@@ -25,7 +25,7 @@ declare global {
 
 export const App: React.FC = () => {
   // Navigation & UI Layout State
-  const [activeSection, setActiveSection] = useState<NavSection>('emo');
+  const [activeSection, setActiveSection] = useState<NavSection>('main');
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [telemetryCollapsed, setTelemetryCollapsed] = useState(false);
   const [fullScreen, setFullScreen] = useState(false);
@@ -82,7 +82,15 @@ export const App: React.FC = () => {
       try {
         const res = await api.listMessages(convId);
         if (res.success) {
-          setMessages(res.data);
+          setMessages((prev) => {
+            if (
+              prev.length === res.data.length &&
+              prev[prev.length - 1]?.id === res.data[res.data.length - 1]?.id
+            ) {
+              return prev;
+            }
+            return res.data;
+          });
         } else {
           setError(res.error);
         }
@@ -136,14 +144,24 @@ export const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [loadConversations, checkHealth]);
 
-  // When active conversation changes
+  // When active conversation changes & auto-sync for proactive speech
   useEffect(() => {
     if (activeConversationId) {
       void loadMessages(activeConversationId);
       setStreamingText('');
       setIsGenerating(false);
+
+      // Fast auto-sync so Arle's proactive speech appears without manual refresh
+      const interval = setInterval(() => {
+        if (!activeRequestIdRef.current) {
+          void loadMessages(activeConversationId);
+        }
+      }, 2500);
+
+      return () => clearInterval(interval);
     } else {
       setMessages([]);
+      return undefined;
     }
   }, [activeConversationId, loadMessages]);
 
@@ -274,8 +292,18 @@ export const App: React.FC = () => {
     }
   };
 
-  // Send message with multimodal vision support
-  const handleSendMessage = async (content: string, imageBase64?: string) => {
+  // Send message with multimodal vision and video support
+  const handleSendMessage = async (
+    content: string,
+    imageBase64?: string,
+    mediaPayload?: {
+      type: 'image' | 'video';
+      base64?: string;
+      videoPath?: string;
+      mimeType?: string;
+      fileName?: string;
+    },
+  ) => {
     if (!api) return;
 
     let targetConvId: string;
@@ -292,7 +320,22 @@ export const App: React.FC = () => {
       targetConvId = activeConversationId;
     }
 
-    // Optimistic UI update
+    // Optimistic UI update with rich media metadata
+    const userMetadata: Record<string, any> = {};
+    const effectiveImgBase64 = imageBase64 || (mediaPayload?.type === 'image' ? mediaPayload.base64 : undefined);
+
+    if (effectiveImgBase64) {
+      userMetadata.imageBase64 = effectiveImgBase64;
+      userMetadata.hasImage = true;
+    }
+
+    if (mediaPayload?.type === 'video') {
+      userMetadata.hasVideo = true;
+      userMetadata.videoBase64 = mediaPayload.base64;
+      userMetadata.videoPath = mediaPayload.videoPath;
+      userMetadata.fileName = mediaPayload.fileName;
+    }
+
     const tempUserMsg: Message = {
       id: crypto.randomUUID(),
       conversationId: targetConvId,
@@ -300,7 +343,7 @@ export const App: React.FC = () => {
       content,
       tokenCount: null,
       createdAt: new Date().toISOString(),
-      metadata: imageBase64 ? { imageBase64, hasImage: true } : {},
+      metadata: userMetadata,
     };
     setMessages((prev) => [...prev, tempUserMsg]);
 
@@ -314,7 +357,7 @@ export const App: React.FC = () => {
       tokenCount: 0,
       tokensPerSecond: 0,
       elapsedSeconds: 0,
-      stage: 'thinking',
+      stage: mediaPayload?.type === 'video' ? 'watching_video' : 'thinking',
     });
 
     const requestId = crypto.randomUUID();
@@ -323,7 +366,10 @@ export const App: React.FC = () => {
     api.startInferenceStream({
       conversationId: targetConvId,
       userMessageContent: content,
-      imageBase64,
+      imageBase64: effectiveImgBase64,
+      videoBase64: mediaPayload?.type === 'video' ? mediaPayload.base64 : undefined,
+      videoPath: mediaPayload?.type === 'video' ? mediaPayload.videoPath : undefined,
+      videoMimeType: mediaPayload?.type === 'video' ? mediaPayload.mimeType : undefined,
     }).then((res) => {
       if (!res.success) {
         setError(res.error);

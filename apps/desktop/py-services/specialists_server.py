@@ -25,6 +25,17 @@ RVC_MODEL_DIR = os.path.join(BASE_MODELS_DIR, "rvc-arlecchino")
 RVC_MODEL_PATH = os.path.join(RVC_MODEL_DIR, "arlecchino_500e.pth")
 RVC_INDEX_PATH = os.path.join(RVC_MODEL_DIR, "arlecchino_500e.index")
 
+# Patch PyAV for newer versions where metadata_errors argument was removed
+try:
+    import av
+    _orig_av_open = av.open
+    def _safe_av_open(*args, **kwargs):
+        kwargs.pop("metadata_errors", None)
+        return _orig_av_open(*args, **kwargs)
+    av.open = _safe_av_open
+except Exception:
+    pass
+
 print(f"[Specialists] Initializing Arletex Specialist Services from {BASE_MODELS_DIR}...")
 
 # 1. Initialize EmbeddingGemma
@@ -212,10 +223,13 @@ class SpecialistRequestHandler(BaseHTTPRequestHandler):
             if "," in audio_b64:
                 audio_b64 = audio_b64.split(",", 1)[1]
 
+            fmt = body.get("format", "webm")
+            if not fmt.startswith("."):
+                fmt = f".{fmt}"
             temp_path = None
             try:
                 audio_bytes = base64.b64decode(audio_b64)
-                with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as f:
+                with tempfile.NamedTemporaryFile(suffix=fmt, delete=False) as f:
                     f.write(audio_bytes)
                     temp_path = f.name
 

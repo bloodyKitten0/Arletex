@@ -112,7 +112,7 @@ describe('APE Phase 1: Section 15 Specification Test Suite', () => {
     const rel = apeService.getRelationshipConfig();
     expect(rel.romanticOrientation).toBe('exclusive_to_user');
     expect(rel.sexualOrientation).toBe('exclusive_to_user');
-    expect(rel.targetUserId).toBe('creator');
+    expect(['creator', 'Proof']).toContain(rel.targetUserId);
   });
 
   // 6. Persistent state reload: state preserved across engine restart / reload

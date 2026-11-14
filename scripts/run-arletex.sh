@@ -69,8 +69,8 @@ else
 fi
 
 # 3. Launch the Electron Desktop application
-echo "Building latest distribution..."
-pnpm --filter @arletex/desktop build
+echo "Building latest distribution (native C++ engine + core + packages + desktop)..."
+pnpm run build
 
 echo "Opening Arletex Desktop App..."
 pnpm start

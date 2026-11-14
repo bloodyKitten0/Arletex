@@ -2,13 +2,21 @@ import React, { useEffect, useRef } from 'react';
 import { Message } from '@arletex/contracts';
 import { Bot, User, AlertCircle, Zap, Loader2 } from 'lucide-react';
 
+function cleanDisplayContent(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/\[(?:action|cmd|tone|thought|mood|emotion|state):[^\]]*\]/gi, '')
+    .replace(/^\s*\[[^\]]+\]\s*/gm, '')
+    .trim();
+}
+
 export interface GenerationStats {
   startTime: number | null;
   firstTokenTime: number | null;
   tokenCount: number;
   tokensPerSecond: number;
   elapsedSeconds: number;
-  stage: 'central' | 'coding_specialist' | 'synthesis' | 'thinking';
+  stage: 'central' | 'coding_specialist' | 'synthesis' | 'thinking' | 'watching_video';
 }
 
 interface ChatViewProps {
@@ -35,14 +43,42 @@ export const ChatView: React.FC<ChatViewProps> = ({
     stage: 'thinking',
   },
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef<boolean>(true);
+
+  const handleScroll = () => {
+    const el = containerRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    isNearBottomRef.current = distanceFromBottom <= 30;
+  };
+
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (e.deltaY < 0) {
+      isNearBottomRef.current = false;
+    } else if (e.deltaY > 0) {
+      const el = containerRef.current;
+      if (el) {
+        const distanceFromBottom = el.scrollHeight - (el.scrollTop + el.clientHeight);
+        if (distanceFromBottom <= 30) {
+          isNearBottomRef.current = true;
+        }
+      }
+    }
+  };
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (isNearBottomRef.current && containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
   }, [messages, streamingText]);
 
   return (
     <div
+      ref={containerRef}
+      onScroll={handleScroll}
+      onWheel={handleWheel}
       style={{
         flex: 1,
         overflowY: 'auto',
@@ -165,7 +201,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 wordBreak: 'break-word',
               }}
             >
-              {msg.content}
+              {cleanDisplayContent(msg.content)}
             </div>
           </div>
         );
@@ -333,7 +369,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
               wordBreak: 'break-word',
             }}
           >
-            {streamingText}
+            {cleanDisplayContent(streamingText)}
             <span
               style={{
                 display: 'inline-block',

@@ -39,10 +39,11 @@ export const IPC_CHANNELS = {
   VOICE_TRANSCRIBE: 'arletex:voice:transcribe',
   VOICE_SYNTHESIZE: 'arletex:voice:synthesize',
 
-  // Preferences & Vision
+  // Preferences & Vision & Video
   PREFERENCES_GET: 'arletex:preferences:get',
   PREFERENCES_SET: 'arletex:preferences:set',
   VISION_INSPECT: 'arletex:vision:inspect',
+  VIDEO_INSPECT: 'arletex:video:inspect',
 
   // APE (Artificial Psychology Engine) Channels
   APE_STATE_GET: 'arletex:ape:state:get',
@@ -51,6 +52,34 @@ export const IPC_CHANNELS = {
   APE_TAXONOMY_GET: 'arletex:ape:taxonomy:get',
   APE_RELATIONSHIP_GET: 'arletex:ape:relationship:get',
   APE_RELATIONSHIP_UPDATE: 'arletex:ape:relationship:update',
+  APE_PERSONALITY_GET: 'arletex:ape:personality:get',
+  APE_PERSONALITY_UPDATE: 'arletex:ape:personality:update',
+  APE_MOTIVATIONAL_GET: 'arletex:ape:motivational:get',
+  APE_MOTIVATIONAL_UPDATE: 'arletex:ape:motivational:update',
+  APE_RELATIONSHIP_EXT_GET: 'arletex:ape:relationship_ext:get',
+  APE_RELATIONSHIP_EXT_UPDATE: 'arletex:ape:relationship_ext:update',
+  APE_SELF_MODEL_GET: 'arletex:ape:self_model:get',
+  APE_SELF_MODEL_UPDATE: 'arletex:ape:self_model:update',
+  APE_DEVELOPMENT_GET: 'arletex:ape:development:get',
+  APE_DEVELOPMENT_UPDATE: 'arletex:ape:development:update',
+  APE_MASTER_STATE_GET: 'arletex:ape:master_state:get',
+
+  // Autonomous Agency & Device Control Channels
+  AUTONOMY_STATUS_GET: 'arletex:autonomy:status:get',
+  AUTONOMY_TOGGLE: 'arletex:autonomy:toggle',
+  AUTONOMY_CYCLE_TRIGGER: 'arletex:autonomy:cycle:trigger',
+  DEVICE_SCREEN_CAPTURE: 'arletex:device:screen:capture',
+  DEVICE_ACTION_EXECUTE: 'arletex:device:action:execute',
+  DEVICE_BROWSER_OPEN: 'arletex:device:browser:open',
+  DEVICE_STEAM_LAUNCH: 'arletex:device:steam:launch',
+  SCREEN_READ_ANALYZE: 'arletex:screen:read:analyze',
+  SCREEN_WINDOWS_GET: 'arletex:screen:windows:get',
+  SCREEN_INTERACT: 'arletex:screen:interact',
+  NOTIFICATIONS_STATUS_GET: 'arletex:notifications:status:get',
+  NOTIFICATIONS_SIMULATE: 'arletex:notifications:simulate',
+  TELEGRAM_STATUS_GET: 'arletex:telegram:status:get',
+  TELEGRAM_CONFIGURE: 'arletex:telegram:configure',
+  TELEGRAM_SEND: 'arletex:telegram:send',
 } as const;
 
 export type IPCChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];
@@ -353,6 +382,24 @@ export const VisionInspectResultSchema = z.object({
 
 export type VisionInspectResult = z.infer<typeof VisionInspectResultSchema>;
 
+export const VideoInspectInputSchema = z.object({
+  videoBase64: z.string().optional(),
+  videoPath: z.string().optional(),
+  mimeType: z.string().default('video/mp4'),
+  maxFrames: z.number().int().min(1).max(12).default(6),
+});
+
+export type VideoInspectInput = z.infer<typeof VideoInspectInputSchema>;
+
+export const VideoInspectResultSchema = z.object({
+  durationSeconds: z.number(),
+  framesBase64: z.array(z.string()),
+  transcript: z.string().nullable(),
+  description: z.string().optional(),
+});
+
+export type VideoInspectResult = z.infer<typeof VideoInspectResultSchema>;
+
 // ==========================================
 // Inference Schemas & Types
 // ==========================================
@@ -428,6 +475,10 @@ export const StartInferenceStreamInputSchema = z.object({
   conversationId: z.string().uuid(),
   userMessageContent: z.string().min(1),
   imageBase64: z.string().optional(),
+  videoBase64: z.string().optional(),
+  videoPath: z.string().optional(),
+  videoMimeType: z.string().optional(),
+  imagesBase64: z.array(z.string()).optional(),
   systemPromptOverride: z.string().optional(),
   temperatureOverride: z.number().min(0).max(2).optional(),
 });
@@ -450,7 +501,7 @@ export const StreamChunkSchema = z.object({
   isDone: z.boolean(),
   error: z.string().nullable().default(null),
   finishReason: z.string().nullable().default(null),
-  specialistStage: z.enum(['central', 'coding_specialist', 'synthesis']).optional(),
+  specialistStage: z.enum(['central', 'coding_specialist', 'synthesis', 'watching_video']).optional(),
   specialistModel: z.string().optional(),
   ttftMs: z.number().optional(),
   tokensPerSecond: z.number().optional(),

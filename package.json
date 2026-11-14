@@ -6,7 +6,8 @@
   "packageManager": "pnpm@12.18.0",
   "scripts": {
     "arle": "./scripts/run-arletex.sh",
-    "build": "pnpm --filter \"@arletex/*\" run build",
+    "build:native": "cmake -B native/build -S native -DCMAKE_BUILD_TYPE=Release && cmake --build native/build -j4 && cp native/build/reflex_engine apps/desktop/src/backend/native/reflex_engine 2>/dev/null || true",
+    "build": "pnpm run build:native && pnpm --filter \"@arletex/*\" run build",
     "typecheck": "pnpm --filter \"@arletex/*\" run typecheck",
     "test": "vitest run",
     "test:watch": "vitest",

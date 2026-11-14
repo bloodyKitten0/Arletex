@@ -275,4 +275,77 @@ export const MIGRATIONS: Migration[] = [
       );
     `,
   },
+  {
+    id: 4,
+    name: '004_ape_master_six_engines_and_reliability',
+    up: `
+      -- 1. Upgrade Psychological Event Journal for Provenance and Recovery
+      ALTER TABLE ape_event_journal ADD COLUMN actor TEXT NOT NULL DEFAULT 'user';
+      ALTER TABLE ape_event_journal ADD COLUMN event_kind TEXT NOT NULL DEFAULT 'external_stimulus';
+      ALTER TABLE ape_event_journal ADD COLUMN processing_status TEXT NOT NULL DEFAULT 'received';
+      ALTER TABLE ape_event_journal ADD COLUMN error TEXT;
+
+      CREATE INDEX IF NOT EXISTS idx_ape_events_status ON ape_event_journal(processing_status);
+      CREATE INDEX IF NOT EXISTS idx_ape_events_actor ON ape_event_journal(actor);
+
+      -- 2. Upgrade Appraisals for Appraisal Method Provenance
+      ALTER TABLE ape_appraisals ADD COLUMN appraisal_method TEXT NOT NULL DEFAULT 'deterministic';
+
+      -- 3. Engine 2: Personality State
+      CREATE TABLE IF NOT EXISTS ape_personality_state (
+        id TEXT PRIMARY KEY,
+        temperament TEXT NOT NULL,
+        traits TEXT NOT NULL DEFAULT '[]',
+        values_list TEXT NOT NULL DEFAULT '[]',
+        beliefs TEXT NOT NULL DEFAULT '[]',
+        preferences TEXT NOT NULL DEFAULT '[]',
+        is_initialized INTEGER NOT NULL DEFAULT 1,
+        last_updated_at TEXT NOT NULL
+      );
+
+      -- 4. Engine 3: Motivational State
+      CREATE TABLE IF NOT EXISTS ape_motivational_state (
+        id TEXT PRIMARY KEY,
+        needs TEXT NOT NULL,
+        goals TEXT NOT NULL DEFAULT '[]',
+        active_initiatives TEXT NOT NULL DEFAULT '[]',
+        is_initialized INTEGER NOT NULL DEFAULT 1,
+        last_updated_at TEXT NOT NULL
+      );
+
+      -- 5. Engine 4: Extended Relationship State
+      CREATE TABLE IF NOT EXISTS ape_relationship_state (
+        id TEXT PRIMARY KEY,
+        attachment_security REAL NOT NULL DEFAULT 0.90,
+        trust_level REAL NOT NULL DEFAULT 0.92,
+        intimacy_depth REAL NOT NULL DEFAULT 0.85,
+        social_graph TEXT NOT NULL DEFAULT '{}',
+        conflict_history TEXT NOT NULL DEFAULT '[]',
+        is_initialized INTEGER NOT NULL DEFAULT 1,
+        last_updated_at TEXT NOT NULL
+      );
+
+      -- 6. Engine 5: Self Model
+      CREATE TABLE IF NOT EXISTS ape_self_model (
+        id TEXT PRIMARY KEY,
+        identity_narrative TEXT NOT NULL,
+        capabilities TEXT NOT NULL DEFAULT '[]',
+        limitations TEXT NOT NULL DEFAULT '[]',
+        creator_perception TEXT NOT NULL,
+        existential_reflections TEXT NOT NULL DEFAULT '[]',
+        private_reflections TEXT NOT NULL DEFAULT '[]',
+        is_initialized INTEGER NOT NULL DEFAULT 1,
+        last_updated_at TEXT NOT NULL
+      );
+
+      -- 7. Engine 6: Development History
+      CREATE TABLE IF NOT EXISTS ape_development_state (
+        id TEXT PRIMARY KEY,
+        developmental_history TEXT NOT NULL DEFAULT '[]',
+        interests TEXT NOT NULL DEFAULT '[]',
+        is_initialized INTEGER NOT NULL DEFAULT 1,
+        last_updated_at TEXT NOT NULL
+      );
+    `,
+  },
 ];

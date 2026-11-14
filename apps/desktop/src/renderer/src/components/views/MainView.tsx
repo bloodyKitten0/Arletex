@@ -14,7 +14,8 @@ import {
   ChevronDown,
   ChevronUp,
   X,
-  Image as ImageIcon,
+  Video,
+  Film,
   Bot,
   User,
   AlertCircle,
@@ -28,18 +29,27 @@ import {
 import { GenerationStats } from '../ChatView';
 import {
   blobToBase64,
-  playWavBase64,
   stopCurrentAudio,
-  cleanTextForSpeech,
   splitIntoSpeechChunks,
   playSpeechQueue,
 } from '../../utils/mediaUtils';
 
 function parseToneAndText(raw: string) {
-  const toneMatch = raw.match(/\[tone:\s*([a-zA-Z]+)\]/i);
-  const clean = raw.replace(/\[tone:\s*[a-zA-Z]+\]\s*/gi, '').trim();
-  const tone = toneMatch ? toneMatch[1]?.toLowerCase() : null;
-  return { tone, text: clean || raw };
+  if (!raw) return { tone: null, text: '' };
+  const clean = raw
+    .replace(/\[(?:action|cmd|tone|thought|mood|emotion|state):[^\]]*\]/gi, '')
+    .replace(/^\s*\[(?:action|cmd|tone|thought|mood|emotion|state)?:?[^\]]*$/gi, '')
+    .replace(/^\s*\[[^\]]+\]\s*/gm, '')
+    .trim();
+  return { tone: null, text: clean };
+}
+
+export interface AttachedMedia {
+  type: 'image' | 'video';
+  base64: string;
+  mimeType: string;
+  name: string;
+  videoPath?: string;
 }
 
 interface MainViewProps {
@@ -50,7 +60,17 @@ interface MainViewProps {
   error: string | null;
   onClearError: () => void;
   generationStats: GenerationStats;
-  onSendMessage: (content: string, imageBase64?: string) => void;
+  onSendMessage: (
+    content: string,
+    imageBase64?: string,
+    mediaPayload?: {
+      type: 'image' | 'video';
+      base64?: string;
+      videoPath?: string;
+      mimeType?: string;
+      fileName?: string;
+    },
+  ) => void;
   onCancelGeneration: () => void;
   health: InferenceHealthResult | null;
   fullScreen: boolean;
@@ -74,7 +94,8 @@ export const MainView: React.FC<MainViewProps> = ({
   onCreateMemory,
 }) => {
   const [inputContent, setInputContent] = useState('');
-  const [selectedImage, setSelectedImage] = useState<{ base64: string; mimeType: string; name: string } | null>(null);
+  const [attachedMedia, setAttachedMedia] = useState<AttachedMedia | null>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -85,9 +106,34 @@ export const MainView: React.FC<MainViewProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef<boolean>(true);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const lastSpokenMsgIdRef = useRef<string | null>(null);
+
+  const handleScroll = () => {
+    if (!messagesContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
+    // User is near bottom only if within 30px
+    isNearBottomRef.current = distanceFromBottom <= 30;
+  };
+
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (e.deltaY < 0) {
+      // User is scrolling UP: immediately disable auto-scrolling so user isn't shoved down!
+      isNearBottomRef.current = false;
+    } else if (e.deltaY > 0) {
+      const el = messagesContainerRef.current;
+      if (el) {
+        const distanceFromBottom = el.scrollHeight - (el.scrollTop + el.clientHeight);
+        if (distanceFromBottom <= 30) {
+          isNearBottomRef.current = true;
+        }
+      }
+    }
+  };
 
   // Load persistent preference for voice
   useEffect(() => {
@@ -171,9 +217,12 @@ export const MainView: React.FC<MainViewProps> = ({
     }
   }, [messages, isGenerating, voiceEnabled]);
 
-  // Auto-scroll chat
+  // Auto-scroll chat only when user is actually at the bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (isNearBottomRef.current && messagesContainerRef.current) {
+      // Direct assignment prevents animated smooth-scrolling from fighting user scroll gestures
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   }, [messages, streamingText]);
 
   // Adjust textarea height
@@ -184,19 +233,104 @@ export const MainView: React.FC<MainViewProps> = ({
     }
   }, [inputContent]);
 
-  // Handle Image attachment
+  // Handle Image & Video File Selection
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
       const base64 = await blobToBase64(file);
-      setSelectedImage({
+      const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|mkv|avi)$/i.test(file.name);
+      setAttachedMedia({
+        type: isVideo ? 'video' : 'image',
         base64,
-        mimeType: file.type || 'image/jpeg',
+        mimeType: file.type || (isVideo ? 'video/mp4' : 'image/jpeg'),
         name: file.name,
+        videoPath: (file as any).path,
       });
     } catch (err) {
-      console.error('Failed to read image file', err);
+      console.error('Failed to read media file:', err);
+    }
+  };
+
+  // Handle Clipboard Paste (Directly paste pictures or videos with Ctrl+V)
+  const handlePaste = async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items || items.length === 0) return;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item && item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          try {
+            const base64 = await blobToBase64(file);
+            setAttachedMedia({
+              type: 'image',
+              base64,
+              mimeType: file.type || 'image/png',
+              name: `Pasted Image ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`,
+            });
+          } catch (err) {
+            console.error('Failed to read pasted image:', err);
+          }
+        }
+        return;
+      } else if (item && item.type.startsWith('video/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          try {
+            const base64 = await blobToBase64(file);
+            setAttachedMedia({
+              type: 'video',
+              base64,
+              mimeType: file.type || 'video/mp4',
+              name: file.name || `Pasted Video ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`,
+              videoPath: (file as any).path,
+            });
+          } catch (err) {
+            console.error('Failed to read pasted video:', err);
+          }
+        }
+        return;
+      }
+    }
+  };
+
+  // Handle Drag & Drop of Images and Videos
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOver(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    try {
+      const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|mkv|avi)$/i.test(file.name);
+      const isImage = file.type.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp)$/i.test(file.name);
+
+      if (isVideo || isImage) {
+        const base64 = await blobToBase64(file);
+        setAttachedMedia({
+          type: isVideo ? 'video' : 'image',
+          base64,
+          mimeType: file.type || (isVideo ? 'video/mp4' : 'image/jpeg'),
+          name: file.name,
+          videoPath: (file as any).path,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to process dropped media:', err);
     }
   };
 
@@ -254,10 +388,23 @@ export const MainView: React.FC<MainViewProps> = ({
   };
 
   const handleSend = () => {
-    if ((!inputContent.trim() && !selectedImage) || isGenerating) return;
-    onSendMessage(inputContent.trim(), selectedImage?.base64);
+    if ((!inputContent.trim() && !attachedMedia) || isGenerating) return;
+
+    const mediaPayload = attachedMedia
+      ? {
+          type: attachedMedia.type,
+          base64: attachedMedia.base64,
+          videoPath: attachedMedia.videoPath,
+          mimeType: attachedMedia.mimeType,
+          fileName: attachedMedia.name,
+        }
+      : undefined;
+
+    const imgBase64 = attachedMedia?.type === 'image' ? attachedMedia.base64 : undefined;
+
+    onSendMessage(inputContent.trim(), imgBase64, mediaPayload);
     setInputContent('');
-    setSelectedImage(null);
+    setAttachedMedia(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
   };
@@ -430,7 +577,12 @@ export const MainView: React.FC<MainViewProps> = ({
       )}
 
       {/* Messages Scroll Area */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div
+        ref={messagesContainerRef}
+        onScroll={handleScroll}
+        onWheel={handleWheel}
+        style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}
+      >
         {messages.length === 0 && !streamingText && (
           <div
             style={{
@@ -546,6 +698,46 @@ export const MainView: React.FC<MainViewProps> = ({
                         border: '1px solid var(--border-subtle)',
                       }}
                     />
+                  </div>
+                )}
+
+                {/* Render attached video player if message contains a video */}
+                {msg.metadata && ((msg.metadata as any).videoBase64 || (msg.metadata as any).hasVideo) && (
+                  <div style={{ marginBottom: '10px' }}>
+                    <video
+                      controls
+                      playsInline
+                      preload="metadata"
+                      src={(msg.metadata as any).videoBase64}
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '300px',
+                        borderRadius: '8px',
+                        display: 'block',
+                        backgroundColor: '#000000',
+                        border: '1px solid var(--border-subtle)',
+                      }}
+                    />
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        marginTop: '6px',
+                        fontSize: '11px',
+                        color: 'var(--text-muted)',
+                      }}
+                    >
+                      <Film size={12} color="var(--accent)" />
+                      <span>
+                        Video Clip {(msg.metadata as any).videoDuration ? `• ${(msg.metadata as any).videoDuration.toFixed(1)}s` : '• Watched by Arle'}
+                      </span>
+                      {(msg.metadata as any).videoTranscript && (
+                        <span style={{ fontStyle: 'italic', color: 'var(--text-secondary)' }}>
+                          • Audio: "{(msg.metadata as any).videoTranscript}"
+                        </span>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -735,40 +927,125 @@ export const MainView: React.FC<MainViewProps> = ({
 
       {/* Composer Area */}
       <div
+        onPaste={handlePaste}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
         style={{
           padding: '12px 20px 16px',
-          backgroundColor: 'var(--bg-secondary)',
-          borderTop: '1px solid var(--border-subtle)',
+          backgroundColor: isDraggingOver ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
+          borderTop: `1px solid ${isDraggingOver ? 'var(--accent)' : 'var(--border-subtle)'}`,
           display: 'flex',
           flexDirection: 'column',
           gap: '8px',
+          transition: 'background-color 0.15s ease, border-color 0.15s ease',
         }}
       >
-        {/* Selected image preview */}
-        {selectedImage && (
+        {/* Drag and Drop visual notice */}
+        {isDraggingOver && (
+          <div
+            style={{
+              padding: '8px 12px',
+              borderRadius: '8px',
+              backgroundColor: 'rgba(56, 139, 253, 0.12)',
+              border: '1px dashed var(--accent)',
+              color: 'var(--accent)',
+              fontSize: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              fontWeight: 600,
+            }}
+          >
+            <Sparkles size={14} />
+            <span>Drop image or video here for Arle to perceive & watch</span>
+          </div>
+        )}
+
+        {/* Attached media preview (Image thumbnail or Video player badge) */}
+        {attachedMedia && (
           <div
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '8px',
-              padding: '6px 10px',
-              backgroundColor: 'var(--bg-tertiary)',
-              borderRadius: '6px',
-              border: '1px solid var(--border-subtle)',
+              gap: '10px',
+              padding: '6px 12px',
+              backgroundColor: 'var(--bg-card)',
+              borderRadius: '8px',
+              border: '1px solid var(--accent)',
               alignSelf: 'flex-start',
               fontSize: '12px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
             }}
           >
-            <ImageIcon size={14} color="var(--accent)" />
-            <span style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {selectedImage.name}
-            </span>
+            {attachedMedia.type === 'image' ? (
+              <img
+                src={
+                  attachedMedia.base64.startsWith('data:')
+                    ? attachedMedia.base64
+                    : `data:${attachedMedia.mimeType};base64,${attachedMedia.base64}`
+                }
+                alt="Pasted Preview"
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '6px',
+                  objectFit: 'cover',
+                  border: '1px solid var(--border-subtle)',
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '6px',
+                  backgroundColor: 'rgba(56, 139, 253, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '1px solid rgba(56, 139, 253, 0.3)',
+                  flexShrink: 0,
+                }}
+              >
+                <Video size={18} color="var(--accent)" />
+              </div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span
+                style={{
+                  maxWidth: '240px',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontWeight: 600,
+                }}
+              >
+                {attachedMedia.name}
+              </span>
+              <span style={{ fontSize: '10px', color: 'var(--accent)' }}>
+                {attachedMedia.type === 'image'
+                  ? 'Image attached (Paste / Drop supported)'
+                  : 'Video ready for Arle to watch & hear'}
+              </span>
+            </div>
             <button
               type="button"
-              onClick={() => setSelectedImage(null)}
-              style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}
+              onClick={() => setAttachedMedia(null)}
+              title="Remove attachment"
+              style={{
+                color: 'var(--text-muted)',
+                display: 'flex',
+                alignItems: 'center',
+                padding: '4px',
+                borderRadius: '4px',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
             >
-              <X size={14} />
+              <X size={15} />
             </button>
           </div>
         )}
@@ -784,18 +1061,18 @@ export const MainView: React.FC<MainViewProps> = ({
             padding: '8px 12px',
           }}
         >
-          {/* File attachment button */}
+          {/* File attachment button (Supports Images and Videos) */}
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/*,video/*"
             style={{ display: 'none' }}
             onChange={handleFileChange}
           />
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            title="Attach image for visual perception"
+            title="Attach image or video for Arle to perceive and watch"
             style={{
               padding: '6px',
               color: 'var(--text-secondary)',
@@ -829,18 +1106,21 @@ export const MainView: React.FC<MainViewProps> = ({
             {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
           </button>
 
-          {/* Textarea */}
+          {/* Textarea with Paste handler */}
           <textarea
             ref={textareaRef}
             value={inputContent}
             onChange={(e) => setInputContent(e.target.value)}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             placeholder={
               isRecording
                 ? 'Listening to microphone...'
                 : (isTranscribing
                   ? 'Transcribing speech via local Whisper...'
-                  : (isGenerating ? 'Arle is formulating response...' : 'Message Arle... (Enter to send, Shift+Enter for newline)'))
+                  : (isGenerating
+                    ? 'Arle is formulating response...'
+                    : 'Message Arle... (Paste images/videos with Ctrl+V, or drag & drop)'))
             }
             disabled={isGenerating || isRecording || isTranscribing}
             rows={1}
@@ -881,14 +1161,14 @@ export const MainView: React.FC<MainViewProps> = ({
             <button
               type="button"
               onClick={handleSend}
-              disabled={!inputContent.trim() && !selectedImage}
+              disabled={!inputContent.trim() && !attachedMedia}
               title="Send Message"
               style={{
                 width: '32px',
                 height: '32px',
                 borderRadius: '8px',
-                backgroundColor: (!inputContent.trim() && !selectedImage) ? 'var(--bg-tertiary)' : 'var(--accent)',
-                color: (!inputContent.trim() && !selectedImage) ? 'var(--text-muted)' : '#000',
+                backgroundColor: (!inputContent.trim() && !attachedMedia) ? 'var(--bg-tertiary)' : 'var(--accent)',
+                color: (!inputContent.trim() && !attachedMedia) ? 'var(--text-muted)' : '#000',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

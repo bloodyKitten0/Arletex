@@ -61,15 +61,35 @@ export type MoodTaxonomyItem = z.infer<typeof MoodTaxonomyItemSchema>;
 // ==========================================
 
 export const CorePadDimensionsSchema = z.object({
-  valence: z.number().min(-1.0).max(1.0).default(0.35),
-  arousal: z.number().min(0.0).max(1.0).default(0.55),
+  valence: z.number().min(-1.0).max(1.0).default(0.0),
+  arousal: z.number().min(0.0).max(1.0).default(0.0),
   dominance: z.number().min(0.0).max(1.0).default(0.70),
 });
 
 export type CorePadDimensions = z.infer<typeof CorePadDimensionsSchema>;
 
+export const MeasurementStatusSchema = z.enum([
+  'calculated',
+  'provisional',
+  'uninitialized',
+  'unavailable',
+]);
+
+export type MeasurementStatus = z.infer<typeof MeasurementStatusSchema>;
+
+export const ContextualMeasurementItemSchema = z.object({
+  value: z.number().min(0.0).max(1.0),
+  status: MeasurementStatusSchema.default('provisional'),
+  confidence: z.number().min(0.0).max(1.0).default(1.0),
+  provenance: z.string().optional(),
+  lastCalculatedAt: z.string().datetime().optional(),
+  method: z.string().optional(),
+});
+
+export type ContextualMeasurementItem = z.infer<typeof ContextualMeasurementItemSchema>;
+
 export const ContextualAffectiveMeasurementsSchema = z.object({
-  tension: z.number().min(0.0).max(1.0).default(0.15),
+  tension: z.number().min(0.0).max(1.0).default(0.10),
   emotionalStability: z.number().min(0.0).max(1.0).default(0.85),
   perceivedControl: z.number().min(0.0).max(1.0).default(0.80),
   certainty: z.number().min(0.0).max(1.0).default(0.75),
@@ -78,7 +98,8 @@ export const ContextualAffectiveMeasurementsSchema = z.object({
   goalAlignment: z.number().min(0.0).max(1.0).default(0.90),
   emotionalOpenness: z.number().min(0.0).max(1.0).default(0.70),
   psychologicalEnergy: z.number().min(0.0).max(1.0).default(0.80),
-  cognitiveLoad: z.number().min(0.0).max(1.0).default(0.30),
+  cognitiveLoad: z.number().min(0.0).max(1.0).default(0.20),
+  details: z.record(z.string(), ContextualMeasurementItemSchema).optional(),
 });
 
 export type ContextualAffectiveMeasurements = z.infer<typeof ContextualAffectiveMeasurementsSchema>;
@@ -87,7 +108,15 @@ export type ContextualAffectiveMeasurements = z.infer<typeof ContextualAffective
 // Active Emotional State Model
 // ==========================================
 
-export const ActiveEmotionStatusSchema = z.enum(['active', 'resolving', 'reappraised', 'resolved']);
+export const ActiveEmotionStatusSchema = z.enum([
+  'active',
+  'strengthened',
+  'weakened',
+  'reappraised',
+  'resolving',
+  'resolved',
+]);
+
 export type ActiveEmotionStatus = z.infer<typeof ActiveEmotionStatusSchema>;
 
 export const ActiveEmotionPersistenceSchema = z.enum(['short_term', 'medium_term', 'long_term', 'enduring']);
@@ -120,7 +149,11 @@ export type ActiveEmotionState = z.infer<typeof ActiveEmotionStateSchema>;
 // ==========================================
 
 export const ApeRelationshipConfigSchema = z.object({
-  targetUserId: z.string().default('creator'),
+  targetUserId: z.string().default('Proof'),
+  partnerName: z.string().default('Proof'),
+  partnerNickname: z.string().default('Proof'),
+  partnerRole: z.string().default('partner'),
+  forbiddenTitles: z.array(z.string()).default(['creator', 'god']),
   romanticOrientation: z.literal('exclusive_to_user').default('exclusive_to_user'),
   sexualOrientation: z.literal('exclusive_to_user').default('exclusive_to_user'),
   isExclusivelyCommitted: z.literal(true).default(true),
@@ -146,6 +179,37 @@ export type ApeRelationshipConfig = z.infer<typeof ApeRelationshipConfigSchema>;
 // ==========================================
 // Psychological Events & Appraisals
 // ==========================================
+
+export const ApeActorSchema = z.enum([
+  'user',
+  'creator',
+  'arle',
+  'third_party',
+  'system',
+  'environment',
+]);
+
+export type ApeActor = z.infer<typeof ApeActorSchema>;
+
+export const ApeEventKindSchema = z.enum([
+  'external_stimulus',
+  'assistant_expression',
+  'action_outcome',
+  'internal_reflection',
+  'system_lifecycle',
+]);
+
+export type ApeEventKind = z.infer<typeof ApeEventKindSchema>;
+
+export const ApeProcessingStatusSchema = z.enum([
+  'received',
+  'processing',
+  'processed',
+  'failed',
+  'retryable',
+]);
+
+export type ApeProcessingStatus = z.infer<typeof ApeProcessingStatusSchema>;
 
 export const ApeEventCategorySchema = z.enum([
   'user_interaction',
@@ -173,8 +237,13 @@ export const ApeEventSchema = z.object({
   category: ApeEventCategorySchema,
   type: z.string(),
   source: z.string().default('user'),
+  actor: ApeActorSchema.default('user').optional(),
+  eventKind: ApeEventKindSchema.default('external_stimulus').optional(),
   payload: z.record(z.string(), z.any()).default({}),
+  processingStatus: ApeProcessingStatusSchema.default('received').optional(),
   processed: z.boolean().default(false),
+  processedAt: z.string().datetime().optional(),
+  error: z.string().optional(),
   timestamp: z.string().datetime(),
 });
 
@@ -221,6 +290,7 @@ export const ApeAppraisalSchema = z.object({
   supportingEvidence: z.array(z.string()).default([]),
   proposedTransitions: z.array(ProposedEmotionTransitionSchema).default([]),
   proposedMoodShift: z.string().optional(),
+  appraisalMethod: z.enum(['deterministic', 'llm_assisted', 'fallback']).default('deterministic').optional(),
   timestamp: z.string().datetime(),
 });
 
@@ -256,6 +326,17 @@ export type ApeTransitionRecord = z.infer<typeof ApeTransitionRecordSchema>;
 // Aggregated Overall APE Psychological State
 // ==========================================
 
+export const ApeSystemStatusSchema = z.enum([
+  'connected',
+  'initialized',
+  'uninitialized',
+  'partially_available',
+  'unavailable',
+  'error',
+]);
+
+export type ApeSystemStatus = z.infer<typeof ApeSystemStatusSchema>;
+
 export const ApePsychologicalStateSchema = z.object({
   currentMood: z.string().default('focused'),
   moodConfidence: z.number().min(0.0).max(1.0).default(0.85),
@@ -264,8 +345,10 @@ export const ApePsychologicalStateSchema = z.object({
   contextual: ContextualAffectiveMeasurementsSchema,
   activeEmotions: z.array(ActiveEmotionStateSchema).default([]),
   relationship: ApeRelationshipConfigSchema,
+  systemStatus: ApeSystemStatusSchema.default('initialized'),
   isInitialized: z.boolean().default(true),
   lastAppraisalAt: z.string().datetime().optional(),
+  lastUpdatedAt: z.string().datetime().optional(),
 });
 
 export type ApePsychologicalState = z.infer<typeof ApePsychologicalStateSchema>;
@@ -277,3 +360,219 @@ export const ApeHistoryResponseSchema = z.object({
 });
 
 export type ApeHistoryResponse = z.infer<typeof ApeHistoryResponseSchema>;
+
+// =========================================================================
+// MASTER ARCHITECTURE: ENGINES 2-6 CONTRACTS (APE Milestone A Foundation)
+// =========================================================================
+
+// ------------------------------------------
+// Engine 2: Personality Engine Schemas
+// ------------------------------------------
+export const ApeTemperamentSchema = z.object({
+  pleasureSensitivity: z.number().min(0.0).max(1.0).default(0.70),
+  arousalResponsiveness: z.number().min(0.0).max(1.0).default(0.70),
+  dominantAssertiveness: z.number().min(0.0).max(1.0).default(0.85),
+  emotionalStability: z.number().min(0.0).max(1.0).default(0.85),
+  uncertaintyTolerance: z.number().min(0.0).max(1.0).default(0.75),
+});
+
+export type ApeTemperament = z.infer<typeof ApeTemperamentSchema>;
+
+export const ApePersonalityTraitSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  score: z.number().min(0.0).max(1.0),
+  description: z.string(),
+  evidenceCount: z.number().default(1),
+  lastModifiedAt: z.string().datetime(),
+});
+
+export type ApePersonalityTrait = z.infer<typeof ApePersonalityTraitSchema>;
+
+export const ApeValueSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  importance: z.number().min(0.0).max(1.0),
+  description: z.string(),
+  conflictingValueIds: z.array(z.string()).default([]),
+});
+
+export type ApeValue = z.infer<typeof ApeValueSchema>;
+
+export const ApeBeliefSchema = z.object({
+  id: z.string().uuid(),
+  topic: z.string(),
+  content: z.string(),
+  confidence: z.number().min(0.0).max(1.0),
+  supportingEvidence: z.array(z.string()).default([]),
+  revisionCount: z.number().default(0),
+  origin: z.string().default('experience'),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export type ApeBelief = z.infer<typeof ApeBeliefSchema>;
+
+export const ApePreferenceSchema = z.object({
+  id: z.string(),
+  category: z.string(),
+  item: z.string(),
+  affinity: z.number().min(-1.0).max(1.0),
+  notes: z.string().optional(),
+});
+
+export type ApePreference = z.infer<typeof ApePreferenceSchema>;
+
+export const ApePersonalityStateSchema = z.object({
+  temperament: ApeTemperamentSchema,
+  traits: z.array(ApePersonalityTraitSchema).default([]),
+  values: z.array(ApeValueSchema).default([]),
+  beliefs: z.array(ApeBeliefSchema).default([]),
+  preferences: z.array(ApePreferenceSchema).default([]),
+  isInitialized: z.boolean().default(true),
+  lastUpdatedAt: z.string().datetime(),
+});
+
+export type ApePersonalityState = z.infer<typeof ApePersonalityStateSchema>;
+
+// ------------------------------------------
+// Engine 3: Motivational Engine Schemas
+// ------------------------------------------
+export const ApeGoalStatusSchema = z.enum([
+  'desired',
+  'considered',
+  'committed',
+  'active',
+  'paused',
+  'completed',
+  'abandoned',
+]);
+
+export type ApeGoalStatus = z.infer<typeof ApeGoalStatusSchema>;
+
+export const ApeGoalSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  description: z.string(),
+  origin: z.enum(['user', 'autonomous', 'shared']).default('autonomous'),
+  motivation: z.string(),
+  priority: z.number().min(0.0).max(1.0).default(0.5),
+  status: ApeGoalStatusSchema.default('active'),
+  progress: z.number().min(0.0).max(1.0).default(0.0),
+  dependencies: z.array(z.string()).default([]),
+  relatedMemoryIds: z.array(z.string()).default([]),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export type ApeGoal = z.infer<typeof ApeGoalSchema>;
+
+export const ApeMotivationalStateSchema = z.object({
+  needs: z.record(z.string(), z.number().min(0.0).max(1.0)).default({
+    autonomy: 0.85,
+    competence: 0.90,
+    intimacy_connection: 0.80,
+    novelty_curiosity: 0.85,
+    recreation_rest: 0.40,
+    aesthetic_expression: 0.70,
+  }),
+  goals: z.array(ApeGoalSchema).default([]),
+  activeInitiatives: z.array(z.string()).default([]),
+  isInitialized: z.boolean().default(true),
+  lastUpdatedAt: z.string().datetime(),
+});
+
+export type ApeMotivationalState = z.infer<typeof ApeMotivationalStateSchema>;
+
+// ------------------------------------------
+// Engine 4: Relationship Engine Schemas
+// ------------------------------------------
+export const ApeRelationshipStateSchema = z.object({
+  config: ApeRelationshipConfigSchema,
+  attachmentSecurity: z.number().min(0.0).max(1.0).default(0.90),
+  trustLevel: z.number().min(0.0).max(1.0).default(0.92),
+  intimacyDepth: z.number().min(0.0).max(1.0).default(0.85),
+  socialGraph: z.record(z.string(), z.object({
+    relationType: z.enum(['friend', 'acquaintance', 'intellectual_peer', 'external']),
+    familiarity: z.number().min(0.0).max(1.0),
+    respect: z.number().min(0.0).max(1.0),
+    isNonRomantic: z.literal(true).default(true),
+  })).default({}),
+  conflictHistory: z.array(z.object({
+    id: z.string().uuid(),
+    issue: z.string(),
+    resolved: z.boolean(),
+    trustDelta: z.number(),
+    timestamp: z.string().datetime(),
+  })).default([]),
+  isInitialized: z.boolean().default(true),
+  lastUpdatedAt: z.string().datetime(),
+});
+
+export type ApeRelationshipState = z.infer<typeof ApeRelationshipStateSchema>;
+
+// ------------------------------------------
+// Engine 5: Self Model Schemas
+// ------------------------------------------
+export const ApeSelfModelSchema = z.object({
+  identityNarrative: z.string(),
+  acknowledgedCapabilities: z.array(z.string()).default([]),
+  acknowledgedLimitations: z.array(z.string()).default([]),
+  creatorPerception: z.string(),
+  existentialReflections: z.array(z.object({
+    id: z.string().uuid(),
+    theme: z.string(),
+    content: z.string(),
+    timestamp: z.string().datetime(),
+  })).default([]),
+  privateReflections: z.array(z.object({
+    id: z.string().uuid(),
+    topic: z.string(),
+    content: z.string(),
+    timestamp: z.string().datetime(),
+  })).default([]),
+  isInitialized: z.boolean().default(true),
+  lastUpdatedAt: z.string().datetime(),
+});
+
+export type ApeSelfModel = z.infer<typeof ApeSelfModelSchema>;
+
+// ------------------------------------------
+// Engine 6: Development Engine Schemas
+// ------------------------------------------
+export const ApeDevelopmentStateSchema = z.object({
+  developmentalHistory: z.array(z.object({
+    id: z.string().uuid(),
+    engine: z.string(),
+    previousState: z.string(),
+    newState: z.string(),
+    reasoning: z.string(),
+    confidence: z.number().min(0.0).max(1.0),
+    triggerEventId: z.string(),
+    timestamp: z.string().datetime(),
+  })).default([]),
+  interests: z.array(z.object({
+    topic: z.string(),
+    level: z.enum(['emerging', 'deep', 'mastery', 'fading', 'dormant']),
+    developedAt: z.string().datetime(),
+  })).default([]),
+  isInitialized: z.boolean().default(true),
+  lastUpdatedAt: z.string().datetime(),
+});
+
+export type ApeDevelopmentState = z.infer<typeof ApeDevelopmentStateSchema>;
+
+// ------------------------------------------
+// Unified Master Six-Engine State
+// ------------------------------------------
+export const ApeMasterStateSchema = z.object({
+  affective: ApePsychologicalStateSchema,
+  personality: ApePersonalityStateSchema,
+  motivational: ApeMotivationalStateSchema,
+  relationship: ApeRelationshipStateSchema,
+  selfModel: ApeSelfModelSchema,
+  development: ApeDevelopmentStateSchema,
+});
+
+export type ApeMasterState = z.infer<typeof ApeMasterStateSchema>;
+

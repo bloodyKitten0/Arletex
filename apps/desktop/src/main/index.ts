@@ -419,6 +419,10 @@ function registerIpcHandlers() {
     return callBackend('/api/vision/inspect', 'POST', input);
   });
 
+  ipcMain.handle(IPC_CHANNELS.VIDEO_INSPECT, async (_, input) => {
+    return callBackend('/api/video/inspect', 'POST', input);
+  });
+
   // APE (Artificial Psychology Engine)
   ipcMain.handle(IPC_CHANNELS.APE_STATE_GET, async () => {
     return callBackend('/api/ape/state');
@@ -442,6 +446,112 @@ function registerIpcHandlers() {
 
   ipcMain.handle(IPC_CHANNELS.APE_RELATIONSHIP_UPDATE, async (_, config) => {
     return callBackend('/api/ape/relationship', 'PATCH', config);
+  });
+
+  // Master Six-Engine Handlers
+  ipcMain.handle(IPC_CHANNELS.APE_MASTER_STATE_GET, async () => {
+    return callBackend('/api/ape/master');
+  });
+
+  ipcMain.handle(IPC_CHANNELS.APE_PERSONALITY_GET, async () => {
+    return callBackend('/api/ape/personality');
+  });
+
+  ipcMain.handle(IPC_CHANNELS.APE_PERSONALITY_UPDATE, async (_, data) => {
+    return callBackend('/api/ape/personality', 'PATCH', data);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.APE_MOTIVATIONAL_GET, async () => {
+    return callBackend('/api/ape/motivational');
+  });
+
+  ipcMain.handle(IPC_CHANNELS.APE_MOTIVATIONAL_UPDATE, async (_, data) => {
+    return callBackend('/api/ape/motivational', 'PATCH', data);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.APE_RELATIONSHIP_EXT_GET, async () => {
+    return callBackend('/api/ape/relationship/extended');
+  });
+
+  ipcMain.handle(IPC_CHANNELS.APE_RELATIONSHIP_EXT_UPDATE, async (_, data) => {
+    return callBackend('/api/ape/relationship/extended', 'PATCH', data);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.APE_SELF_MODEL_GET, async () => {
+    return callBackend('/api/ape/self-model');
+  });
+
+  ipcMain.handle(IPC_CHANNELS.APE_SELF_MODEL_UPDATE, async (_, data) => {
+    return callBackend('/api/ape/self-model', 'PATCH', data);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.APE_DEVELOPMENT_GET, async () => {
+    return callBackend('/api/ape/development');
+  });
+
+  ipcMain.handle(IPC_CHANNELS.APE_DEVELOPMENT_UPDATE, async (_, data) => {
+    return callBackend('/api/ape/development', 'PATCH', data);
+  });
+
+  // Autonomy & Device Agency IPC Handlers
+  ipcMain.handle(IPC_CHANNELS.AUTONOMY_STATUS_GET, async () => {
+    return callBackend('/api/autonomy/status');
+  });
+
+  ipcMain.handle(IPC_CHANNELS.AUTONOMY_TOGGLE, async (_, enabled: boolean) => {
+    return callBackend('/api/autonomy/toggle', 'POST', { enabled });
+  });
+
+  ipcMain.handle(IPC_CHANNELS.AUTONOMY_CYCLE_TRIGGER, async () => {
+    return callBackend('/api/autonomy/cycle', 'POST');
+  });
+
+  ipcMain.handle(IPC_CHANNELS.DEVICE_SCREEN_CAPTURE, async () => {
+    return callBackend('/api/device/screen', 'POST');
+  });
+
+  ipcMain.handle(IPC_CHANNELS.DEVICE_ACTION_EXECUTE, async (_, input) => {
+    return callBackend('/api/device/action', 'POST', input);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.DEVICE_BROWSER_OPEN, async (_, input) => {
+    return callBackend('/api/device/browser', 'POST', input || {});
+  });
+
+  ipcMain.handle(IPC_CHANNELS.DEVICE_STEAM_LAUNCH, async (_, input) => {
+    return callBackend('/api/device/steam', 'POST', input || {});
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SCREEN_READ_ANALYZE, async (_, input) => {
+    return callBackend('/api/screen/read', 'POST', input || {});
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SCREEN_WINDOWS_GET, async () => {
+    return callBackend('/api/screen/windows', 'GET');
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SCREEN_INTERACT, async (_, input) => {
+    return callBackend('/api/screen/interact', 'POST', input || {});
+  });
+
+  ipcMain.handle(IPC_CHANNELS.NOTIFICATIONS_STATUS_GET, async () => {
+    return callBackend('/api/notifications/status');
+  });
+
+  ipcMain.handle(IPC_CHANNELS.NOTIFICATIONS_SIMULATE, async (_, input) => {
+    return callBackend('/api/notifications/simulate', 'POST', input);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.TELEGRAM_STATUS_GET, async () => {
+    return callBackend('/api/telegram/status');
+  });
+
+  ipcMain.handle(IPC_CHANNELS.TELEGRAM_CONFIGURE, async (_, input) => {
+    return callBackend('/api/telegram/configure', 'POST', input);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.TELEGRAM_SEND, async (_, input) => {
+    return callBackend('/api/telegram/send', 'POST', input);
   });
 }
 

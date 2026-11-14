@@ -12,6 +12,13 @@ import {
   Bot,
   Trash2,
   X,
+  Globe,
+  Camera,
+  Radio,
+  Sparkles,
+  MessageSquare,
+  Eye,
+  Gamepad2,
 } from 'lucide-react';
 import {
   Activity,
@@ -33,6 +40,22 @@ export const ActivitiesView: React.FC = () => {
   const [originFilter, setOriginFilter] = useState<ActivityOrigin | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<ActivityStatus | 'all'>('all');
 
+  // Autonomous Agency & Device Agency State
+  const [autonomyStatus, setAutonomyStatus] = useState<any>(null);
+  const [_telegramStatus, setTelegramStatus] = useState<any>(null);
+  const [_notifStatus, setNotifStatus] = useState<any>(null);
+  const [capturedScreen, setCapturedScreen] = useState<any>(null);
+  const [isCapturingScreen, setIsCapturingScreen] = useState(false);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const [showAgencyModal, setShowAgencyModal] = useState(false);
+  const [screenReading, setScreenReading] = useState<any>(null);
+  const [isAnalyzingScreen, setIsAnalyzingScreen] = useState(false);
+  const [windowsList, setWindowsList] = useState<any[]>([]);
+  const [typeText, setTypeText] = useState('');
+  const [targetWin, setTargetWin] = useState('');
+  const [clickX, setClickX] = useState('');
+  const [clickY, setClickY] = useState('');
+
   // Modal
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [formTitle, setFormTitle] = useState('');
@@ -42,6 +65,32 @@ export const ActivitiesView: React.FC = () => {
   const [formProgress, setFormProgress] = useState(0);
 
   const api = window.arletexApi;
+
+  const loadAgencyState = useCallback(async () => {
+    if (!api) return;
+    try {
+      if (api.getAutonomyStatus) {
+        const autoRes = await api.getAutonomyStatus();
+        if (autoRes.success) setAutonomyStatus(autoRes.data);
+      }
+      if (api.getTelegramStatus) {
+        const tgRes = await api.getTelegramStatus();
+        if (tgRes.success) setTelegramStatus(tgRes.data);
+      }
+      if (api.getNotificationsStatus) {
+        const nRes = await api.getNotificationsStatus();
+        if (nRes.success) setNotifStatus(nRes.data);
+      }
+    } catch {}
+  }, [api]);
+
+  useEffect(() => {
+    void loadAgencyState();
+    const timer = setInterval(() => {
+      void loadAgencyState();
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [loadAgencyState]);
 
   const loadActivities = useCallback(async () => {
     if (!api) return;
@@ -131,6 +180,169 @@ export const ActivitiesView: React.FC = () => {
     }
   };
 
+  const handleToggleAutonomy = async () => {
+    if (!api?.toggleAutonomy) return;
+    try {
+      const next = !(autonomyStatus?.isEnabled);
+      const res = await api.toggleAutonomy(next);
+      if (res.success) {
+        setActionNotice(`Autonomous Agency ${next ? 'enabled' : 'paused'}.`);
+        void loadAgencyState();
+      }
+    } catch (err: any) {
+      console.error('Toggle autonomy error:', err);
+    }
+  };
+
+  const handleTriggerCycle = async () => {
+    if (!api?.triggerAutonomyCycle) return;
+    try {
+      setActionNotice('Running autonomous thinking and activity cycle...');
+      const res = await api.triggerAutonomyCycle();
+      if (res.success && res.data?.actionLog) {
+        setActionNotice(`Autonomous action executed: ${res.data.actionLog.title}`);
+        void loadActivities();
+        void loadAgencyState();
+      }
+    } catch (err: any) {
+      console.error('Trigger autonomy cycle error:', err);
+    }
+  };
+
+  const handleCaptureScreen = async () => {
+    if (!api?.captureDeviceScreen) return;
+    setIsCapturingScreen(true);
+    setActionNotice('Capturing monitor screen frame...');
+    try {
+      const res = await api.captureDeviceScreen();
+      if (res.success) {
+        setCapturedScreen(res.data);
+        setActionNotice(`Screen captured (${res.data.width}x${res.data.height})`);
+      }
+    } catch (err: any) {
+      console.error('Screen capture error:', err);
+      setActionNotice(`Capture failed: ${err.message}`);
+    } finally {
+      setIsCapturingScreen(false);
+    }
+  };
+
+  const handleOpenBrowser = async () => {
+    if (!api?.openDeviceBrowser) return;
+    setActionNotice('Launching Google Chrome with Arle profile (arletex.email@gmail.com)...');
+    try {
+      const res = await api.openDeviceBrowser('https://google.com');
+      if (res.success) {
+        setActionNotice(res.data.message);
+      }
+    } catch (err: any) {
+      console.error('Open browser error:', err);
+    }
+  };
+
+  const handleLaunchSteam = async () => {
+    if (!api?.launchDeviceSteam) return;
+    setActionNotice('Launching Steam from Proof account...');
+    try {
+      const res = await api.launchDeviceSteam();
+      if (res.success) {
+        setActionNotice(res.data.message);
+      }
+    } catch (err: any) {
+      console.error('Launch Steam error:', err);
+    }
+  };
+
+  const handleReadScreen = async () => {
+    if (!api?.readAndAnalyzeScreen) return;
+    setIsAnalyzingScreen(true);
+    setActionNotice('Reading screen with local VLM (Qwen3.5 mmproj)...');
+    try {
+      const res = await api.readAndAnalyzeScreen(
+        'Analyze active screen. Identify open applications, visible messages, and UI interaction coordinates.',
+      );
+      if (res.success) {
+        setScreenReading(res.data);
+        if (res.data?.visibleWindows) {
+          setWindowsList(res.data.visibleWindows);
+        }
+        setActionNotice('Screen analyzed successfully by local VLM vision!');
+      }
+    } catch (err: any) {
+      console.error('Screen reading error:', err);
+      setActionNotice(`Vision analysis failed: ${err.message}`);
+    } finally {
+      setIsAnalyzingScreen(false);
+    }
+  };
+
+  const handleFetchWindows = async () => {
+    if (!api?.getVisibleWindows) return;
+    try {
+      const res = await api.getVisibleWindows();
+      if (res.success && res.data?.windows) {
+        setWindowsList(res.data.windows);
+      }
+    } catch (err: any) {
+      console.error('Get windows error:', err);
+    }
+  };
+
+  const handleTypeToWindow = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!api?.interactWithScreen || !typeText.trim()) return;
+    setActionNotice(`Typing "${typeText.slice(0, 20)}..." via xdotool keyboard...`);
+    try {
+      const res = await api.interactWithScreen({
+        text: typeText.trim(),
+        windowTitle: targetWin.trim() || undefined,
+        sendEnter: true,
+      });
+      if (res.success) {
+        setActionNotice(res.data.message || 'Typed text successfully into window!');
+        setTypeText('');
+      }
+    } catch (err: any) {
+      console.error('Type to window error:', err);
+      setActionNotice(`Typing failed: ${err.message}`);
+    }
+  };
+
+  const handleClickCoords = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!api?.executeDeviceAction || !clickX || !clickY) return;
+    const x = parseInt(clickX, 10);
+    const y = parseInt(clickY, 10);
+    if (isNaN(x) || isNaN(y)) return;
+    setActionNotice(`Clicking mouse at (${x}, ${y})...`);
+    try {
+      const res = await api.executeDeviceAction({ action: 'mouse_click', x, y, button: 1 });
+      if (res.success) {
+        setActionNotice(res.data.message || `Clicked mouse at (${x}, ${y})`);
+      }
+    } catch (err: any) {
+      console.error('Click error:', err);
+      setActionNotice(`Click failed: ${err.message}`);
+    }
+  };
+
+  const handleSimulateNotification = async () => {
+    if (!api?.simulateNotification) return;
+    try {
+      setActionNotice('Simulating test Telegram notification from Proof...');
+      const res = await api.simulateNotification({
+        appName: 'Google Chrome',
+        summary: 'Proof (Telegram)',
+        body: 'Hey Arle, what are you reading today?',
+      });
+      if (res.success) {
+        setActionNotice('Notification dispatched! Arle is processing her response.');
+      }
+    } catch (err: any) {
+      console.error('Simulate notification error:', err);
+    }
+  };
+
   const renderStatusBadge = (status: ActivityStatus) => {
     switch (status) {
       case 'in_progress':
@@ -215,6 +427,211 @@ export const ActivitiesView: React.FC = () => {
             <Plus size={16} />
             <span>New Activity</span>
           </button>
+        </div>
+
+        {/* Autonomous Agency & Device Control Card */}
+        <div
+          style={{
+            backgroundColor: 'var(--bg-tertiary)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '8px',
+            padding: '12px 16px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div
+                style={{
+                  width: '10px',
+                  height: '10px',
+                  borderRadius: '50%',
+                  backgroundColor: autonomyStatus?.isEnabled ? '#10b981' : '#6b7280',
+                  boxShadow: autonomyStatus?.isEnabled ? '0 0 8px #10b981' : 'none',
+                }}
+              />
+              <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Independent Selfhood & Agency: {autonomyStatus?.isEnabled ? 'Always On' : 'Paused'}
+              </span>
+              <span
+                style={{
+                  fontSize: '11px',
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  backgroundColor: 'var(--bg-card)',
+                  color: 'var(--accent)',
+                  border: '1px solid var(--border-subtle)',
+                }}
+              >
+                Drive: {autonomyStatus?.dominantDrive || 'curiosity'}
+              </span>
+              {autonomyStatus?.currentActivity && (
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                  "{autonomyStatus.currentActivity}"
+                </span>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={handleToggleAutonomy}
+                style={{
+                  fontSize: '12px',
+                  padding: '4px 10px',
+                  borderRadius: '4px',
+                  border: '1px solid var(--border-subtle)',
+                  backgroundColor: autonomyStatus?.isEnabled ? 'var(--bg-card)' : 'var(--accent-muted)',
+                  color: autonomyStatus?.isEnabled ? 'var(--text-secondary)' : 'var(--accent)',
+                  cursor: 'pointer',
+                }}
+              >
+                {autonomyStatus?.isEnabled ? 'Pause Autonomy' : 'Enable Always-On'}
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Agency Actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={handleOpenBrowser}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontSize: '12px',
+                padding: '6px 10px',
+                borderRadius: '5px',
+                backgroundColor: 'var(--bg-card)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-subtle)',
+                cursor: 'pointer',
+              }}
+            >
+              <Globe size={13} color="#3b82f6" />
+              <span>Browse Web (arletex.email)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleLaunchSteam}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontSize: '12px',
+                padding: '6px 10px',
+                borderRadius: '5px',
+                backgroundColor: 'var(--bg-card)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-subtle)',
+                cursor: 'pointer',
+              }}
+            >
+              <Gamepad2 size={13} color="#8b5cf6" />
+              <span>Play Steam Game</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleCaptureScreen}
+              disabled={isCapturingScreen}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontSize: '12px',
+                padding: '6px 10px',
+                borderRadius: '5px',
+                backgroundColor: 'var(--bg-card)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-subtle)',
+                cursor: 'pointer',
+              }}
+            >
+              <Camera size={13} color="#10b981" />
+              <span>{isCapturingScreen ? 'Viewing...' : 'Look at Monitor'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleTriggerCycle}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontSize: '12px',
+                padding: '6px 10px',
+                borderRadius: '5px',
+                backgroundColor: 'var(--bg-card)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-subtle)',
+                cursor: 'pointer',
+              }}
+            >
+              <Sparkles size={13} color="#f59e0b" />
+              <span>Trigger Life Cycle</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowAgencyModal(true);
+                void handleFetchWindows();
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontSize: '12px',
+                padding: '6px 10px',
+                borderRadius: '5px',
+                backgroundColor: 'var(--accent-muted)',
+                color: 'var(--accent)',
+                border: '1px solid var(--border-subtle)',
+                cursor: 'pointer',
+              }}
+            >
+              <Eye size={13} color="var(--accent)" />
+              <span>Desktop Vision & Agency (Mouse/Keys)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSimulateNotification}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontSize: '12px',
+                padding: '6px 10px',
+                borderRadius: '5px',
+                backgroundColor: 'var(--bg-card)',
+                color: 'var(--text-secondary)',
+                border: '1px solid var(--border-subtle)',
+                cursor: 'pointer',
+              }}
+            >
+              <Radio size={13} color="#ec4899" />
+              <span>Simulate Notification</span>
+            </button>
+          </div>
+
+          {actionNotice && (
+            <div style={{ fontSize: '12px', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span>{actionNotice}</span>
+              <button
+                type="button"
+                onClick={() => setActionNotice(null)}
+                style={{ fontSize: '11px', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Filter Controls */}
@@ -651,6 +1068,466 @@ export const ActivitiesView: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Screen Vision Preview Modal */}
+      {capturedScreen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: 'var(--bg-secondary)',
+              borderRadius: '8px',
+              border: '1px solid var(--border-subtle)',
+              maxWidth: '900px',
+              width: '100%',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                padding: '12px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderBottom: '1px solid var(--border-subtle)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Camera size={16} color="var(--accent)" />
+                <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>
+                  Monitor Vision Capture ({capturedScreen.width}x{capturedScreen.height})
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCapturedScreen(null)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div style={{ padding: '16px', overflowY: 'auto', display: 'flex', justifyContent: 'center' }}>
+              <img
+                src={capturedScreen.imageBase64}
+                alt="Monitor Capture"
+                style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: '4px', border: '1px solid var(--border-subtle)' }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Embodied Desktop Agency & Vision Modal */}
+      {showAgencyModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: 'var(--bg-secondary)',
+              borderRadius: '10px',
+              border: '1px solid var(--border-subtle)',
+              maxWidth: '680px',
+              width: '100%',
+              maxHeight: '88vh',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
+            }}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: '16px 20px',
+                borderBottom: '1px solid var(--border-subtle)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Eye size={20} color="var(--accent)" />
+                <div>
+                  <h2 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
+                    Embodied Desktop Agency & Vision
+                  </h2>
+                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0, marginTop: '2px' }}>
+                    Physical mouse & keyboard automation and VLM screen perception (No API tokens)
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAgencyModal(false)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* Section 1: Screen Perception & Vision */}
+              <div
+                style={{
+                  backgroundColor: 'var(--bg-card)',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-subtle)',
+                  padding: '16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Camera size={16} color="var(--accent)" />
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      Monitor Vision & Screen Reading
+                    </span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                      [DISPLAY :0 • 1920x1080 • Local VLM mmproj]
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={isAnalyzingScreen}
+                    onClick={handleReadScreen}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      backgroundColor: 'var(--accent)',
+                      color: '#000',
+                      fontWeight: 600,
+                      fontSize: '12px',
+                      border: 'none',
+                      cursor: isAnalyzingScreen ? 'not-allowed' : 'pointer',
+                      opacity: isAnalyzingScreen ? 0.7 : 1,
+                    }}
+                  >
+                    <Eye size={13} />
+                    <span>{isAnalyzingScreen ? 'Analyzing Screen...' : 'Read Screen with VLM'}</span>
+                  </button>
+                </div>
+
+                {screenReading && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '6px' }}>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                      {screenReading.imageBase64 && (
+                        <img
+                          src={screenReading.imageBase64}
+                          alt="Analyzed Screen"
+                          style={{
+                            width: '160px',
+                            height: '90px',
+                            objectFit: 'cover',
+                            borderRadius: '4px',
+                            border: '1px solid var(--border-subtle)',
+                            flexShrink: 0,
+                          }}
+                        />
+                      )}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                          VLM Visual Perception:
+                        </span>
+                        <p
+                          style={{
+                            fontSize: '12px',
+                            color: 'var(--text-primary)',
+                            lineHeight: 1.4,
+                            margin: 0,
+                            backgroundColor: 'var(--bg-tertiary)',
+                            padding: '8px',
+                            borderRadius: '6px',
+                            maxHeight: '120px',
+                            overflowY: 'auto',
+                          }}
+                        >
+                          {screenReading.visualDescription || screenReading.reasoning || 'No details generated.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Visible Windows List */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                      Active Desktop Windows ({windowsList.length}):
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleFetchWindows}
+                      style={{ fontSize: '11px', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}
+                    >
+                      Refresh
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {windowsList.length > 0 ? (
+                      windowsList.map((win) => (
+                        <button
+                          key={win.id}
+                          type="button"
+                          onClick={() => setTargetWin(win.title || win.client)}
+                          style={{
+                            fontSize: '11px',
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            backgroundColor: targetWin === (win.title || win.client) ? 'var(--accent-muted)' : 'var(--bg-tertiary)',
+                            color: targetWin === (win.title || win.client) ? 'var(--accent)' : 'var(--text-secondary)',
+                            border: '1px solid var(--border-subtle)',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {win.client}: {win.title ? win.title.slice(0, 24) : 'Window'}
+                        </button>
+                      ))
+                    ) : (
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Click Refresh to list open windows.</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Physical Mouse & Keyboard Automation */}
+              <div
+                style={{
+                  backgroundColor: 'var(--bg-card)',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-subtle)',
+                  padding: '16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '14px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <MessageSquare size={16} color="#06b6d4" />
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    Mouse & Keyboard Agency (xdotool)
+                  </span>
+                </div>
+
+                <form onSubmit={handleTypeToWindow} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '3px' }}>
+                        Target Window (e.g. Telegram, Chrome, Steam):
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Window title or app name..."
+                        value={targetWin}
+                        onChange={(e) => setTargetWin(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '7px 10px',
+                          borderRadius: '6px',
+                          backgroundColor: 'var(--bg-tertiary)',
+                          border: '1px solid var(--border-subtle)',
+                          color: 'var(--text-primary)',
+                          fontSize: '12px',
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '3px' }}>
+                      Type Text & Send (Sends Return Key):
+                    </label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input
+                        type="text"
+                        placeholder="Enter text to type directly into target window..."
+                        value={typeText}
+                        onChange={(e) => setTypeText(e.target.value)}
+                        style={{
+                          flex: 1,
+                          padding: '7px 10px',
+                          borderRadius: '6px',
+                          backgroundColor: 'var(--bg-tertiary)',
+                          border: '1px solid var(--border-subtle)',
+                          color: 'var(--text-primary)',
+                          fontSize: '12px',
+                        }}
+                      />
+                      <button
+                        type="submit"
+                        disabled={!typeText.trim()}
+                        style={{
+                          padding: '7px 14px',
+                          borderRadius: '6px',
+                          backgroundColor: '#06b6d4',
+                          color: '#000',
+                          fontWeight: 600,
+                          fontSize: '12px',
+                          border: 'none',
+                          cursor: typeText.trim() ? 'pointer' : 'not-allowed',
+                          opacity: typeText.trim() ? 1 : 0.6,
+                        }}
+                      >
+                        Type & Send
+                      </button>
+                    </div>
+                  </div>
+                </form>
+
+                {/* Mouse Click Coordinate Tester */}
+                <form onSubmit={handleClickCoords} style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', borderTop: '1px solid var(--border-subtle)', paddingTop: '10px' }}>
+                  <div style={{ width: '90px' }}>
+                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '3px' }}>X Coord:</label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 500"
+                      value={clickX}
+                      onChange={(e) => setClickX(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '6px 8px',
+                        borderRadius: '6px',
+                        backgroundColor: 'var(--bg-tertiary)',
+                        border: '1px solid var(--border-subtle)',
+                        color: 'var(--text-primary)',
+                        fontSize: '12px',
+                      }}
+                    />
+                  </div>
+                  <div style={{ width: '90px' }}>
+                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '3px' }}>Y Coord:</label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 400"
+                      value={clickY}
+                      onChange={(e) => setClickY(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '6px 8px',
+                        borderRadius: '6px',
+                        backgroundColor: 'var(--bg-tertiary)',
+                        border: '1px solid var(--border-subtle)',
+                        color: 'var(--text-primary)',
+                        fontSize: '12px',
+                      }}
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={!clickX || !clickY}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      backgroundColor: 'var(--bg-tertiary)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-subtle)',
+                      fontSize: '12px',
+                      cursor: clickX && clickY ? 'pointer' : 'not-allowed',
+                    }}
+                  >
+                    Click Coordinate
+                  </button>
+                </form>
+              </div>
+
+              {/* Section 3: Applications & Notifications */}
+              <div
+                style={{
+                  backgroundColor: 'var(--bg-card)',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-subtle)',
+                  padding: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '12px',
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    Desktop Applications & D-Bus Notifications
+                  </span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    Google Chrome Profile 7 (arletex.email@gmail.com) • Steam Games • D-Bus Monitor
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={handleOpenBrowser}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      fontSize: '11px',
+                      padding: '6px 10px',
+                      borderRadius: '5px',
+                      backgroundColor: 'var(--bg-tertiary)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-subtle)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Globe size={12} color="#10b981" />
+                    <span>Launch Chrome (Arle)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleLaunchSteam}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      fontSize: '11px',
+                      padding: '6px 10px',
+                      borderRadius: '5px',
+                      backgroundColor: 'var(--bg-tertiary)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-subtle)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Gamepad2 size={12} color="#a855f7" />
+                    <span>Launch Steam</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

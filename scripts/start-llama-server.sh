@@ -4,7 +4,7 @@ set -euo pipefail
 MODEL_PATH="${1:-/home/proof/models/qwen-heretic/Qwen3.5-9B-Heretic-Q4_K_M.gguf}"
 PORT="${2:-8080}"
 HOST="127.0.0.1"
-CTX_SIZE="8192"
+CTX_SIZE="16384"
 THREADS="8"
 N_GPU_LAYERS="99"
 
@@ -47,5 +47,6 @@ exec "$LLAMA_SERVER" \
   --host "$HOST" \
   --port "$PORT" \
   -c "$CTX_SIZE" \
+  --parallel 1 \
   -t "$THREADS" \
   -ngl "$N_GPU_LAYERS"

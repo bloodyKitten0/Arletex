@@ -150,7 +150,10 @@ describe('ApeRepository - Persistent Foundation', () => {
       category: 'user_interaction',
       type: 'chat_message',
       source: 'user',
+      actor: 'user',
+      eventKind: 'external_stimulus',
       payload: { text: 'Hello Arle' },
+      processingStatus: 'received',
       processed: false,
       timestamp: new Date().toISOString(),
     };
@@ -176,7 +179,10 @@ describe('ApeRepository - Persistent Foundation', () => {
       category: 'relationship_event',
       type: 'unanswered_message',
       source: 'user',
+      actor: 'user',
+      eventKind: 'external_stimulus',
       payload: { elapsedHours: 4 },
+      processingStatus: 'received',
       processed: true,
       timestamp: now,
     });

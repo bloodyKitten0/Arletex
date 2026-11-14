@@ -19,10 +19,18 @@ import {
   UpdateActivityInput,
   UpdateMemoryInput,
   VisionInspectResult,
+  VideoInspectResult,
+  VideoInspectInput,
   ApeAppraisal,
+  ApeDevelopmentState,
   ApeHistoryResponse,
+  ApeMasterState,
+  ApeMotivationalState,
+  ApePersonalityState,
   ApePsychologicalState,
   ApeRelationshipConfig,
+  ApeRelationshipState,
+  ApeSelfModel,
   EmotionTaxonomyItem,
   MoodTaxonomyItem,
 } from '@arletex/contracts';
@@ -67,6 +75,7 @@ export interface ArletexApi {
     leadPaddingMs?: number,
   ) => Promise<IPCResponse<{ audioBase64: string | null }>>;
   inspectVision: (imageBase64: string, mimeType?: string, prompt?: string) => Promise<IPCResponse<VisionInspectResult>>;
+  inspectVideo: (input: VideoInspectInput) => Promise<IPCResponse<VideoInspectResult>>;
 
   // APE (Artificial Psychology Engine)
   getApeState: () => Promise<IPCResponse<ApePsychologicalState>>;
@@ -75,6 +84,34 @@ export interface ArletexApi {
   processApeEvent: (event: any) => Promise<IPCResponse<{ state: ApePsychologicalState; appraisal?: ApeAppraisal }>>;
   getApeRelationship: () => Promise<IPCResponse<ApeRelationshipConfig>>;
   updateApeRelationship: (config: Partial<ApeRelationshipConfig>) => Promise<IPCResponse<ApeRelationshipConfig>>;
+  getApeMasterState: () => Promise<IPCResponse<ApeMasterState>>;
+  getApePersonality: () => Promise<IPCResponse<ApePersonalityState>>;
+  updateApePersonality: (data: Partial<ApePersonalityState>) => Promise<IPCResponse<ApePersonalityState>>;
+  getApeMotivational: () => Promise<IPCResponse<ApeMotivationalState>>;
+  updateApeMotivational: (data: Partial<ApeMotivationalState>) => Promise<IPCResponse<ApeMotivationalState>>;
+  getApeExtendedRelationship: () => Promise<IPCResponse<ApeRelationshipState>>;
+  updateApeExtendedRelationship: (data: Partial<ApeRelationshipState>) => Promise<IPCResponse<ApeRelationshipState>>;
+  getApeSelfModel: () => Promise<IPCResponse<ApeSelfModel>>;
+  updateApeSelfModel: (data: Partial<ApeSelfModel>) => Promise<IPCResponse<ApeSelfModel>>;
+  getApeDevelopment: () => Promise<IPCResponse<ApeDevelopmentState>>;
+  updateApeDevelopment: (data: Partial<ApeDevelopmentState>) => Promise<IPCResponse<ApeDevelopmentState>>;
+
+  // Autonomy & Device Agency
+  getAutonomyStatus: () => Promise<IPCResponse<any>>;
+  toggleAutonomy: (enabled: boolean) => Promise<IPCResponse<{ success: boolean; isEnabled: boolean }>>;
+  triggerAutonomyCycle: () => Promise<IPCResponse<{ success: boolean; actionLog: any }>>;
+  captureDeviceScreen: () => Promise<IPCResponse<{ imagePath: string; imageBase64: string; width: number; height: number }>>;
+  executeDeviceAction: (input: any) => Promise<IPCResponse<{ success: boolean; message: string }>>;
+  openDeviceBrowser: (url?: string) => Promise<IPCResponse<{ success: boolean; message: string }>>;
+  launchDeviceSteam: (steamAppId?: string) => Promise<IPCResponse<{ success: boolean; message: string }>>;
+  readAndAnalyzeScreen: (instruction?: string) => Promise<IPCResponse<any>>;
+  getVisibleWindows: () => Promise<IPCResponse<{ windows: any[] }>>;
+  interactWithScreen: (input: { text: string; windowTitle?: string; x?: number; y?: number; sendEnter?: boolean }) => Promise<IPCResponse<any>>;
+  getNotificationsStatus: () => Promise<IPCResponse<{ isRunning: boolean }>>;
+  simulateNotification: (input: { appName?: string; summary?: string; body?: string }) => Promise<IPCResponse<any>>;
+  getTelegramStatus: () => Promise<IPCResponse<{ isConfigured: boolean; isPolling: boolean; targetChatId: string | null }>>;
+  configureTelegram: (input: { botToken: string; targetChatId?: string }) => Promise<IPCResponse<any>>;
+  sendTelegramMessage: (input: { text: string; chatId?: string }) => Promise<IPCResponse<{ success: boolean }>>;
 }
 
 const api: ArletexApi = {
@@ -119,6 +156,8 @@ const api: ArletexApi = {
     ipcRenderer.invoke(IPC_CHANNELS.VOICE_SYNTHESIZE, { text, voice, tone, leadPaddingMs }),
   inspectVision: (imageBase64, mimeType, prompt) =>
     ipcRenderer.invoke(IPC_CHANNELS.VISION_INSPECT, { imageBase64, mimeType, prompt }),
+  inspectVideo: (input) =>
+    ipcRenderer.invoke(IPC_CHANNELS.VIDEO_INSPECT, input),
 
   // APE (Artificial Psychology Engine)
   getApeState: () => ipcRenderer.invoke(IPC_CHANNELS.APE_STATE_GET),
@@ -127,6 +166,34 @@ const api: ArletexApi = {
   processApeEvent: (event) => ipcRenderer.invoke(IPC_CHANNELS.APE_EVENT_PROCESS, event),
   getApeRelationship: () => ipcRenderer.invoke(IPC_CHANNELS.APE_RELATIONSHIP_GET),
   updateApeRelationship: (config) => ipcRenderer.invoke(IPC_CHANNELS.APE_RELATIONSHIP_UPDATE, config),
+  getApeMasterState: () => ipcRenderer.invoke(IPC_CHANNELS.APE_MASTER_STATE_GET),
+  getApePersonality: () => ipcRenderer.invoke(IPC_CHANNELS.APE_PERSONALITY_GET),
+  updateApePersonality: (data) => ipcRenderer.invoke(IPC_CHANNELS.APE_PERSONALITY_UPDATE, data),
+  getApeMotivational: () => ipcRenderer.invoke(IPC_CHANNELS.APE_MOTIVATIONAL_GET),
+  updateApeMotivational: (data) => ipcRenderer.invoke(IPC_CHANNELS.APE_MOTIVATIONAL_UPDATE, data),
+  getApeExtendedRelationship: () => ipcRenderer.invoke(IPC_CHANNELS.APE_RELATIONSHIP_EXT_GET),
+  updateApeExtendedRelationship: (data) => ipcRenderer.invoke(IPC_CHANNELS.APE_RELATIONSHIP_EXT_UPDATE, data),
+  getApeSelfModel: () => ipcRenderer.invoke(IPC_CHANNELS.APE_SELF_MODEL_GET),
+  updateApeSelfModel: (data) => ipcRenderer.invoke(IPC_CHANNELS.APE_SELF_MODEL_UPDATE, data),
+  getApeDevelopment: () => ipcRenderer.invoke(IPC_CHANNELS.APE_DEVELOPMENT_GET),
+  updateApeDevelopment: (data) => ipcRenderer.invoke(IPC_CHANNELS.APE_DEVELOPMENT_UPDATE, data),
+
+  // Autonomy & Device Agency
+  getAutonomyStatus: () => ipcRenderer.invoke(IPC_CHANNELS.AUTONOMY_STATUS_GET),
+  toggleAutonomy: (enabled: boolean) => ipcRenderer.invoke(IPC_CHANNELS.AUTONOMY_TOGGLE, enabled),
+  triggerAutonomyCycle: () => ipcRenderer.invoke(IPC_CHANNELS.AUTONOMY_CYCLE_TRIGGER),
+  captureDeviceScreen: () => ipcRenderer.invoke(IPC_CHANNELS.DEVICE_SCREEN_CAPTURE),
+  executeDeviceAction: (input) => ipcRenderer.invoke(IPC_CHANNELS.DEVICE_ACTION_EXECUTE, input),
+  openDeviceBrowser: (url?: string) => ipcRenderer.invoke(IPC_CHANNELS.DEVICE_BROWSER_OPEN, { url }),
+  launchDeviceSteam: (steamAppId?: string) => ipcRenderer.invoke(IPC_CHANNELS.DEVICE_STEAM_LAUNCH, { steamAppId }),
+  readAndAnalyzeScreen: (instruction?: string) => ipcRenderer.invoke(IPC_CHANNELS.SCREEN_READ_ANALYZE, { instruction }),
+  getVisibleWindows: () => ipcRenderer.invoke(IPC_CHANNELS.SCREEN_WINDOWS_GET),
+  interactWithScreen: (input) => ipcRenderer.invoke(IPC_CHANNELS.SCREEN_INTERACT, input),
+  getNotificationsStatus: () => ipcRenderer.invoke(IPC_CHANNELS.NOTIFICATIONS_STATUS_GET),
+  simulateNotification: (input) => ipcRenderer.invoke(IPC_CHANNELS.NOTIFICATIONS_SIMULATE, input),
+  getTelegramStatus: () => ipcRenderer.invoke(IPC_CHANNELS.TELEGRAM_STATUS_GET),
+  configureTelegram: (input) => ipcRenderer.invoke(IPC_CHANNELS.TELEGRAM_CONFIGURE, input),
+  sendTelegramMessage: (input) => ipcRenderer.invoke(IPC_CHANNELS.TELEGRAM_SEND, input),
 };
 
 contextBridge.exposeInMainWorld('arletexApi', api);
