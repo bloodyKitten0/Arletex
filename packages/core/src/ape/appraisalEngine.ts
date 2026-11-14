@@ -5,17 +5,22 @@ import {
   ApePsychologicalState,
   ApeRelationshipConfig,
   EmotionTaxonomyItem,
+  INITIAL_EMOTIONS_TAXONOMY,
   ProposedEmotionTransition,
 } from '@arletex/contracts';
+import { ComprehensiveAppraisalMatcher } from './comprehensiveAppraisalMatcher.js';
 import { IApeInferenceGateway } from './interfaces.js';
 
 export class AppraisalEngine {
   private readonly emotionsMap: Map<string, EmotionTaxonomyItem>;
   private readonly inferenceGateway?: IApeInferenceGateway;
+  private readonly comprehensiveMatcher: ComprehensiveAppraisalMatcher;
 
   constructor(emotions: EmotionTaxonomyItem[] = [], inferenceGateway?: IApeInferenceGateway) {
-    this.emotionsMap = new Map(emotions.map((e) => [e.id, e]));
+    const activeEmotions = emotions.length > 0 ? emotions : INITIAL_EMOTIONS_TAXONOMY;
+    this.emotionsMap = new Map(activeEmotions.map((e) => [e.id, e]));
     this.inferenceGateway = inferenceGateway;
+    this.comprehensiveMatcher = new ComprehensiveAppraisalMatcher();
   }
 
   /**
@@ -1258,6 +1263,12 @@ export class AppraisalEngine {
       if (!proposedMoodShift) proposedMoodShift = 'focused';
     }
 
+    // Evaluate comprehensive appraisal triggers across all 143 emotions
+    const compMatch = this.comprehensiveMatcher.evaluate(event, currentState, relationship);
+    for (const trans of compMatch.transitions) {
+      addTransition(trans);
+    }
+
     // Default Fallback for general interactions
     if (proposedTransitions.length === 0) {
       addTransition({
@@ -1701,9 +1712,10 @@ export class AppraisalEngine {
     id: string,
     event: ApeEvent,
     currentState: ApePsychologicalState,
-    _relationship: ApeRelationshipConfig,
+    relationship: ApeRelationshipConfig,
     timestamp: string,
   ): ApeAppraisal {
+    const compResult = this.comprehensiveMatcher.evaluate(event, currentState, relationship);
     return {
       id,
       eventId: event.id,
@@ -1724,7 +1736,7 @@ export class AppraisalEngine {
       primaryInterpretation: `Processed system event ${event.type}`,
       alternativeInterpretations: [],
       supportingEvidence: [JSON.stringify(event.payload || {})],
-      proposedTransitions: [],
+      proposedTransitions: compResult.transitions,
       proposedMoodShift: currentState.currentMood,
       appraisalMethod: 'deterministic',
       timestamp,

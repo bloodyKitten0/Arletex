@@ -13,6 +13,8 @@ export * from './ape/selfModelEngine.js';
 export * from './ape/developmentEngine.js';
 export * from './ape/crossEngineCycle.js';
 export * from './ape/emotionalLifecycleEngine.js';
+export * from './ape/taxonomyAuditData.js';
+export * from './ape/comprehensiveAppraisalMatcher.js';
 export * from './ape/apeService.js';
 
 // Digital Agency Subsystem

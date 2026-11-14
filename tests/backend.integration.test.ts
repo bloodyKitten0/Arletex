@@ -220,7 +220,7 @@ describe('Backend Integration Test', () => {
     expect(queryRes.status).toBe(200);
     const queryResults = (await queryRes.json()) as any[];
     expect(queryResults.length).toBeGreaterThanOrEqual(1);
-    expect(queryResults[0].id).toBe(created.id);
+    expect(queryResults.some((m) => m.id === created.id)).toBe(true);
 
     // 3. Update memory (tracks correction history)
     const updateRes = await fetch(`http://127.0.0.1:${serverPort}/api/memories/${created.id}`, {

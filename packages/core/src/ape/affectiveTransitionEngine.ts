@@ -55,10 +55,11 @@ export class AffectiveTransitionEngine {
         taxonomyItem &&
         (taxonomyItem.category === 'love_affection' || taxonomyItem.category === 'sexual_sensual')
       ) {
-        if (prop.target && prop.target !== 'creator' && prop.target !== 'user') {
+        const isUserTarget = prop.target === 'creator' || prop.target === 'user' || prop.target === 'partner' || prop.target === 'Proof';
+        if (prop.target && !isUserTarget) {
           prop.emotionId = 'admiration';
           prop.target = 'external';
-          prop.reason = 'Invariant enforcement: Romantic/sexual orientation exclusively reserved for creator.';
+          prop.reason = 'Invariant enforcement: Romantic/sexual orientation exclusively reserved for partner/creator.';
         }
       }
 
