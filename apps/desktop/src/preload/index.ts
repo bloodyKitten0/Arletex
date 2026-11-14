@@ -112,6 +112,15 @@ export interface ArletexApi {
   getTelegramStatus: () => Promise<IPCResponse<{ isConfigured: boolean; isPolling: boolean; targetChatId: string | null }>>;
   configureTelegram: (input: { botToken: string; targetChatId?: string }) => Promise<IPCResponse<any>>;
   sendTelegramMessage: (input: { text: string; chatId?: string }) => Promise<IPCResponse<{ success: boolean }>>;
+
+  // Digital Agency Subsystem
+  listAgencyTasks: (status?: string) => Promise<IPCResponse<any[]>>;
+  getAgencyTask: (id: string) => Promise<IPCResponse<any>>;
+  submitAgencyObjective: (input: { objective: string; initiator?: 'user' | 'arle' }) => Promise<IPCResponse<any>>;
+  executeAgencyTask: (taskId: string) => Promise<IPCResponse<any>>;
+  cancelAgencyTask: (taskId: string) => Promise<IPCResponse<any>>;
+  getAgencyPolicy: () => Promise<IPCResponse<any>>;
+  updateAgencyPolicy: (policy: any) => Promise<IPCResponse<any>>;
 }
 
 const api: ArletexApi = {
@@ -194,6 +203,15 @@ const api: ArletexApi = {
   getTelegramStatus: () => ipcRenderer.invoke(IPC_CHANNELS.TELEGRAM_STATUS_GET),
   configureTelegram: (input) => ipcRenderer.invoke(IPC_CHANNELS.TELEGRAM_CONFIGURE, input),
   sendTelegramMessage: (input) => ipcRenderer.invoke(IPC_CHANNELS.TELEGRAM_SEND, input),
+
+  // Digital Agency Subsystem
+  listAgencyTasks: (status) => ipcRenderer.invoke(IPC_CHANNELS.AGENCY_TASKS_LIST, status),
+  getAgencyTask: (id) => ipcRenderer.invoke(IPC_CHANNELS.AGENCY_TASK_GET, id),
+  submitAgencyObjective: (input) => ipcRenderer.invoke(IPC_CHANNELS.AGENCY_TASK_SUBMIT, input),
+  executeAgencyTask: (taskId) => ipcRenderer.invoke(IPC_CHANNELS.AGENCY_TASK_EXECUTE, taskId),
+  cancelAgencyTask: (taskId) => ipcRenderer.invoke(IPC_CHANNELS.AGENCY_TASK_CANCEL, taskId),
+  getAgencyPolicy: () => ipcRenderer.invoke(IPC_CHANNELS.AGENCY_POLICY_GET),
+  updateAgencyPolicy: (policy) => ipcRenderer.invoke(IPC_CHANNELS.AGENCY_POLICY_UPDATE, policy),
 };
 
 contextBridge.exposeInMainWorld('arletexApi', api);

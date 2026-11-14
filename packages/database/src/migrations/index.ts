@@ -348,4 +348,83 @@ export const MIGRATIONS: Migration[] = [
       );
     `,
   },
+  {
+    id: 5,
+    name: '005_digital_agency_tables',
+    up: `
+      -- 1. Agency Tasks
+      CREATE TABLE IF NOT EXISTS agency_tasks (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        objective TEXT NOT NULL,
+        constraints TEXT NOT NULL DEFAULT '[]',
+        priority TEXT NOT NULL DEFAULT 'normal',
+        initiator TEXT NOT NULL DEFAULT 'user',
+        status TEXT NOT NULL DEFAULT 'proposed',
+        completion_criteria TEXT NOT NULL DEFAULT '[]',
+        plan_id TEXT,
+        current_step_index INTEGER NOT NULL DEFAULT 0,
+        total_steps INTEGER NOT NULL DEFAULT 0,
+        retry_count INTEGER NOT NULL DEFAULT 0,
+        max_retries INTEGER NOT NULL DEFAULT 3,
+        error TEXT,
+        metadata TEXT NOT NULL DEFAULT '{}',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        completed_at TEXT
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_agency_tasks_status ON agency_tasks(status, updated_at DESC);
+
+      -- 2. Agency Plans
+      CREATE TABLE IF NOT EXISTS agency_plans (
+        id TEXT PRIMARY KEY,
+        task_id TEXT NOT NULL,
+        objective TEXT NOT NULL,
+        assumptions TEXT NOT NULL DEFAULT '[]',
+        uncertainties TEXT NOT NULL DEFAULT '[]',
+        steps TEXT NOT NULL DEFAULT '[]',
+        alternative_approaches TEXT NOT NULL DEFAULT '[]',
+        status TEXT NOT NULL DEFAULT 'active',
+        version INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (task_id) REFERENCES agency_tasks(id) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_agency_plans_task ON agency_plans(task_id);
+
+      -- 3. Agency Observations
+      CREATE TABLE IF NOT EXISTS agency_observations (
+        id TEXT PRIMARY KEY,
+        task_id TEXT,
+        action_id TEXT,
+        source TEXT NOT NULL,
+        timestamp TEXT NOT NULL,
+        success INTEGER NOT NULL DEFAULT 1,
+        confidence REAL NOT NULL DEFAULT 1.0,
+        provenance TEXT NOT NULL,
+        data TEXT NOT NULL DEFAULT '{}',
+        error TEXT
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_agency_obs_task ON agency_observations(task_id);
+
+      -- 4. Agency Verifications
+      CREATE TABLE IF NOT EXISTS agency_verifications (
+        id TEXT PRIMARY KEY,
+        action_id TEXT NOT NULL,
+        expected_outcome TEXT NOT NULL,
+        observed_outcome TEXT NOT NULL,
+        verified INTEGER NOT NULL DEFAULT 0,
+        confidence REAL NOT NULL DEFAULT 1.0,
+        failure_reason TEXT,
+        is_recoverable INTEGER NOT NULL DEFAULT 0,
+        recommended_strategy TEXT,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_agency_ver_action ON agency_verifications(action_id);
+    `,
+  },
 ];

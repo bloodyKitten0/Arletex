@@ -80,6 +80,15 @@ export const IPC_CHANNELS = {
   TELEGRAM_STATUS_GET: 'arletex:telegram:status:get',
   TELEGRAM_CONFIGURE: 'arletex:telegram:configure',
   TELEGRAM_SEND: 'arletex:telegram:send',
+
+  // Digital Agency Channels
+  AGENCY_TASKS_LIST: 'arletex:agency:tasks:list',
+  AGENCY_TASK_GET: 'arletex:agency:task:get',
+  AGENCY_TASK_SUBMIT: 'arletex:agency:task:submit',
+  AGENCY_TASK_CANCEL: 'arletex:agency:task:cancel',
+  AGENCY_POLICY_GET: 'arletex:agency:policy:get',
+  AGENCY_POLICY_UPDATE: 'arletex:agency:policy:update',
+  AGENCY_TASK_EXECUTE: 'arletex:agency:task:execute',
 } as const;
 
 export type IPCChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];
@@ -548,3 +557,8 @@ export type IPCResponse<T> =
 // ==========================================
 export * from './ape.js';
 export * from './apeTaxonomyData.js';
+
+// ==========================================
+// Digital Agency Contracts
+// ==========================================
+export * from './agency.js';

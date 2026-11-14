@@ -109,12 +109,16 @@ export type ContextualAffectiveMeasurements = z.infer<typeof ContextualAffective
 // ==========================================
 
 export const ActiveEmotionStatusSchema = z.enum([
+  'emerging',
   'active',
+  'diminishing',
+  'dormant',
+  'resolved',
+  'historical',
   'strengthened',
   'weakened',
   'reappraised',
   'resolving',
-  'resolved',
 ]);
 
 export type ActiveEmotionStatus = z.infer<typeof ActiveEmotionStatusSchema>;

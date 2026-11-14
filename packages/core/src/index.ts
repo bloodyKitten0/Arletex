@@ -12,4 +12,15 @@ export * from './ape/relationshipEngine.js';
 export * from './ape/selfModelEngine.js';
 export * from './ape/developmentEngine.js';
 export * from './ape/crossEngineCycle.js';
+export * from './ape/emotionalLifecycleEngine.js';
 export * from './ape/apeService.js';
+
+// Digital Agency Subsystem
+export * from './agency/interfaces.js';
+export * from './agency/actionPermissionController.js';
+export * from './agency/verificationEngine.js';
+export * from './agency/intentTaskManager.js';
+export * from './agency/planningInterface.js';
+export * from './agency/webAgencyService.js';
+export * from './agency/safeComputerAgencyService.js';
+export * from './agency/memoryExperienceSync.js';

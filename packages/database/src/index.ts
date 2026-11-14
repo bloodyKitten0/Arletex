@@ -8,3 +8,4 @@ export * from './repositories/memoryRepository.js';
 export * from './repositories/activityRepository.js';
 export * from './repositories/preferenceRepository.js';
 export * from './repositories/apeRepository.js';
+export * from './repositories/agencyRepository.js';

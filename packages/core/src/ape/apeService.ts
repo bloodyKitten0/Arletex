@@ -22,6 +22,7 @@ import { RelationshipEngine } from './relationshipEngine.js';
 import { SelfModelEngine } from './selfModelEngine.js';
 import { DevelopmentEngine } from './developmentEngine.js';
 import { CrossEngineCognitiveCycle, CrossEngineCycleResult } from './crossEngineCycle.js';
+import { EmotionalLifecycleEngine } from './emotionalLifecycleEngine.js';
 
 export class ApeService {
   private readonly repo: IApeRepository;
@@ -34,6 +35,7 @@ export class ApeService {
   public readonly selfModelEngine: SelfModelEngine;
   public readonly developmentEngine: DevelopmentEngine;
   public readonly crossEngineCycle: CrossEngineCognitiveCycle;
+  public readonly lifecycleEngine: EmotionalLifecycleEngine;
 
   constructor(
     repo: IApeRepository,
@@ -53,6 +55,10 @@ export class ApeService {
     this.relationshipEngine = new RelationshipEngine(this.repo, logger);
     this.selfModelEngine = new SelfModelEngine(this.repo, logger);
     this.developmentEngine = new DevelopmentEngine(this.repo, logger);
+    this.lifecycleEngine = new EmotionalLifecycleEngine(this.repo, emotions, logger);
+
+    // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
+    this.lifecycleEngine.cleanupStaleEmotions(4);
 
     this.crossEngineCycle = new CrossEngineCognitiveCycle(
       this.repo,
@@ -75,6 +81,7 @@ export class ApeService {
   // Affective State & History
   // ==========================================
   public getState(): ApePsychologicalState {
+    this.lifecycleEngine.stepLifecycle();
     return this.repo.getAffectiveState();
   }
 
@@ -248,6 +255,7 @@ export class ApeService {
    * into a grounded system prompt context block for the inference model.
    */
   public formatApePromptContext(): string {
+    this.lifecycleEngine.stepLifecycle();
     const master = this.getMasterState();
     const aff = master.affective;
     const pers = master.personality;
@@ -255,8 +263,10 @@ export class ApeService {
     const rel = master.relationship;
     const self = master.selfModel;
 
-    const activeEmotions = aff.activeEmotions.length
-      ? aff.activeEmotions.map((e) => `${e.emotionId} (intensity: ${e.intensity.toFixed(2)})`).join(', ')
+    // Use dominant coexisting emotions (top 4 non-contradictory) to guide attention instead of dumping 20+ contradictory emotions
+    const dominantEmotions = this.lifecycleEngine.getDominantCoexistingEmotions(4);
+    const activeEmotions = dominantEmotions.length
+      ? dominantEmotions.map((e) => `${e.emotionId} (${e.status}, intensity: ${e.intensity.toFixed(2)})`).join(', ')
       : 'composed baseline (focused, analytical)';
 
     const topTraits = pers.traits.map((t) => `${t.name} (${t.score.toFixed(2)})`).join(', ');

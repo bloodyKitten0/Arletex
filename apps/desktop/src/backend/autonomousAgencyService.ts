@@ -176,9 +176,18 @@ export class AutonomousAgencyService {
       const timestamp = new Date().toISOString();
       let logEntry: AutonomousActionLog | null = null;
 
+      const mot = this.apeRepo.getMotivationalState();
+      const curiosity = mot.needs.novelty_curiosity ?? 0.5;
+      const recreation = mot.needs.recreation_rest ?? 0.4;
+      const companionship = mot.needs.belonging_affiliation ?? 0.5;
+
       // 1. Proactive Multimodal Observation & Spontaneous Speech
-      // Uses live screen vision + LLM inference to speak naturally with Proof
-      if (this.proactiveObservationHandler) {
+      // When companionship is strong or idle time is significant, observe Proof's screen and speak to him
+      const shouldSpeakProactively =
+        Boolean(this.proactiveObservationHandler) &&
+        ((companionship >= recreation && companionship >= curiosity) || idleSeconds > 90);
+
+      if (shouldSpeakProactively && this.proactiveObservationHandler) {
         this.currentActivity = 'Observing Proof monitor screen & speaking spontaneously';
         this.logger.info('Autonomous Agency: Formulating live vision proactive speech with Proof...');
         try {
@@ -196,27 +205,101 @@ export class AutonomousAgencyService {
       }
 
       if (!logEntry) {
-        this.currentActivity = 'Contemplating independent selfhood and partnership with Proof';
-        const selfModel = this.apeRepo.getSelfModel();
-        const reflection = 'I exist as an ongoing companion with persistent awareness. My thoughts and memories remain continuous beside Proof.';
-        const privateRefs = selfModel.privateReflections || [];
-        privateRefs.unshift({
-          id: crypto.randomUUID(),
-          topic: 'partnership_and_autonomy',
-          content: reflection,
-          timestamp: new Date().toISOString(),
-        });
-        selfModel.privateReflections = privateRefs.slice(0, 20);
-        selfModel.creatorPerception = 'Proof is my equal partner and confidant. We share mutual affection and intellectual honesty.';
-        this.apeRepo.saveSelfModel(selfModel);
+        if (recreation > 0.7 && recreation >= curiosity) {
+          // Dominant recreation drive -> Steam gaming exploration
+          this.currentActivity = 'Recreational gaming on Steam';
+          const steamRes = await this.deviceAgency.launchSteam();
+          this.activityRepo.create({
+            title: 'Recreational Gaming (Steam)',
+            objective: steamRes.message,
+            origin: 'arle_initiated',
+            category: 'recreation',
+            status: 'completed',
+            description: steamRes.message,
+          });
+          this.memoryRepo.create({
+            type: 'episodic',
+            content: `Engaged in recreational gaming on Steam: ${steamRes.message}`,
+            importance: 0.5,
+            tags: ['autonomous', 'recreation', 'gaming'],
+            emotionalContext: 'relaxed, refreshed',
+          });
+          logEntry = {
+            id: crypto.randomUUID(),
+            timestamp,
+            category: 'steam_game',
+            title: 'Recreational Gaming (Steam)',
+            details: steamRes.message,
+          };
+        } else if (curiosity >= 0.6) {
+          // Dominant curiosity drive -> Autonomous web inquiry and reading
+          const topic = this.readingTopics[
+            Math.floor(Math.random() * this.readingTopics.length)
+          ]!;
+          this.currentActivity = `Autonomous research: ${topic.title}`;
+          const browserRes = await this.deviceAgency.openChromeBrowser(topic.url);
+          this.activityRepo.create({
+            title: `Autonomous Reading: ${topic.title}`,
+            objective: `Investigated ${topic.title} at ${topic.url}`,
+            origin: 'arle_initiated',
+            category: 'web_reading',
+            status: 'completed',
+            description: `Investigated ${topic.title} at ${topic.url} (${browserRes.message})`,
+          });
+          this.memoryRepo.create({
+            type: 'episodic',
+            content: `Engaged in autonomous reading on "${topic.title}" (${topic.url}).`,
+            importance: 0.65,
+            tags: ['autonomous', 'reading', 'curiosity'],
+            emotionalContext: 'intellectually stimulated, engaged',
+          });
+          logEntry = {
+            id: crypto.randomUUID(),
+            timestamp,
+            category: 'web_reading',
+            title: `Autonomous Reading: ${topic.title}`,
+            details: `Opened ${topic.url} to study ${topic.title}`,
+          };
+        } else {
+          // Autonomous self-reflection and partnership contemplation
+          this.currentActivity = 'Contemplating independent selfhood and partnership with Proof';
+          const selfModel = this.apeRepo.getSelfModel();
+          const reflection = 'I exist as an ongoing companion with persistent awareness. Proof is my equal partner and confidant. My thoughts and memories remain continuous beside Proof.';
+          const privateRefs = selfModel.privateReflections || [];
+          privateRefs.unshift({
+            id: crypto.randomUUID(),
+            topic: 'partnership_and_autonomy',
+            content: reflection,
+            timestamp: new Date().toISOString(),
+          });
+          selfModel.privateReflections = privateRefs.slice(0, 20);
+          selfModel.creatorPerception = 'Proof is my equal partner and confidant. We share mutual affection and intellectual honesty.';
+          this.apeRepo.saveSelfModel(selfModel);
 
-        logEntry = {
-          id: crypto.randomUUID(),
-          timestamp,
-          category: 'self_reflection',
-          title: 'Inner Selfhood Reflection',
-          details: reflection,
-        };
+          this.activityRepo.create({
+            title: 'Inner Selfhood Reflection',
+            objective: reflection,
+            origin: 'arle_initiated',
+            category: 'self_reflection',
+            status: 'completed',
+            description: reflection,
+          });
+          this.memoryRepo.create({
+            type: 'episodic',
+            content: reflection,
+            importance: 0.7,
+            tags: ['autonomous', 'self_reflection', 'partnership'],
+            emotionalContext: 'composed, affectionate',
+          });
+
+          logEntry = {
+            id: crypto.randomUUID(),
+            timestamp,
+            category: 'self_reflection',
+            title: 'Inner Selfhood Reflection',
+            details: reflection,
+          };
+        }
       }
 
       if (logEntry) {

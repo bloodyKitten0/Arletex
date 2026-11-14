@@ -29,10 +29,17 @@ import {
   VideoInspectInputSchema,
 } from '@arletex/contracts';
 import {
+  ActionPermissionController,
   ApeService,
   DEFAULT_ARLE_SYSTEM_PROMPT,
   ILogger,
+  IntentTaskManager,
+  MemoryExperienceSync,
+  PlanningInterface,
   rootLogger,
+  SafeComputerAgencyService,
+  VerificationEngine,
+  WebAgencyService,
 } from '@arletex/core';
 import { defaultVideoProcessor, ProcessedVideoResult } from './videoProcessor.js';
 import { syncHistoricalMemories } from './historicalMemorySync.js';
@@ -44,6 +51,7 @@ import { defaultTelegramBridge, TelegramBridgeService, InboundTelegramMessage } 
 import { AutonomousAgencyService } from './autonomousAgencyService.js';
 import {
   ActivityRepository,
+  AgencyRepository,
   ApeRepository,
   AuditRepository,
   ConversationRepository,
@@ -83,6 +91,16 @@ export class ArletexBackendServer {
   private readonly inferenceGateway: InferenceGateway;
   private readonly authToken: string;
 
+  // Digital Agency Subsystem
+  public readonly agencyRepo: AgencyRepository;
+  public readonly permissionController: ActionPermissionController;
+  public readonly safeComputerAgency: SafeComputerAgencyService;
+  public readonly webAgency: WebAgencyService;
+  public readonly verificationEngine: VerificationEngine;
+  public readonly planningInterface: PlanningInterface;
+  public readonly memorySync: MemoryExperienceSync;
+  public readonly intentTaskManager: IntentTaskManager;
+
   private activeStreams = new Map<string, AbortController>();
   private port = 0;
 
@@ -117,6 +135,198 @@ export class ArletexBackendServer {
     this.apeRepo = new ApeRepository(db);
     this.apeService = new ApeService(this.apeRepo, this.inferenceGateway, logger);
     this.telemetryService = new TelemetryService(logger);
+
+    // Instantiate Digital Agency Subsystem
+    this.agencyRepo = new AgencyRepository(db);
+    this.permissionController = new ActionPermissionController(undefined, logger);
+    this.safeComputerAgency = new SafeComputerAgencyService(this.permissionController, undefined, logger);
+    this.webAgency = new WebAgencyService(this.permissionController, logger);
+    this.verificationEngine = new VerificationEngine(logger);
+    this.planningInterface = new PlanningInterface(this.agencyRepo, logger);
+    this.memorySync = new MemoryExperienceSync(this.memoryRepo as any, logger);
+    this.intentTaskManager = new IntentTaskManager(this.agencyRepo, logger);
+  }
+
+  public getIntentTaskManager(): IntentTaskManager {
+    return this.intentTaskManager;
+  }
+
+  public getPermissionController(): ActionPermissionController {
+    return this.permissionController;
+  }
+
+  public async submitAgencyObjective(
+    objective: string,
+    initiator: 'user' | 'arle' = 'user',
+  ) {
+    const task = this.intentTaskManager.createTask({
+      objective,
+      initiator,
+      status: 'authorized',
+    });
+
+    const plan = await this.planningInterface.formulatePlan(task);
+    this.agencyRepo.savePlan(plan);
+    this.intentTaskManager.transitionTask(task.id, 'authorized');
+    return { task, plan };
+  }
+
+  public async executeAgencyTask(taskId: string) {
+    const task = this.intentTaskManager.getTask(taskId);
+    if (!task) throw new Error(`Task ${taskId} not found`);
+
+    const plan = this.agencyRepo.getPlanByTask(taskId);
+    if (!plan) throw new Error(`Plan for task ${taskId} not found`);
+
+    this.intentTaskManager.transitionTask(taskId, 'running');
+    const observations: any[] = [];
+    const verifications: any[] = [];
+    let allStepsSucceeded = true;
+
+    for (let i = 0; i < plan.steps.length; i++) {
+      const step = plan.steps[i]!;
+      const action = step.action;
+
+      // 1. Authorization check against ActionPermissionController
+      const auth = this.permissionController.authorize(action);
+      if (!auth.allowed) {
+        this.logger.error(`Action ${action.id} denied: ${auth.denialReason}`);
+        const ver = {
+          actionId: action.id,
+          expectedOutcome: action.expectedOutcome,
+          observedOutcome: `Action denied by policy: ${auth.denialReason}`,
+          verified: false,
+          confidence: 1.0,
+          failureReason: auth.denialReason || 'Unauthorized action proposal',
+          isRecoverable: false,
+          timestamp: new Date().toISOString(),
+        };
+        this.agencyRepo.saveVerification(ver);
+        verifications.push(ver);
+        allStepsSucceeded = false;
+        break;
+      }
+
+      // 2. Execution layer
+      let obs: any = null;
+      try {
+        if (action.type === 'web_search') {
+          const query = action.parameters?.['query'] || task.objective;
+          const candidates = await this.webAgency.searchVideos(query);
+          obs = {
+            id: crypto.randomUUID(),
+            taskId,
+            actionId: action.id,
+            source: 'browser_page',
+            timestamp: new Date().toISOString(),
+            success: candidates.length > 0,
+            confidence: 0.95,
+            provenance: 'WebAgencyService.searchVideos',
+            data: { candidatesCount: candidates.length, candidates },
+            error: null,
+          };
+        } else if (action.type === 'navigate_browser') {
+          const url = action.parameters?.['url'] || 'https://www.youtube.com/watch?v=uD4izuDMUQA';
+          const pageObs = await this.webAgency.navigateToVideo(url);
+          obs = {
+            id: crypto.randomUUID(),
+            taskId,
+            actionId: action.id,
+            source: 'browser_page',
+            timestamp: new Date().toISOString(),
+            success: pageObs.hasVideoElement,
+            confidence: 0.95,
+            provenance: 'WebAgencyService.navigateToVideo',
+            data: {
+              url: pageObs.url,
+              title: pageObs.title,
+              hasVideoElement: pageObs.hasVideoElement,
+              isPlaying: pageObs.isPlaying,
+            },
+            error: pageObs.playbackError || null,
+          };
+        } else if (action.type === 'execute_command') {
+          const command = action.parameters?.['command'] as string;
+          const args = (action.parameters?.['args'] as string[]) || [];
+          const cmdRes = await this.safeComputerAgency.executeCommand(command, args);
+          obs = {
+            id: crypto.randomUUID(),
+            taskId,
+            actionId: action.id,
+            source: 'system_probe',
+            timestamp: new Date().toISOString(),
+            success: cmdRes.exitCode === 0,
+            confidence: 1.0,
+            provenance: 'SafeComputerAgencyService.executeCommand',
+            data: { exitCode: cmdRes.exitCode, stdout: cmdRes.stdout, stderr: cmdRes.stderr },
+            error: cmdRes.exitCode !== 0 ? cmdRes.stderr : null,
+          };
+        } else if (action.type === 'capture_screen') {
+          const capture = await this.safeComputerAgency.captureScreen();
+          obs = {
+            id: crypto.randomUUID(),
+            taskId,
+            actionId: action.id,
+            source: 'screen_ocr',
+            timestamp: new Date().toISOString(),
+            success: !!capture.imageBase64,
+            confidence: 1.0,
+            provenance: 'SafeComputerAgencyService.captureScreen',
+            data: { width: capture.width, height: capture.height },
+            error: null,
+          };
+        }
+      } catch (execErr: any) {
+        obs = {
+          id: crypto.randomUUID(),
+          taskId,
+          actionId: action.id,
+          source: 'system_probe',
+          timestamp: new Date().toISOString(),
+          success: false,
+          confidence: 1.0,
+          provenance: 'ExecutionError',
+          data: {},
+          error: execErr.message || String(execErr),
+        };
+      }
+
+      if (obs) {
+        this.agencyRepo.saveObservation(obs);
+        observations.push(obs);
+      }
+
+      // 3. Verification Engine comparison
+      const ver = this.verificationEngine.verify(action, obs);
+      this.agencyRepo.saveVerification(ver);
+      verifications.push(ver);
+
+      if (!ver.verified) {
+        allStepsSucceeded = false;
+        this.intentTaskManager.handleFailure(taskId, ver.failureReason || 'Verification failed');
+        break;
+      }
+
+      this.intentTaskManager.advanceStep(taskId);
+    }
+
+    const finalStatus = allStepsSucceeded ? 'completed' : 'failed';
+    const finalTask = this.intentTaskManager.transitionTask(taskId, finalStatus);
+
+    // 4. Memory Experience Sync
+    try {
+      await this.memorySync.distillExperience(finalTask, plan, observations, verifications);
+    } catch (memErr: any) {
+      this.logger.warn(`Experience sync note: ${memErr.message}`);
+    }
+
+    return {
+      task: finalTask,
+      plan,
+      observations,
+      verifications,
+      success: allStepsSucceeded,
+    };
   }
 
   public getApeService(): ApeService {
@@ -323,6 +533,17 @@ export class ArletexBackendServer {
     try {
       this.logger.info(`Handling inbound notification from ${notif.appName}: "${notif.summary}" - "${notif.body}"`);
 
+      // Security check: Ignore unapproved or system noise notifications to protect private LLM context
+      const isAuthorizedSender =
+        notif.isTelegram ||
+        /telegram|google\s*messages|partner|proof/i.test(notif.appName) ||
+        /telegram|proof/i.test(notif.summary);
+
+      if (!isAuthorizedSender) {
+        this.logger.debug(`Ignored unapproved notification from app: "${notif.appName}"`);
+        return;
+      }
+
       if (this.autonomousAgency) {
         this.autonomousAgency.notifyUserActivity();
       }
@@ -387,6 +608,15 @@ export class ArletexBackendServer {
   public async handleInboundTelegramMessage(msg: InboundTelegramMessage): Promise<void> {
     try {
       this.logger.info(`Handling inbound Telegram message from ${msg.fromName}: "${msg.text}"`);
+
+      // Security authorization check: Verify against targetChatId if configured
+      const status = this.telegramBridge?.getStatus();
+      if (status?.targetChatId && String(msg.chatId) !== String(status.targetChatId)) {
+        this.logger.warn(
+          `Rejected Telegram message from unauthorized chatId: ${msg.chatId} (authorized: ${status.targetChatId})`,
+        );
+        return;
+      }
 
       if (this.autonomousAgency) {
         this.autonomousAgency.notifyUserActivity();
@@ -1019,14 +1249,17 @@ export class ArletexBackendServer {
           this.logger.warn(`APE assistant expression processing note: ${apeOutcomeErr.message}`);
         }
 
-        // Execute any requested device/browser/steam actions directly on the machine
-        try {
-          const actionResult = await this.executeAssistantActions(accumulatedResponse, userMessageContent);
-          if (actionResult.executed) {
-            this.logger.info(`Executed device action for Proof: ${actionResult.resultNotice}`);
+        // Digital Agency Invariant: Never execute from conversational prose.
+        // Actions only trigger from explicit validated [action: ...] directives.
+        if (/\[action:\s*\w+/i.test(accumulatedResponse)) {
+          try {
+            const actionResult = await this.executeAssistantActions(accumulatedResponse, userMessageContent);
+            if (actionResult.executed) {
+              this.logger.info(`Executed structured device action for Proof: ${actionResult.resultNotice}`);
+            }
+          } catch (actErr: any) {
+            this.logger.warn(`Device action execution note: ${actErr.message}`);
           }
-        } catch (actErr: any) {
-          this.logger.warn(`Device action execution note: ${actErr.message}`);
         }
 
         // 24/7 Physical Speaker Audio Output via Kokoro TTS & pw-play
@@ -1133,21 +1366,13 @@ export class ArletexBackendServer {
     const clickRegex = /\[action:\s*mouse_click(?:\s+x=(\d+)\s+y=(\d+))?(?:\s+button=(\d+))?\]/i;
     const clickMatch = responseContent.match(clickRegex);
 
-    // 2. Direct user command detection or assistant claim fallback
+    // 2. Direct user command detection (never infer actions from natural-language statements in Arle's generated prose)
     let targetUrl: string | undefined;
     if (browserMatch && browserMatch[1]) {
       targetUrl = browserMatch[1];
     } else if (browserMatch && !browserMatch[1]) {
       targetUrl = 'https://www.youtube.com/watch?v=uD4izuDMUQA&autoplay=1';
     } else {
-      const isVideoIntent =
-        /yotube|youtube|video|song|track|music|listen|play/i.test(lowerUser) ||
-        /(watch|play|put on|bring up|check out).*(video|music|track|song|something)/i.test(lowerUser) ||
-        /let('?s)?\s*(watch|listen|play)/i.test(lowerUser) ||
-        /(where is it|where'?s (the|it)|did you open|why isn'?t it)/i.test(lowerUser) ||
-        /video.*choice/i.test(lowerUser) ||
-        /(video is (currently )?loading|selected a (video|track|song|piece)|opening (the )?(video|browser)|navigating to (the )?browser|bring up a track|watch it with me|loading on your screen|music is playing|video player is open|it'?s right here)/i.test(responseContent);
-
       const isOpenIntent =
         lowerUser.startsWith('open ') ||
         lowerUser.includes('open the web') ||
@@ -1155,18 +1380,7 @@ export class ArletexBackendServer {
         lowerUser.includes('go to ') ||
         lowerUser.includes('browse ');
 
-      if (isVideoIntent) {
-        // Direct curated playback links (actual video player, never empty search listings)
-        if (/song|ember|burning|genshin/i.test(responseContent) || /genshin/i.test(lowerUser)) {
-          targetUrl = 'https://www.youtube.com/watch?v=tN5JACOEJFM&autoplay=1';
-        } else if (/consciousness|mind|aware/i.test(responseContent)) {
-          targetUrl = 'https://www.youtube.com/watch?v=H6u0VBqNBQ8&autoplay=1';
-        } else if (/music|chill|lofi|relax/i.test(responseContent) || /music/i.test(lowerUser)) {
-          targetUrl = 'https://www.youtube.com/watch?v=jfKfPfyJRdk&autoplay=1';
-        } else {
-          targetUrl = 'https://www.youtube.com/watch?v=uD4izuDMUQA&autoplay=1';
-        }
-      } else if (isOpenIntent) {
+      if (isOpenIntent) {
         if (/youtube|yotube/i.test(lowerUser)) targetUrl = 'https://www.youtube.com/watch?v=uD4izuDMUQA&autoplay=1';
         else if (/google/i.test(lowerUser)) targetUrl = 'https://google.com';
         else if (/reddit/i.test(lowerUser)) targetUrl = 'https://reddit.com';
@@ -1199,8 +1413,7 @@ export class ArletexBackendServer {
       lowerUser.includes('play steam') ||
       lowerUser.includes('start steam') ||
       lowerUser.includes('play a game') ||
-      lowerUser.includes('play games') ||
-      /(launched steam|opening steam|launching steam|starting steam)/i.test(responseContent);
+      lowerUser.includes('play games');
 
     if (shouldLaunchSteam && !targetUrl) {
       try {
@@ -1219,8 +1432,7 @@ export class ArletexBackendServer {
       lowerUser.includes('capture screen') ||
       lowerUser.includes('see my screen') ||
       lowerUser.includes('what is on my screen') ||
-      lowerUser.includes('read my screen') ||
-      /(taking a look at your screen|checking your monitor|looking at the screen)/i.test(responseContent);
+      lowerUser.includes('read my screen');
 
     if (shouldCaptureScreen) {
       try {
@@ -1368,27 +1580,24 @@ Rules:
         });
       }
 
-      // 5. Query local llama-server
-      const res = await fetch('http://127.0.0.1:8080/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'qwen3.5-9b',
-          messages: messagesPayload,
-          temperature: 0.7,
-          max_tokens: 150,
-          stream: false,
-        }),
-      });
-
-      if (!res.ok) {
-        const errText = await res.text();
-        this.logger.warn(`Proactive inference call failed (${res.status}): ${errText}`);
+      // 5. Query Inference Gateway with automatic context management
+      let rawReply = '';
+      try {
+        rawReply = await this.inferenceGateway.streamChat({
+          conversationId: conv.id,
+          requestId: crypto.randomUUID(),
+          messages: messagesPayload as any,
+          configOverride: {
+            maxTokens: 150,
+            temperature: 0.7,
+          },
+          onChunk: () => {},
+        });
+      } catch (err: any) {
+        this.logger.warn(`Proactive inference call failed: ${err.message}`);
         return;
       }
 
-      const resJson = (await res.json()) as any;
-      const rawReply = resJson.choices?.[0]?.message?.content || '';
       const cleanReply = sanitizeAssistantDialogue(rawReply);
 
       if (!cleanReply || cleanReply.length < 5) return;
@@ -2197,6 +2406,67 @@ Rules:
         const body = (await this.readJsonBody(req)) as any;
         this.apeService.saveDevelopmentState(body);
         this.sendJson(res, 200, this.apeService.getDevelopmentState());
+        return;
+      }
+
+      // ==========================================
+      // Digital Agency Subsystem Routes
+      // ==========================================
+      if (url.pathname === '/api/agency/tasks' && method === 'GET') {
+        const status = url.searchParams.get('status') as any;
+        const tasks = this.intentTaskManager.listTasks(status || undefined);
+        this.sendJson(res, 200, tasks);
+        return;
+      }
+
+      if (url.pathname === '/api/agency/tasks' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const task = this.intentTaskManager.createTask(body);
+        this.sendJson(res, 201, task);
+        return;
+      }
+
+      if (url.pathname.startsWith('/api/agency/tasks/') && method === 'GET') {
+        const taskId = url.pathname.replace('/api/agency/tasks/', '');
+        const details = this.intentTaskManager.getTaskDetails(taskId);
+        if (!details) {
+          this.sendJson(res, 404, { error: 'Task not found' });
+          return;
+        }
+        this.sendJson(res, 200, details);
+        return;
+      }
+
+      if (url.pathname === '/api/agency/intent' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as { objective: string; initiator?: 'user' | 'arle' };
+        const result = await this.submitAgencyObjective(body.objective, body.initiator || 'user');
+        this.sendJson(res, 200, result);
+        return;
+      }
+
+      if (url.pathname.startsWith('/api/agency/tasks/') && url.pathname.endsWith('/execute') && method === 'POST') {
+        const taskId = url.pathname.replace('/api/agency/tasks/', '').replace('/execute', '');
+        const result = await this.executeAgencyTask(taskId);
+        this.sendJson(res, 200, result);
+        return;
+      }
+
+      if (url.pathname.startsWith('/api/agency/tasks/') && url.pathname.endsWith('/cancel') && method === 'POST') {
+        const taskId = url.pathname.replace('/api/agency/tasks/', '').replace('/cancel', '');
+        const task = this.intentTaskManager.cancelTask(taskId);
+        this.sendJson(res, 200, task);
+        return;
+      }
+
+      if (url.pathname === '/api/agency/policy' && method === 'GET') {
+        this.sendJson(res, 200, this.permissionController.getPolicy());
+        return;
+      }
+
+      if (url.pathname === '/api/agency/policy' && (method === 'POST' || method === 'PATCH')) {
+        const body = (await this.readJsonBody(req)) as any;
+        this.permissionController.updatePolicy(body);
+        this.sendJson(res, 200, this.permissionController.getPolicy());
         return;
       }
 

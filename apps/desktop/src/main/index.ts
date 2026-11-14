@@ -553,6 +553,36 @@ function registerIpcHandlers() {
   ipcMain.handle(IPC_CHANNELS.TELEGRAM_SEND, async (_, input) => {
     return callBackend('/api/telegram/send', 'POST', input);
   });
+
+  // Digital Agency Handlers
+  ipcMain.handle(IPC_CHANNELS.AGENCY_TASKS_LIST, async (_, status?: string) => {
+    const query = status ? `?status=${encodeURIComponent(status)}` : '';
+    return callBackend(`/api/agency/tasks${query}`);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.AGENCY_TASK_GET, async (_, id: string) => {
+    return callBackend(`/api/agency/tasks/${encodeURIComponent(id)}`);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.AGENCY_TASK_SUBMIT, async (_, input) => {
+    return callBackend('/api/agency/intent', 'POST', input);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.AGENCY_TASK_EXECUTE, async (_, taskId: string) => {
+    return callBackend(`/api/agency/tasks/${encodeURIComponent(taskId)}/execute`, 'POST');
+  });
+
+  ipcMain.handle(IPC_CHANNELS.AGENCY_TASK_CANCEL, async (_, taskId: string) => {
+    return callBackend(`/api/agency/tasks/${encodeURIComponent(taskId)}/cancel`, 'POST');
+  });
+
+  ipcMain.handle(IPC_CHANNELS.AGENCY_POLICY_GET, async () => {
+    return callBackend('/api/agency/policy');
+  });
+
+  ipcMain.handle(IPC_CHANNELS.AGENCY_POLICY_UPDATE, async (_, policy) => {
+    return callBackend('/api/agency/policy', 'POST', policy);
+  });
 }
 
 app.whenReady().then(async () => {

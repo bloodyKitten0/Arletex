@@ -23,6 +23,7 @@ export class ActivityRepository {
       const origin = input.origin || 'user_assigned';
       const status = input.status || 'planned';
       const progress = input.progress ?? 0.0;
+      const objective = input.objective || (input as any).description || input.title;
       const memoriesStr = JSON.stringify(input.associatedMemories || []);
       const actionsStr = JSON.stringify(input.relevantActions || []);
       const metadataStr = JSON.stringify(input.metadata || {});
@@ -42,7 +43,7 @@ export class ActivityRepository {
       stmt.run(
         id,
         input.title,
-        input.objective,
+        objective,
         origin,
         status,
         progress,

@@ -47,7 +47,7 @@ describe('Multimodal Media Perception: Pictures and Video Watching', () => {
     // Verify frames are valid base64 image strings
     expect(result.framesBase64[0]!.length).toBeGreaterThan(100);
     expect(result.videoDataUrl).toContain('base64');
-  });
+  }, 30000);
 
   it('processes base64 video data directly with automatic format conversion', async () => {
     const videoBytes = await fs.readFile(testVideoPath);

@@ -239,14 +239,14 @@ describe('Embodied Screen Reading, Mouse/Keyboard Agency & Cross-Chat Memory', (
 
       openBrowserSpy.mockClear();
 
-      // Case 2: Arle omitted the action tag, but hallucinated/claimed "The video is currently loading on your screen"
+      // Case 2: Digital Agency Invariant: Natural language prose alone does NOT trigger device execution
       const userPrompt2 = "I'm back didn't forget about you now let's watch a yotube video of your choice";
       const arleResponse2 =
         '[tone: warm, affectionate, confident]\nWelcome back, Proof...\nThe video is currently loading on your screen. Sit back, Proof. Watch it with me...';
 
       const res2 = await server.executeAssistantActions(arleResponse2, userPrompt2);
-      expect(res2.executed).toBe(true);
-      expect(openBrowserSpy).toHaveBeenCalledWith(expect.stringContaining('youtube.com/watch?v='));
+      expect(res2.executed).toBe(false);
+      expect(openBrowserSpy).not.toHaveBeenCalled();
 
       openBrowserSpy.mockClear();
 

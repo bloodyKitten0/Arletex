@@ -147,6 +147,16 @@ export class LlamaServerAdapter implements IInferenceProvider {
 
     if (!response.ok) {
       const errBody = await response.text().catch(() => 'Unknown error');
+      if (response.status === 400 && errBody.includes('exceed_context_size_error')) {
+        this.logger.warn(`[Llama] Request exceeded context size. Attempting automatic context pruning and retry.`);
+        const prunedMessages = this.pruneMessagesForContext(messages);
+        if (prunedMessages && prunedMessages.length > 0) {
+          return this.streamChat({
+            ...options,
+            messages: prunedMessages,
+          });
+        }
+      }
       this.logger.error(`[Llama] llama-server responded with HTTP ${response.status}`, errBody);
       const errMsg = `llama-server error (${response.status}): ${errBody}`;
       onChunk({
@@ -279,5 +289,34 @@ export class LlamaServerAdapter implements IInferenceProvider {
     }
 
     return fullContent || fullReasoning;
+  }
+
+  private pruneMessagesForContext(messages: any[]): any[] | null {
+    if (!messages || messages.length === 0) return null;
+    const systemMsg = messages.find((m) => m.role === 'system');
+    const userMsgs = messages.filter((m) => m.role === 'user');
+    const lastUserMsg = userMsgs[userMsgs.length - 1];
+    if (!lastUserMsg) return null;
+
+    let prunedUserContent = lastUserMsg.content;
+    if (Array.isArray(lastUserMsg.content)) {
+      const textParts = lastUserMsg.content.filter((p: any) => p.type === 'text');
+      const imageParts = lastUserMsg.content.filter((p: any) => p.type === 'image_url');
+      // Keep only at most 1 representative image/frame to sharply drop tokens
+      prunedUserContent = [...textParts, ...imageParts.slice(0, 1)];
+    }
+
+    let prunedSystemContent = systemMsg?.content;
+    if (typeof prunedSystemContent === 'string' && prunedSystemContent.length > 3500) {
+      prunedSystemContent = prunedSystemContent.slice(0, 3500) + '\n[Context trimmed for token budget]';
+    }
+
+    const pruned: any[] = [];
+    if (prunedSystemContent) {
+      pruned.push({ role: 'system', content: prunedSystemContent });
+    }
+    pruned.push({ role: 'user', content: prunedUserContent });
+
+    return pruned;
   }
 }
