@@ -1270,12 +1270,13 @@ export class ArletexBackendServer {
               ? cleanContent.slice(0, 250).replace(/\s+[^\s]*$/, '...')
               : cleanContent;
 
+            const modulation = this.apeService.getLinguisticModulation();
             const synthRes = await fetch('http://127.0.0.1:39282/synthesize', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 text: speechText,
-                tone: 'warm, gentle',
+                tone: modulation.vocalRegister,
                 voice: 'arlecchino',
               }),
             });
