@@ -129,6 +129,7 @@ export class EmotionalLifecycleEngine {
         Math.max(decayProfile.minBaselineIntensity, prevIntensity * decayFactor).toFixed(3),
       );
 
+      const prevStatus = em.status;
       let nextStatus: ActiveEmotionStatus = em.status;
 
       // Determine lifecycle transition
@@ -136,7 +137,7 @@ export class EmotionalLifecycleEngine {
         nextStatus = 'resolved';
         newIntensity = 0.0;
       } else if (newIntensity < 0.4 && em.status === 'active') {
-        nextStatus = 'diminishing';
+        nextStatus = 'resolving';
       }
 
       em.intensity = newIntensity;
@@ -166,7 +167,7 @@ export class EmotionalLifecycleEngine {
         this.repo.saveActiveEmotion(em);
         updated.push(em);
 
-        if (nextStatus !== em.status) {
+        if (nextStatus !== prevStatus) {
           const transition: ApeTransitionRecord = {
             id: crypto.randomUUID(),
             appraisalId: em.id,
@@ -252,7 +253,9 @@ export class EmotionalLifecycleEngine {
    * preventing contradictory dumps of 20+ emotions into prompt context.
    */
   public getDominantCoexistingEmotions(limit = 4): ActiveEmotionState[] {
-    const active = this.repo.getActiveEmotions().filter((e) => e.status === 'active' || e.status === 'emerging');
+    const active = this.repo
+      .getActiveEmotions()
+      .filter((e) => e.status === 'active' || e.status === 'emerging' || e.status === 'resolving');
 
     // Sort by intensity descending
     active.sort((a, b) => b.intensity - a.intensity);

@@ -26,6 +26,14 @@ async function main() {
 
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
+
+  process.on('uncaughtException', (err) => {
+    logger.error('Uncaught Exception in Arletex Backend:', err);
+  });
+
+  process.on('unhandledRejection', (reason) => {
+    logger.error('Unhandled Rejection in Arletex Backend:', reason);
+  });
 }
 
 void main().catch((err) => {

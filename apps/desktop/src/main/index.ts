@@ -22,6 +22,7 @@ let mainWindow: BrowserWindow | null = null;
 let backendProcess: ChildProcess | null = null;
 let backendPort = 39281;
 let backendAuthToken = '';
+let isAppQuitting = false;
 
 function findSystemNode(): string {
   if (process.env['NODE_BINARY'] && fs.existsSync(process.env['NODE_BINARY'])) {
@@ -52,7 +53,9 @@ async function startBackendService(): Promise<number> {
     const nodeBinary = findSystemNode();
     logger.info(`Starting backend service: ${backendScript} using node: ${nodeBinary}`);
 
-    backendAuthToken = crypto.randomBytes(32).toString('hex');
+    if (!backendAuthToken) {
+      backendAuthToken = crypto.randomBytes(32).toString('hex');
+    }
     let hasResolved = false;
 
     backendProcess = fork(backendScript, [], {
@@ -106,9 +109,19 @@ async function startBackendService(): Promise<number> {
 
     backendProcess.on('exit', (code, signal) => {
       logger.warn(`Backend process exited with code ${code}, signal ${signal}`);
+      backendProcess = null;
       if (!hasResolved) {
         hasResolved = true;
         reject(new Error(`Backend exited unexpectedly with code ${code}`));
+      } else if (!isAppQuitting) {
+        logger.warn('Backend process exited unexpectedly during active session. Respawning in 1000ms...');
+        setTimeout(() => {
+          if (!isAppQuitting) {
+            void startBackendService().catch((err) => {
+              logger.error('Failed to respawn backend service', err);
+            });
+          }
+        }, 1000);
       }
     });
 
@@ -605,6 +618,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('will-quit', () => {
+  isAppQuitting = true;
   logger.info('Application quitting. Terminating backend service...');
   if (backendProcess) {
     backendProcess.kill('SIGTERM');

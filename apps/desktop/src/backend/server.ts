@@ -707,7 +707,10 @@ export class ArletexBackendServer {
         if (res.ok) {
           const data = (await res.json()) as { embedding: number[] };
           if (data.embedding && data.embedding.length > 0) {
-            return this.memoryRepo.searchSimilar(new Float32Array(data.embedding), options);
+            const results = this.memoryRepo.searchSimilar(new Float32Array(data.embedding), options);
+            if (results.length > 0) {
+              return results;
+            }
           }
         }
       } catch {
