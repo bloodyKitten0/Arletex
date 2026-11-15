@@ -27,3 +27,6 @@ export * from './agency/playwrightBrowserProvider.js';
 export * from './agency/webAgencyService.js';
 export * from './agency/safeComputerAgencyService.js';
 export * from './agency/memoryExperienceSync.js';
+
+// Central Cognitive Control Subsystem
+export * from './cognitive/cognitiveControlBus.js';

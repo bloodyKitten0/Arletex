@@ -600,3 +600,8 @@ export * from './apeTaxonomyData.js';
 // Digital Agency Contracts
 // ==========================================
 export * from './agency.js';
+
+// ==========================================
+// Central Cognitive Control Contracts
+// ==========================================
+export * from './cognitive.js';
