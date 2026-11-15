@@ -30,3 +30,6 @@ export * from './agency/memoryExperienceSync.js';
 
 // Central Cognitive Control Subsystem
 export * from './cognitive/cognitiveControlBus.js';
+
+// Autobiographical Memory Subsystem
+export * from './memory/autobiographicalMemoryService.js';

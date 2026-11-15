@@ -182,7 +182,9 @@ export class MemoryRepository {
       const interpretation = input.interpretation !== undefined ? input.interpretation : existing.interpretation;
       const importance = input.importance ?? existing.importance;
       const confidence = input.confidence ?? existing.confidence;
+      const provenance = input.provenance ?? existing.provenance;
       const tags = input.tags ?? existing.tags;
+      const metadata = input.metadata ?? existing.metadata;
       const isArchived = input.isArchived !== undefined ? (input.isArchived ? 1 : 0) : (existing.isArchived ? 1 : 0);
       const isDeleted = input.isDeleted !== undefined ? (input.isDeleted ? 1 : 0) : (existing.isDeleted ? 1 : 0);
 
@@ -208,7 +210,9 @@ export class MemoryRepository {
               interpretation = ?,
               importance = ?,
               confidence = ?,
+              provenance = ?,
               tags = ?,
+              metadata = ?,
               correction_history = ?,
               is_archived = ?,
               is_deleted = ?,
@@ -221,7 +225,9 @@ export class MemoryRepository {
           interpretation,
           importance,
           confidence,
+          provenance,
           JSON.stringify(tags),
+          JSON.stringify(metadata),
           JSON.stringify(history),
           isArchived,
           isDeleted,

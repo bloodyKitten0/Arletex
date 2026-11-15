@@ -542,4 +542,55 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_ape_projects_status ON ape_personal_projects(status);
     `,
   },
+  {
+    id: 9,
+    name: '009_memory_autobiographical_categories_and_consolidation',
+    up: `
+      -- Upgrade memories table to support all 8 canonical memory categories:
+      -- episodic, semantic, procedural, autobiographical, relationship, project, emotional, prospective, developmental
+      CREATE TABLE IF NOT EXISTS memories_new (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL CHECK (type IN ('episodic', 'semantic', 'procedural', 'autobiographical', 'relationship', 'project', 'emotional', 'prospective', 'developmental')),
+        content TEXT NOT NULL,
+        raw_observation TEXT,
+        interpretation TEXT,
+        confidence REAL NOT NULL DEFAULT 1.0,
+        importance REAL NOT NULL DEFAULT 0.5,
+        timestamp TEXT NOT NULL,
+        provenance TEXT NOT NULL DEFAULT 'interaction',
+        source_conversation_id TEXT,
+        source_message_id TEXT,
+        tags TEXT NOT NULL DEFAULT '[]',
+        metadata TEXT NOT NULL DEFAULT '{}',
+        correction_history TEXT NOT NULL DEFAULT '[]',
+        is_archived INTEGER NOT NULL DEFAULT 0,
+        is_deleted INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      INSERT OR IGNORE INTO memories_new (
+        id, type, content, raw_observation, interpretation,
+        confidence, importance, timestamp, provenance,
+        source_conversation_id, source_message_id,
+        tags, metadata, correction_history,
+        is_archived, is_deleted, created_at, updated_at
+      )
+      SELECT
+        id, type, content, raw_observation, interpretation,
+        confidence, importance, timestamp, provenance,
+        source_conversation_id, source_message_id,
+        tags, metadata, correction_history,
+        is_archived, is_deleted, created_at, updated_at
+      FROM memories;
+
+      DROP TABLE memories;
+      ALTER TABLE memories_new RENAME TO memories;
+
+      CREATE INDEX IF NOT EXISTS idx_memories_type ON memories(type);
+      CREATE INDEX IF NOT EXISTS idx_memories_timestamp ON memories(timestamp DESC);
+      CREATE INDEX IF NOT EXISTS idx_memories_importance ON memories(importance DESC);
+      CREATE INDEX IF NOT EXISTS idx_memories_archived ON memories(is_archived, is_deleted);
+    `,
+  },
 ];

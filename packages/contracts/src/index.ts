@@ -158,8 +158,11 @@ export const MemoryTypeSchema = z.enum([
   'episodic',
   'semantic',
   'procedural',
+  'autobiographical',
   'relationship',
+  'project',
   'emotional',
+  'prospective',
   'developmental',
 ]);
 export type MemoryType = z.infer<typeof MemoryTypeSchema>;
@@ -254,7 +257,9 @@ export const UpdateMemoryInputSchema = z.object({
   interpretation: z.string().optional(),
   importance: z.number().min(0).max(1).optional(),
   confidence: z.number().min(0).max(1).optional(),
+  provenance: z.string().optional(),
   tags: z.array(z.string()).optional(),
+  metadata: z.record(z.unknown()).optional(),
   isArchived: z.boolean().optional(),
   isDeleted: z.boolean().optional(),
   reason: z.string().optional(),

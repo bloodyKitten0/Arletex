@@ -24,12 +24,14 @@ import { ActionPermissionController } from '../agency/actionPermissionController
 import { VerificationEngine } from '../agency/verificationEngine.js';
 import { IExperienceMemorySink } from '../agency/memoryExperienceSync.js';
 import { IntentTaskManager } from '../agency/intentTaskManager.js';
+import { AutobiographicalMemoryService } from '../memory/autobiographicalMemoryService.js';
 
 export interface CognitiveControlBusDependencies {
   apeService: ApeService;
   permissionController?: ActionPermissionController;
   verificationEngine?: VerificationEngine;
   memorySink?: IExperienceMemorySink;
+  autobiographicalMemoryService?: AutobiographicalMemoryService;
   intentTaskManager?: IntentTaskManager;
   logger?: ILogger;
   maxCausalDepth?: number;
@@ -40,6 +42,7 @@ export class CognitiveControlBus {
   private readonly permissionController?: ActionPermissionController;
   private readonly verificationEngine?: VerificationEngine;
   private readonly memorySink?: IExperienceMemorySink;
+  private readonly autobiographicalMemoryService?: AutobiographicalMemoryService;
   private readonly intentTaskManager?: IntentTaskManager;
   private readonly logger: ILogger;
   private readonly maxCausalDepth: number;
@@ -56,6 +59,7 @@ export class CognitiveControlBus {
     this.permissionController = deps.permissionController;
     this.verificationEngine = deps.verificationEngine;
     this.memorySink = deps.memorySink;
+    this.autobiographicalMemoryService = deps.autobiographicalMemoryService;
     this.intentTaskManager = deps.intentTaskManager;
     this.logger = (deps.logger || rootLogger).child('CognitiveControlBus');
     this.maxCausalDepth = deps.maxCausalDepth ?? 4;
@@ -160,6 +164,13 @@ export class CognitiveControlBus {
       stagesCompleted.push('perception_interpretation');
       const interpretation = this.interpretPerception(event, event.payload);
 
+      // Associative autobiographical memory retrieval
+      let associativeMemories: any[] = [];
+      if (this.autobiographicalMemoryService) {
+        const queryText = (event.payload?.text as string) || (event.payload?.topic as string) || interpretation;
+        associativeMemories = this.autobiographicalMemoryService.retrieveAssociativeContext(queryText, { limit: 3 });
+      }
+
       // Stage 5: Appraisal
       stagesCompleted.push('appraisal');
       const apeEvent: ApeEvent = {
@@ -172,6 +183,7 @@ export class CognitiveControlBus {
         payload: {
           ...event.payload,
           interpretation,
+          associativeMemories,
         },
         processed: false,
         timestamp: event.timestamp,
@@ -179,26 +191,21 @@ export class CognitiveControlBus {
 
       const apeState = this.apeService.getState();
       const relationshipConfig = this.apeService.getRelationshipConfig();
-      const rawAppraisal = await this.apeService.appraisalEngine.appraiseAsync(
+
+      // Execute full 6-engine cross-engine cognitive cycle
+      const cycleResult = await this.apeService.crossEngineCycle.executeCycle(
         apeEvent,
         apeState,
         relationshipConfig,
       );
-      appraisal = this.apeService.personalityEngine.modulateAppraisal(rawAppraisal, apeEvent);
+      appraisal = cycleResult.appraisal;
 
       // Stage 6: Psychological State Evaluation
       stagesCompleted.push('psychological_evaluation');
-      this.apeService.transitionEngine.applyAppraisal(
-        appraisal,
-        apeEvent,
-        apeState,
-        relationshipConfig,
-      );
       this.apeService.stepLifecycle(timestamp);
 
       // Stage 7: Motivational Evaluation
       stagesCompleted.push('motivational_evaluation');
-      this.apeService.motivationalEngine.updateNeedsOnEvent(apeEvent, appraisal);
 
       // Stage 8: Goal Evaluation
       stagesCompleted.push('goal_evaluation');
@@ -257,15 +264,37 @@ export class CognitiveControlBus {
 
       // Stage 13: Memory Integration (Truthful Epistemic Provenance)
       stagesCompleted.push('memory_integration');
-      if (this.memorySink) {
-        const memContent = this.formatMemoryContent(event, decision, actionOutcomeSuccess, verifiedFact);
-        const memProvenance: MemoryProvenance = actionOutcomeSuccess ? 'verified_fact' : 'raw_observation';
+      const memContent = this.formatMemoryContent(event, decision, actionOutcomeSuccess, verifiedFact);
+
+      if (this.autobiographicalMemoryService) {
+        const autoProvenance: MemoryProvenance = actionOutcomeSuccess
+          ? (verifiedFact ? 'verified_fact' : 'interaction')
+          : 'inferred_interpretation';
+        const mem = this.autobiographicalMemoryService.recordExperience({
+          type: 'autobiographical',
+          content: memContent,
+          rawObservation: verifiedFact,
+          provenance: autoProvenance,
+          confidence: actionOutcomeSuccess ? 0.95 : 0.60,
+          importance: appraisal.dimensions.personalSignificance || 0.6,
+          tags: ['cognitive_bus', event.type, decision.actionType, actionOutcomeSuccess ? 'success' : 'failure'],
+          metadata: {
+            eventId: event.id,
+            decisionId: decision.id,
+            actionOutcomeSuccess,
+            permissionReason,
+          },
+        });
+        if (mem && mem.id) {
+          memoriesCommitted.push(mem.id);
+        }
+      } else if (this.memorySink) {
         const mem = await this.memorySink.create?.({
           type: 'episodic',
           content: memContent,
           importance: appraisal.dimensions.personalSignificance || 0.6,
           confidence: actionOutcomeSuccess ? 0.95 : 0.8,
-          provenance: memProvenance,
+          provenance: actionOutcomeSuccess ? 'verified_fact' : 'raw_observation',
           tags: ['cognitive_bus', event.type, decision.actionType, actionOutcomeSuccess ? 'success' : 'failure'],
           metadata: {
             eventId: event.id,
