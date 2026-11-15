@@ -95,11 +95,35 @@ export class EmotionalLifecycleEngine {
   } {
     const nowTime = new Date(nowIso).getTime();
     const activeEmotions = this.repo.getActiveEmotions();
+    const resolvedEmotions = this.repo.getActiveEmotions('resolved');
+    const emotionsToProcess = [...activeEmotions, ...resolvedEmotions];
     const updated: ActiveEmotionState[] = [];
     const resolved: ActiveEmotionState[] = [];
 
-    for (const em of activeEmotions) {
-      if (em.status === 'resolved' || em.status === 'historical') {
+    for (const em of emotionsToProcess) {
+      if (em.status === 'historical') {
+        continue;
+      }
+
+      if (em.status === 'resolved') {
+        const lastUpdate = new Date(em.lastUpdatedAt || em.activatedAt).getTime();
+        // After 15 minutes of being resolved, transition to permanent historical record
+        if (nowTime - lastUpdate > 15 * 60 * 1000) {
+          em.status = 'historical';
+          this.repo.saveActiveEmotion(em);
+          const eventId = this.ensureEventExists(em.triggerEventId);
+          this.repo.recordTransition({
+            id: crypto.randomUUID(),
+            appraisalId: em.id,
+            eventId,
+            emotionId: em.emotionId,
+            transitionType: 'resolution',
+            previousIntensity: 0.0,
+            newIntensity: 0.0,
+            reason: 'Archived resolved emotion to historical record.',
+            timestamp: nowIso,
+          });
+        }
         continue;
       }
 
@@ -135,7 +159,14 @@ export class EmotionalLifecycleEngine {
       // Determine lifecycle transition across the 6 states:
       // emerging -> active -> diminishing -> dormant -> resolved -> historical
       if (newIntensity <= 0.08) {
-        if (em.resolutionConditions && em.resolutionConditions.length > 0 && persistence !== 'short_term') {
+        const isUnresolvedGrievance =
+          (em.resolutionConditions && em.resolutionConditions.length > 0) ||
+          (em.context && /grievance|violation|conflict|distrust/i.test(em.context)) ||
+          (em.interpretation && /grievance|violation|conflict|distrust/i.test(em.interpretation)) ||
+          persistence === 'long_term' ||
+          persistence === 'enduring';
+
+        if (isUnresolvedGrievance && persistence !== 'short_term') {
           // Unresolved grievances, questions, or long-term attachments transition to dormant
           nextStatus = 'dormant';
         } else {
@@ -221,6 +252,24 @@ export class EmotionalLifecycleEngine {
 
       // Do not resolve enduring relational love
       if (isEnduring) continue;
+
+      // Do not automatically resolve meaningful unresolved grievances solely because of age!
+      // They transition to dormant, preserving the conflict/grievance state.
+      const isUnresolvedGrievance =
+        (em.resolutionConditions && em.resolutionConditions.length > 0) ||
+        (em.context && /grievance|violation|conflict|distrust/i.test(em.context)) ||
+        (em.interpretation && /grievance|violation|conflict|distrust/i.test(em.interpretation)) ||
+        em.persistence === 'long_term' ||
+        em.persistence === 'enduring';
+
+      if (isUnresolvedGrievance) {
+        if (em.status !== 'dormant') {
+          em.status = 'dormant';
+          em.intensity = Math.min(em.intensity, 0.15);
+          this.repo.saveActiveEmotion(em);
+        }
+        continue;
+      }
 
       const activatedTime = new Date(em.activatedAt).getTime();
       const ageHours = (now - activatedTime) / (1000 * 60 * 60);

@@ -81,8 +81,11 @@ export class ApeService {
   // Affective State & History
   // ==========================================
   public getState(): ApePsychologicalState {
-    this.lifecycleEngine.stepLifecycle();
     return this.repo.getAffectiveState();
+  }
+
+  public stepLifecycle(nowIso?: string) {
+    return this.lifecycleEngine.stepLifecycle(nowIso);
   }
 
   public getHistory(): ApeHistoryResponse {

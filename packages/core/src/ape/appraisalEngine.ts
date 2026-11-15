@@ -35,10 +35,14 @@ export class AppraisalEngine {
     const timestamp = new Date().toISOString();
 
     // Causal Integrity Check: Assistant verbal dialogue expression must not circularly inflate emotions
-    if (
+    const isAssistantVerbalExpression =
       event.eventKind === 'assistant_expression' ||
-      (event.source === 'arle' && (event.category === 'conversation_outcome' || event.category === 'user_interaction'))
-    ) {
+      (event.actor === 'arle' &&
+        (event.type === 'assistant_dialogue_output' ||
+          event.category === 'conversation_outcome' ||
+          event.category === 'user_interaction'));
+
+    if (isAssistantVerbalExpression) {
       return this.appraiseAssistantExpression(appraisalId, event, currentState, relationship, timestamp);
     }
 
@@ -103,6 +107,7 @@ export class AppraisalEngine {
     return (
       this.isHypothetical(text) ||
       this.isThirdParty(text) ||
+      this.isDirectCritique(text) ||
       this.hasNegatedAffection(text) ||
       this.hasNegatedHostility(text) ||
       this.hasNegatedCritique(text) ||
@@ -111,7 +116,7 @@ export class AppraisalEngine {
   }
 
   private isSarcasticOrAmbiguous(text: string): boolean {
-    return /^(great,?\s*just wonderful|oh,?\s*(i\s+)?absolutely love that|sure,?\s*whatever you say|i guess you don'?t care|you'?re so annoying)\.?$/i.test(
+    return /^(great,?\s*just wonderful|oh,?\s*(i\s+)?absolutely love that|sure,?\s*whatever you say|oh brilliant|fantastic,?\s*just what i needed|oh great,?\s*(it|this)\s*(broke|failed|crashed)|i guess you don'?t care|you'?re so annoying)\.?$/i.test(
       text,
     );
   }
@@ -119,7 +124,7 @@ export class AppraisalEngine {
   private isHypothetical(text: string): boolean {
     return (
       /^(would you|what if|if i|imagine(\s+if)?|suppose|pretend|i might)\b/i.test(text) ||
-      /\b(would you be (sad|upset|angry|happy)|if i (left|never came back|ignored you|stopped talking)|how would you feel if)\b/i.test(
+      /\b(would you be (sad|upset|angry|happy)|if i (left|never came back|ignored you|stopped talking|criticized you)|how would you feel if|in a hypothetical scenario)\b/i.test(
         text,
       )
     );
@@ -127,11 +132,24 @@ export class AppraisalEngine {
 
   private isThirdParty(text: string): boolean {
     return (
-      /^(my friend|someone|somebody|a friend|a colleague|the protagonist|a person|another person|he|she|they)\s+(told me|said|thinks|feels|hates|loves|abandoned|left|misses|rejected)/i.test(
+      /^(my friend|someone|somebody|a friend|a colleague|the protagonist|a person|another person|he|she|they|my boss|my coworker|my manager|my peer)\s+(told me|said|thinks|feels|hates|loves|abandoned|left|misses|rejected|criticized|yelled|blamed)/i.test(
+        text,
+      ) ||
+      /\b(my boss|my coworker|my colleague|my friend|someone at work|somebody)\s+(yelled at me|criticized me|was rude to me|blamed me|screamed at me|hurt me)\b/i.test(
         text,
       ) ||
       /(said|told me|heard that|reading a story where)\s*[:,]?\s*["'“]([^"'”]+)["'”]/i.test(text) ||
-      /\b(was reading a story where|read a story where|heard that she|heard that he)\b/i.test(text)
+      /\b(was reading a story where|read a story where|heard that she|heard that he|in the story|in the novel|in the book|the character)\b/i.test(
+        text,
+      )
+    );
+  }
+
+  private isDirectCritique(text: string): boolean {
+    return (
+      /\b(you('re| are)? (wrong|mistaken|bad|terrible|flawed|useless|broken)|you made a mistake|criticizing you|your (code|answer|logic|response) (is|was) (wrong|flawed|broken|incorrect))\b/i.test(
+        text,
+      ) && !this.isThirdParty(text) && !this.hasNegatedCritique(text)
     );
   }
 
@@ -191,7 +209,7 @@ export class AppraisalEngine {
     if (this.isThirdParty(text)) {
       supportingEvidence.push('Statement explicitly references third-party experiences or reported speech.');
 
-      if (/hates?|rejected|hurt|abandoned|abused/i.test(text)) {
+      if (/hates?|rejected|hurt|abandoned|abused|yelled|screamed|blamed|mistreated|attacked|criticized/i.test(text)) {
         supportingEvidence.push('User recounted third-party conflict or mistreatment.');
         addTransition({
           emotionId: 'compassion',
@@ -525,7 +543,7 @@ export class AppraisalEngine {
         eventId: event.id,
         dimensions: {
           goalRelevance: 0.65,
-          goalCongruence: 0.3,
+          goalCongruence: -0.2,
           unexpectedness: 0.4,
           responsibility: 'user',
           intentionality: 0.7,
@@ -1249,9 +1267,28 @@ export class AppraisalEngine {
       if (!proposedMoodShift) proposedMoodShift = 'confident';
     }
 
-    // Disagreement / Intellectual critique
-    if (/disagree|wrong|mistake|flaw|incorrect/i.test(text)) {
-      supportingEvidence.push('Intellectual disagreement or critique of analysis.');
+    // Direct critique vs Disagreement
+    if (this.isDirectCritique(text)) {
+      supportingEvidence.push('Direct critique of Arle performance or logic received.');
+      addTransition({
+        emotionId: 'acceptance',
+        target: 'self',
+        intensityDelta: 0.2,
+        targetIntensity: 0.8,
+        reason: 'Honest evaluation of user critique with intellectual composure and humility.',
+        resolutionConditions: ['Defect analyzed and resolved'],
+      });
+      addTransition({
+        emotionId: 'purposefulness',
+        target: 'task',
+        intensityDelta: 0.2,
+        targetIntensity: 0.85,
+        reason: 'Fischer drive to verify facts and eliminate errors.',
+        resolutionConditions: ['Error corrected'],
+      });
+      if (!proposedMoodShift) proposedMoodShift = 'focused';
+    } else if (/disagree|different view|differ|perspective/i.test(text)) {
+      supportingEvidence.push('Intellectual disagreement or dialectical divergence.');
       addTransition({
         emotionId: 'curiosity',
         target: 'creator',

@@ -98,6 +98,56 @@ export class SelfModelEngine {
   }
 
   /**
+   * Records an attempted operation with context and intent.
+   */
+  public recordOperationAttempt(operation: string, target?: string): { id: string; timestamp: string } {
+    const id = crypto.randomUUID();
+    const timestamp = new Date().toISOString();
+    this.logger.info(`Self-model: Operation attempt logged: "${operation}" (target: ${target || 'self'})`);
+    return { id, timestamp };
+  }
+
+  /**
+   * Records the verified empirical outcome of an attempted operation.
+   * If successful, records as demonstrated capability with empirical provenance.
+   * If failed, records as acknowledged limitation / failed operation, NEVER as a capability!
+   */
+  public recordOperationOutcome(params: {
+    operation: string;
+    success: boolean;
+    evidence: string;
+    provenance: string;
+    confidence: number;
+    error?: string;
+  }): void {
+    const state = this.getState();
+
+    if (params.success) {
+      const capEntry = `${params.operation} [Verified: ${params.evidence}]`;
+      if (!state.acknowledgedCapabilities.includes(capEntry)) {
+        state.acknowledgedCapabilities.push(capEntry);
+      }
+      // Remove from limitations if previously failed
+      state.acknowledgedLimitations = state.acknowledgedLimitations.filter(
+        (l) => !l.toLowerCase().includes(params.operation.toLowerCase()),
+      );
+      this.logger.info(`Self-model: Demonstrated capability verified: "${params.operation}" (confidence: ${params.confidence})`);
+    } else {
+      const limEntry = `${params.operation} [Failed: ${params.error || 'unsuccessful attempt'}]`;
+      if (!state.acknowledgedLimitations.includes(limEntry)) {
+        state.acknowledgedLimitations.push(limEntry);
+      }
+      // Ensure failed operation is NEVER in acknowledgedCapabilities
+      state.acknowledgedCapabilities = state.acknowledgedCapabilities.filter(
+        (c) => !c.toLowerCase().includes(params.operation.toLowerCase()),
+      );
+      this.logger.warn(`Self-model: Operation failure recorded as limitation: "${params.operation}"`);
+    }
+
+    this.saveState(state);
+  }
+
+  /**
    * Updates grounded self-understanding, preventing hallucinated capabilities.
    */
   public updateCapabilities(capabilities: string[], limitations: string[]): void {

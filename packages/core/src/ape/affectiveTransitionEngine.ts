@@ -32,9 +32,26 @@ export class AffectiveTransitionEngine {
     currentState: ApePsychologicalState,
     relationship: ApeRelationshipConfig,
   ): ApePsychologicalState {
-    const timestamp = appraisal.timestamp;
+    const timestamp = appraisal.timestamp || new Date().toISOString();
     const activeEmotions = this.repo.getActiveEmotions();
     const transitionsRecorded: ApeTransitionRecord[] = [];
+
+    // Ensure event is anchored in journal for foreign key integrity
+    const existingEvent = this.repo.getEvent(event.id);
+    if (!existingEvent) {
+      this.repo.logEvent({
+        id: event.id,
+        category: event.category,
+        type: event.type,
+        source: event.source,
+        actor: event.actor || 'user',
+        eventKind: event.eventKind || 'external_stimulus',
+        payload: event.payload,
+        timestamp: event.timestamp || timestamp,
+        processingStatus: 'processed',
+        processed: true,
+      });
+    }
 
     // Causal Integrity Check: Assistant expression must not circularly inflate emotions
     const isAssistantExpression =
@@ -68,13 +85,31 @@ export class AffectiveTransitionEngine {
         );
 
         if (existing) {
+          // If existing emotion is dormant, only reactivate if the event contains relevant evidence or explicit trigger
+          if (existing.status === 'dormant') {
+            const text = (event.payload?.text || '').toLowerCase();
+            const isRelevant =
+              text.includes(existing.emotionId.replace(/_/g, ' ')) ||
+              event.type.includes(existing.emotionId) ||
+              (existing.resolutionConditions &&
+                existing.resolutionConditions.some((rc) => text.includes(rc.toLowerCase()))) ||
+              Math.abs(prop.intensityDelta) > 0.1;
+
+            if (!isRelevant) {
+              // Unrelated event must NOT alter or prematurely reactivate dormant emotions
+              continue;
+            }
+          }
+
           // Emotion is already active -> update intensity or resolve
           const prevIntensity = existing.intensity;
           let newIntensity = Math.max(0.0, Math.min(1.0, Number((prevIntensity + prop.intensityDelta).toFixed(3))));
 
-          // If delta is 0 but a targetIntensity is explicitly provided
-          if (prop.intensityDelta === 0 && prop.targetIntensity !== undefined) {
-            newIntensity = prop.targetIntensity;
+          // Zero-delta guard enforcement:
+          // If intensityDelta is 0 (e.g. from assistant expression or zero-delta event),
+          // targetIntensity MUST NOT bypass or override the guard! Intensity must persist.
+          if (prop.intensityDelta === 0) {
+            newIntensity = prevIntensity;
           }
 
           const transitionType =
@@ -123,7 +158,13 @@ export class AffectiveTransitionEngine {
           this.repo.recordTransition(transition);
           transitionsRecorded.push(transition);
         } else if (prop.targetIntensity > 0) {
-          // Activate new emotional state
+          // Assistant verbal expression cannot activate brand new emotional states from thin air
+          if (isAssistantExpression) {
+            continue;
+          }
+
+          // Newly arising emotional episodes begin as 'emerging' unless immediate acute reaction (>= 0.75)
+          const initialStatus: ActiveEmotionStatus = prop.targetIntensity >= 0.75 ? 'active' : 'emerging';
           const persistence: ActiveEmotionPersistence = taxonomyItem?.defaultPersistence || 'medium_term';
           const newActiveState: ActiveEmotionState = {
             id: crypto.randomUUID(),
@@ -142,7 +183,7 @@ export class AffectiveTransitionEngine {
             relatedMemoryIds: [],
             relatedEmotionIds: [],
             resolutionConditions: prop.resolutionConditions || [],
-            status: 'active',
+            status: initialStatus,
           };
 
           this.repo.saveActiveEmotion(newActiveState);

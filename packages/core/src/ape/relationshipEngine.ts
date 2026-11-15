@@ -123,25 +123,48 @@ export class RelationshipEngine {
       this.logger.info(`Contextual disagreement in dialogue recognized as healthy intellectual discourse; trust preserved.`);
     }
 
-    // 2. User Apology
+    // 2. User Apology: Targeted resolution of addressed conflict, preserving unrelated conflicts
     if (
       meaning.includes('apology') ||
       event.type.includes('apology') ||
       (event.payload?.text && /sorry|apologize|forgive me/i.test(event.payload.text))
     ) {
-      for (const c of state.conflictHistory) {
-        if (!c.resolved) {
+      const apologyText = event.payload?.text || '';
+      const unresolved = state.conflictHistory.filter((c) => !c.resolved);
+
+      if (unresolved.length > 0) {
+        const lowerApology = apologyText.toLowerCase();
+        // Match specific conflict mentioned in apology
+        let targeted = unresolved.filter((c) => {
+          const words = c.issue.toLowerCase().split(/\s+/).filter((w) => w.length > 4);
+          return words.some((w) => lowerApology.includes(w));
+        });
+
+        // Fallback: If no specific keywords match, resolve only the single most recent incident
+        if (targeted.length === 0) {
+          targeted = [unresolved[unresolved.length - 1]!];
+        }
+
+        for (const c of targeted) {
           c.resolved = true;
         }
+        state.trustLevel = Math.min(1.0, Number((state.trustLevel + 0.04).toFixed(3)));
       }
-      state.trustLevel = Math.min(1.0, Number((state.trustLevel + 0.05).toFixed(3)));
     }
 
-    // 3. Affection or Intimacy
+    // 3. Affection or Intimacy (with cooldown check so casual repetition does not mechanically compound)
     if (meaning.includes('affection') || meaning.includes('intimacy') || meaning.includes('love')) {
-      state.intimacyDepth = Math.min(1.0, Number((state.intimacyDepth + 0.02).toFixed(3)));
-      state.attachmentSecurity = Math.min(1.0, Number((state.attachmentSecurity + 0.01).toFixed(3)));
-      state.config.lastIntimacyInteractionAt = new Date().toISOString();
+      const lastIntimacy = state.config.lastIntimacyInteractionAt
+        ? new Date(state.config.lastIntimacyInteractionAt).getTime()
+        : 0;
+      const elapsedMins = (Date.now() - lastIntimacy) / (1000 * 60);
+
+      // Require at least 5 minutes cooldown between intimacy increments
+      if (elapsedMins > 5) {
+        state.intimacyDepth = Math.min(1.0, Number((state.intimacyDepth + 0.02).toFixed(3)));
+        state.attachmentSecurity = Math.min(1.0, Number((state.attachmentSecurity + 0.01).toFixed(3)));
+        state.config.lastIntimacyInteractionAt = new Date().toISOString();
+      }
     }
 
     // 4. Absence rituals: Sleep or Busy is normal healthy life, not abandonment

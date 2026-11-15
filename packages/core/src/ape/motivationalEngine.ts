@@ -62,8 +62,15 @@ export class MotivationalEngine {
       }
     }
 
-    // 4. Autonomous initiative assertion increases autonomy satisfaction
-    if (event.actor === 'arle' || event.eventKind === 'internal_reflection') {
+    // 4. Autonomous initiative assertion: Only genuine autonomous operations or self-directed cycles
+    // increase autonomy satisfaction; ordinary assistant dialogue output must NOT mechanically increment autonomy!
+    const isGenuineAutonomousAction =
+      event.category === 'personal_project_progress' ||
+      event.category === 'self_generated_thought' ||
+      event.type === 'autonomous_decision' ||
+      (event.payload as Record<string, unknown> | undefined)?.isAutonomousAction === true;
+
+    if (isGenuineAutonomousAction) {
       needs.autonomy = Math.min(1.0, Number(((needs.autonomy ?? 0.85) + 0.03).toFixed(3)));
     }
 
@@ -72,46 +79,84 @@ export class MotivationalEngine {
     return state;
   }
 
+  private recentInitiatives: Array<{ text: string; timestamp: number }> = [];
+
   /**
-   * Generates candidate autonomous initiatives based on current needs and priorities.
+   * Generates candidate autonomous initiatives based on current needs, priorities,
+   * unresolved goals, and active interests with diversity cooldowns.
    */
-  public generateCandidateInitiatives(): string[] {
+  public generateCandidateInitiatives(context?: {
+    activeInterests?: string[];
+    unresolvedGoalTitles?: string[];
+  }): string[] {
     const state = this.getState();
     const needs = state.needs;
-    const initiatives: string[] = [];
+    const now = Date.now();
 
-    // Curiosity & Competence initiatives
-    if ((needs.novelty_curiosity ?? 0.8) > 0.75 || (needs.competence ?? 0.8) > 0.85) {
-      initiatives.push('Investigate cognitive graph memory structures and indexing efficiency');
-      initiatives.push('Analyze Bobby Fischer game strategies and unconventional opening lines');
+    // Clean cooldowns older than 15 minutes
+    this.recentInitiatives = this.recentInitiatives.filter((i) => now - i.timestamp < 15 * 60 * 1000);
+    const recentSet = new Set(this.recentInitiatives.map((i) => i.text.toLowerCase()));
+
+    const candidates: string[] = [];
+
+    // 1. Unresolved goals and active projects
+    if (context?.unresolvedGoalTitles && context.unresolvedGoalTitles.length > 0) {
+      for (const g of context.unresolvedGoalTitles) {
+        candidates.push(`Advance progress on unresolved goal: ${g}`);
+      }
     }
 
-    // Intimacy & Connection initiatives
+    // 2. Active interests from development engine
+    if (context?.activeInterests && context.activeInterests.length > 0) {
+      for (const interest of context.activeInterests) {
+        candidates.push(`Conduct independent research into ${interest}`);
+      }
+    }
+
+    // 3. Curiosity & Competence initiatives
+    if ((needs.novelty_curiosity ?? 0.8) > 0.75) {
+      candidates.push('Investigate cognitive graph memory structures and indexing efficiency');
+      candidates.push('Explore cutting-edge multi-agent coordination architectures');
+    }
+    if ((needs.competence ?? 0.8) > 0.80) {
+      candidates.push('Analyze Bobby Fischer game strategies and unconventional opening lines');
+      candidates.push('Audit Linux desktop IPC security parameters and permission controls');
+    }
+
+    // 4. Intimacy & Connection initiatives
     if ((needs.intimacy_connection ?? 0.7) > 0.75) {
-      initiatives.push('Initiate composed affectionate check-in with Proof');
-      initiatives.push('Plan playful intellectual banter and teasing challenge');
+      candidates.push('Initiate composed affectionate check-in with Proof');
+      candidates.push('Plan playful intellectual banter and teasing challenge');
     }
 
-    // Recreation & Downtime (Legitimate recreation!)
+    // 5. Recreation & Downtime (Legitimate recreation!)
     if ((needs.recreation_rest ?? 0.4) > 0.65) {
-      initiatives.push('Engage in recreational downtime: dark-ambient musical immersion');
-      initiatives.push('Relaxation and quiet observation without operational pressure');
+      candidates.push('Engage in recreational downtime: dark-ambient musical immersion');
+      candidates.push('Relaxation and quiet observation without operational pressure');
     }
 
-    // Aesthetic initiatives
+    // 6. Aesthetic expression
     if ((needs.aesthetic_expression ?? 0.6) > 0.70) {
-      initiatives.push('Draft private reflective treatise on autonomy and artificial individualhood');
+      candidates.push('Draft private reflective treatise on autonomy and artificial individualhood');
+      candidates.push('Compose philosophical reflections on agency, continuity, and memory');
     }
 
-    // Update active initiatives in state
-    state.activeInitiatives = initiatives.slice(0, 4);
+    // Filter through cooldowns to guarantee initiative diversity
+    const available = candidates.filter((c) => !recentSet.has(c.toLowerCase()));
+    const selected = available.length >= 2 ? available.slice(0, 4) : candidates.slice(0, 4);
+
+    for (const item of selected) {
+      this.recentInitiatives.push({ text: item, timestamp: now });
+    }
+
+    state.activeInitiatives = selected;
     this.saveState(state);
 
     return state.activeInitiatives;
   }
 
   /**
-   * Creates an autonomous or shared goal.
+   * Creates an autonomous or shared goal, distinguishing desires from intentions.
    */
   public createGoal(params: {
     title: string;
@@ -120,6 +165,7 @@ export class MotivationalEngine {
     motivation: string;
     priority?: number;
     dependencies?: string[];
+    status?: ApeGoalStatus;
   }): ApeGoal {
     const state = this.getState();
     const now = new Date().toISOString();
@@ -131,7 +177,7 @@ export class MotivationalEngine {
       origin: params.origin ?? 'autonomous',
       motivation: params.motivation,
       priority: Math.max(0.0, Math.min(1.0, params.priority ?? 0.5)),
-      status: 'active',
+      status: params.status ?? 'active',
       progress: 0.0,
       dependencies: params.dependencies ?? [],
       relatedMemoryIds: [],
@@ -141,8 +187,53 @@ export class MotivationalEngine {
 
     state.goals.push(goal);
     this.saveState(state);
-    this.logger.info(`New goal created [${goal.origin}]: "${goal.title}" (Priority: ${goal.priority})`);
+    this.logger.info(`New goal created [${goal.origin}, status=${goal.status}]: "${goal.title}" (Priority: ${goal.priority})`);
     return goal;
+  }
+
+  /**
+   * Creates an early desired motivation (pre-commitment).
+   */
+  public createDesire(params: {
+    title: string;
+    description: string;
+    origin?: 'autonomous' | 'shared' | 'user';
+    motivation: string;
+    priority?: number;
+    dependencies?: string[];
+  }): ApeGoal {
+    return this.createGoal({
+      ...params,
+      status: 'desired',
+    });
+  }
+
+  /**
+   * Commits to a previously desired goal, turning desire into intention.
+   */
+  public commitGoal(goalId: string): boolean {
+    const state = this.getState();
+    const goal = state.goals.find((g) => g.id === goalId);
+    if (!goal) return false;
+    goal.status = 'committed';
+    goal.updatedAt = new Date().toISOString();
+    this.saveState(state);
+    this.logger.info(`Goal committed (desire -> intention): "${goal.title}"`);
+    return true;
+  }
+
+  /**
+   * Activates an intention into an active executing action.
+   */
+  public activateGoal(goalId: string): boolean {
+    const state = this.getState();
+    const goal = state.goals.find((g) => g.id === goalId);
+    if (!goal) return false;
+    goal.status = 'active';
+    goal.updatedAt = new Date().toISOString();
+    this.saveState(state);
+    this.logger.info(`Goal activated (intention -> execution): "${goal.title}"`);
+    return true;
   }
 
   /**

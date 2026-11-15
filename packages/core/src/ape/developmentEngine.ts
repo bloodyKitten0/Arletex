@@ -85,7 +85,12 @@ export class DevelopmentEngine {
       if (action === 'explore' && interest.level === 'emerging') {
         interest.level = 'deep';
       } else if (action === 'master') {
-        interest.level = 'mastery';
+        // Mastery requires prior sustained deep practice; cannot jump directly from emerging
+        if (interest.level === 'deep') {
+          interest.level = 'mastery';
+        } else {
+          interest.level = 'deep';
+        }
       } else if (action === 'fade') {
         interest.level = interest.level === 'mastery' ? 'deep' : interest.level === 'deep' ? 'fading' : 'dormant';
       } else if (action === 'revive') {
@@ -95,6 +100,24 @@ export class DevelopmentEngine {
     }
 
     this.saveState(state);
+  }
+
+  /**
+   * Records practice attempts, outcomes, and setbacks toward mastery.
+   */
+  public recordPracticeAttempt(params: {
+    skillOrTopic: string;
+    success: boolean;
+    evidence: string;
+    notes?: string;
+  }): void {
+    const topic = params.skillOrTopic;
+    if (params.success) {
+      this.developInterest(topic, 'explore');
+      this.logger.info(`Development: Successful practice recorded for "${topic}": ${params.evidence}`);
+    } else {
+      this.logger.warn(`Development: Practice setback recorded for "${topic}": ${params.evidence}`);
+    }
   }
 
   /**

@@ -694,13 +694,13 @@ export class ApeRepository implements IApeRepository {
       JSON.stringify(appraisal.proposedTransitions || []),
       appraisal.proposedMoodShift || null,
       appraisal.appraisalMethod || 'deterministic',
-      appraisal.timestamp,
+      appraisal.timestamp || new Date().toISOString(),
     );
 
     // Update last_appraisal_at in affective state
     this.db
       .prepare(`UPDATE ape_affective_state SET last_appraisal_at = ? WHERE id = 'singleton'`)
-      .run(appraisal.timestamp);
+      .run(appraisal.timestamp || new Date().toISOString());
   }
 
   public recordTransition(transition: ApeTransitionRecord): void {
