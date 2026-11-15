@@ -202,6 +202,13 @@ export const MainView: React.FC<MainViewProps> = ({
     }
   };
 
+  // Guard against auto-speaking historical messages when loading or switching conversations
+  useEffect(() => {
+    if (messages.length > 0) {
+      lastSpokenMsgIdRef.current = messages[messages.length - 1]?.id || null;
+    }
+  }, [conversation?.id]);
+
   // Play voice when assistant completion arrives if voice enabled
   useEffect(() => {
     if (!voiceEnabled || isGenerating || !messages.length) return;

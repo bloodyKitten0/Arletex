@@ -480,31 +480,34 @@ export class ArletexBackendServer {
 
             this.logger.info(`Arle spoke proactively to Proof: "${cleanText}"`);
 
-            // Synthesize voice via Kokoro and play through system speakers
-            try {
-              const synthRes = await fetch('http://127.0.0.1:39282/synthesize', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  text: cleanText,
-                  tone: event.tone || 'calm',
-                  voice: 'arlecchino',
-                }),
-              });
-              if (synthRes.ok) {
-                const synthData = (await synthRes.json()) as { audioBase64?: string };
-                if (synthData.audioBase64) {
-                  const rawB64 = synthData.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
-                  const audioPath = `/tmp/arle_proactive_${Date.now()}.wav`;
-                  await fs.promises.writeFile(audioPath, Buffer.from(rawB64, 'base64'));
-                  const { exec } = await import('node:child_process');
-                  exec(`pw-play "${audioPath}" || paplay "${audioPath}"`, () => {
-                    try { fs.unlinkSync(audioPath); } catch {}
-                  });
+            // Synthesize voice via Kokoro and play through system speakers ONLY if voice output is enabled
+            const isVoiceEnabled = this.preferenceRepo.get('voice_output_enabled') === 'true';
+            if (isVoiceEnabled) {
+              try {
+                const synthRes = await fetch('http://127.0.0.1:39282/synthesize', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    text: cleanText,
+                    tone: event.tone || 'calm',
+                    voice: 'arlecchino',
+                  }),
+                });
+                if (synthRes.ok) {
+                  const synthData = (await synthRes.json()) as { audioBase64?: string };
+                  if (synthData.audioBase64) {
+                    const rawB64 = synthData.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
+                    const audioPath = `/tmp/arle_proactive_${Date.now()}.wav`;
+                    await fs.promises.writeFile(audioPath, Buffer.from(rawB64, 'base64'));
+                    const { exec } = await import('node:child_process');
+                    exec(`pw-play "${audioPath}" || paplay "${audioPath}"`, () => {
+                      try { fs.unlinkSync(audioPath); } catch {}
+                    });
+                  }
                 }
+              } catch (ttsErr: any) {
+                this.logger.debug(`Proactive speech TTS note: ${ttsErr.message}`);
               }
-            } catch (ttsErr: any) {
-              this.logger.debug(`Proactive speech TTS note: ${ttsErr.message}`);
             }
           } catch (err: any) {
             this.logger.error('Error in proactive speech dispatch', err);
@@ -730,6 +733,19 @@ export class ArletexBackendServer {
     return this.inferenceGateway.checkHealth();
   }
 
+  public async checkVisionSupport(): Promise<boolean> {
+    try {
+      const res = await fetch('http://127.0.0.1:8080/props', {
+        signal: AbortSignal.timeout(1200),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as any;
+        return Boolean(data?.modalities?.vision);
+      }
+    } catch {}
+    return false;
+  }
+
   public getInferenceGateway(): InferenceGateway {
     return this.inferenceGateway;
   }
@@ -920,6 +936,8 @@ export class ArletexBackendServer {
     }
 
     try {
+      const modelSupportsVision = await this.checkVisionSupport();
+
       // 0. Continuous 24/7 Embodied Perception (Eyes & Ears):
       // Always capture screen and listen to live system audio output
       let liveHostMedia: { title?: string; artist?: string } | null = null;
@@ -1081,9 +1099,9 @@ export class ArletexBackendServer {
       // Determine if a current visual frame exists in this turn
       const hasCurrentVisual = Boolean(userUploadedImageBase64 || perceptionScreenBase64 || videoInfo || (userUploadedImagesBase64 && userUploadedImagesBase64.length > 0));
 
-      // Find index of the single most recent historical image (only if no current visual frame is present)
+      // Find index of the single most recent historical image (only if no current visual frame is present and model supports vision)
       let recentImageIndex = -1;
-      if (!hasCurrentVisual) {
+      if (!hasCurrentVisual && modelSupportsVision) {
         for (let i = filteredHistory.length - 1; i >= 0; i--) {
           const m = filteredHistory[i];
           if (m && m.role === 'user' && m.metadata?.imageBase64) {
@@ -1095,7 +1113,7 @@ export class ArletexBackendServer {
 
       const history = filteredHistory.map((m, idx) => {
         if (m.role === 'user' && m.metadata?.imageBase64) {
-          if (idx === recentImageIndex) {
+          if (idx === recentImageIndex && modelSupportsVision) {
             const img = m.metadata.imageBase64 as string;
             const imageUrl = img.startsWith('data:') ? img : `data:image/jpeg;base64,${img}`;
             return {
@@ -1238,40 +1256,49 @@ export class ArletexBackendServer {
       let textPrompt = userMessageContent;
 
       if (videoInfo) {
-        const videoNotice = `\n\n[Visual Video Observation: Arle is watching this video clip (${videoInfo.durationSeconds.toFixed(1)}s duration). ${videoInfo.transcript ? `Audio dialogue track transcript: "${videoInfo.transcript}"` : 'No spoken dialogue detected on the audio track.'}]\n`;
+        const videoNotice = `\n\n[Visual Video Observation: Arle is watching this video clip (${videoInfo.durationSeconds.toFixed(1)}s duration, ${videoInfo.framesBase64.length} keyframes extracted). ${videoInfo.transcript ? `Audio dialogue track transcript: "${videoInfo.transcript}"` : 'No spoken dialogue detected on the audio track.'}${!modelSupportsVision ? ' (Note: Active inference model is running in text-only mode without vision mmproj).' : ''} Respond naturally based on what Proof presented.]\n`;
         textPrompt = `${userMessageContent || 'Please watch this video clip and share your thoughts.'}${videoNotice}`;
       } else if (ambientPerceptionNote) {
         textPrompt = `${userMessageContent}\n${ambientPerceptionNote}`;
       }
 
+      const effectiveVisionImage = userUploadedImageBase64 || perceptionScreenBase64;
+      if (!modelSupportsVision && (effectiveVisionImage || (userUploadedImagesBase64 && userUploadedImagesBase64.length > 0))) {
+        const count = (userUploadedImagesBase64 && userUploadedImagesBase64.length > 0) ? userUploadedImagesBase64.length : 1;
+        textPrompt += `\n[Image Attachment Note: Proof attached ${count} image(s). The active model is operating in text-only mode without vision projector mmproj.]\n`;
+      }
+
       contentParts.push({ type: 'text', text: textPrompt });
 
-      const effectiveVisionImage = userUploadedImageBase64 || perceptionScreenBase64;
-      if (effectiveVisionImage) {
-        const imageUrl = effectiveVisionImage.startsWith('data:')
-          ? effectiveVisionImage
-          : `data:image/jpeg;base64,${effectiveVisionImage}`;
-        contentParts.push({ type: 'image_url', image_url: { url: imageUrl } });
-      }
-
-      if (userUploadedImagesBase64 && userUploadedImagesBase64.length > 0) {
-        for (const img of userUploadedImagesBase64) {
-          const imageUrl = img.startsWith('data:') ? img : `data:image/jpeg;base64,${img}`;
+      if (modelSupportsVision) {
+        if (effectiveVisionImage) {
+          const imageUrl = effectiveVisionImage.startsWith('data:')
+            ? effectiveVisionImage
+            : `data:image/jpeg;base64,${effectiveVisionImage}`;
           contentParts.push({ type: 'image_url', image_url: { url: imageUrl } });
         }
-      }
 
-      if (videoInfo && videoInfo.framesBase64.length > 0) {
-        for (const frameB64 of videoInfo.framesBase64) {
-          contentParts.push({
-            type: 'image_url',
-            image_url: { url: `data:image/jpeg;base64,${frameB64}` },
-          });
+        if (userUploadedImagesBase64 && userUploadedImagesBase64.length > 0) {
+          for (const img of userUploadedImagesBase64) {
+            const imageUrl = img.startsWith('data:') ? img : `data:image/jpeg;base64,${img}`;
+            contentParts.push({ type: 'image_url', image_url: { url: imageUrl } });
+          }
+        }
+
+        if (videoInfo && videoInfo.framesBase64.length > 0) {
+          for (const frameB64 of videoInfo.framesBase64) {
+            contentParts.push({
+              type: 'image_url',
+              image_url: { url: `data:image/jpeg;base64,${frameB64}` },
+            });
+          }
         }
       }
 
       if (contentParts.length > 1) {
         userContent = contentParts;
+      } else {
+        userContent = textPrompt;
       }
 
       const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: any }> = [
@@ -1380,41 +1407,6 @@ export class ArletexBackendServer {
             this.logger.warn(`Device action execution note: ${actErr.message}`);
           }
         }
-
-        // 24/7 Physical Speaker Audio Output via Kokoro TTS & pw-play
-        void (async () => {
-          try {
-            // First 250 characters or full sentence for clean vocal delivery
-            const speechText = cleanContent.length > 250
-              ? cleanContent.slice(0, 250).replace(/\s+[^\s]*$/, '...')
-              : cleanContent;
-
-            const modulation = this.apeService.getLinguisticModulation();
-            const synthRes = await fetch('http://127.0.0.1:39282/synthesize', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                text: speechText,
-                tone: modulation.vocalRegister,
-                voice: 'arlecchino',
-              }),
-            });
-            if (synthRes.ok) {
-              const synthData = (await synthRes.json()) as { audioBase64?: string };
-              if (synthData.audioBase64) {
-                const rawB64 = synthData.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
-                const audioPath = `/tmp/arle_reply_${Date.now()}.wav`;
-                await fs.promises.writeFile(audioPath, Buffer.from(rawB64, 'base64'));
-                const { exec } = await import('node:child_process');
-                exec(`pw-play "${audioPath}" || paplay "${audioPath}"`, () => {
-                  try { fs.unlinkSync(audioPath); } catch {}
-                });
-              }
-            }
-          } catch (ttsErr: any) {
-            this.logger.debug(`Direct speech synthesis note: ${ttsErr.message}`);
-          }
-        })();
       }
 
       return accumulatedResponse;
@@ -1731,36 +1723,39 @@ Rules:
 
       this.logger.info(`[Autonomous Proactive Speech]: "${cleanReply}"`);
 
-      // 7. Vocalize via Kokoro TTS & pw-play
-      try {
-        const speechText = cleanReply.length > 250
-          ? cleanReply.slice(0, 250).replace(/\s+[^\s]*$/, '...')
-          : cleanReply;
+      // 7. Vocalize via Kokoro TTS & pw-play ONLY if voice output is enabled
+      const isVoiceEnabled = this.preferenceRepo.get('voice_output_enabled') === 'true';
+      if (isVoiceEnabled) {
+        try {
+          const speechText = cleanReply.length > 250
+            ? cleanReply.slice(0, 250).replace(/\s+[^\s]*$/, '...')
+            : cleanReply;
 
-        const synthRes = await fetch('http://127.0.0.1:39282/synthesize', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            text: speechText,
-            tone: 'warm, calm',
-            voice: 'arlecchino',
-          }),
-        });
+          const synthRes = await fetch('http://127.0.0.1:39282/synthesize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: speechText,
+              tone: 'warm, calm',
+              voice: 'arlecchino',
+            }),
+          });
 
-        if (synthRes.ok) {
-          const synthData = (await synthRes.json()) as { audioBase64?: string };
-          if (synthData.audioBase64) {
-            const rawB64 = synthData.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
-            const audioPath = `/tmp/arle_proactive_${Date.now()}.wav`;
-            await fs.promises.writeFile(audioPath, Buffer.from(rawB64, 'base64'));
-            const { exec } = await import('node:child_process');
-            exec(`pw-play "${audioPath}" || paplay "${audioPath}"`, () => {
-              try { fs.unlinkSync(audioPath); } catch {}
-            });
+          if (synthRes.ok) {
+            const synthData = (await synthRes.json()) as { audioBase64?: string };
+            if (synthData.audioBase64) {
+              const rawB64 = synthData.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
+              const audioPath = `/tmp/arle_proactive_${Date.now()}.wav`;
+              await fs.promises.writeFile(audioPath, Buffer.from(rawB64, 'base64'));
+              const { exec } = await import('node:child_process');
+              exec(`pw-play "${audioPath}" || paplay "${audioPath}"`, () => {
+                try { fs.unlinkSync(audioPath); } catch {}
+              });
+            }
           }
+        } catch (ttsErr: any) {
+          this.logger.debug(`Proactive TTS vocalization note: ${ttsErr.message}`);
         }
-      } catch (ttsErr: any) {
-        this.logger.debug(`Proactive TTS vocalization note: ${ttsErr.message}`);
       }
 
       // 8. Ingest into APE
