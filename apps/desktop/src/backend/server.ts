@@ -767,8 +767,19 @@ export class ArletexBackendServer {
           const data = (await res.json()) as { embedding: number[] };
           if (data.embedding && data.embedding.length > 0) {
             const results = this.memoryRepo.searchSimilar(new Float32Array(data.embedding), options);
-            if (results.length > 0) {
-              return results;
+            // Merge semantic results with exact keyword matches for true hybrid retrieval
+            const textMatches = this.memoryRepo.list(options);
+            const combined = [...results];
+            const seenIds = new Set(results.map((r) => r.id));
+            for (const tm of textMatches) {
+              if (!seenIds.has(tm.id)) {
+                combined.push(tm);
+                seenIds.add(tm.id);
+              }
+            }
+            if (combined.length > 0) {
+              const effectiveLimit = options.limit || 50;
+              return combined.slice(0, effectiveLimit);
             }
           }
         }

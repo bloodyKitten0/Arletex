@@ -211,5 +211,14 @@ Configuration options can be customized via environment variables:
 | `ARLETEX_LOG_LEVEL` | Console log verbosity (`debug`, `info`, `warn`, `error`) | `info` |
 | `ARLETEX_PORT` | Internal backend service port | `39281` |
 
+---
+
+## 8. License
+
+Arletex is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE).
+
+You are free to view, study, experiment with, and run Arletex for personal, hobby, and noncommercial research purposes. Any commercial use, redistribution for commercial gain, or integration into proprietary services is strictly prohibited without prior explicit permission from the creator.
+
+---
 
 **Note: files in drafts folder are the core of building**
