@@ -15,6 +15,7 @@ export class TelemetryService {
     whisper: false,
     kokoro: false,
   };
+  private llamaServerStatus = false;
   private lastSpecialistProbe = 0;
 
   constructor(logger: ILogger = rootLogger) {
@@ -39,6 +40,17 @@ export class TelemetryService {
     } catch (err: any) {
       this.logger.debug(`Specialist services offline: ${err.message}`);
       this.specialistStatus = { embeddingGemma: false, whisper: false, kokoro: false };
+    }
+
+    // Dynamic probe of llama-server on port 8080 (never hardcode true)
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 1200);
+      const llamaRes = await fetch('http://127.0.0.1:8080/health', { signal: controller.signal });
+      clearTimeout(timeout);
+      this.llamaServerStatus = llamaRes.ok;
+    } catch {
+      this.llamaServerStatus = false;
     }
   }
 
@@ -89,7 +101,7 @@ export class TelemetryService {
       services: {
         backend: true,
         database: true,
-        llamaServer: true,
+        llamaServer: this.llamaServerStatus,
         embeddingGemma: this.specialistStatus.embeddingGemma,
         whisper: this.specialistStatus.whisper,
         kokoro: this.specialistStatus.kokoro,

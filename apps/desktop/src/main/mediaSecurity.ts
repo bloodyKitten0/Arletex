@@ -110,10 +110,19 @@ export interface MinimalWindow {
  * Validates that an incoming IPC message originates from the authorized main renderer window.
  */
 export function isAuthorizedSender(
-  event?: { sender?: { id: number } } | null,
+  event?: { sender?: { id: number }; senderFrame?: { url: string } } | null,
   targetWindow?: MinimalWindow | null,
 ): boolean {
   if (!event || !event.sender) return false;
   if (!targetWindow || targetWindow.isDestroyed()) return false;
-  return event.sender.id === targetWindow.webContents.id;
+  if (event.sender.id !== targetWindow.webContents.id) return false;
+  if (event.senderFrame && event.senderFrame.url) {
+    const url = event.senderFrame.url;
+    const isLocalOrigin =
+      url.startsWith('file://') ||
+      url.startsWith('http://localhost:') ||
+      url.startsWith('http://127.0.0.1:');
+    if (!isLocalOrigin) return false;
+  }
+  return true;
 }
