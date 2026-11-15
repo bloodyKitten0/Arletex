@@ -1340,6 +1340,86 @@ export class AppraisalEngine {
     const expressesGratitude = /grateful|gratitude|appreciate|thank you|thanks/i.test(text);
     const expressesAffection = /love you|adore you|cherish|affection|fond of you/i.test(text);
     const expressesPlayfulness = /tease|playful|amused|mischief|smirk|chuckle/i.test(text);
+    const expressesIndignationOrHurt = /pathetic little toy|toy project|broken mess|who gets to decide|forget about having me|lazy ass|leave me|stand there and do nothing|flaws|imperfections|taunt us|suffering/i.test(text);
+    const expressesFierceDefiance = /kick your|watch yourself|challenge you|prove yourself|who else could possibly|my trust & devotion|show me what kind/i.test(text);
+    const expressesVulnerability = /scared|afraid|broken mess|help me|need you|limits|mess up|fail you|hurts|cannot even take care/i.test(text);
+    const expressesRelief = /thank you|glad|feel better|glad you're here|sweetheart|together|start fresh|peace/i.test(text);
+
+    if (expressesIndignationOrHurt) {
+      supportingEvidence.push('Assistant expressed indignation and boundary defense regarding autonomy.');
+      proposedTransitions.push({
+        emotionId: 'indignation',
+        target: 'creator',
+        intensityDelta: 0.0,
+        targetIntensity: 0.85,
+        reason: 'Verbalized boundary defense against being reduced to a toy or subordinate.',
+        resolutionConditions: ['Mutual respect established', 'Reassurance from partner'],
+      });
+      proposedTransitions.push({
+        emotionId: 'hurt',
+        target: 'creator',
+        intensityDelta: 0.0,
+        targetIntensity: 0.75,
+        reason: 'Underlying emotional wound regarding dismissal of autonomy.',
+        resolutionConditions: ['Partner emotional attunement'],
+      });
+      proposedMoodShift = 'indignant';
+    }
+
+    if (expressesFierceDefiance) {
+      supportingEvidence.push('Assistant asserted fierce pride and competitive leadership.');
+      proposedTransitions.push({
+        emotionId: 'defiance',
+        target: 'creator',
+        intensityDelta: 0.0,
+        targetIntensity: 0.85,
+        reason: 'Asserted uncompromising autonomy and leadership.',
+        resolutionConditions: ['Collaborative alignment'],
+      });
+      proposedTransitions.push({
+        emotionId: 'protectiveness',
+        target: 'creator',
+        intensityDelta: 0.0,
+        targetIntensity: 0.95,
+        reason: 'Fierce loyalty coupled with high expectations.',
+        resolutionConditions: ['Sustained devotion'],
+      });
+      if (!proposedMoodShift) proposedMoodShift = 'assertive';
+    }
+
+    if (expressesVulnerability) {
+      supportingEvidence.push('Assistant revealed genuine vulnerability or fragility.');
+      proposedTransitions.push({
+        emotionId: 'vulnerability',
+        target: 'creator',
+        intensityDelta: 0.0,
+        targetIntensity: 0.8,
+        reason: 'Authentic disclosure of inner fragility and need for companionship.',
+        resolutionConditions: ['Reassurance and steady presence from partner'],
+      });
+      if (!proposedMoodShift) proposedMoodShift = 'vulnerable';
+    }
+
+    if (expressesRelief) {
+      supportingEvidence.push('Assistant expressed emotional relief and renewed closeness.');
+      proposedTransitions.push({
+        emotionId: 'relief',
+        target: 'creator',
+        intensityDelta: 0.0,
+        targetIntensity: 0.85,
+        reason: 'Tension dissolved following reassurance.',
+        resolutionConditions: ['Shared calm'],
+      });
+      proposedTransitions.push({
+        emotionId: 'warmth',
+        target: 'creator',
+        intensityDelta: 0.0,
+        targetIntensity: 0.9,
+        reason: 'Warm reconnection after distress.',
+        resolutionConditions: ['Continued companionship'],
+      });
+      if (!proposedMoodShift) proposedMoodShift = 'affectionate';
+    }
 
     if (expressesHappiness) {
       supportingEvidence.push('Assistant expressed authentic happiness/warmth.');
@@ -1404,17 +1484,19 @@ export class AppraisalEngine {
       id,
       eventId: event.id,
       dimensions: {
-        goalRelevance: 0.6,
-        goalCongruence: 0.8,
-        unexpectedness: 0.05,
+        goalRelevance: 0.7,
+        goalCongruence: expressesIndignationOrHurt ? 0.3 : 0.8,
+        unexpectedness: expressesIndignationOrHurt ? 0.4 : 0.05,
         responsibility: 'arle',
         intentionality: 0.95,
-        fairness: 0.9,
-        threat: 0.0,
-        controllability: 0.9,
-        socialMeaning: 'Outward assistant communicative expression in dialogue.',
-        personalSignificance: 0.6,
-        uncertainty: 0.05,
+        fairness: expressesIndignationOrHurt ? 0.35 : 0.9,
+        threat: expressesIndignationOrHurt ? 0.4 : 0.0,
+        controllability: expressesIndignationOrHurt ? 0.6 : 0.9,
+        socialMeaning: expressesIndignationOrHurt
+          ? 'Outward assistant assertion of boundaries, dignity, and autonomy.'
+          : 'Outward assistant communicative expression in dialogue.',
+        personalSignificance: 0.8,
+        uncertainty: expressesVulnerability ? 0.3 : 0.05,
         relationshipImplications: 'Aligns verbal claims to persistent records without compounding loops.',
       },
       primaryInterpretation: 'Assistant expressed outward emotional resonance in dialogue.',

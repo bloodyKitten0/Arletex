@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-MODEL_PATH="${1:-/home/proof/models/qwen-14b-uncensored/Qwen2.5-14B_Uncensored_Instruct-Q4_K_M.gguf}"
+MODEL_PATH="${1:-/home/proof/models/qwen-14b-abliterated/Qwen2.5-14B-Instruct-abliterated-v2.Q4_K_M.gguf}"
 PORT="${2:-8080}"
 HOST="127.0.0.1"
 THREADS="8"

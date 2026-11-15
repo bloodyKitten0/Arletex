@@ -132,6 +132,19 @@ export class LlamaServerAdapter implements IInferenceProvider {
       '\nProof:',
       'User:',
       'Proof:',
+      'GetResponse(',
+      'getResponse(',
+      '.GetResponse',
+      '._getResponse',
+      'getResponse(Proof',
+      'getResponse(proof',
+      'GetResponse(Proof',
+      'GetResponse(Arle',
+      'getResponse(Arle',
+      'Arle:',
+      '\nArle:',
+      'You:',
+      '\nYou:',
     ];
     const stopList =
       effectiveConfig.stopSequences && effectiveConfig.stopSequences.length > 0
@@ -258,6 +271,16 @@ export class LlamaServerAdapter implements IInferenceProvider {
 
           if (delta) {
             fullContent += delta;
+            const scriptMatch = fullContent.match(/(\.?[_gG]etResponse\s*\(|\n?Proof:|\n?User:|\n?You:)/i);
+            if (scriptMatch && scriptMatch.index !== undefined) {
+              this.logger.warn(
+                `[Llama] Scriptwriter/speaker leak detected at index ${scriptMatch.index}. Truncating turn.`,
+              );
+              fullContent = fullContent.slice(0, scriptMatch.index).trim();
+              void reader.cancel().catch(() => {});
+              emitDone('stop');
+              return;
+            }
             const loopCheck = findRepetitionLoop(fullContent);
             if (loopCheck.isLoop) {
               this.logger.warn(

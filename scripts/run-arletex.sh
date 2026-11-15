@@ -6,11 +6,11 @@ cd "$PROJECT_DIR"
 
 PORT="8080"
 SPECIALIST_PORT="39282"
-MODEL_PATH="/home/proof/models/qwen-14b-uncensored/Qwen2.5-14B_Uncensored_Instruct-Q4_K_M.gguf"
+MODEL_PATH="/home/proof/models/qwen-14b-abliterated/Qwen2.5-14B-Instruct-abliterated-v2.Q4_K_M.gguf"
 
 echo "=========================================================="
 echo " Starting Arletex (Arle Artificial Individual)"
-echo " Cognitive Engine:    Qwen 2.5-14B Uncensored Instruct"
+echo " Cognitive Engine:    Qwen 2.5-14B Abliterated v2 (Uncensored)"
 echo " Cognitive Port:      $PORT (Vulkan on Radeon 780M)"
 echo " Specialist Services: EmbeddingGemma, Whisper, Kokoro"
 echo " Specialist Port:     $SPECIALIST_PORT"
