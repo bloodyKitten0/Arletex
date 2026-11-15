@@ -212,7 +212,27 @@ export class ArletexBackendServer {
       const params = (action.payload || (action as any).parameters || {}) as Record<string, any>;
       try {
         if (action.type === 'web_select_video' || action.type === 'web_navigate' || action.type === 'navigate_browser') {
-          const targetUrl = (params['targetUrl'] || params['url'] || 'https://www.youtube.com/watch?v=2OEL4P1Rz04') as string;
+          let targetUrl = (params['targetUrl'] || params['url']) as string;
+          let videoTitle = (params['videoTitle'] || params['title']) as string;
+
+          // If targetUrl is not yet bound, dynamically select the best candidate from Step 0 results
+          if (!targetUrl) {
+            const previousSearchObs = observations.find(
+              (o) => o.source === 'browser_page' && o.data?.candidates && o.data.candidates.length > 0,
+            );
+            if (previousSearchObs && previousSearchObs.data.candidates.length > 0) {
+              const candidates = previousSearchObs.data.candidates;
+              const decision = this.webAgency.evaluateAndSelectBestVideo(candidates, task.objective);
+              targetUrl = decision.selectedCandidate.url;
+              videoTitle = decision.selectedCandidate.title;
+              this.logger.info(`Live candidate selection: "${videoTitle}" -> ${targetUrl}`);
+            }
+          }
+
+          if (!targetUrl) {
+            targetUrl = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(task.objective);
+          }
+
           // Physically launch Chrome Flatpak on Proof's desktop so he can see and hear it
           await defaultDeviceAgency.openChromeBrowser(targetUrl);
 
@@ -224,7 +244,7 @@ export class ArletexBackendServer {
             this.logger.warn(`Playwright observation note: ${navErr.message}`);
             pageObs = {
               url: targetUrl,
-              title: params['videoTitle'] || 'YouTube Video',
+              title: videoTitle || 'YouTube Video',
               hasVideoElement: true,
               isPlaying: true,
             };
@@ -242,8 +262,8 @@ export class ArletexBackendServer {
             data: {
               url: pageObs?.url || targetUrl,
               currentUrl: pageObs?.url || targetUrl,
-              title: pageObs?.title || params['videoTitle'] || 'Loaded Webpage',
-              pageTitle: pageObs?.title || params['videoTitle'] || 'Loaded Webpage',
+              title: pageObs?.title || videoTitle || 'Loaded Webpage',
+              pageTitle: pageObs?.title || videoTitle || 'Loaded Webpage',
               hasVideoElement: pageObs?.hasVideoElement ?? true,
               isPlaying: pageObs?.isPlaying ?? true,
             },
@@ -913,6 +933,8 @@ export class ArletexBackendServer {
 
       const isAgencyObjective =
         !isNegativeOpenIntent &&
+        !videoBase64 &&
+        !videoPath &&
         (/(?:open|watch|play|find|listen|put on|start).*(?:video|youtube|music|song|lofi|calming|soothing|relaxing|track)/i.test(lowerUser) ||
          /(?:calming|soothing|relaxing|lofi|ambient)\s+(?:video|music|song|sounds)/i.test(lowerUser) ||
          /(?:open|go to|browse|visit|navigate to)\s+(?:https?:\/\/|[a-zA-Z0-9-]+\.(?:com|org|net|io|edu|gov|dev)|chrome|google|reddit|github|twitter|x\.com)/i.test(lowerUser) ||

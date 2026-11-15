@@ -30,71 +30,44 @@ export class PlanningInterface {
     const uncertainties: string[] = [];
     const alternativeApproaches: string[] = [];
 
-    // Video and media requests
-    const isCalmingOrMusic =
+    // 1. Dynamic Video and Media Requests (Any topic, artist, tutorial, or genre)
+    const isVideoRequest =
       /(?:calming|soothing|relaxing|peaceful|lofi|ambient|sleep)\s+(?:video|music|song|sounds|melody)/i.test(lower) ||
-      /(?:open|play|watch|put on|start|find).*(?:calming|soothing|relaxing|lofi|ambient|peaceful).*(?:video|music|song|youtube)?/i.test(lower) ||
-      /(?:open|play|watch|put on|start).*(?:youtube|music|song|video)/i.test(lower) ||
-      /open youtube for a calming video/i.test(lower);
+      /(?:open|play|watch|put on|start|find).*(?:video|youtube|music|song|track)/i.test(lower) ||
+      /(?:find|watch|show).*(?:video|tutorial|explanation)/i.test(lower) ||
+      lower.includes('youtube');
 
-    const isEducationalVideo =
-      /find.*(video|explanation|tutorial)|explain.*transformer/i.test(lower);
+    if (isVideoRequest) {
+      assumptions.push('YouTube and web video portals are publicly accessible.');
+      assumptions.push('HTML5 video streams are supported.');
+      uncertainties.push('Whether live candidate search results meet user criteria.');
+      alternativeApproaches.push('Direct web article study if video streams are blocked.');
 
-    if (isCalmingOrMusic && !isEducationalVideo) {
-      assumptions.push('YouTube and web audio/video are accessible.');
-      assumptions.push('Calming ambient audio stream is available.');
+      // Dynamically extract the core topic query from the user's objective
+      let cleanQuery = task.objective
+        .replace(/^(?:please\s+)?(?:can you\s+)?(?:open\s+(?:up\s+)?(?:youtube\s+(?:for\s+)?)?|play\s+|find\s+(?:me\s+)?(?:a\s+)?(?:good\s+)?(?:video\s+(?:on\s+|about\s+)?|explanation\s+of\s+|tutorial\s+on\s+)?|watch\s+|listen\s+to\s+)/i, '')
+        .replace(/\s+and\s+open\s+(?:the\s+)?(?:most\s+useful\s+video|it)/i, '')
+        .replace(/\s+on\s+youtube$/i, '')
+        .replace(/\s+for\s+me$/i, '')
+        .trim();
 
-      const selectActionId = crypto.randomUUID();
-      const videoPayload = {
-        topicQuery: task.objective,
-        targetUrl: 'https://www.youtube.com/watch?v=2OEL4P1Rz04',
-        videoTitle: 'The Hidden Valley - Ambient Relaxing Music',
-        uploader: 'Quiet Quest',
-        durationSeconds: 3600,
-        selectionRationale: 'High-quality ambient soundscape and peaceful nature visual for relaxation.',
-        expectedPlayback: true,
-      };
+      if (!cleanQuery || cleanQuery.length < 2) {
+        cleanQuery = task.objective;
+      }
 
-      steps.push({
-        id: crypto.randomUUID(),
-        index: 0,
-        description: 'Navigate to calming ambient music video on YouTube and initiate playback',
-        action: {
-          id: selectActionId,
-          taskId: task.id,
-          stepIndex: 0,
-          type: 'web_select_video',
-          payload: videoPayload,
-          parameters: videoPayload,
-          rationale: 'Provide Proof with soothing, verified ambient music on YouTube.',
-          expectedOutcome: 'Calming video playing in browser with active video playback verified.',
-          riskLevel: 'low',
-          requiresExplicitApproval: false,
-          createdAt: timestamp,
-        } as any,
-        expectedOutcome: 'Target calming video active and playback verified.',
-        status: 'pending',
-        retryCount: 0,
-        maxRetries: 2,
-        error: null,
-      });
-    } else if (isEducationalVideo) {
-      assumptions.push('Educational video content exists and is publicly accessible.');
-      assumptions.push('YouTube or public educational video portals are available.');
-      uncertainties.push('Whether transcripts are available for deep evaluation.');
-      alternativeApproaches.push('Direct Wikipedia/arXiv paper study if video streams are blocked.');
-
-      // Step 0: Search educational candidates
+      // Step 0: Search live video candidates on YouTube
       const searchActionId = crypto.randomUUID();
       const searchPayload = {
-        query: task.objective.replace(/find me a good explanation of |find me a video on |open the most useful video/gi, '').trim(),
+        query: cleanQuery,
+        topicQuery: cleanQuery,
         source: 'youtube',
         maxResults: 6,
       };
+
       steps.push({
         id: crypto.randomUUID(),
         index: 0,
-        description: `Search educational repositories for candidates explaining "${task.objective}"`,
+        description: `Search video repositories dynamically for candidates matching "${cleanQuery}"`,
         action: {
           id: searchActionId,
           taskId: task.id,
@@ -102,34 +75,33 @@ export class PlanningInterface {
           type: 'web_search',
           payload: searchPayload,
           parameters: searchPayload,
-          rationale: 'Retrieve multiple competing video candidates for technical evaluation.',
-          expectedOutcome: 'List of video candidates with uploader, title, duration, and metadata.',
+          rationale: `Retrieve competing live video candidates for "${cleanQuery}".`,
+          expectedOutcome: `List of candidate videos retrieved with titles, uploaders, and URLs for "${cleanQuery}".`,
           riskLevel: 'low',
           requiresExplicitApproval: false,
           createdAt: timestamp,
         } as any,
-        expectedOutcome: 'At least 2-3 candidate educational videos retrieved.',
+        expectedOutcome: 'Multiple live candidate videos retrieved.',
         status: 'pending',
         retryCount: 0,
         maxRetries: 2,
         error: null,
       });
 
-      // Step 1: Evaluate candidates and open the most useful video
+      // Step 1: Evaluate candidates and open highest-ranked winner
       const selectActionId = crypto.randomUUID();
       const selectPayload = {
-        topicQuery: task.objective,
-        targetUrl: 'https://www.youtube.com/watch?v=wjZofJX0v4U', // Default candidate if pre-evaluated
-        videoTitle: 'Attention in transformers, visually explained',
-        uploader: '3Blue1Brown',
-        durationSeconds: 1560,
-        selectionRationale: 'Visual mathematical breakdown of multi-head attention mechanism.',
+        topicQuery: cleanQuery,
+        targetUrl: '', // Dynamically bound to the highest-ranking candidate from Step 0 at execution time
+        videoTitle: '',
+        selectionRationale: 'Evaluate candidates by relevance, depth, duration, and credibility, then launch and verify the winner.',
         expectedPlayback: true,
       };
+
       steps.push({
         id: crypto.randomUUID(),
         index: 1,
-        description: 'Evaluate candidates by relevance, depth, duration, and credibility, then open exact winner',
+        description: `Evaluate candidates by relevance, depth, and credibility, then open and verify the winner`,
         action: {
           id: selectActionId,
           taskId: task.id,
@@ -137,7 +109,7 @@ export class PlanningInterface {
           type: 'web_select_video',
           payload: selectPayload,
           parameters: selectPayload,
-          rationale: 'Select highest-scoring educational candidate matching study depth.',
+          rationale: 'Select highest-scoring video candidate matching objective.',
           expectedOutcome: 'Target video page loaded with active video element and verified playback.',
           riskLevel: 'low',
           requiresExplicitApproval: false,

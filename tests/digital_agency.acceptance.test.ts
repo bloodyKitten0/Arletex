@@ -290,37 +290,40 @@ describe('Digital Agency & APE Emotional Lifecycle Acceptance Milestone', () => 
         objective,
         initiator: 'user',
         priority: 'high',
-        completionCriteria: ['Navigate to calming video on YouTube', 'Verify playback'],
+        completionCriteria: ['Search and navigate to calming video on YouTube', 'Verify playback'],
       });
 
       const plan = await planningInterface.formulatePlan(task);
-      expect(plan.steps.length).toBeGreaterThanOrEqual(1);
-      const step = plan.steps[0]!;
-      expect(step.action.type).toBe('web_select_video');
-      expect((step.action.payload as any).targetUrl).toContain('youtube.com/watch');
+      expect(plan.steps.length).toBeGreaterThanOrEqual(2);
+      const searchStep = plan.steps[0]!;
+      expect(searchStep.action.type).toBe('web_search');
+      expect((searchStep.action.payload as any).query).toContain('calming video');
 
-      const auth = permissionController.authorize(step.action);
+      const selectStep = plan.steps[1]!;
+      expect(selectStep.action.type).toBe('web_select_video');
+
+      const auth = permissionController.authorize(selectStep.action);
       expect(auth.allowed).toBe(true);
 
       const mockObs: AgencyObservation = {
         id: crypto.randomUUID(),
         taskId: task.id,
-        actionId: step.action.id,
+        actionId: selectStep.action.id,
         source: 'browser_page',
         timestamp: new Date().toISOString(),
         success: true,
         confidence: 0.95,
         provenance: 'WebAgencyService.navigateToVideo',
         data: {
-          currentUrl: (step.action.payload as any).targetUrl,
-          pageTitle: (step.action.payload as any).videoTitle,
+          currentUrl: 'https://www.youtube.com/watch?v=mPZkdNFkNps',
+          pageTitle: 'Rain Sound On Window with Thunder Sounds',
           hasVideoElement: true,
           isPlaying: true,
         },
         error: null,
       };
 
-      const ver = verificationEngine.verify(step.action, mockObs);
+      const ver = verificationEngine.verify(selectStep.action, mockObs);
       expect(ver.verified).toBe(true);
       expect(ver.observedOutcome).toContain('playback confirmed');
     });

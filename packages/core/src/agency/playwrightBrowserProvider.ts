@@ -165,24 +165,37 @@ export class PlaywrightBrowserProvider implements IBrowserProvider {
   public async search(query: string, maxResults = 5): Promise<SearchResultItem[]> {
     try {
       const page = await this.ensurePage();
-      const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+      const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+      this.logger.info(`Searching web via DuckDuckGo: ${query}`);
       await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
 
       const results = await page.evaluate((limit: number) => {
         const doc = (globalThis as any).document;
         const items: Array<{ title: string; url: string; snippet: string }> = [];
         if (!doc) return items;
-        const links = doc.querySelectorAll('a h3');
-        links.forEach((h3: any) => {
-          const anchor = h3.closest('a');
-          if (anchor && anchor.href && items.length < limit) {
+        const elements = doc.querySelectorAll('.result__body');
+        for (const el of elements) {
+          const a = el.querySelector('a.result__url') || el.querySelector('a.result__snippet');
+          const titleEl = el.querySelector('h2.result__title a');
+          const snippetEl = el.querySelector('.result__snippet');
+          if (titleEl) {
+            let href = a?.getAttribute('href') || '';
+            if (href.includes('uddg=')) {
+              try {
+                const match = href.match(/uddg=([^&]+)/);
+                if (match && match[1]) {
+                  href = decodeURIComponent(match[1]);
+                }
+              } catch {}
+            }
             items.push({
-              title: h3.textContent || '',
-              url: anchor.href,
-              snippet: '',
+              title: titleEl.textContent?.trim() || '',
+              url: href,
+              snippet: snippetEl?.textContent?.trim() || '',
             });
           }
-        });
+          if (items.length >= limit) break;
+        }
         return items;
       }, maxResults);
 
@@ -194,77 +207,71 @@ export class PlaywrightBrowserProvider implements IBrowserProvider {
     return [
       {
         title: `Search results for ${query}`,
-        url: `https://www.google.com/search?q=${encodeURIComponent(query)}`,
+        url: `https://duckduckgo.com/?q=${encodeURIComponent(query)}`,
         snippet: `Web search inquiry for "${query}"`,
       },
     ];
   }
 
-  public async searchVideos(query: string, _maxResults = 5): Promise<VideoCandidate[]> {
-    const lower = query.toLowerCase();
-    if (
-      lower.includes('calm') ||
-      lower.includes('relax') ||
-      lower.includes('sooth') ||
-      lower.includes('sleep') ||
-      lower.includes('ambient') ||
-      lower.includes('peace')
-    ) {
-      return [
-        {
-          title: 'The Hidden Valley: Ambient Relaxing Music for Stress Relief, Sleep & Meditation',
-          url: 'https://www.youtube.com/watch?v=2OEL4P1Rz04',
-          uploader: 'Soothing Relaxation',
-          durationSeconds: 10800,
-          durationText: '3:00:00',
-          descriptionSnippet: 'Peaceful ambient relaxing music designed for stress relief, calm focus, and sleep.',
-          isEducational: false,
-        },
-        {
-          title: 'Weightless - Marconi Union (Ambient Calming Soundscape)',
-          url: 'https://www.youtube.com/watch?v=UfcAVejslrU',
-          uploader: 'Marconi Union',
-          durationSeconds: 485,
-          durationText: '8:05',
-          descriptionSnippet: 'Scientifically designed ambient track to reduce heart rate and calm the nervous system.',
-          isEducational: false,
-        },
-      ];
-    }
+  public async searchVideos(query: string, maxResults = 5): Promise<VideoCandidate[]> {
+    try {
+      const page = await this.ensurePage();
+      const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+      this.logger.info(`Executing live video search on YouTube for "${query}"`);
+      await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
+      await page.waitForTimeout(2000);
 
-    if (
-      lower.includes('transformer') ||
-      lower.includes('attention') ||
-      lower.includes('ai') ||
-      lower.includes('neural')
-    ) {
-      return [
-        {
-          title: 'Attention in transformers, visually explained',
-          url: 'https://www.youtube.com/watch?v=wjZofJX0v4U',
-          uploader: '3Blue1Brown',
-          durationSeconds: 1560,
-          durationText: '26:00',
-          descriptionSnippet: 'Visual mathematical breakdown of multi-head attention mechanism.',
-          isEducational: true,
-        },
-        {
-          title: 'Transformers from scratch: step by step guide',
-          url: 'https://www.youtube.com/watch?v=kCc8FmEb1nY',
-          uploader: 'Andrej Karpathy',
-          durationSeconds: 7200,
-          durationText: '2:00:00',
-          descriptionSnippet: 'Building GPT from scratch code walkthrough and architecture fundamentals.',
-          isEducational: true,
-        },
-      ];
+      const liveVideos = await page.evaluate((limit: number) => {
+        const doc = (globalThis as any).document;
+        const results: Array<{
+          title: string;
+          url: string;
+          uploader: string;
+          durationSeconds: number;
+          durationText: string;
+          descriptionSnippet: string;
+          isEducational: boolean;
+        }> = [];
+        if (!doc) return results;
+
+        const elements = doc.querySelectorAll('a#video-title');
+        for (const el of elements) {
+          const href = el.getAttribute('href');
+          const title = el.getAttribute('title') || el.textContent?.trim();
+          if (href && href.includes('/watch?v=') && title) {
+            const renderer = el.closest('ytd-video-renderer');
+            const channelEl = renderer ? renderer.querySelector('#channel-info, #channel-name, .ytd-channel-name') : null;
+            const uploader = channelEl?.textContent?.trim() || 'YouTube Creator';
+            const fullUrl = href.startsWith('http') ? href : `https://www.youtube.com${href}`;
+
+            results.push({
+              title,
+              url: fullUrl,
+              uploader,
+              durationSeconds: 900,
+              durationText: '',
+              descriptionSnippet: title,
+              isEducational: /tutorial|explain|how to|course|lecture|guide|math|code/i.test(title),
+            });
+          }
+          if (results.length >= limit) break;
+        }
+        return results;
+      }, maxResults);
+
+      if (liveVideos.length > 0) {
+        this.logger.info(`Discovered ${liveVideos.length} live video candidates from YouTube for "${query}"`);
+        return liveVideos;
+      }
+    } catch (err: any) {
+      this.logger.warn(`Live YouTube search failed for "${query}": ${err.message}. Using resilient fallback candidates.`);
     }
 
     return [
       {
-        title: `YouTube: ${query}`,
+        title: `${query} (YouTube)`,
         url: `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
-        uploader: 'YouTube',
+        uploader: 'YouTube Search',
         durationSeconds: 600,
         durationText: '10:00',
         descriptionSnippet: `Search video candidate for query: "${query}"`,
