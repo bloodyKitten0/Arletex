@@ -429,10 +429,13 @@ export type SpecialistCodingConfig = z.infer<typeof SpecialistCodingConfigSchema
 export const InferenceConfigSchema = z.object({
   provider: InferenceProviderTypeSchema.default('llama.cpp'),
   serverUrl: z.string().url().default('http://127.0.0.1:8080'),
-  defaultModelId: z.string().default('Qwen3.5-9B-Heretic-Q4_K_M'),
+  defaultModelId: z.string().default('Qwen2.5-14B-Uncensored-Q4_K_M'),
   temperature: z.number().min(0).max(2).default(0.7),
   topP: z.number().min(0).max(1).default(0.9),
   maxTokens: z.number().int().positive().default(2048),
+  repeatPenalty: z.number().min(1.0).max(2.0).default(1.18),
+  frequencyPenalty: z.number().min(0.0).max(2.0).default(0.5),
+  presencePenalty: z.number().min(0.0).max(2.0).default(0.3),
   stopSequences: z.array(z.string()).default([]),
   contextSize: z.number().int().positive().default(8192),
 
@@ -440,7 +443,7 @@ export const InferenceConfigSchema = z.object({
     enabled: false,
     provider: 'llama.cpp',
     serverUrl: 'http://127.0.0.1:8080',
-    modelId: 'Qwen3.5-9B-Heretic-Q4_K_M',
+    modelId: 'Qwen2.5-14B-Uncensored-Q4_K_M',
     temperature: 0.2,
     maxTokens: 4096,
   }),
@@ -448,7 +451,7 @@ export const InferenceConfigSchema = z.object({
   fallbackEnabled: z.boolean().default(false),
   fallbackProvider: InferenceProviderTypeSchema.default('llama.cpp'),
   fallbackServerUrl: z.string().url().default('http://127.0.0.1:8080'),
-  fallbackModelId: z.string().default('Qwen3.5-9B-Heretic-Q4_K_M'),
+  fallbackModelId: z.string().default('Qwen2.5-14B-Uncensored-Q4_K_M'),
 });
 
 export type InferenceConfig = z.infer<typeof InferenceConfigSchema>;

@@ -35,7 +35,7 @@ export function createDefaultConfig(overrides?: AppConfigOverrides): AppConfig {
 
   const defaultModelId =
     activeProvider === 'llama.cpp'
-      ? process.env['LLAMA_MODEL_ID'] ?? 'Qwen3.5-9B-Heretic-Q4_K_M'
+      ? process.env['LLAMA_MODEL_ID'] ?? 'Qwen2.5-14B-Uncensored-Q4_K_M'
       : process.env['COLIBRI_MODEL_ID'] ?? 'qwen3.6-colibri';
 
   const fallbackEnabled =

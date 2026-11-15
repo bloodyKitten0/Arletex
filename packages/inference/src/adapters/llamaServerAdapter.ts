@@ -8,6 +8,25 @@ import { ILogger, InferenceError, ModelUnavailableError, rootLogger } from '@arl
 import { createParser, EventSourceMessage } from 'eventsource-parser';
 import { ChatStreamOptions, IInferenceProvider } from '../types.js';
 
+function findRepetitionLoop(text: string): { isLoop: boolean; cleanText: string } {
+  if (text.length < 80) return { isLoop: false, cleanText: text };
+
+  for (let len = 30; len <= 120; len += 10) {
+    if (text.length < len * 2) continue;
+    const tail = text.slice(-len);
+    const beforeTail = text.slice(0, -len);
+    const matchIndex = beforeTail.lastIndexOf(tail);
+    if (matchIndex !== -1) {
+      const repeatStart = text.length - len;
+      if (repeatStart > matchIndex) {
+        const clean = text.slice(0, repeatStart).trim();
+        return { isLoop: true, cleanText: clean };
+      }
+    }
+  }
+  return { isLoop: false, cleanText: text };
+}
+
 export class LlamaServerAdapter implements IInferenceProvider {
   public readonly providerType: InferenceProviderType = 'llama.cpp';
   public readonly name = 'llama.cpp (Vulkan)';
@@ -105,14 +124,32 @@ export class LlamaServerAdapter implements IInferenceProvider {
 
     this.logger.info(`[Llama] Starting stream inference request ${requestId} to ${endpoint}`);
 
+    const defaultStopSequences = [
+      '<|im_end|>',
+      '<|endoftext|>',
+      '<|im_start|>',
+      '\nUser:',
+      '\nProof:',
+      'User:',
+      'Proof:',
+    ];
+    const stopList =
+      effectiveConfig.stopSequences && effectiveConfig.stopSequences.length > 0
+        ? effectiveConfig.stopSequences
+        : defaultStopSequences;
+
     const payload = {
       model: effectiveConfig.defaultModelId,
       messages,
-      temperature: effectiveConfig.temperature,
-      top_p: effectiveConfig.topP,
-      max_tokens: effectiveConfig.maxTokens,
+      temperature: effectiveConfig.temperature ?? 0.7,
+      top_p: effectiveConfig.topP ?? 0.9,
+      max_tokens: effectiveConfig.maxTokens ?? 2048,
+      repeat_penalty: (effectiveConfig as any).repeatPenalty ?? 1.18,
+      frequency_penalty: (effectiveConfig as any).frequencyPenalty ?? 0.5,
+      presence_penalty: (effectiveConfig as any).presencePenalty ?? 0.3,
+      repeat_last_n: 128,
       stream: true,
-      stop: effectiveConfig.stopSequences.length > 0 ? effectiveConfig.stopSequences : undefined,
+      stop: stopList,
       chat_template_kwargs: { enable_thinking: false },
     };
 
@@ -221,6 +258,16 @@ export class LlamaServerAdapter implements IInferenceProvider {
 
           if (delta) {
             fullContent += delta;
+            const loopCheck = findRepetitionLoop(fullContent);
+            if (loopCheck.isLoop) {
+              this.logger.warn(
+                `[Llama] Repetition loop detected at ${fullContent.length} chars. Truncating loop and terminating inference stream.`,
+              );
+              fullContent = loopCheck.cleanText;
+              void reader.cancel().catch(() => {});
+              emitDone('stop');
+              return;
+            }
           }
 
           if (delta || reasoningDelta) {

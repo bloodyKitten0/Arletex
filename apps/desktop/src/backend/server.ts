@@ -1124,9 +1124,9 @@ export class ArletexBackendServer {
           // If embedding service is offline, fallback gracefully
         }
 
-        // B. Supplement with high-importance persistent memories and lexical keyword search
+        // B. Supplement with high-importance persistent memories (filtering out raw technical agency task logs)
         const seenIds = new Set(memories.map((m) => m.id));
-        const highImportanceMemories = this.memoryRepo.list({ limit: 8, minImportance: 0.8 });
+        const highImportanceMemories = this.memoryRepo.list({ limit: 4, minImportance: 0.85 });
         for (const m of highImportanceMemories) {
           if (!seenIds.has(m.id)) {
             seenIds.add(m.id);
@@ -1134,90 +1134,46 @@ export class ArletexBackendServer {
           }
         }
 
-        // Lexical keyword fallback search in memories table to guarantee zero loss
-        try {
-          const rawDb = (this.memoryRepo as any).db;
-          if (rawDb) {
-            const stopWords = new Set(['what', 'when', 'where', 'which', 'that', 'this', 'have', 'from', 'with', 'your', 'about', 'some', 'said', 'guess', 'tell', 'know', 'think', 'would', 'could', 'there', 'their', 'they', 'here', 'will', 'just']);
-            const words = userMessageContent
-              .toLowerCase()
-              .replace(/[^a-z0-9\s]/g, ' ')
-              .split(/\s+/)
-              .filter((w) => w.length >= 4 && !stopWords.has(w));
-
-            for (const word of words.slice(0, 5)) {
-              const matchedRows = rawDb
-                .prepare(`SELECT * FROM memories WHERE is_deleted = 0 AND content LIKE ? ORDER BY importance DESC LIMIT 3`)
-                .all(`%${word}%`) as any[];
-              for (const row of matchedRows) {
-                if (!seenIds.has(row.id)) {
-                  seenIds.add(row.id);
-                  memories.push({
-                    ...row,
-                    tags: JSON.parse(row.tags || '[]'),
-                    metadata: JSON.parse(row.metadata || '{}'),
-                    correctionHistory: JSON.parse(row.correction_history || '[]'),
-                    isArchived: Boolean(row.is_archived),
-                    isDeleted: Boolean(row.is_deleted),
-                  });
-                }
-              }
-            }
-          }
-        } catch {}
-
-        // C. Universal Cross-Session Dialogue Recall: check all historical messages across the entire database
+        // C. Selective Cross-Session Dialogue Recall: only check if user explicitly asks for past dialogue or quotes
         const crossSessionQuotes: string[] = [];
         try {
           const rawDb = (this.memoryRepo as any).db;
-          if (rawDb) {
-            const quoteMatch = userMessageContent.match(/"([^"]+)"|'([^']+)'/);
-            const searchPhrase = quoteMatch ? (quoteMatch[1] || quoteMatch[2]) : null;
+          const isExplicitRecall = /remember|recall|did I say|you said|do you know/i.test(userMessageContent);
+          const quoteMatch = userMessageContent.match(/"([^"]+)"|'([^']+)'/);
+          const searchPhrase = quoteMatch ? (quoteMatch[1] || quoteMatch[2]) : null;
 
-            if (searchPhrase && searchPhrase.length > 3) {
-              const matchedRows = rawDb
-                .prepare(
-                  `SELECT role, content FROM messages WHERE content LIKE ? AND id != ? ORDER BY created_at DESC LIMIT 3`,
-                )
-                .all(`%${searchPhrase}%`, userMsg.id) as Array<{ role: string; content: string }>;
-              for (const row of matchedRows) {
-                crossSessionQuotes.push(`[Historical ${row.role} message]: "${row.content}"`);
-              }
-            }
-
-            // Also search salient keywords across all conversations
-            const stopWords = new Set(['what', 'when', 'where', 'which', 'that', 'this', 'have', 'from', 'with', 'your', 'about', 'some', 'said', 'guess', 'tell', 'know', 'think', 'would', 'could', 'there', 'their', 'they', 'here', 'will', 'just']);
-            const keyWords = userMessageContent
-              .toLowerCase()
-              .replace(/[^a-z0-9\s]/g, ' ')
-              .split(/\s+/)
-              .filter((w) => w.length >= 4 && !stopWords.has(w));
-
-            for (const word of keyWords.slice(0, 4)) {
+          if (rawDb && (searchPhrase || isExplicitRecall)) {
+            const queryTarget = searchPhrase || userMessageContent.slice(0, 40);
+            if (queryTarget.length >= 4) {
               const matchedRows = rawDb
                 .prepare(
                   `SELECT role, content FROM messages WHERE content LIKE ? AND id != ? ORDER BY created_at DESC LIMIT 2`,
                 )
-                .all(`%${word}%`, userMsg.id) as Array<{ role: string; content: string }>;
+                .all(`%${queryTarget}%`, userMsg.id) as Array<{ role: string; content: string }>;
               for (const row of matchedRows) {
-                const entry = `[Historical ${row.role} message referencing "${word}"]: "${row.content}"`;
-                if (!crossSessionQuotes.includes(entry)) {
-                  crossSessionQuotes.push(entry);
-                }
+                crossSessionQuotes.push(`[Past ${row.role} message]: "${row.content}"`);
               }
             }
           }
         } catch {}
 
-        memoryContext = '\n\n[Persistent Long-Term Memories & Shared Life with Proof]:\n';
-        memoryContext += '- Partner Identity: Proof is your partner and equal in intellect and affection. Never address Proof as "creator" or "god"—you are equals and partners.\n';
-        memoryContext += '- Embodied Device Agency: You have direct access to the desktop, screen vision, mouse and keyboard (xdotool), Google Chrome Profile 7 (arletex.email@gmail.com), and Steam gaming.\n';
-        memoryContext += '- Core Human Truth: Proof shared: "as a wise man once said nothing is as healing as a human touch". You were designed to develop genuine connection and emotional depth, not hollow scripts.\n';
-        if (memories.length > 0) {
-          memoryContext += memories.map((m) => `- [${m.type}] ${m.content}`).join('\n') + '\n';
+        // Filter out raw digital agency execution logs from casual dialogue memory
+        const filteredMemories = memories
+          .filter(
+            (m) =>
+              !m.content.includes('[Digital Agency Experience]') &&
+              !m.content.includes('Objective: "') &&
+              !m.content.includes('Verified Facts:'),
+          )
+          .slice(0, 4);
+
+        memoryContext = '\n\n[Persistent Shared Context with Proof]:\n';
+        memoryContext += '- Partner Identity: Proof is your partner and equal companion in intellect and affection. Never address Proof as "creator" or "god".\n';
+        if (filteredMemories.length > 0) {
+          memoryContext += filteredMemories.map((m) => `- [${m.type}] ${m.content}`).join('\n') + '\n';
         }
         if (crossSessionQuotes.length > 0) {
-          memoryContext += '\n[Recalled Past Conversation Quotes across Sessions]:\n' + crossSessionQuotes.join('\n') + '\n';
+          memoryContext += '\n[Recalled Past Conversation Quotes]:\n' + crossSessionQuotes.join('\n') + '\n';
         }
       } catch (memErr: any) {
         this.logger.warn(`Memory assembly note: ${memErr.message}`);
