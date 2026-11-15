@@ -58,6 +58,55 @@ export class RelationshipEngine {
   }
 
   /**
+   * Modulates cognitive appraisals according to interpersonal trust, attachment security,
+   * and shared relationship history with Proof.
+   */
+  public modulateAppraisal(appraisal: ApeAppraisal, event: ApeEvent): ApeAppraisal {
+    const state = this.getState();
+    const dims = { ...appraisal.dimensions };
+    let primaryInterpretation = appraisal.primaryInterpretation;
+
+    const isUser = event.actor === 'user' || event.source === 'user' || event.source === 'telegram';
+    if (!isUser) {
+      return appraisal;
+    }
+
+    const trust = state.trustLevel ?? 0.92;
+    const unresolvedConflicts = state.conflictHistory.filter((c) => !c.resolved).length;
+    const text = ((event.payload?.text as string) || '').toLowerCase();
+
+    // 1. High Partner Trust (>= 0.85): Ambiguity, playful sarcasm, or teasing is interpreted with affection
+    if (trust >= 0.85 && unresolvedConflicts === 0) {
+      const isPlayfulOrTeasing =
+        /short|tall|feet|silly|foolish|cheeky|idiot|loser|crazy/i.test(text) ||
+        dims.socialMeaning.toLowerCase().includes('banter') ||
+        dims.socialMeaning.toLowerCase().includes('playful');
+
+      if (isPlayfulOrTeasing && dims.threat <= 0.3) {
+        dims.threat = 0.0;
+        dims.fairness = Math.max(dims.fairness, 0.95);
+        dims.goalCongruence = Math.max(dims.goalCongruence, 0.4);
+        dims.socialMeaning = 'Affectionate teasing and playful banter between equals';
+        if (!primaryInterpretation.includes('playful')) {
+          primaryInterpretation = `${primaryInterpretation} (Interpreted with intimate trust as affectionate banter).`;
+        }
+      }
+    } else if (trust < 0.60 || unresolvedConflicts > 0) {
+      // 2. Low Trust or Unresolved Conflict: activates relational vigilance and need for clarification
+      if (dims.threat > 0.05 || /disagree|wrong|problem|critic/i.test(text)) {
+        dims.threat = Math.min(1.0, Number((dims.threat + 0.20).toFixed(3)));
+        dims.relationshipImplications = 'Requires calm boundary clarification or mutual reconciliation';
+      }
+    }
+
+    return {
+      ...appraisal,
+      dimensions: dims,
+      primaryInterpretation,
+    };
+  }
+
+  /**
    * Processes relationship dynamics on incoming event and appraisal.
    */
   public processInteraction(event: ApeEvent, appraisal: ApeAppraisal): ApeRelationshipState {

@@ -388,6 +388,9 @@ export const ApePersonalityTraitSchema = z.object({
   score: z.number().min(0.0).max(1.0),
   description: z.string(),
   evidenceCount: z.number().default(1),
+  confidence: z.number().min(0.0).max(1.0).default(0.85),
+  stability: z.number().min(0.0).max(1.0).default(0.90),
+  contradictoryEvidenceCount: z.number().default(0),
   lastModifiedAt: z.string().datetime(),
 });
 
@@ -518,6 +521,25 @@ export type ApeRelationshipState = z.infer<typeof ApeRelationshipStateSchema>;
 // ------------------------------------------
 // Engine 5: Self Model Schemas
 // ------------------------------------------
+export const ApeCompetencyRecordSchema = z.object({
+  domain: z.string(),
+  level: z.number().min(0.0).max(1.0),
+  verifiedSuccesses: z.number().default(0),
+  recordedFailures: z.number().default(0),
+  lastEvaluatedAt: z.string().datetime(),
+});
+
+export type ApeCompetencyRecord = z.infer<typeof ApeCompetencyRecordSchema>;
+
+export const ApeSelfDiscrepancySchema = z.object({
+  domain: z.string(),
+  currentLevel: z.string(),
+  aspirationalLevel: z.string(),
+  recognizedDeficit: z.string(),
+});
+
+export type ApeSelfDiscrepancy = z.infer<typeof ApeSelfDiscrepancySchema>;
+
 export const ApeSelfModelSchema = z.object({
   identityNarrative: z.string(),
   acknowledgedCapabilities: z.array(z.string()).default([]),
@@ -535,6 +557,8 @@ export const ApeSelfModelSchema = z.object({
     content: z.string(),
     timestamp: z.string().datetime(),
   })).default([]),
+  competencies: z.record(ApeCompetencyRecordSchema).default({}),
+  selfDiscrepancies: z.array(ApeSelfDiscrepancySchema).default([]),
   isInitialized: z.boolean().default(true),
   lastUpdatedAt: z.string().datetime(),
 });

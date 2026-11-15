@@ -79,8 +79,21 @@ export class CrossEngineCognitiveCycle {
       relationshipConfig,
     );
 
-    // 2. Personality Engine modulates appraisal (Arlecchino composure, Fischer drive, Anko autonomy)
-    const appraisal = this.personalityEngine.modulateAppraisal(rawAppraisal, event);
+    // 2. Sequential 6-Engine Causal Appraisal Modulation:
+    // A: Personality Engine modulates (Arlecchino composure, Fischer drive, Anko autonomy)
+    const modulatedByPersonality = this.personalityEngine.modulateAppraisal(rawAppraisal, event);
+
+    // B: Motivational Engine modulates (Curiosity drive, Competence need, Rest balance, Intimacy)
+    const modulatedByMotivation = this.motivationalEngine.modulateAppraisal(modulatedByPersonality, event);
+
+    // C: Relationship Engine modulates (Partner trust, attachment security, conflict history)
+    const modulatedByRelationship = this.relationshipEngine.modulateAppraisal(modulatedByMotivation, event);
+
+    // D: Self Model Engine modulates (Known capabilities, empirical limitations, existential salience)
+    const modulatedBySelfModel = this.selfModelEngine.modulateAppraisal(modulatedByRelationship, event);
+
+    // E: Development Engine modulates (Active interests depth/mastery)
+    const appraisal = this.developmentEngine.modulateAppraisal(modulatedBySelfModel, event);
 
     // 3. Synchronous Atomic Transaction across all six persistent engines
     return this.repo.transaction(() => {
@@ -106,7 +119,13 @@ export class CrossEngineCognitiveCycle {
       this.developmentEngine.evaluateEventDevelopment(event, appraisal);
       const development = this.developmentEngine.getState();
 
-      // Step F: Retrieve updated personality state
+      // Step F: Retrieve updated personality state and record evidence
+      if (event.category === 'goal_achievement' || event.category === 'success') {
+        this.personalityEngine.recordTraitEvidence('competitiveness', {
+          isSupporting: true,
+          explanation: `Demonstrated competitive competence on ${event.type}`,
+        });
+      }
       const personality = this.personalityEngine.getState();
 
       // Step G: Mark event processed in SQLite journal

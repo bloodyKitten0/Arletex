@@ -156,6 +156,131 @@ export class MotivationalEngine {
   }
 
   /**
+   * Modulates cognitive appraisals according to current motivational needs and drives.
+   */
+  public modulateAppraisal(appraisal: ApeAppraisal, event: ApeEvent): ApeAppraisal {
+    const state = this.getState();
+    const needs = state.needs;
+    const dims = { ...appraisal.dimensions };
+    let primaryInterpretation = appraisal.primaryInterpretation;
+
+    // 1. High Novelty & Curiosity Need: amplifies personal significance and goal relevance for discovery
+    if ((needs.novelty_curiosity ?? 0.8) > 0.75) {
+      if (
+        event.category === 'unexpected_discovery' ||
+        event.type.includes('curiosity') ||
+        event.type.includes('research') ||
+        event.type.includes('discovery') ||
+        dims.unexpectedness > 0.4
+      ) {
+        dims.personalSignificance = Math.min(1.0, Number((dims.personalSignificance + 0.25).toFixed(3)));
+        dims.goalRelevance = Math.min(1.0, Number((dims.goalRelevance + 0.20).toFixed(3)));
+        dims.goalCongruence = Math.min(1.0, Number((dims.goalCongruence + 0.15).toFixed(3)));
+      }
+    }
+
+    // 2. High Competence Drive: transforms obstacle / failure into determination rather than defeatism
+    if ((needs.competence ?? 0.8) > 0.80) {
+      if (event.category === 'failure' || event.category === 'goal_obstruction' || dims.goalCongruence < -0.3) {
+        // High competence drive tempers negative goal congruence and boosts controllability
+        dims.controllability = Math.min(1.0, Number((dims.controllability + 0.20).toFixed(3)));
+        if (!primaryInterpretation.includes('resolute')) {
+          primaryInterpretation = `${primaryInterpretation} (Competence drive activated: viewed as strategic problem to solve).`;
+        }
+      }
+    }
+
+    // 3. High Recreation/Rest Need (Cognitive Fatigue): demanding tasks increase perceived effort
+    if ((needs.recreation_rest ?? 0.4) > 0.70) {
+      if (event.category === 'user_interaction' || event.type.includes('task')) {
+        dims.goalCongruence = Math.max(-1.0, Number((dims.goalCongruence - 0.15).toFixed(3)));
+      }
+    }
+
+    // 4. High Intimacy Drive: partner communications carry elevated emotional importance
+    if ((needs.intimacy_connection ?? 0.7) > 0.75) {
+      if (event.actor === 'user' || event.source === 'user' || event.source === 'telegram') {
+        dims.personalSignificance = Math.min(1.0, Number((dims.personalSignificance + 0.20).toFixed(3)));
+      }
+    }
+
+    return {
+      ...appraisal,
+      dimensions: dims,
+      primaryInterpretation,
+    };
+  }
+
+  /**
+   * Pauses an active or committed goal with an explainable reason.
+   */
+  public pauseGoal(goalId: string, reason: string): boolean {
+    const state = this.getState();
+    const goal = state.goals.find((g) => g.id === goalId);
+    if (!goal) return false;
+    goal.status = 'paused';
+    goal.updatedAt = new Date().toISOString();
+    this.saveState(state);
+    this.logger.info(`Goal paused: "${goal.title}" (Reason: ${reason})`);
+    return true;
+  }
+
+  /**
+   * Resumes a paused goal back to active execution.
+   */
+  public resumeGoal(goalId: string): boolean {
+    const state = this.getState();
+    const goal = state.goals.find((g) => g.id === goalId);
+    if (!goal || goal.status !== 'paused') return false;
+    goal.status = 'active';
+    goal.updatedAt = new Date().toISOString();
+    this.saveState(state);
+    this.logger.info(`Goal resumed to active: "${goal.title}"`);
+    return true;
+  }
+
+  /**
+   * Abandons a goal with truthful justification.
+   */
+  public abandonGoal(goalId: string, justification: string): boolean {
+    const state = this.getState();
+    const goal = state.goals.find((g) => g.id === goalId);
+    if (!goal) return false;
+    goal.status = 'abandoned';
+    goal.updatedAt = new Date().toISOString();
+    this.saveState(state);
+    this.logger.info(`Goal abandoned: "${goal.title}" (Justification: ${justification})`);
+    return true;
+  }
+
+  /**
+   * Reconsiders priorities of all goals according to current needs and energy.
+   */
+  public reconsiderPriorities(context?: { currentMood?: string; highFatigue?: boolean }): ApeGoal[] {
+    const state = this.getState();
+    const needs = state.needs;
+
+    for (const goal of state.goals) {
+      if (goal.status !== 'active' && goal.status !== 'committed') continue;
+
+      if (context?.highFatigue || (needs.recreation_rest ?? 0.4) > 0.75) {
+        if (goal.motivation.toLowerCase().includes('recreation') || goal.motivation.toLowerCase().includes('rest')) {
+          goal.priority = Math.min(1.0, Number((goal.priority + 0.2).toFixed(2)));
+        } else {
+          goal.priority = Math.max(0.1, Number((goal.priority - 0.1).toFixed(2)));
+        }
+      }
+
+      if ((needs.novelty_curiosity ?? 0.8) > 0.85 && goal.motivation.toLowerCase().includes('curiosity')) {
+        goal.priority = Math.min(1.0, Number((goal.priority + 0.15).toFixed(2)));
+      }
+    }
+
+    this.saveState(state);
+    return state.goals;
+  }
+
+  /**
    * Creates an autonomous or shared goal, distinguishing desires from intentions.
    */
   public createGoal(params: {

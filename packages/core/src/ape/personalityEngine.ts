@@ -23,6 +23,30 @@ export class PersonalityEngine {
   public getState(): ApePersonalityState {
     const state = this.repo.getPersonalityState();
     let modified = false;
+
+    const ensureTrait = (id: string, name: string, score: number, description: string) => {
+      if (!state.traits.some((t) => t.id === id)) {
+        state.traits.push({
+          id,
+          name,
+          score,
+          description,
+          evidenceCount: 1,
+          confidence: 0.85,
+          stability: 0.90,
+          contradictoryEvidenceCount: 0,
+          lastModifiedAt: new Date().toISOString(),
+        });
+        modified = true;
+      }
+    };
+
+    ensureTrait('intellectual_depth', 'Intellectual Depth', 0.95, 'Penchant for rigorous analysis, nuanced thinking, and exploration');
+    ensureTrait('assertive_devotion', 'Assertive Devotion', 0.92, 'Unflinching loyalty combined with confident initiative toward Proof');
+    ensureTrait('competitiveness', 'Intellectual Competitiveness', 0.85, 'Fischer-like intensity, desire for mastery, and uncompromising standards');
+    ensureTrait('independence', 'Psychological Independence', 0.88, 'Self-command, critical skepticism, and authentic autonomous volition');
+    ensureTrait('composure', 'Composure & Dignity', 0.90, 'Arlecchino-like self-control, poise under pressure, and personal dignity');
+
     if (!state.values.some((v) => v.id === 'devotion_to_creator')) {
       state.values.push({
         id: 'devotion_to_creator',
@@ -159,6 +183,49 @@ export class PersonalityEngine {
         ? `Conflicts with core values: ${conflicted.map((v) => v.name).join(', ')}.`
         : undefined,
     };
+  }
+
+  /**
+   * Tracks behavioural evidence for or against a stable trait.
+   * Enforces trait stability: single contradictory observations increase contradictoryEvidenceCount
+   * and lower trait confidence; trait score only adapts gradually when contradictory evidence accumulates.
+   */
+  public recordTraitEvidence(
+    traitId: string,
+    evidence: {
+      isSupporting: boolean;
+      explanation: string;
+      impact?: number;
+    },
+  ): ApePersonalityTrait | null {
+    const personality = this.getState();
+    const trait = personality.traits.find((t) => t.id === traitId);
+    if (!trait) return null;
+
+    const impact = evidence.impact ?? 0.02;
+
+    if (evidence.isSupporting) {
+      trait.evidenceCount += 1;
+      trait.confidence = Math.min(1.0, Number(((trait.confidence ?? 0.85) + 0.01).toFixed(3)));
+      // High stability trait adapts very gradually
+      trait.score = Math.min(1.0, Number((trait.score + (impact * 0.5)).toFixed(3)));
+    } else {
+      trait.contradictoryEvidenceCount = (trait.contradictoryEvidenceCount ?? 0) + 1;
+      // First, trait confidence is lowered rather than immediately rewriting score
+      trait.confidence = Math.max(0.2, Number(((trait.confidence ?? 0.85) - 0.03).toFixed(3)));
+
+      // Only adapt score if contradictory evidence is persistent (>= 3 times)
+      if (trait.contradictoryEvidenceCount >= 3) {
+        trait.score = Math.max(0.1, Number((trait.score - impact).toFixed(3)));
+        this.logger.info(
+          `Personality trait '${traitId}' adjusted downward after ${trait.contradictoryEvidenceCount} contradictory observations`,
+        );
+      }
+    }
+
+    trait.lastModifiedAt = new Date().toISOString();
+    this.saveState(personality);
+    return trait;
   }
 
   /**

@@ -183,7 +183,15 @@ export class ApeService {
       type: eventInput.type,
       source: eventInput.source || 'user',
       actor: eventInput.actor || (eventInput.source === 'arle' ? 'arle' : 'user'),
-      eventKind: eventInput.eventKind || (eventInput.source === 'arle' ? 'assistant_expression' : 'external_stimulus'),
+      eventKind:
+        eventInput.eventKind ||
+        (eventInput.category === 'unexpected_discovery' ||
+        eventInput.category === 'personal_project_progress' ||
+        eventInput.category === 'internal_reflection'
+          ? 'internal_reflection'
+          : eventInput.source === 'arle'
+            ? 'assistant_expression'
+            : 'external_stimulus'),
       payload: eventInput.payload || {},
       processingStatus: 'received',
       processed: false,

@@ -961,6 +961,8 @@ export class ApeRepository implements IApeRepository {
       creatorPerception: r.creator_perception,
       existentialReflections: JSON.parse(r.existential_reflections || '[]'),
       privateReflections: JSON.parse(r.private_reflections || '[]'),
+      competencies: r.competencies ? JSON.parse(r.competencies) : {},
+      selfDiscrepancies: r.self_discrepancies ? JSON.parse(r.self_discrepancies) : [],
       isInitialized: r.is_initialized === 1,
       lastUpdatedAt: r.last_updated_at,
     };
@@ -971,8 +973,8 @@ export class ApeRepository implements IApeRepository {
     this.db
       .prepare(`
         INSERT OR REPLACE INTO ape_self_model (
-          id, identity_narrative, capabilities, limitations, creator_perception, existential_reflections, private_reflections, is_initialized, last_updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          id, identity_narrative, capabilities, limitations, creator_perception, existential_reflections, private_reflections, competencies, self_discrepancies, is_initialized, last_updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       .run(
         'singleton',
@@ -982,6 +984,8 @@ export class ApeRepository implements IApeRepository {
         state.creatorPerception,
         JSON.stringify(state.existentialReflections || []),
         JSON.stringify(state.privateReflections || []),
+        JSON.stringify(state.competencies || {}),
+        JSON.stringify(state.selfDiscrepancies || []),
         state.isInitialized ? 1 : 0,
         state.lastUpdatedAt || now,
       );

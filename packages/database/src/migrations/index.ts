@@ -516,4 +516,30 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_memory_embeddings_model ON memory_embeddings(model_name);
     `,
   },
+  {
+    id: 8,
+    name: '008_ape_milestone2_cross_engine_wiring',
+    up: `
+      -- 1. Extend ape_self_model with competencies and self_discrepancies columns
+      ALTER TABLE ape_self_model ADD COLUMN competencies TEXT NOT NULL DEFAULT '{}';
+      ALTER TABLE ape_self_model ADD COLUMN self_discrepancies TEXT NOT NULL DEFAULT '[]';
+
+      -- 2. Add personal_projects table for Milestone 4 readiness / persistent personal projects
+      CREATE TABLE IF NOT EXISTS ape_personal_projects (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        category TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('proposed', 'active', 'paused', 'completed', 'abandoned')),
+        progress REAL NOT NULL DEFAULT 0.0,
+        motivation TEXT NOT NULL,
+        milestones TEXT NOT NULL DEFAULT '[]',
+        related_goal_ids TEXT NOT NULL DEFAULT '[]',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_ape_projects_status ON ape_personal_projects(status);
+    `,
+  },
 ];

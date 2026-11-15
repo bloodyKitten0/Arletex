@@ -28,6 +28,45 @@ export class DevelopmentEngine {
   }
 
   /**
+   * Modulates cognitive appraisals according to Arle's evolving interests and competencies.
+   */
+  public modulateAppraisal(appraisal: ApeAppraisal, event: ApeEvent): ApeAppraisal {
+    const state = this.getState();
+    const dims = { ...appraisal.dimensions };
+    let primaryInterpretation = appraisal.primaryInterpretation;
+
+    const topicCandidate = (
+      (event.payload?.topic as string) ||
+      (event.payload?.text as string) ||
+      event.type ||
+      ''
+    ).toLowerCase();
+
+    const matchedInterest = state.interests.find((i) =>
+      topicCandidate.includes(i.topic.toLowerCase()) || i.topic.toLowerCase().includes(topicCandidate)
+    );
+
+    if (matchedInterest) {
+      if (matchedInterest.level === 'deep' || matchedInterest.level === 'mastery') {
+        dims.goalRelevance = Math.min(1.0, Number((dims.goalRelevance + 0.25).toFixed(3)));
+        dims.personalSignificance = Math.min(1.0, Number((dims.personalSignificance + 0.25).toFixed(3)));
+        dims.goalCongruence = Math.min(1.0, Number((dims.goalCongruence + 0.15).toFixed(3)));
+        if (!primaryInterpretation.includes('interest')) {
+          primaryInterpretation = `${primaryInterpretation} (Directly engages established ${matchedInterest.level} interest in "${matchedInterest.topic}").`;
+        }
+      } else if (matchedInterest.level === 'emerging') {
+        dims.personalSignificance = Math.min(1.0, Number((dims.personalSignificance + 0.15).toFixed(3)));
+      }
+    }
+
+    return {
+      ...appraisal,
+      dimensions: dims,
+      primaryInterpretation,
+    };
+  }
+
+  /**
    * Records a developmental milestone marking significant growth, belief shift, or relationship maturation.
    */
   public recordDevelopmentalMilestone(params: {
