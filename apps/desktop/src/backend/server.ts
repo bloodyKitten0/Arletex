@@ -1,5 +1,6 @@
 import http from 'node:http';
 import fs from 'node:fs';
+import path from 'node:path';
 import { AddressInfo } from 'node:net';
 import crypto from 'node:crypto';
 import {
@@ -47,7 +48,13 @@ import { defaultDeviceAgency, DeviceActionInput } from './deviceAgencyService.js
 import { defaultScreenReadingService, ScreenReadingService } from './screenReadingService.js';
 import { defaultAudioPerception, AudioListeningResult } from './audioPerceptionService.js';
 import { defaultNotificationListener, NotificationListenerService, DesktopNotification } from './notificationListenerService.js';
-import { defaultTelegramBridge, TelegramBridgeService, InboundTelegramMessage } from './telegramBridgeService.js';
+import {
+  defaultTelegramBridge,
+  TelegramBridgeService,
+  InboundTelegramMessage,
+  DownloadedTelegramMedia,
+  TelegramMediaType,
+} from './telegramBridgeService.js';
 import { AutonomousAgencyService } from './autonomousAgencyService.js';
 import {
   ActivityRepository,
@@ -682,15 +689,21 @@ export class ArletexBackendServer {
 
   public async handleInboundTelegramMessage(msg: InboundTelegramMessage): Promise<void> {
     try {
-      this.logger.info(`Handling inbound Telegram message from ${msg.fromName}: "${msg.text}"`);
+      this.logger.info(
+        `Handling inbound Telegram message from ${msg.fromName} (chat=${msg.chatId}, user=${msg.fromId}): "${msg.text || msg.caption || ''}" (attachments: ${msg.attachments?.length || 0})`,
+      );
 
-      // Security authorization check: Verify against targetChatId if configured
-      const status = this.telegramBridge?.getStatus();
-      if (status?.targetChatId && String(msg.chatId) !== String(status.targetChatId)) {
-        this.logger.warn(
-          `Rejected Telegram message from unauthorized chatId: ${msg.chatId} (authorized: ${status.targetChatId})`,
-        );
-        return;
+      // Fail-Closed Security Boundary: Verify chat and user authorization
+      const bridge = this.telegramBridge || defaultTelegramBridge;
+      if (bridge) {
+        const isChatAllowed = bridge.isChatAuthorized(msg.chatId);
+        const isUserAllowed = bridge.isUserAuthorized(msg.fromId);
+        if (!isChatAllowed || !isUserAllowed) {
+          this.logger.warn(
+            `Rejected unauthorized inbound Telegram message from user=${msg.fromId} (${msg.fromName}) in chat=${msg.chatId} [Fail-Closed: chatAllowed=${isChatAllowed}, userAllowed=${isUserAllowed}]`,
+          );
+          return;
+        }
       }
 
       if (this.autonomousAgency) {
@@ -704,35 +717,407 @@ export class ArletexBackendServer {
         conv = this.conversationRepo.create({ title: 'Proof • Telegram & Notifications', isPinned: true });
       }
 
+      // Process and perceive inbound media attachments
+      const processedMedia: Array<{
+        internalMediaId: string;
+        type: TelegramMediaType;
+        fileSize: number;
+        mimeType: string;
+        status: 'completed' | 'failed' | 'unavailable';
+        summary: string;
+        confidence: number;
+        provenance: string;
+        filePath?: string;
+        details?: {
+          stagesSucceeded: string[];
+          stagesFailed: string[];
+          visualDescription?: string;
+          speechTranscript?: string | null;
+          durationSeconds?: number;
+          keyframesCount?: number;
+        };
+      }> = [];
+
+      if (msg.attachments && msg.attachments.length > 0 && bridge) {
+        for (const att of msg.attachments) {
+          let downloaded: DownloadedTelegramMedia;
+          try {
+            downloaded = await bridge.downloadAttachment(att);
+          } catch (dlErr: any) {
+            this.logger.error(`Failed to download Telegram attachment ${att.fileId}: ${dlErr.message}`);
+            processedMedia.push({
+              internalMediaId: 'unknown',
+              type: att.type,
+              fileSize: att.fileSize || 0,
+              mimeType: att.mimeType || 'application/octet-stream',
+              status: 'failed',
+              summary: `Attachment download failed: ${dlErr.message}`,
+              confidence: 0.0,
+              provenance: 'TelegramBridgeService:download_failed',
+              details: {
+                stagesSucceeded: [],
+                stagesFailed: ['download'],
+              },
+            });
+            continue;
+          }
+
+          const isImage =
+            att.type === 'photo' ||
+            (att.type === 'document' && downloaded.mimeType.startsWith('image/'));
+          const isVideo =
+            att.type === 'video' ||
+            att.type === 'video_note' ||
+            (att.type === 'document' && downloaded.mimeType.startsWith('video/'));
+
+          if (isImage) {
+            const vlmRes = await this.inspectImageWithVLM(downloaded.filePath, msg.caption || msg.text);
+            if (vlmRes.status === 'completed' && vlmRes.visualDescription) {
+              processedMedia.push({
+                internalMediaId: downloaded.internalMediaId,
+                type: att.type,
+                fileSize: downloaded.fileSize,
+                mimeType: downloaded.mimeType,
+                status: 'completed',
+                summary: `Image observation: ${vlmRes.visualDescription}`,
+                confidence: vlmRes.confidence,
+                provenance: vlmRes.provenance,
+                filePath: downloaded.filePath,
+                details: {
+                  stagesSucceeded: ['download', 'vlm_visual_inspection'],
+                  stagesFailed: [],
+                  visualDescription: vlmRes.visualDescription,
+                },
+              });
+            } else {
+              processedMedia.push({
+                internalMediaId: downloaded.internalMediaId,
+                type: att.type,
+                fileSize: downloaded.fileSize,
+                mimeType: downloaded.mimeType,
+                status: vlmRes.status,
+                summary: `Image downloaded (${(downloaded.fileSize / 1024).toFixed(1)} KB), but visual analysis unavailable: ${vlmRes.error || 'VLM offline'}`,
+                confidence: 0.0,
+                provenance: vlmRes.provenance,
+                filePath: downloaded.filePath,
+                details: {
+                  stagesSucceeded: ['download'],
+                  stagesFailed: ['vlm_visual_inspection'],
+                },
+              });
+            }
+          } else if (isVideo) {
+            const stagesSucceeded: string[] = ['download'];
+            const stagesFailed: string[] = [];
+
+            let videoRes: ProcessedVideoResult | null = null;
+            try {
+              videoRes = await defaultVideoProcessor.processVideo({
+                videoPath: downloaded.filePath,
+                mimeType: downloaded.mimeType,
+                maxFrames: 6,
+              });
+              stagesSucceeded.push('ffprobe_duration', 'ffmpeg_keyframes');
+            } catch (vidErr: any) {
+              this.logger.error(`VideoProcessor failed: ${vidErr.message}`);
+              stagesFailed.push('video_processing');
+            }
+
+            if (!videoRes) {
+              processedMedia.push({
+                internalMediaId: downloaded.internalMediaId,
+                type: att.type,
+                fileSize: downloaded.fileSize,
+                mimeType: downloaded.mimeType,
+                status: 'failed',
+                summary: `Video downloaded, but processing failed.`,
+                confidence: 0.0,
+                provenance: 'VideoProcessor:failed',
+                filePath: downloaded.filePath,
+                details: { stagesSucceeded, stagesFailed },
+              });
+            } else {
+              if (videoRes.transcript) {
+                stagesSucceeded.push('whisper_transcription');
+              } else {
+                stagesFailed.push('whisper_transcription');
+              }
+
+              let keyframeDesc: string | undefined;
+              if (videoRes.framesBase64.length > 0) {
+                try {
+                  const kfRes = await this.inspectImageBase64WithVLM(
+                    videoRes.framesBase64[0]!,
+                    `Representative video keyframe. Caption: "${msg.caption || 'none'}"`,
+                  );
+                  if (kfRes.status === 'completed' && kfRes.visualDescription) {
+                    keyframeDesc = kfRes.visualDescription;
+                    stagesSucceeded.push('vlm_keyframe_inspection');
+                  } else {
+                    stagesFailed.push('vlm_keyframe_inspection');
+                  }
+                } catch {
+                  stagesFailed.push('vlm_keyframe_inspection');
+                }
+              }
+
+              const visiblePart = `Visible: ${videoRes.durationSeconds.toFixed(1)}s video clip, ${videoRes.framesBase64.length} keyframes extracted.${keyframeDesc ? ` Keyframe description: ${keyframeDesc}` : ''}`;
+              const audiblePart = videoRes.transcript
+                ? `Spoken dialogue: "${videoRes.transcript}"`
+                : 'No spoken dialogue transcribed.';
+
+              processedMedia.push({
+                internalMediaId: downloaded.internalMediaId,
+                type: att.type,
+                fileSize: downloaded.fileSize,
+                mimeType: downloaded.mimeType,
+                status: 'completed',
+                summary: `${visiblePart} | ${audiblePart}`,
+                confidence: 0.85,
+                provenance: 'VideoProcessor:ffprobe+ffmpeg+Whisper+VLM',
+                filePath: downloaded.filePath,
+                details: {
+                  stagesSucceeded,
+                  stagesFailed,
+                  speechTranscript: videoRes.transcript,
+                  durationSeconds: videoRes.durationSeconds,
+                  keyframesCount: videoRes.framesBase64.length,
+                  visualDescription: keyframeDesc,
+                },
+              });
+            }
+          }
+        }
+      }
+
+      // Grounded episodic memory creation for perceived media
+      for (const item of processedMedia) {
+        if (item.status === 'completed') {
+          try {
+            this.memoryRepo.create({
+              type: 'episodic',
+              content: `Telegram media (${item.type}, ID: ${item.internalMediaId}) from Proof. Caption: "${msg.caption || msg.text || 'none'}". Observation: ${item.summary}`,
+              rawObservation: item.summary,
+              tags: ['telegram', 'media', item.type, 'empirical', 'grounded'],
+              importance: 0.7,
+              confidence: item.confidence,
+              provenance: 'raw_observation',
+              metadata: {
+                source: 'telegram_media_perception',
+                method: item.type === 'photo' ? 'vlm_inspection' : 'video_processor_inspection',
+                internalMediaId: item.internalMediaId,
+                chatId: msg.chatId,
+                messageId: msg.messageId,
+                mediaGroupId: msg.mediaGroupId,
+              },
+            });
+          } catch (memErr: any) {
+            this.logger.warn(`Failed to store memory for Telegram media: ${memErr.message}`);
+          }
+        }
+      }
+
+      // Format user message and prompt
+      let userPrompt = msg.text || msg.caption || '';
+      if (processedMedia.length > 0) {
+        const summaries = processedMedia
+          .map((m) => ` - [${m.type} ${m.internalMediaId}]: ${m.summary}`)
+          .join('\n');
+        userPrompt = `${userPrompt ? userPrompt + '\n\n' : ''}[Attached Telegram Media Ingestion (${processedMedia.length})]:\n${summaries}`;
+      }
+
+      // Record message in persistent conversation history (never storing bot tokens or download URLs)
+      this.messageRepo.create({
+        conversationId: conv.id,
+        role: 'user',
+        content: userPrompt,
+        metadata: {
+          source: 'telegram',
+          chatId: msg.chatId,
+          messageId: msg.messageId,
+          fromId: msg.fromId,
+          fromName: msg.fromName,
+          mediaGroupId: msg.mediaGroupId,
+          attachments: processedMedia.map((m) => ({
+            internalMediaId: m.internalMediaId,
+            type: m.type,
+            fileSize: m.fileSize,
+            mimeType: m.mimeType,
+            status: m.status,
+            confidence: m.confidence,
+            provenance: m.provenance,
+            stagesSucceeded: m.details?.stagesSucceeded,
+            stagesFailed: m.details?.stagesFailed,
+          })),
+        },
+      });
+
+      // Emit event to APE Psychology Engine
       await this.apeService.processEvent({
         category: 'user_interaction',
-        type: 'message_received',
+        type: processedMedia.length > 0 ? 'media_received' : 'message_received',
         source: 'telegram',
         actor: 'user',
         eventKind: 'external_stimulus',
         payload: {
           chatId: msg.chatId,
           sender: msg.fromName,
-          text: msg.text,
+          text: msg.text || msg.caption || '',
+          hasMedia: processedMedia.length > 0,
+          mediaCount: processedMedia.length,
+          mediaTypes: processedMedia.map((p) => p.type),
+          mediaIds: processedMedia.map((p) => p.internalMediaId),
         },
       });
 
-      const prompt = `[Telegram message from ${msg.fromName}]:\n${msg.text}`;
+      // Run inference stream and reply back to Telegram
+      const streamPrompt = `[Telegram message from ${msg.fromName}]:\n${userPrompt}`;
       let replyText = '';
       await this.runInferenceStream(
         conv.id,
-        prompt,
+        streamPrompt,
         (chunk) => {
           replyText = chunk.fullContent;
         },
       );
 
-      if (replyText && this.telegramBridge) {
-        await this.telegramBridge.sendMessage(msg.chatId, replyText);
+      if (replyText && bridge) {
+        await bridge.sendMessage(msg.chatId, replyText);
       }
     } catch (err: any) {
       this.logger.error('Error handling inbound Telegram message', err);
     }
+  }
+
+  /**
+   * Inspects an image file using local VLM on port 8080.
+   */
+  public async inspectImageWithVLM(
+    imagePath: string,
+    contextPrompt?: string,
+  ): Promise<{
+    status: 'completed' | 'failed' | 'unavailable';
+    visualDescription?: string;
+    visibleText?: string;
+    inferredDetails?: string;
+    confidence: number;
+    provenance: string;
+    error?: string;
+  }> {
+    try {
+      const imageBuf = await fs.promises.readFile(imagePath);
+      const ext = path.extname(imagePath).toLowerCase();
+      const mime = ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : 'image/jpeg';
+      const imageBase64 = `data:${mime};base64,${imageBuf.toString('base64')}`;
+      return this.inspectImageBase64WithVLM(imageBase64, contextPrompt);
+    } catch (err: any) {
+      this.logger.warn(`Failed to read image for VLM analysis: ${err.message}`);
+      return {
+        status: 'failed',
+        confidence: 0.0,
+        provenance: 'LocalVLM:port8080:read_error',
+        error: err.message,
+      };
+    }
+  }
+
+  /**
+   * Inspects a base64 image using local VLM on port 8080.
+   */
+  public async inspectImageBase64WithVLM(
+    imageBase64: string,
+    contextPrompt?: string,
+  ): Promise<{
+    status: 'completed' | 'failed' | 'unavailable';
+    visualDescription?: string;
+    visibleText?: string;
+    inferredDetails?: string;
+    confidence: number;
+    provenance: string;
+    error?: string;
+  }> {
+    try {
+      const dataUrl = imageBase64.startsWith('data:')
+        ? imageBase64
+        : `data:image/jpeg;base64,${imageBase64}`;
+
+      const captionContext = contextPrompt?.trim()
+        ? `Accompanying context from user: "${contextPrompt.trim()}".`
+        : 'No accompanying caption was provided.';
+
+      const prompt = `Analyze this image in detail.\n${captionContext}\n\nPlease report:\n1. Direct visual observations (main subjects, setting, colors, key elements).\n2. Visible text / OCR present in the image.\n3. Distinct interpretation vs direct observation.\n4. Relevant contextual summary.`;
+
+      const res = await fetch('http://127.0.0.1:8080/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'Qwen2.5-14B-Uncensored-Q4_K_M',
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: prompt },
+                { type: 'image_url', image_url: { url: dataUrl } },
+              ],
+            },
+          ],
+          max_tokens: 600,
+          temperature: 0.1,
+        }),
+        signal: AbortSignal.timeout(20000),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        this.logger.warn(`VLM visual analysis HTTP error ${res.status}: ${errText}`);
+        return {
+          status: 'failed',
+          confidence: 0.0,
+          provenance: 'LocalVLM:port8080:error',
+          error: `VLM HTTP ${res.status}`,
+        };
+      }
+
+      const data = (await res.json()) as any;
+      const content = data.choices?.[0]?.message?.content?.trim() || '';
+      if (!content) {
+        return {
+          status: 'failed',
+          confidence: 0.0,
+          provenance: 'LocalVLM:port8080:empty_response',
+          error: 'VLM returned empty analysis',
+        };
+      }
+
+      return {
+        status: 'completed',
+        visualDescription: content,
+        confidence: 0.85,
+        provenance: 'LocalVLM:port8080:Qwen2.5-14B',
+      };
+    } catch (err: any) {
+      this.logger.warn(`VLM visual analysis unavailable: ${err.message}`);
+      return {
+        status: 'unavailable',
+        confidence: 0.0,
+        provenance: 'LocalVLM:port8080:offline',
+        error: err.message,
+      };
+    }
+  }
+
+  /**
+   * Retrieves a previously stored Telegram media file by internal media ID.
+   */
+  public async getTelegramMediaById(
+    mediaId: string,
+  ): Promise<{ filePath: string; mimeType: string; fileSize: number } | null> {
+    const bridge = this.telegramBridge || defaultTelegramBridge;
+    if (bridge) {
+      const customDir = path.join(this.config.dataDirectory, 'media', 'telegram');
+      return bridge.getMediaById(mediaId, customDir);
+    }
+    return null;
   }
 
   public async checkInferenceHealth(): Promise<InferenceHealthResult> {
@@ -2399,13 +2784,23 @@ Rules:
       }
 
       if (url.pathname === '/api/telegram/configure' && method === 'POST') {
-        const body = (await this.readJsonBody(req)) as { botToken: string; targetChatId?: string };
+        const body = (await this.readJsonBody(req)) as {
+          botToken: string;
+          targetChatId?: string;
+          allowedChatIds?: (string | number)[];
+          allowedUserIds?: number[];
+        };
         if (body.botToken) {
           this.preferenceRepo.set('telegram_bot_token', body.botToken.trim());
           if (body.targetChatId) {
             this.preferenceRepo.set('telegram_target_chat_id', body.targetChatId.trim());
           }
-          (this.telegramBridge || defaultTelegramBridge).configure(body.botToken, body.targetChatId);
+          (this.telegramBridge || defaultTelegramBridge).configure(
+            body.botToken,
+            body.targetChatId,
+            body.allowedChatIds,
+            body.allowedUserIds,
+          );
           void (this.telegramBridge || defaultTelegramBridge).startPolling();
         }
         this.sendJson(res, 200, { success: true, status: (this.telegramBridge || defaultTelegramBridge).getStatus() });
@@ -2421,6 +2816,17 @@ Rules:
         }
         const sent = await (this.telegramBridge || defaultTelegramBridge).sendMessage(targetChatId, body.text);
         this.sendJson(res, 200, { success: sent });
+        return;
+      }
+
+      if (url.pathname.startsWith('/api/telegram/media/') && method === 'GET') {
+        const mediaId = url.pathname.replace('/api/telegram/media/', '').trim();
+        const media = await this.getTelegramMediaById(mediaId);
+        if (!media) {
+          this.sendJson(res, 404, { error: 'Media not found or unapproved' });
+          return;
+        }
+        this.sendJson(res, 200, media);
         return;
       }
 
