@@ -68,7 +68,7 @@ export const EnvironmentView: React.FC = () => {
             Autonomy and Permission Architecture
           </h2>
           <p style={{ fontSize: '13px', lineHeight: 1.6, color: 'var(--text-secondary)' }}>
-            Arletex enforces strict boundaries between cognitive model proposals and authorized system actions. The language model (Qwen 3.5-9B Heretic) may propose executions, file operations, or web requests, but executions require programmatic security validation and user consent gates.
+            Arletex enforces strict boundaries between cognitive model proposals and authorized system actions. The language model (Qwen 2.5-14B Uncensored) may propose executions, file operations, or web requests, but executions require programmatic security validation and user consent gates.
           </p>
         </div>
 

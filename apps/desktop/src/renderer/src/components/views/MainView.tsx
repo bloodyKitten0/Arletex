@@ -456,7 +456,7 @@ export const MainView: React.FC<MainViewProps> = ({
               {conversation?.title || 'Active Dialogue & Reflection'}
             </span>
             <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-              Model: {health?.modelLoaded?.split('/').pop()?.replace('.gguf', '') || 'Qwen 3.5-9B Heretic'} • Vulkan 780M
+              Model: {health?.modelLoaded?.split('/').pop()?.replace('.gguf', '') || 'Qwen 2.5-14B Uncensored'} • Vulkan 780M
             </span>
           </div>
         </div>

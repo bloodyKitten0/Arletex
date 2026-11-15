@@ -80,7 +80,7 @@ export class TelemetryService {
       storage,
       battery,
       inference: {
-        activeModel: inferenceStats?.activeModel ?? 'Qwen3.5-9B-Heretic-Q4_K_M',
+        activeModel: inferenceStats?.activeModel ?? 'Qwen2.5-14B-Uncensored-Q4_K_M',
         provider: inferenceStats?.provider ?? 'llama.cpp',
         lastTtftMs: inferenceStats?.lastTtftMs ?? null,
         lastTps: inferenceStats?.lastTps ?? null,

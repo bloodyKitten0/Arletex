@@ -164,7 +164,7 @@ export class ScreenReadingService {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'Qwen3.5-9B-Heretic-Q4_K_M',
+          model: 'Qwen2.5-14B-Uncensored-Q4_K_M',
           messages: [
             {
               role: 'user',

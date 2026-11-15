@@ -25,7 +25,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       ? 'llama.cpp (Vulkan)'
       : `llama.cpp (${health?.status || 'offline'})`;
 
-  const rawModel = health?.modelLoaded || 'Qwen3.5-9B-Heretic';
+  const rawModel = health?.modelLoaded || 'Qwen2.5-14B-Uncensored';
   const shortModel = rawModel.split('/').pop()?.replace('.gguf', '') || rawModel;
 
   useEffect(() => {

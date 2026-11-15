@@ -1276,7 +1276,7 @@ export class ArletexBackendServer {
         { role: 'user', content: userContent },
       ];
 
-      const activeModelId = this.inferenceGateway.getConfig().defaultModelId || 'Qwen3.5-9B-Heretic-Q4_K_M';
+      const activeModelId = this.inferenceGateway.getConfig().defaultModelId || 'Qwen2.5-14B-Uncensored-Q4_K_M';
 
       // Emit initial heartbeat
       onChunk({

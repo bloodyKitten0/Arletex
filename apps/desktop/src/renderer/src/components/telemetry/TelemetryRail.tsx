@@ -366,7 +366,7 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
             Cognitive Inference
           </div>
           <div style={{ fontSize: '11px', color: 'var(--text-primary)', wordBreak: 'break-all' }}>
-            {telemetry?.inference.activeModel || 'Qwen3.5-9B-Heretic-Q4_K_M'}
+            {telemetry?.inference.activeModel || 'Qwen2.5-14B-Uncensored-Q4_K_M'}
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
             <span style={{ color: 'var(--text-muted)' }}>Throughput:</span>
