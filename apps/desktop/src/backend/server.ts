@@ -1704,7 +1704,7 @@ Rules:
           requestId: crypto.randomUUID(),
           messages: messagesPayload as any,
           configOverride: {
-            maxTokens: 150,
+            maxTokens: 500,
             temperature: 0.7,
           },
           onChunk: () => {},

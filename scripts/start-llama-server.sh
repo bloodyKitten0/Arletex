@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-MODEL_PATH="${1:-/home/proof/models/qwen-14b-abliterated/Qwen2.5-14B-Instruct-abliterated-v2.Q4_K_M.gguf}"
+MODEL_PATH="${1:-/home/proof/models/qwen-heretic/Qwen3.5-9B-Heretic-Q4_K_M.gguf}"
 PORT="${2:-8080}"
 HOST="127.0.0.1"
 THREADS="8"
@@ -10,12 +10,15 @@ if [ -z "${N_GPU_LAYERS:-}" ]; then
   if [[ "$MODEL_PATH" == *"14B"* ]] || [[ "$MODEL_PATH" == *"14b"* ]]; then
     N_GPU_LAYERS="36"
     CTX_SIZE="8192"
+  elif [[ "$MODEL_PATH" == *"9B"* ]] || [[ "$MODEL_PATH" == *"9b"* ]]; then
+    N_GPU_LAYERS="28"
+    CTX_SIZE="4096"
   else
-    N_GPU_LAYERS="99"
-    CTX_SIZE="16384"
+    N_GPU_LAYERS="28"
+    CTX_SIZE="4096"
   fi
 else
-  CTX_SIZE="${CTX_SIZE:-8192}"
+  CTX_SIZE="${CTX_SIZE:-4096}"
 fi
 
 LLAMA_SERVER="/home/linuxbrew/.linuxbrew/bin/llama-server"
