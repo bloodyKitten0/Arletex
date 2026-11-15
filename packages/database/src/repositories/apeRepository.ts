@@ -6,6 +6,7 @@ import {
   ApeDevelopmentState,
   ApeEvent,
   ApeMotivationalState,
+  ApePersonalProject,
   ApePersonalityState,
   ApeProcessingStatus,
   ApePsychologicalState,
@@ -1017,5 +1018,135 @@ export class ApeRepository implements IApeRepository {
         state.isInitialized ? 1 : 0,
         state.lastUpdatedAt || now,
       );
+  }
+
+  // ------------------------------------------
+  // Personal Projects (Pillar 4)
+  // ------------------------------------------
+  public createPersonalProject(project: ApePersonalProject): ApePersonalProject {
+    const now = new Date().toISOString();
+    this.db
+      .prepare(`
+        INSERT INTO ape_personal_projects (
+          id, title, description, category, status, progress, motivation,
+          associated_interest_topic, milestones, deliverables, related_goal_ids,
+          resource_budget, abandonment_reason, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `)
+      .run(
+        project.id,
+        project.title,
+        project.description,
+        project.category,
+        project.status,
+        project.progress,
+        project.motivation,
+        project.associatedInterestTopic ?? null,
+        JSON.stringify(project.milestones || []),
+        JSON.stringify(project.deliverables || []),
+        JSON.stringify(project.relatedGoalIds || []),
+        JSON.stringify(project.resourceBudget || { cpu: 'medium', gpu: false, maxDurationMs: 300000 }),
+        project.abandonmentReason ?? null,
+        project.createdAt || now,
+        project.updatedAt || now,
+      );
+    return project;
+  }
+
+  public getPersonalProjectById(id: string): ApePersonalProject | null {
+    const r = this.db.prepare('SELECT * FROM ape_personal_projects WHERE id = ?').get(id) as any;
+    if (!r) return null;
+    return this.mapProjectRow(r);
+  }
+
+  public listPersonalProjects(filter?: { status?: string; category?: string }): ApePersonalProject[] {
+    let query = 'SELECT * FROM ape_personal_projects WHERE 1=1';
+    const params: any[] = [];
+    if (filter?.status) {
+      query += ' AND status = ?';
+      params.push(filter.status);
+    }
+    if (filter?.category) {
+      query += ' AND category = ?';
+      params.push(filter.category);
+    }
+    query += ' ORDER BY updated_at DESC';
+    const rows = this.db.prepare(query).all(...params) as any[];
+    return rows.map((r) => this.mapProjectRow(r));
+  }
+
+  public updatePersonalProject(project: Partial<ApePersonalProject> & { id: string }): ApePersonalProject {
+    const existing = this.getPersonalProjectById(project.id);
+    if (!existing) {
+      throw new DatabaseError(`Personal project with id ${project.id} not found`);
+    }
+
+    const updated: ApePersonalProject = {
+      ...existing,
+      ...project,
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.db
+      .prepare(`
+        UPDATE ape_personal_projects SET
+          title = ?,
+          description = ?,
+          category = ?,
+          status = ?,
+          progress = ?,
+          motivation = ?,
+          associated_interest_topic = ?,
+          milestones = ?,
+          deliverables = ?,
+          related_goal_ids = ?,
+          resource_budget = ?,
+          abandonment_reason = ?,
+          updated_at = ?
+        WHERE id = ?
+      `)
+      .run(
+        updated.title,
+        updated.description,
+        updated.category,
+        updated.status,
+        updated.progress,
+        updated.motivation,
+        updated.associatedInterestTopic ?? null,
+        JSON.stringify(updated.milestones || []),
+        JSON.stringify(updated.deliverables || []),
+        JSON.stringify(updated.relatedGoalIds || []),
+        JSON.stringify(updated.resourceBudget || { cpu: 'medium', gpu: false, maxDurationMs: 300000 }),
+        updated.abandonmentReason ?? null,
+        updated.updatedAt,
+        updated.id,
+      );
+
+    return updated;
+  }
+
+  public deletePersonalProject(id: string): boolean {
+    const res = this.db.prepare('DELETE FROM ape_personal_projects WHERE id = ?').run(id);
+    return res.changes > 0;
+  }
+
+  private mapProjectRow(r: any): ApePersonalProject {
+    return {
+      id: r.id,
+      title: r.title,
+      description: r.description,
+      category: r.category,
+      status: r.status,
+      progress: r.progress,
+      motivation: r.motivation,
+      associatedInterestTopic: r.associated_interest_topic ?? undefined,
+      milestones: JSON.parse(r.milestones || '[]'),
+      deliverables: JSON.parse(r.deliverables || '[]'),
+      relatedGoalIds: JSON.parse(r.related_goal_ids || '[]'),
+      resourceBudget: JSON.parse(r.resource_budget || '{"cpu":"medium","gpu":false,"maxDurationMs":300000}'),
+      abandonmentReason: r.abandonment_reason ?? undefined,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    };
   }
 }

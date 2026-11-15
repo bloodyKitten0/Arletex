@@ -206,11 +206,22 @@ export class CognitiveControlBus {
 
       // Stage 7: Motivational Evaluation
       stagesCompleted.push('motivational_evaluation');
+      if (event.source === 'user') {
+        this.apeService.resourceGovernor.recordUserActivity();
+      }
+      this.apeService.motivationalEngine.resolveMotivationalConflicts({
+        isUserInteracting: event.source === 'user',
+        highFatigue: (apeState.contextual.psychologicalEnergy ?? 0.8) < 0.3,
+      });
 
       // Stage 8: Goal Evaluation
       stagesCompleted.push('goal_evaluation');
+      this.apeService.personalProjectService.rankActiveProjects();
       const candidateInitiatives = this.apeService.motivationalEngine.generateCandidateInitiatives({
         activeInterests: this.apeService.developmentEngine.getState().interests.map((i) => i.topic),
+        unresolvedGoalTitles: this.apeService.motivationalEngine.getState().goals
+          .filter((g) => g.status === 'active' || g.status === 'committed')
+          .map((g) => g.title),
       });
 
       // Stage 9: Decision Selection (Explainable Decision Architecture)

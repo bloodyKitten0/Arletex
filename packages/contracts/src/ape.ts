@@ -457,22 +457,142 @@ export const ApeGoalStatusSchema = z.enum([
 
 export type ApeGoalStatus = z.infer<typeof ApeGoalStatusSchema>;
 
+export const ApeGoalCategorySchema = z.enum([
+  'long_term',
+  'short_term',
+  'exploratory',
+  'learning',
+  'creative',
+  'personal_project',
+  'maintenance',
+  'relationship',
+]);
+
+export type ApeGoalCategory = z.infer<typeof ApeGoalCategorySchema>;
+
+export const ApeGoalCostSchema = z.object({
+  cpu: z.enum(['low', 'medium', 'high']).default('low'),
+  gpu: z.boolean().default(false),
+  estimatedDurationMs: z.number().default(10000),
+});
+
+export type ApeGoalCost = z.infer<typeof ApeGoalCostSchema>;
+
 export const ApeGoalSchema = z.object({
   id: z.string().uuid(),
   title: z.string(),
   description: z.string(),
-  origin: z.enum(['user', 'autonomous', 'shared']).default('autonomous'),
+  origin: z.enum(['user', 'autonomous', 'shared', 'curiosity', 'project', 'relationship', 'maintenance']).default('autonomous'),
   motivation: z.string(),
+  parentInterestTopic: z.string().optional(),
+  category: ApeGoalCategorySchema.default('short_term'),
   priority: z.number().min(0.0).max(1.0).default(0.5),
   status: ApeGoalStatusSchema.default('active'),
   progress: z.number().min(0.0).max(1.0).default(0.0),
+  expectedValue: z.number().min(0.0).max(1.0).default(0.6),
+  estimatedCost: ApeGoalCostSchema.default({ cpu: 'low', gpu: false, estimatedDurationMs: 10000 }),
+  requiredCapabilities: z.array(z.string()).default([]),
+  requiredPermissions: z.array(z.string()).default([]),
   dependencies: z.array(z.string()).default([]),
+  successCriteria: z.array(z.string()).default([]),
+  progressEvidence: z.array(z.string()).default([]),
+  failureConditions: z.array(z.string()).default([]),
+  lastReviewedAt: z.string().datetime().optional(),
+  deadline: z.string().datetime().optional(),
   relatedMemoryIds: z.array(z.string()).default([]),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
 
 export type ApeGoal = z.infer<typeof ApeGoalSchema>;
+
+// ------------------------------------------
+// Personal Project Schemas (Pillar 4)
+// ------------------------------------------
+export const ApeProjectStatusSchema = z.enum([
+  'proposed',
+  'active',
+  'paused',
+  'completed',
+  'abandoned',
+]);
+
+export type ApeProjectStatus = z.infer<typeof ApeProjectStatusSchema>;
+
+export const ApeProjectCategorySchema = z.enum([
+  'research',
+  'creative',
+  'software',
+  'learning',
+  'worldbuilding',
+  'philosophical',
+  'system',
+]);
+
+export type ApeProjectCategory = z.infer<typeof ApeProjectCategorySchema>;
+
+export const ApeProjectMilestoneSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  completed: z.boolean().default(false),
+  evidence: z.string().optional(),
+  completedAt: z.string().datetime().optional(),
+});
+
+export type ApeProjectMilestone = z.infer<typeof ApeProjectMilestoneSchema>;
+
+export const ApeProjectDeliverableSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  type: z.enum(['document', 'code', 'synthesis', 'dataset']),
+  contentOrPath: z.string(),
+  verifiedAt: z.string().datetime(),
+});
+
+export type ApeProjectDeliverable = z.infer<typeof ApeProjectDeliverableSchema>;
+
+export const ApeProjectResourceBudgetSchema = z.object({
+  cpu: z.enum(['low', 'medium', 'high']).default('medium'),
+  gpu: z.boolean().default(false),
+  maxDurationMs: z.number().default(300000),
+});
+
+export type ApeProjectResourceBudget = z.infer<typeof ApeProjectResourceBudgetSchema>;
+
+export const ApePersonalProjectSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  description: z.string(),
+  category: ApeProjectCategorySchema,
+  status: ApeProjectStatusSchema.default('active'),
+  progress: z.number().min(0.0).max(1.0).default(0.0),
+  motivation: z.string(),
+  associatedInterestTopic: z.string().optional(),
+  milestones: z.array(ApeProjectMilestoneSchema).default([]),
+  deliverables: z.array(ApeProjectDeliverableSchema).default([]),
+  relatedGoalIds: z.array(z.string()).default([]),
+  resourceBudget: ApeProjectResourceBudgetSchema.default({ cpu: 'medium', gpu: false, maxDurationMs: 300000 }),
+  abandonmentReason: z.string().optional(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export type ApePersonalProject = z.infer<typeof ApePersonalProjectSchema>;
+
+// ------------------------------------------
+// Resource Execution Profile (ASUS ROG Ally X)
+// ------------------------------------------
+export const ResourceExecutionProfileSchema = z.object({
+  targetDevice: z.literal('ASUS_ROG_ALLY_X').default('ASUS_ROG_ALLY_X'),
+  cpuBudget: z.enum(['low', 'medium', 'high']).default('medium'),
+  gpuAllowed: z.boolean().default(true),
+  maxMemoryMb: z.number().default(16384),
+  backoffMs: z.number().default(35000),
+  isUserInteracting: z.boolean().default(false),
+  throttleFactor: z.number().min(0.1).max(1.0).default(1.0),
+});
+
+export type ResourceExecutionProfile = z.infer<typeof ResourceExecutionProfileSchema>;
 
 export const ApeMotivationalStateSchema = z.object({
   needs: z.record(z.string(), z.number().min(0.0).max(1.0)).default({
@@ -566,8 +686,64 @@ export const ApeSelfModelSchema = z.object({
 export type ApeSelfModel = z.infer<typeof ApeSelfModelSchema>;
 
 // ------------------------------------------
-// Engine 6: Development Engine Schemas
+// Engine 6: Development Engine Schemas (Pillar 3)
 // ------------------------------------------
+export const InterestDevelopmentStageSchema = z.enum([
+  'exposure',
+  'attention',
+  'exploration',
+  'appraisal',
+  'formed',
+  'developing',
+  'mastery',
+  'fading',
+  'dormant',
+  'abandoned',
+]);
+
+export type InterestDevelopmentStage = z.infer<typeof InterestDevelopmentStageSchema>;
+
+export const InterestEngagementRecordSchema = z.object({
+  timestamp: z.string().datetime(),
+  action: z.string(),
+  outcome: z.enum(['success', 'failure', 'frustration', 'rewarding', 'neutral']).default('rewarding'),
+  voluntary: z.boolean().default(true),
+  satisfaction: z.number().min(0.0).max(1.0).default(0.7),
+  notes: z.string().optional(),
+});
+
+export type InterestEngagementRecord = z.infer<typeof InterestEngagementRecordSchema>;
+
+export const ApeInterestSchema = z.object({
+  topic: z.string(),
+  origin: z.enum([
+    'spontaneous',
+    'conversation',
+    'reading',
+    'environmental',
+    'project',
+    'unresolved_question',
+    'external_recommendation',
+  ]).default('spontaneous'),
+  initialTrigger: z.string().default('General environmental exposure'),
+  relevance: z.number().min(0.0).max(1.0).default(0.5),
+  novelty: z.number().min(0.0).max(1.0).default(0.8),
+  curiosity: z.number().min(0.0).max(1.0).default(0.8),
+  engagementHistory: z.array(InterestEngagementRecordSchema).default([]),
+  knowledgeLevel: z.number().min(0.0).max(1.0).default(0.1),
+  confidence: z.number().min(0.0).max(1.0).default(0.5),
+  developmentStage: InterestDevelopmentStageSchema.default('exposure'),
+  level: z.enum(['emerging', 'deep', 'mastery', 'fading', 'dormant', 'abandoned']).default('emerging'),
+  relatedInterests: z.array(z.string()).default([]),
+  associatedGoalIds: z.array(z.string()).default([]),
+  currentMotivationalStrength: z.number().min(0.0).max(1.0).default(0.7),
+  developedAt: z.string().datetime(),
+  lastEngagedAt: z.string().datetime().optional(),
+  abandonmentReason: z.string().optional(),
+});
+
+export type ApeInterest = z.infer<typeof ApeInterestSchema>;
+
 export const ApeDevelopmentStateSchema = z.object({
   developmentalHistory: z.array(z.object({
     id: z.string().uuid(),
@@ -579,11 +755,7 @@ export const ApeDevelopmentStateSchema = z.object({
     triggerEventId: z.string(),
     timestamp: z.string().datetime(),
   })).default([]),
-  interests: z.array(z.object({
-    topic: z.string(),
-    level: z.enum(['emerging', 'deep', 'mastery', 'fading', 'dormant']),
-    developedAt: z.string().datetime(),
-  })).default([]),
+  interests: z.array(ApeInterestSchema).default([]),
   isInitialized: z.boolean().default(true),
   lastUpdatedAt: z.string().datetime(),
 });

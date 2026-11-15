@@ -593,4 +593,46 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_memories_archived ON memories(is_archived, is_deleted);
     `,
   },
+  {
+    id: 10,
+    name: '010_ape_milestone4_motivation_interests_projects_and_resources',
+    up: `
+      -- Upgrade ape_personal_projects to support rich deliverables, associated interest topics, resource budget, and abandonment reason
+      CREATE TABLE IF NOT EXISTS ape_personal_projects_new (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        category TEXT NOT NULL CHECK (category IN ('research', 'creative', 'software', 'learning', 'worldbuilding', 'philosophical', 'system')),
+        status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('proposed', 'active', 'paused', 'completed', 'abandoned')),
+        progress REAL NOT NULL DEFAULT 0.0,
+        motivation TEXT NOT NULL,
+        associated_interest_topic TEXT,
+        milestones TEXT NOT NULL DEFAULT '[]',
+        deliverables TEXT NOT NULL DEFAULT '[]',
+        related_goal_ids TEXT NOT NULL DEFAULT '[]',
+        resource_budget TEXT NOT NULL DEFAULT '{"cpu":"medium","gpu":false,"maxDurationMs":300000}',
+        abandonment_reason TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      INSERT OR IGNORE INTO ape_personal_projects_new (
+        id, title, description, category, status, progress, motivation,
+        associated_interest_topic, milestones, deliverables, related_goal_ids,
+        resource_budget, abandonment_reason, created_at, updated_at
+      )
+      SELECT
+        id, title, description, category, status, progress, motivation,
+        NULL, milestones, '[]', related_goal_ids,
+        '{"cpu":"medium","gpu":false,"maxDurationMs":300000}', NULL, created_at, updated_at
+      FROM ape_personal_projects;
+
+      DROP TABLE ape_personal_projects;
+      ALTER TABLE ape_personal_projects_new RENAME TO ape_personal_projects;
+
+      CREATE INDEX IF NOT EXISTS idx_ape_projects_status ON ape_personal_projects(status);
+      CREATE INDEX IF NOT EXISTS idx_ape_projects_category ON ape_personal_projects(category);
+      CREATE INDEX IF NOT EXISTS idx_ape_projects_interest ON ape_personal_projects(associated_interest_topic);
+    `,
+  },
 ];

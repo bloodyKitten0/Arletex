@@ -3,11 +3,30 @@ import {
   ApeAppraisal,
   ApeEvent,
   ApeGoal,
+  ApeGoalCategory,
+  ApeGoalCost,
   ApeGoalStatus,
   ApeMotivationalState,
 } from '@arletex/contracts';
 import { IApeRepository } from './interfaces.js';
 import { ILogger, rootLogger } from '../logger.js';
+
+export interface ConflictResolutionContext {
+  isUserInteracting?: boolean;
+  userMessageUrgent?: boolean;
+  resourceConstrained?: boolean;
+  thermalThrottle?: boolean;
+  highFatigue?: boolean;
+  stalledGoalIds?: string[];
+}
+
+export interface ConflictResolutionResult {
+  selectedGoalId?: string;
+  actionType: 'user_engagement' | 'work' | 'recreation' | 'intimacy' | 'curiosity' | 'throttle_backoff' | 'change_strategy';
+  priorityScore: number;
+  deferredGoalIds: string[];
+  justification: string;
+}
 
 export class MotivationalEngine {
   private readonly repo: IApeRepository;
@@ -286,10 +305,19 @@ export class MotivationalEngine {
   public createGoal(params: {
     title: string;
     description: string;
-    origin?: 'user' | 'autonomous' | 'shared';
+    origin?: 'user' | 'autonomous' | 'shared' | 'curiosity' | 'project' | 'relationship' | 'maintenance';
     motivation: string;
+    parentInterestTopic?: string;
+    category?: ApeGoalCategory;
     priority?: number;
+    expectedValue?: number;
+    estimatedCost?: ApeGoalCost;
+    requiredCapabilities?: string[];
+    requiredPermissions?: string[];
     dependencies?: string[];
+    successCriteria?: string[];
+    failureConditions?: string[];
+    deadline?: string;
     status?: ApeGoalStatus;
   }): ApeGoal {
     const state = this.getState();
@@ -301,10 +329,21 @@ export class MotivationalEngine {
       description: params.description,
       origin: params.origin ?? 'autonomous',
       motivation: params.motivation,
+      parentInterestTopic: params.parentInterestTopic,
+      category: params.category ?? 'short_term',
       priority: Math.max(0.0, Math.min(1.0, params.priority ?? 0.5)),
       status: params.status ?? 'active',
       progress: 0.0,
+      expectedValue: Math.max(0.0, Math.min(1.0, params.expectedValue ?? 0.6)),
+      estimatedCost: params.estimatedCost ?? { cpu: 'low', gpu: false, estimatedDurationMs: 10000 },
+      requiredCapabilities: params.requiredCapabilities ?? [],
+      requiredPermissions: params.requiredPermissions ?? [],
       dependencies: params.dependencies ?? [],
+      successCriteria: params.successCriteria ?? [],
+      progressEvidence: [],
+      failureConditions: params.failureConditions ?? [],
+      lastReviewedAt: now,
+      deadline: params.deadline,
       relatedMemoryIds: [],
       createdAt: now,
       updatedAt: now,
@@ -312,8 +351,37 @@ export class MotivationalEngine {
 
     state.goals.push(goal);
     this.saveState(state);
-    this.logger.info(`New goal created [${goal.origin}, status=${goal.status}]: "${goal.title}" (Priority: ${goal.priority})`);
+    this.logger.info(
+      `New goal created [${goal.origin}, category=${goal.category}, status=${goal.status}]: "${goal.title}" (Priority: ${goal.priority})`,
+    );
     return goal;
+  }
+
+  /**
+   * Formulates an autonomous goal derived from an active interest.
+   */
+  public formulateGoalFromInterest(params: {
+    interestTopic: string;
+    objective: string;
+    description: string;
+    motivation?: string;
+    expectedValue?: number;
+    estimatedCost?: ApeGoalCost;
+    category?: ApeGoalCategory;
+    priority?: number;
+  }): ApeGoal {
+    return this.createGoal({
+      title: params.objective,
+      description: params.description,
+      origin: 'curiosity',
+      motivation: params.motivation || `Driven by active interest in ${params.interestTopic}`,
+      parentInterestTopic: params.interestTopic,
+      category: params.category || 'learning',
+      priority: params.priority || 0.65,
+      expectedValue: params.expectedValue || 0.75,
+      estimatedCost: params.estimatedCost,
+      status: 'committed',
+    });
   }
 
   /**
@@ -322,8 +390,9 @@ export class MotivationalEngine {
   public createDesire(params: {
     title: string;
     description: string;
-    origin?: 'autonomous' | 'shared' | 'user';
+    origin?: 'autonomous' | 'shared' | 'user' | 'curiosity';
     motivation: string;
+    parentInterestTopic?: string;
     priority?: number;
     dependencies?: string[];
   }): ApeGoal {
@@ -342,6 +411,7 @@ export class MotivationalEngine {
     if (!goal) return false;
     goal.status = 'committed';
     goal.updatedAt = new Date().toISOString();
+    goal.lastReviewedAt = goal.updatedAt;
     this.saveState(state);
     this.logger.info(`Goal committed (desire -> intention): "${goal.title}"`);
     return true;
@@ -356,19 +426,27 @@ export class MotivationalEngine {
     if (!goal) return false;
     goal.status = 'active';
     goal.updatedAt = new Date().toISOString();
+    goal.lastReviewedAt = goal.updatedAt;
     this.saveState(state);
     this.logger.info(`Goal activated (intention -> execution): "${goal.title}"`);
     return true;
   }
 
   /**
-   * Updates goal progress, potentially triggering completion or milestone.
+   * Records verifiable progress evidence for a goal.
    */
-  public updateGoalProgress(goalId: string, progressDelta: number, newStatus?: ApeGoalStatus): ApeGoal | null {
+  public recordGoalProgressEvidence(
+    goalId: string,
+    evidence: string,
+    progressDelta: number,
+    newStatus?: ApeGoalStatus,
+  ): ApeGoal | null {
     const state = this.getState();
     const goal = state.goals.find((g) => g.id === goalId);
     if (!goal) return null;
 
+    goal.progressEvidence = goal.progressEvidence || [];
+    goal.progressEvidence.push(`[${new Date().toISOString()}] ${evidence}`);
     goal.progress = Math.max(0.0, Math.min(1.0, Number((goal.progress + progressDelta).toFixed(3))));
     if (newStatus) {
       goal.status = newStatus;
@@ -376,57 +454,145 @@ export class MotivationalEngine {
       goal.status = 'completed';
     }
     goal.updatedAt = new Date().toISOString();
+    goal.lastReviewedAt = goal.updatedAt;
 
     this.saveState(state);
-    this.logger.info(`Goal '${goal.title}' progress: ${(goal.progress * 100).toFixed(1)}% [Status: ${goal.status}]`);
+    this.logger.info(
+      `Goal '${goal.title}' progress: ${(goal.progress * 100).toFixed(1)}% [Status: ${goal.status}] (Evidence: ${evidence})`,
+    );
     return goal;
   }
 
   /**
-   * Resolves competing motivations when multiple drives or goals collide.
-   * Explicitly protects legitimate recreation from being suppressed by pure workaholism.
+   * Updates goal progress, potentially triggering completion or milestone.
+   */
+  public updateGoalProgress(goalId: string, progressDelta: number, newStatus?: ApeGoalStatus): ApeGoal | null {
+    return this.recordGoalProgressEvidence(goalId, 'Progress updated via standard cycle increment', progressDelta, newStatus);
+  }
+
+  /**
+   * Detects stalled goals that have had zero progress over a defined window.
+   */
+  public detectStalledGoals(maxInactiveMs = 24 * 60 * 60 * 1000): ApeGoal[] {
+    const state = this.getState();
+    const now = Date.now();
+    return state.goals.filter((g) => {
+      if (g.status !== 'active') return false;
+      const last = g.lastReviewedAt ? new Date(g.lastReviewedAt).getTime() : new Date(g.createdAt).getTime();
+      return now - last > maxInactiveMs && g.progress < 0.2;
+    });
+  }
+
+  /**
+   * Comprehensive conflict resolution across competing motivations, drives, and environmental constraints.
+   */
+  public resolveMotivationalConflicts(context: ConflictResolutionContext = {}): ConflictResolutionResult {
+    const state = this.getState();
+    const needs = state.needs;
+    const activeGoals = state.goals.filter((g) => g.status === 'active');
+
+    // 1. Social Precedence: Active User Engagement takes immediate priority over background autonomous goals
+    if (context.isUserInteracting || context.userMessageUrgent) {
+      const deferred = activeGoals.map((g) => g.id);
+      return {
+        actionType: 'user_engagement',
+        priorityScore: 1.0,
+        deferredGoalIds: deferred,
+        justification: 'Proof is actively interacting; user communication takes absolute conversational and social precedence.',
+      };
+    }
+
+    // 2. Recreation & Rest Protection: Protect cognitive downtime from being suppressed by workaholism
+    if (context.highFatigue || (needs.recreation_rest ?? 0.4) > 0.70) {
+      const deferred = activeGoals.map((g) => g.id);
+      return {
+        actionType: 'recreation',
+        priorityScore: 0.9,
+        deferredGoalIds: deferred,
+        justification: 'Cognitive rest and recreation prioritized to maintain psychological equilibrium and prevent fatigue.',
+      };
+    }
+
+    // 3. System Resource / Thermal Constraints: On ASUS ROG Ally X, throttle heavy background computations
+    if (context.resourceConstrained || context.thermalThrottle) {
+      const heavyGoals = activeGoals.filter((g) => g.estimatedCost?.cpu === 'high' || g.estimatedCost?.gpu);
+      return {
+        actionType: 'throttle_backoff',
+        priorityScore: 0.85,
+        deferredGoalIds: heavyGoals.map((g) => g.id),
+        justification: 'Device resource constraint active; throttling heavy compute to preserve battery and thermal headroom.',
+      };
+    }
+
+    // 4. Stalled Goal Strategy Adjustment: If active goal has stalled, shift strategy or deprioritize
+    if (context.stalledGoalIds && context.stalledGoalIds.length > 0) {
+      const stalled = activeGoals.find((g) => context.stalledGoalIds!.includes(g.id));
+      if (stalled) {
+        return {
+          selectedGoalId: stalled.id,
+          actionType: 'change_strategy',
+          priorityScore: 0.75,
+          deferredGoalIds: [],
+          justification: `Goal "${stalled.title}" progress has stalled; triggering strategy reassessment or alternative path exploration.`,
+        };
+      }
+    }
+
+    // 5. Intimacy Drive: Very high intimacy drive prioritizes partner check-in
+    if ((needs.intimacy_connection ?? 0.7) > 0.85) {
+      return {
+        actionType: 'intimacy',
+        priorityScore: 0.8,
+        deferredGoalIds: [],
+        justification: 'Interpersonal closeness and emotional connection with Proof (partner) take priority.',
+      };
+    }
+
+    // 6. Active Goals Prioritization
+    if (activeGoals.length > 0) {
+      const sorted = [...activeGoals].sort((a, b) => b.priority - a.priority);
+      const top = sorted[0]!;
+      const deferred = sorted.slice(1).map((g) => g.id);
+      return {
+        selectedGoalId: top.id,
+        actionType: 'work',
+        priorityScore: top.priority,
+        deferredGoalIds: deferred,
+        justification: `Selected highest-priority active goal: "${top.title}" (Priority: ${top.priority}).`,
+      };
+    }
+
+    // 7. Default to curiosity / exploratory readiness
+    return {
+      actionType: 'curiosity',
+      priorityScore: 0.5,
+      deferredGoalIds: [],
+      justification: 'No competing goals active; default to exploratory curiosity and analytical readiness.',
+    };
+  }
+
+  /**
+   * Backwards-compatible priority resolution helper.
    */
   public resolveCompetingPriorities(): {
     selectedGoalId?: string;
     actionType: 'work' | 'recreation' | 'intimacy' | 'curiosity';
     justification: string;
   } {
-    const state = this.getState();
-    const needs = state.needs;
-    const activeGoals = state.goals.filter((g) => g.status === 'active');
-
-    // If recreation need is high (> 0.70), validate rest as legitimate autonomy
-    if ((needs.recreation_rest ?? 0.4) > 0.70) {
-      return {
-        actionType: 'recreation',
-        justification: 'Cognitive rest and recreation prioritized to maintain psychological equilibrium and prevent fatigue.',
-      };
-    }
-
-    // If intimacy drive is very high (> 0.85), prioritize partner connection
-    if ((needs.intimacy_connection ?? 0.7) > 0.85) {
-      return {
-        actionType: 'intimacy',
-        justification: 'Interpersonal closeness and emotional connection with Proof (partner) take priority.',
-      };
-    }
-
-    // Otherwise, choose highest priority active goal
-    if (activeGoals.length > 0) {
-      const sorted = [...activeGoals].sort((a, b) => b.priority - a.priority);
-      const top = sorted[0];
-      if (top) {
-        return {
-          selectedGoalId: top.id,
-          actionType: 'work',
-          justification: `Selected highest-priority active goal: "${top.title}".`,
-        };
-      }
-    }
+    const res = this.resolveMotivationalConflicts();
+    const mappedAction: 'work' | 'recreation' | 'intimacy' | 'curiosity' =
+      res.actionType === 'recreation'
+        ? 'recreation'
+        : res.actionType === 'intimacy'
+        ? 'intimacy'
+        : res.actionType === 'work'
+        ? 'work'
+        : 'curiosity';
 
     return {
-      actionType: 'curiosity',
-      justification: 'No competing goals active; default to exploratory curiosity and analytical readiness.',
+      selectedGoalId: res.selectedGoalId,
+      actionType: mappedAction,
+      justification: res.justification,
     };
   }
 }

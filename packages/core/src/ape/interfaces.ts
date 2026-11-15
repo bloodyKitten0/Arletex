@@ -5,6 +5,7 @@ import {
   ApeDevelopmentState,
   ApeEvent,
   ApeMotivationalState,
+  ApePersonalProject,
   ApePersonalityState,
   ApeProcessingStatus,
   ApePsychologicalState,
@@ -65,6 +66,13 @@ export interface IApeRepository {
   saveSelfModel(state: ApeSelfModel): void;
   getDevelopmentState(): ApeDevelopmentState;
   saveDevelopmentState(state: ApeDevelopmentState): void;
+
+  // Personal Projects (Pillar 4)
+  createPersonalProject(project: ApePersonalProject): ApePersonalProject;
+  getPersonalProjectById(id: string): ApePersonalProject | null;
+  listPersonalProjects(filter?: { status?: string; category?: string }): ApePersonalProject[];
+  updatePersonalProject(project: Partial<ApePersonalProject> & { id: string }): ApePersonalProject;
+  deletePersonalProject(id: string): boolean;
 }
 
 export interface IApeInferenceGateway {
