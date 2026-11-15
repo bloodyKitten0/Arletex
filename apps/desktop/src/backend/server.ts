@@ -1383,8 +1383,6 @@ export class ArletexBackendServer {
         ambientPerceptionNote += `\n[Live Aural Perception (Listening to System Audio)]:\n${liveAudioHearing.summary}\n`;
       } else if (liveHostMedia && liveHostMedia.title) {
         ambientPerceptionNote += `\n[Live Host Perception - Active Media]: Currently playing on your system: "${liveHostMedia.title}" by ${liveHostMedia.artist || 'Unknown'}.\n`;
-      } else {
-        ambientPerceptionNote += `\n[Live Host Perception - Audio]: System audio is SILENT (no active media stream playing).\n`;
       }
 
       // User-uploaded images vs system screen capture:
@@ -1451,8 +1449,6 @@ export class ArletexBackendServer {
           this.logger.warn(`Digital agency chat execution note: ${agencyErr.message}`);
         }
       }
-
-      ambientPerceptionNote += `\n[Reality Grounding Rule]: Your speech MUST reflect physical reality. You can hear system audio and receive host status. NEVER claim that a browser, video, or music is playing unless it was verified by the digital agency execution or detected in audio. State honestly what you have completed.\n`;
 
       // 0. Process video if provided (extract frames and transcribe audio dialogue)
       let videoInfo: ProcessedVideoResult | null = null;
