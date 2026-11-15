@@ -156,6 +156,7 @@ export class LlamaServerAdapter implements IInferenceProvider {
       messages,
       temperature: effectiveConfig.temperature ?? 0.7,
       top_p: effectiveConfig.topP ?? 0.9,
+      min_p: 0.05,
       max_tokens: effectiveConfig.maxTokens ?? 2048,
       repeat_penalty: (effectiveConfig as any).repeatPenalty ?? 1.18,
       frequency_penalty: (effectiveConfig as any).frequencyPenalty ?? 0.5,

@@ -122,14 +122,37 @@ export class ColibriAdapter implements IInferenceProvider {
     const effectiveModelId =
       this.discoveredModelId || effectiveConfig.defaultModelId || 'qwen3.6-colibri';
 
+    const defaultStopSequences = [
+      '<|im_end|>',
+      '<|endoftext|>',
+      '<|im_start|>',
+      '\nUser:',
+      '\nProof:',
+      'User:',
+      'Proof:',
+      'GetResponse(',
+      'getResponse(',
+      'Arle:',
+      '\nArle:',
+    ];
+    const stopList =
+      effectiveConfig.stopSequences && effectiveConfig.stopSequences.length > 0
+        ? effectiveConfig.stopSequences
+        : defaultStopSequences;
+
     const payload = {
       model: effectiveModelId,
       messages,
-      temperature: effectiveConfig.temperature,
-      top_p: effectiveConfig.topP,
-      max_tokens: effectiveConfig.maxTokens,
+      temperature: effectiveConfig.temperature ?? 0.7,
+      top_p: effectiveConfig.topP ?? 0.9,
+      min_p: 0.05,
+      max_tokens: effectiveConfig.maxTokens ?? 2048,
+      repeat_penalty: (effectiveConfig as any).repeatPenalty ?? 1.18,
+      frequency_penalty: (effectiveConfig as any).frequencyPenalty ?? 0.5,
+      presence_penalty: (effectiveConfig as any).presencePenalty ?? 0.3,
+      repeat_last_n: 128,
       stream: true,
-      stop: effectiveConfig.stopSequences.length > 0 ? effectiveConfig.stopSequences : undefined,
+      stop: stopList,
       chat_template_kwargs: { enable_thinking: false },
     };
 

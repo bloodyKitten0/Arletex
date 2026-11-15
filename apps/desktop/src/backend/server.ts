@@ -75,10 +75,39 @@ const MAX_BODY_SIZE = 250 * 1024 * 1024; // 250MB limit to reliably support vide
 
 export function sanitizeAssistantDialogue(text: string): string {
   if (!text) return '';
-  return text
+  let cleaned = text
     .replace(/\[(?:action|cmd|tone|thought|mood|emotion|state):[^\]]*\]/gi, '')
     .replace(/^\s*\[[^\]]+\]\s*/gm, '')
     .trim();
+
+  // Guard against autoregressive associative runaway loops (unpunctuated word cascades > 45 words)
+  const sentences = cleaned.split(/(?<=[.?!])\s+/);
+  let hasRunaway = false;
+  for (const s of sentences) {
+    if (s.trim().split(/\s+/).length > 45 && !s.includes('\n')) {
+      hasRunaway = true;
+      break;
+    }
+  }
+
+  if (hasRunaway) {
+    const validSentences: string[] = [];
+    for (const s of sentences) {
+      const words = s.trim().split(/\s+/);
+      if (words.length > 45 && !s.includes('\n')) {
+        // Truncate at the first natural clause boundary to discard runaway token degenerations
+        const clauseParts = s.split(/[,;—–-]\s+/);
+        if (clauseParts.length > 0 && clauseParts[0] && clauseParts[0].split(/\s+/).length < 25) {
+          validSentences.push(clauseParts[0].trim() + '.');
+        }
+        break;
+      }
+      validSentences.push(s);
+    }
+    cleaned = validSentences.join(' ').trim();
+  }
+
+  return cleaned;
 }
 
 export class ArletexBackendServer {
