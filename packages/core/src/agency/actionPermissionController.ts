@@ -218,7 +218,7 @@ export class ActionPermissionController {
 
     // 2. Application Launch validation
     if (actionType === 'app_launch' || actionType === 'execute_command') {
-      const rawCommand = String(payload.appName || payload.command || '').trim();
+      const rawCommand = String(payload.appName || payload.command || payload.app || '').trim();
       const firstWord = rawCommand.split(/\s+/)[0]?.toLowerCase() || '';
 
       if (/[;&|><$`\\]/.test(rawCommand)) {
@@ -286,7 +286,7 @@ export class ActionPermissionController {
       action.type === 'web_read_page' ||
       action.type === 'web_select_video'
     ) {
-      const urlStr = String(action.payload?.url || action.payload?.targetUrl || '');
+      const urlStr = String(payload.url || payload.targetUrl || action.payload?.url || action.payload?.targetUrl || '');
       if (urlStr) {
         try {
           const parsed = new URL(urlStr);

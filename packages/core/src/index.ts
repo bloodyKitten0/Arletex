@@ -23,6 +23,7 @@ export * from './agency/actionPermissionController.js';
 export * from './agency/verificationEngine.js';
 export * from './agency/intentTaskManager.js';
 export * from './agency/planningInterface.js';
+export * from './agency/playwrightBrowserProvider.js';
 export * from './agency/webAgencyService.js';
 export * from './agency/safeComputerAgencyService.js';
 export * from './agency/memoryExperienceSync.js';

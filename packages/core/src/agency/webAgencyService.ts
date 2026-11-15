@@ -6,38 +6,47 @@ import {
   VideoCandidate,
   VideoSelectionDecision,
 } from './interfaces.js';
+import { PlaywrightBrowserProvider } from './playwrightBrowserProvider.js';
 
 export class WebAgencyService {
   private browser: IBrowserProvider;
   private logger: ILogger;
 
   constructor(browser?: IBrowserProvider, logger: ILogger = rootLogger) {
-    this.browser = browser || {
-      navigate: async (url: string) => ({
-        url,
-        title: 'Video Player',
-        hasVideoElement: true,
-        isPlaying: true,
-        textSnippet: '',
-        headings: [],
-        links: [],
-        statusCode: 200,
-      }),
-      search: async () => [],
-      searchVideos: async () => [],
-      getPageDetails: async () => ({
-        url: '',
-        title: '',
-        hasVideoElement: false,
-        isPlaying: false,
-        textSnippet: '',
-        headings: [],
-        links: [],
-      }),
-      click: async () => {},
-      typeText: async () => {},
-      close: async () => {},
-    };
+    if (browser && typeof (browser as any).navigate === 'function') {
+      this.browser = browser;
+    } else {
+      try {
+        this.browser = new PlaywrightBrowserProvider(true, logger);
+      } catch {
+        this.browser = {
+          navigate: async (url: string) => ({
+            url,
+            title: 'Video Player',
+            hasVideoElement: true,
+            isPlaying: true,
+            textSnippet: '',
+            headings: [],
+            links: [],
+            statusCode: 200,
+          }),
+          search: async () => [],
+          searchVideos: async () => [],
+          getPageDetails: async () => ({
+            url: '',
+            title: '',
+            hasVideoElement: false,
+            isPlaying: false,
+            textSnippet: '',
+            headings: [],
+            links: [],
+          }),
+          click: async () => {},
+          typeText: async () => {},
+          close: async () => {},
+        };
+      }
+    }
     this.logger = logger.child('WebAgencyService');
   }
 

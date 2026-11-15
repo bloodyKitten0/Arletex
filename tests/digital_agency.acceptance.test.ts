@@ -282,6 +282,48 @@ describe('Digital Agency & APE Emotional Lifecycle Acceptance Milestone', () => 
       expect(agencyMemory?.content).toContain('3Blue1Brown');
       expect(agencyMemory?.content).toContain('transformer attention');
     });
+
+    it('Plans, authorizes, and executes "open youtube for a calming video" with verified playback', async () => {
+      const objective = 'open youtube for a calming video';
+
+      const task = intentTaskManager.createTask({
+        objective,
+        initiator: 'user',
+        priority: 'high',
+        completionCriteria: ['Navigate to calming video on YouTube', 'Verify playback'],
+      });
+
+      const plan = await planningInterface.formulatePlan(task);
+      expect(plan.steps.length).toBeGreaterThanOrEqual(1);
+      const step = plan.steps[0]!;
+      expect(step.action.type).toBe('web_select_video');
+      expect((step.action.payload as any).targetUrl).toContain('youtube.com/watch');
+
+      const auth = permissionController.authorize(step.action);
+      expect(auth.allowed).toBe(true);
+
+      const mockObs: AgencyObservation = {
+        id: crypto.randomUUID(),
+        taskId: task.id,
+        actionId: step.action.id,
+        source: 'browser_page',
+        timestamp: new Date().toISOString(),
+        success: true,
+        confidence: 0.95,
+        provenance: 'WebAgencyService.navigateToVideo',
+        data: {
+          currentUrl: (step.action.payload as any).targetUrl,
+          pageTitle: (step.action.payload as any).videoTitle,
+          hasVideoElement: true,
+          isPlaying: true,
+        },
+        error: null,
+      };
+
+      const ver = verificationEngine.verify(step.action, mockObs);
+      expect(ver.verified).toBe(true);
+      expect(ver.observedOutcome).toContain('playback confirmed');
+    });
   });
 
   describe('Pillar 2: Action & Permission Controller Security Boundaries', () => {

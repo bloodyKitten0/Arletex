@@ -74,6 +74,8 @@ describe('Multimodal Media Perception: Pictures and Video Watching', () => {
     const server = new ArletexBackendServer(config);
     await server.start(0);
 
+    vi.spyOn((server as any).inferenceGateway, 'streamChat').mockResolvedValue('I see the media clearly.');
+
     const conv = server.createConversation('Multimodal Media Session');
 
     // 1. Send message with pasted picture

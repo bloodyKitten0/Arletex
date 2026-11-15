@@ -221,25 +221,21 @@ method call time=101.0 sender=:1.6 -> destination=:1.2 serial=2 path=/org/freede
       expect(log).toBeNull();
     });
 
-    it('executes recreational gaming when recreation need is dominant', async () => {
+    it('executes recreational rest when recreation need is dominant', async () => {
       const motState = apeRepo.getMotivationalState();
       motState.needs.recreation_rest = 0.85;
       motState.needs.novelty_curiosity = 0.4;
       apeRepo.saveMotivationalState(motState);
 
       (autonomousAgency as any).lastUserInteractionTime = Date.now() - 60000;
-      vi.spyOn(deviceAgency, 'launchSteam').mockResolvedValue({
-        success: true,
-        message: 'Mock Steam launched',
-      });
 
       const log = await autonomousAgency.runAutonomousCycle();
       expect(log).not.toBeNull();
-      expect(log?.category).toBe('steam_game');
-      expect(log?.title).toContain('Recreational Gaming');
+      expect(log?.category).toBe('recreation');
+      expect(log?.title).toContain('Rest & Reflection');
 
       const activities = activityRepo.list('completed', 'arle_initiated');
-      expect(activities.some((a) => a.title.includes('Steam'))).toBe(true);
+      expect(activities.some((a) => a.title.includes('Rest') || a.category === 'recreation')).toBe(true);
     });
 
     it('asserts Proof as partner and equal in self-model reflections, forbidding creator titles', async () => {

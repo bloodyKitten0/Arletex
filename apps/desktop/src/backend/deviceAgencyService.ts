@@ -275,6 +275,16 @@ export class DeviceAgencyService {
    */
   public async launchSteam(appId?: string): Promise<{ success: boolean; message: string }> {
     try {
+      if (!appId) {
+        try {
+          const check = await execPromise('pgrep -u proof -x steam || pgrep -u proof steam');
+          if (check.stdout.trim().length > 0) {
+            logger.info('Steam client is already running on host.');
+            return { success: true, message: 'Steam client is already running' };
+          }
+        } catch {}
+      }
+
       const args = appId ? [`steam://run/${appId}`] : [];
       logger.info(`Launching Steam ${appId ? `for game ID ${appId}` : 'client'}...`);
 

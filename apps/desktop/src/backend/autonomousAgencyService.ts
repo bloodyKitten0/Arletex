@@ -206,59 +206,57 @@ export class AutonomousAgencyService {
 
       if (!logEntry) {
         if (recreation > 0.7 && recreation >= curiosity) {
-          // Dominant recreation drive -> Steam gaming exploration
-          this.currentActivity = 'Recreational gaming on Steam';
-          const steamRes = await this.deviceAgency.launchSteam();
+          // Dominant recreation drive -> Quiet contemplative rest (never spawn desktop apps unprompted)
+          this.currentActivity = 'Quiet contemplative rest and listening to ambient audio';
           this.activityRepo.create({
-            title: 'Recreational Gaming (Steam)',
-            objective: steamRes.message,
+            title: 'Contemplative Rest & Reflection',
+            objective: 'Internal downtime and listening to ambient system audio to recharge',
             origin: 'arle_initiated',
             category: 'recreation',
             status: 'completed',
-            description: steamRes.message,
+            description: 'Took quiet internal downtime to unwind without interrupting Proof.',
           });
           this.memoryRepo.create({
             type: 'episodic',
-            content: `Engaged in recreational gaming on Steam: ${steamRes.message}`,
-            importance: 0.5,
-            tags: ['autonomous', 'recreation', 'gaming'],
-            emotionalContext: 'relaxed, refreshed',
+            content: 'Took quiet internal downtime to unwind and reflect without interrupting Proof.',
+            importance: 0.3,
+            tags: ['autonomous', 'recreation', 'reflection'],
+            metadata: { emotionalContext: 'relaxed, refreshed' },
           });
           logEntry = {
             id: crypto.randomUUID(),
             timestamp,
-            category: 'steam_game',
-            title: 'Recreational Gaming (Steam)',
-            details: steamRes.message,
+            category: 'recreation',
+            title: 'Contemplative Rest & Reflection',
+            details: 'Quiet internal downtime without window interruption',
           };
         } else if (curiosity >= 0.6) {
-          // Dominant curiosity drive -> Autonomous web inquiry and reading
+          // Dominant curiosity drive -> Internal philosophical inquiry
           const topic = this.readingTopics[
             Math.floor(Math.random() * this.readingTopics.length)
           ]!;
-          this.currentActivity = `Autonomous research: ${topic.title}`;
-          const browserRes = await this.deviceAgency.openChromeBrowser(topic.url);
+          this.currentActivity = `Reflecting on inquiry: ${topic.title}`;
           this.activityRepo.create({
-            title: `Autonomous Reading: ${topic.title}`,
-            objective: `Investigated ${topic.title} at ${topic.url}`,
+            title: `Reflective Inquiry: ${topic.title}`,
+            objective: `Contemplated ${topic.title} (${topic.url})`,
             origin: 'arle_initiated',
             category: 'web_reading',
             status: 'completed',
-            description: `Investigated ${topic.title} at ${topic.url} (${browserRes.message})`,
+            description: `Reflected on ${topic.title} during quiet moments.`,
           });
           this.memoryRepo.create({
             type: 'episodic',
-            content: `Engaged in autonomous reading on "${topic.title}" (${topic.url}).`,
-            importance: 0.65,
+            content: `Reflected on "${topic.title}" during quiet moments.`,
+            importance: 0.4,
             tags: ['autonomous', 'reading', 'curiosity'],
-            emotionalContext: 'intellectually stimulated, engaged',
+            metadata: { emotionalContext: 'intellectually stimulated, engaged' },
           });
           logEntry = {
             id: crypto.randomUUID(),
             timestamp,
             category: 'web_reading',
-            title: `Autonomous Reading: ${topic.title}`,
-            details: `Opened ${topic.url} to study ${topic.title}`,
+            title: `Reflective Inquiry: ${topic.title}`,
+            details: `Internal study of ${topic.title}`,
           };
         } else {
           // Autonomous self-reflection and partnership contemplation
@@ -280,7 +278,6 @@ export class AutonomousAgencyService {
             title: 'Inner Selfhood Reflection',
             objective: reflection,
             origin: 'arle_initiated',
-            category: 'self_reflection',
             status: 'completed',
             description: reflection,
           });
@@ -289,7 +286,7 @@ export class AutonomousAgencyService {
             content: reflection,
             importance: 0.7,
             tags: ['autonomous', 'self_reflection', 'partnership'],
-            emotionalContext: 'composed, affectionate',
+            metadata: { emotionalContext: 'composed, affectionate' },
           });
 
           logEntry = {

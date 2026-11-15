@@ -160,9 +160,9 @@ export class VerificationEngine {
 
     // 3. Application Launch Verification
     if (action.type === 'app_launch') {
-      const appName = action.payload?.appName as string;
+      const appName = String(action.payload?.appName || action.payload?.app || (action as any).parameters?.app || 'application');
       const pid = observation.data?.pid as number | undefined;
-      const isRunning = Boolean(observation.data?.isRunning ?? (pid && pid > 0));
+      const isRunning = Boolean(observation.data?.isRunning ?? observation.success ?? (pid && pid > 0));
 
       return {
         actionId: action.id,
