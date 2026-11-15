@@ -21,6 +21,7 @@ export interface ProcessedVideoResult {
   framesBase64: string[];
   transcript: string | null;
   videoDataUrl: string;
+  videoPath?: string;
 }
 
 export class VideoProcessor {
@@ -51,19 +52,24 @@ export class VideoProcessor {
 
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'arletex_video_'));
     let inputFilePath: string;
+    let resolvedVideoPath: string | undefined = videoPath;
 
     try {
       if (videoPath) {
         inputFilePath = videoPath;
       } else {
         const ext = mimeType.includes('webm') ? '.webm' : mimeType.includes('mov') ? '.mov' : '.mp4';
-        inputFilePath = path.join(tempDir, `input_video${ext}`);
+        const mediaDir = path.join(os.homedir(), '.arletex', 'media', 'videos');
+        await fs.mkdir(mediaDir, { recursive: true });
+        const persistentFile = path.join(mediaDir, `clip_${Date.now()}_${crypto.randomBytes(4).toString('hex')}${ext}`);
 
         let rawB64 = videoBase64!;
         if (rawB64.includes('base64,')) {
           rawB64 = rawB64.split('base64,')[1]!;
         }
-        await fs.writeFile(inputFilePath, Buffer.from(rawB64, 'base64'));
+        await fs.writeFile(persistentFile, Buffer.from(rawB64, 'base64'));
+        inputFilePath = persistentFile;
+        resolvedVideoPath = persistentFile;
       }
 
       // 1. Probe video duration
@@ -201,25 +207,24 @@ export class VideoProcessor {
         this.logger.warn(`Audio extraction / transcription note: ${audioErr.message}`);
       }
 
-      // 4. Construct video data URL
+      // 4. Construct video data URL (data URL for lightweight clips, arletex-media:// for large files)
       let videoDataUrl = '';
       if (videoBase64) {
         videoDataUrl = videoBase64.startsWith('data:')
           ? videoBase64
           : `data:${mimeType};base64,${videoBase64}`;
-      } else if (videoPath) {
+      } else if (resolvedVideoPath) {
         try {
-          const fileStat = await fs.stat(videoPath);
-          // For clips under 10MB, return data URL for universal consumer compatibility
+          const fileStat = await fs.stat(resolvedVideoPath);
           if (fileStat.size < 10 * 1024 * 1024) {
-            const fileBuf = await fs.readFile(videoPath);
+            const fileBuf = await fs.readFile(resolvedVideoPath);
             videoDataUrl = `data:${mimeType};base64,${fileBuf.toString('base64')}`;
           } else {
-            const cleanPath = path.resolve(videoPath);
+            const cleanPath = path.resolve(resolvedVideoPath);
             videoDataUrl = `arletex-media://${encodeURI(cleanPath.replace(/^\/+/, ''))}`;
           }
         } catch {
-          const cleanPath = path.resolve(videoPath);
+          const cleanPath = path.resolve(resolvedVideoPath);
           videoDataUrl = `arletex-media://${encodeURI(cleanPath.replace(/^\/+/, ''))}`;
         }
       }
@@ -229,6 +234,7 @@ export class VideoProcessor {
         framesBase64,
         transcript,
         videoDataUrl,
+        videoPath: resolvedVideoPath,
       };
     } finally {
       // Cleanup temp directory

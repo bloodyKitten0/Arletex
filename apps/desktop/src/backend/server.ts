@@ -64,7 +64,7 @@ import {
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
 
-const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10MB limit
+const MAX_BODY_SIZE = 250 * 1024 * 1024; // 250MB limit to reliably support video uploads
 
 export function sanitizeAssistantDialogue(text: string): string {
   if (!text) return '';
@@ -1071,6 +1071,7 @@ export class ArletexBackendServer {
       }
       if (videoInfo) {
         msgMetadata.hasVideo = true;
+        msgMetadata.videoPath = videoInfo.videoPath || videoPath;
         msgMetadata.videoBase64 = videoInfo.videoDataUrl;
         msgMetadata.videoDuration = videoInfo.durationSeconds;
         msgMetadata.videoTranscript = videoInfo.transcript;
@@ -1673,8 +1674,11 @@ Rules:
         });
       }
 
-      // Append current proactive vision frame
-      if (screenBase64) {
+      // Check model vision capability before pushing multimodal tokens
+      const modelSupportsVision = await this.checkVisionSupport();
+
+      // Append current proactive vision frame ONLY if vision is supported by the active model
+      if (screenBase64 && modelSupportsVision) {
         const imageUrl = screenBase64.startsWith('data:')
           ? screenBase64
           : `data:image/jpeg;base64,${screenBase64}`;
@@ -2676,7 +2680,7 @@ Rules:
         receivedBytes += chunk.length;
         if (receivedBytes > MAX_BODY_SIZE) {
           req.destroy(new Error('Payload too large'));
-          reject(new Error('Payload exceeds maximum allowed size of 10MB'));
+          reject(new Error('Payload exceeds maximum allowed size of 250MB'));
           return;
         }
         body += chunk;

@@ -76,6 +76,14 @@ export class AudioPerceptionService {
 
       for (const service of services) {
         try {
+          // Strictly verify that media is actively PLAYING, not paused or stopped in a background tab
+          const { stdout: statusOut } = await execPromise(
+            `busctl --user get-property ${service} /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player PlaybackStatus 2>/dev/null || true`,
+          );
+          if (!/s\s+"Playing"/i.test(statusOut)) {
+            continue;
+          }
+
           const { stdout: metaOut } = await execPromise(
             `busctl --user get-property ${service} /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player Metadata 2>/dev/null || true`,
           );
