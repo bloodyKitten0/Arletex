@@ -88,10 +88,10 @@ export class SelfModelEngine {
       const content = `Appraised "${appraisal.primaryInterpretation}" with personal significance ${dims.personalSignificance}. Meaning: ${dims.socialMeaning || 'Introspective inquiry'}.`;
       this.recordPrivateReflection(topic, content);
 
-      if (event.type.includes('identity') || event.type.includes('creator') || event.type.includes('existential')) {
+      if (event.type.includes('identity') || event.type.includes('partner') || event.type.includes('existential')) {
         this.recordExistentialReflection(
           'Identity and Continuity',
-          `Contemplating relationship with creator and autonomous individualhood: ${appraisal.primaryInterpretation}`,
+          `Contemplating relationship with Proof (partner) and autonomous individualhood: ${appraisal.primaryInterpretation}`,
         );
       }
     }

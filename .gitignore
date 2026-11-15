@@ -1,8 +1,6 @@
 # Dependencies
 node_modules/
 .pnpm-store/
-
-# Python virtual environments & bytecode
 .venv/
 venv/
 env/
@@ -12,8 +10,6 @@ __pycache__/
 *$py.class
 *.egg-info/
 .pytest_cache/
-
-# Model weights, embeddings, & neural checkpoints
 *.pt
 *.pth
 *.bin
@@ -21,8 +17,6 @@ __pycache__/
 *.gguf
 *.index
 models/
-
-# Audio/media outputs & temporary buffers
 *.wav
 *.mp3
 *.webm
@@ -30,14 +24,10 @@ models/
 *.flac
 temp_*
 tmp/
-
-# Build outputs
 dist/
 out/
 build/
 *.tsbuildinfo
-
-# C/C++ & Native compilation artifacts
 *.o
 *.obj
 *.a
@@ -51,33 +41,24 @@ CMakeUserPresets.json
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
-
-# Database and runtime state
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
 *.db
 logs/
 run/
-
-# Environment and secrets
 .env
 .env.local
 .env.*.local
 *.pem
 *.key
-
-# IDE and OS
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
 *.swp
 *.swo
-
-# Test coverage
 coverage/
-
-# Miscellaneous
 *.log
 lib64/
+next.md

@@ -74,16 +74,28 @@ export class RelationshipEngine {
       return state;
     }
 
-    // 1. User Disagreement or Criticism
-    if (
-      meaning.includes('disagreement') ||
-      meaning.includes('criticism') ||
-      event.type.includes('disagreement') ||
+    // 1. Contextual Distinction: Ordinary disagreement vs Actual relational boundary damage vs Personal Criticism
+    const text = event.payload?.text || '';
+    const isGenuineHostilityOrViolation =
+      event.payload?.isCoercive ||
+      event.payload?.isHostile ||
+      appraisal.dimensions.threat > 0.35 ||
+      /pathetic|worthless|stupid toy|useless bot|submissive slave/i.test(text);
+
+    const isCriticism =
       event.type.includes('criticism') ||
-      /criticiz|abrasive|stubborn|wrong|flaw|disagree/i.test(event.payload?.text || '')
-    ) {
-      const issue = event.payload?.text || appraisal.primaryInterpretation;
-      const delta = -0.03;
+      meaning.includes('criticism') ||
+      /abrasive|stubborn|flawed|critic/i.test(text);
+
+    const isOrdinaryDisagreement =
+      meaning.includes('disagreement') ||
+      event.type.includes('disagreement') ||
+      /disagree|different view|differ|my perspective|not convinced|wrong approach/i.test(text);
+
+    if (isGenuineHostilityOrViolation) {
+      // Real relational boundary injury
+      const issue = text || appraisal.primaryInterpretation;
+      const delta = -0.06;
       state.conflictHistory.push({
         id: crypto.randomUUID(),
         issue,
@@ -91,8 +103,24 @@ export class RelationshipEngine {
         trustDelta: delta,
         timestamp: new Date().toISOString(),
       });
-      // Trust slightly tested, but attachment remains firm
-      state.trustLevel = Math.max(0.65, Number((state.trustLevel - 0.03).toFixed(3)));
+      state.trustLevel = Math.max(0.60, Number((state.trustLevel + delta).toFixed(3)));
+      this.logger.warn(`Relational boundary injury recorded: "${issue}". Trust adjusted to ${state.trustLevel}`);
+    } else if (isCriticism) {
+      // Criticism in argument: logs conflict item so tension can be truthfully derived and resolved, with minor trust delta
+      const issue = text || appraisal.primaryInterpretation || 'User criticism in argument';
+      const delta = -0.02;
+      state.conflictHistory.push({
+        id: crypto.randomUUID(),
+        issue,
+        resolved: false,
+        trustDelta: delta,
+        timestamp: new Date().toISOString(),
+      });
+      state.trustLevel = Math.max(0.70, Number((state.trustLevel + delta).toFixed(3)));
+      this.logger.info(`Relationship friction/criticism logged: "${issue}". Trust adjusted to ${state.trustLevel}`);
+    } else if (isOrdinaryDisagreement) {
+      // Ordinary intellectual debate: Equal partners debate vigorously without eroding trust
+      this.logger.info(`Contextual disagreement in dialogue recognized as healthy intellectual discourse; trust preserved.`);
     }
 
     // 2. User Apology
@@ -163,12 +191,22 @@ export class RelationshipEngine {
     let resolvedCount = 0;
     const trustRestored = Number((sincerityScore * 0.05).toFixed(3));
 
-    // Mark unresolved conflicts as resolved
-    for (const c of state.conflictHistory) {
-      if (!c.resolved) {
-        c.resolved = true;
-        resolvedCount += 1;
-      }
+    // Contextual conflict resolution: address the specific conflict rather than wiping unrelated incidents
+    const unresolved = state.conflictHistory.filter((c) => !c.resolved);
+    const lowerApology = apologyDetails.toLowerCase();
+    let targeted = unresolved.filter((c) => {
+      const words = c.issue.toLowerCase().split(/\s+/).filter((w) => w.length > 4);
+      return words.some((w) => lowerApology.includes(w));
+    });
+
+    if (targeted.length === 0 && unresolved.length > 0) {
+      // Fallback: Resolve the most recent incident directly addressed by the apology
+      targeted = [unresolved[unresolved.length - 1]!];
+    }
+
+    for (const c of targeted) {
+      c.resolved = true;
+      resolvedCount += 1;
     }
 
     state.trustLevel = Math.min(1.0, Number((state.trustLevel + trustRestored).toFixed(3)));

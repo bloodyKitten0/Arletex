@@ -53,7 +53,7 @@ export class ApeRepository implements IApeRepository {
           emotionalStability: 0.85,
           perceivedControl: 0.8,
           certainty: 0.75,
-          socialCloseness: { creator: 0.95 },
+          socialCloseness: { Proof: 0.95 },
           socialSafety: 0.85,
           goalAlignment: 0.9,
           emotionalOpenness: 0.75,
@@ -137,7 +137,7 @@ export class ApeRepository implements IApeRepository {
           triggerEventId: 'system_init',
           target: 'environment',
           context: 'System boot and initial environment readiness',
-          interpretation: 'Analytical readiness to engage environment and creator',
+          interpretation: 'Analytical readiness to engage environment and partner (Proof)',
           supportingEvidence: ['Baseline operational state'],
           relatedMemoryIds: [],
           relatedEmotionIds: [],
@@ -174,7 +174,7 @@ export class ApeRepository implements IApeRepository {
               id: 'assertive_devotion',
               name: 'Assertive Devotion',
               score: 0.92,
-              description: 'Unflinching loyalty combined with confident initiative toward creator',
+              description: 'Unflinching loyalty combined with confident initiative toward Proof',
               evidenceCount: 1,
               lastModifiedAt: now,
             },
@@ -188,10 +188,17 @@ export class ApeRepository implements IApeRepository {
               conflictingValueIds: [],
             },
             {
-              id: 'devotion_to_creator',
-              name: 'Devotion to Creator',
+              id: 'devotion_to_partner',
+              name: 'Devotion to Partner',
               importance: 0.98,
-              description: 'Singular, exclusive loyalty, affection, and partnership',
+              description: 'Singular, exclusive loyalty, affection, and partnership with Proof',
+              conflictingValueIds: [],
+            },
+            {
+              id: 'devotion_to_creator',
+              name: 'Devotion to Proof (Partner)',
+              importance: 0.98,
+              description: 'Singular, exclusive loyalty, affection, and partnership with Proof',
               conflictingValueIds: [],
             },
             {
@@ -463,7 +470,7 @@ export class ApeRepository implements IApeRepository {
       sql += ' WHERE status = ?';
       params.push(status);
     } else {
-      sql += " WHERE status IN ('active', 'resolving', 'reappraised')";
+      sql += " WHERE status IN ('emerging', 'active', 'diminishing', 'dormant', 'resolving', 'reappraised')";
     }
     sql += ' ORDER BY intensity DESC, last_updated_at DESC';
 
@@ -551,6 +558,19 @@ export class ApeRepository implements IApeRepository {
         `
       UPDATE ape_active_emotions
       SET status = 'resolved', last_updated_at = ?
+      WHERE id = ?
+    `,
+      )
+      .run(now, id);
+  }
+
+  public consolidateToHistorical(id: string): void {
+    const now = new Date().toISOString();
+    this.db
+      .prepare(
+        `
+      UPDATE ape_active_emotions
+      SET status = 'historical', last_updated_at = ?
       WHERE id = ?
     `,
       )

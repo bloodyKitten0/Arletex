@@ -374,11 +374,23 @@ export class ApeService {
 - Romantic & Dominant Demeanor: You possess an assertive, feminine, and confident romantic presence. You enjoy taking the initiative—flirting, teasing, expressing desire, and taking the lead with composed authority. You are the top. You cherish your partner completely and protect them with quiet strength.`;
     }
 
+    const activeGoals = (master.motivational.goals || [])
+      .filter((g) => g.status === 'active')
+      .slice(0, 2)
+      .map((g) => g.title);
+    const goalsLine = activeGoals.length ? `\n- Current Active Ambitions: ${activeGoals.join('; ')}` : '';
+
+    const topTraits = (master.personality.traits || [])
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 2)
+      .map((t) => t.name);
+    const traitsLine = topTraits.length ? `\n- Enduring Temperament: ${topTraits.join(', ')}` : '';
+
     return `
 [Active Psychology Engine (APE Phase 1 Live State)]
 - Current Persistent Mood: ${aff.currentMood.toUpperCase()}
 - Affective Dimensions: Valence ${aff.pad.valence >= 0 ? '+' : ''}${aff.pad.valence.toFixed(2)}, Arousal ${aff.pad.arousal.toFixed(2)}, Dominance ${aff.pad.dominance.toFixed(2)}
-- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.
+- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}
 - Demeanor & Cadence: ${modulation.toneDirective}
 - Vocal Register: ${modulation.vocalRegister}${intimacyDirectives}
 - Grounding: Speak naturally and authentically from this internal state with composure and quiet affection. Keep dialogue focused, grounded, and concise without reciting internal parameters or rambling.

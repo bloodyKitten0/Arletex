@@ -238,4 +238,43 @@ export class SafeComputerAgencyService implements IComputerProvider {
     }
     return fs.promises.readdir(resolved);
   }
+
+  /**
+   * Safely executes an argument-based command without shell string interpolation.
+   */
+  public async executeCommand(
+    command: string,
+    args: string[] = [],
+  ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
+    return new Promise((resolve) => {
+      const child = spawn(command, args, {
+        env: {
+          ...process.env,
+          DISPLAY: this.display,
+        },
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      child.stdout?.on('data', (d) => (stdout += d.toString()));
+      child.stderr?.on('data', (d) => (stderr += d.toString()));
+
+      child.on('close', (code) => {
+        resolve({
+          exitCode: code ?? 0,
+          stdout,
+          stderr,
+        });
+      });
+
+      child.on('error', (err) => {
+        resolve({
+          exitCode: 1,
+          stdout,
+          stderr: err.message,
+        });
+      });
+    });
+  }
 }

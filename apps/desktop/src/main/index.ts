@@ -1,9 +1,9 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, protocol, net } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
 import http from 'node:http';
 import crypto from 'node:crypto';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { fork, ChildProcess, execSync } from 'node:child_process';
 import {
   IPC_CHANNELS,
@@ -18,11 +18,27 @@ const __dirname = path.dirname(__filename);
 
 const logger = rootLogger.child('ElectronMain');
 
+// Register custom streaming protocol for local video & audio assets
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'arletex-media',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+      stream: true,
+      bypassCSP: true,
+    },
+  },
+]);
+
 let mainWindow: BrowserWindow | null = null;
 let backendProcess: ChildProcess | null = null;
 let backendPort = 39281;
 let backendAuthToken = '';
 let isAppQuitting = false;
+const activeStreamRequests = new Map<string, http.ClientRequest>();
 
 function findSystemNode(): string {
   if (process.env['NODE_BINARY'] && fs.existsSync(process.env['NODE_BINARY'])) {
@@ -239,6 +255,23 @@ function registerIpcHandlers() {
 
   // Stream Cancellation
   ipcMain.handle(IPC_CHANNELS.INFERENCE_STREAM_CANCEL, async (_, requestId: string) => {
+    logger.info(`IPC Cancel received for inference stream: ${requestId}`);
+    if (requestId === 'all' || !requestId) {
+      for (const [, activeReq] of activeStreamRequests.entries()) {
+        try {
+          activeReq.destroy();
+        } catch {}
+      }
+      activeStreamRequests.clear();
+    } else {
+      const activeReq = activeStreamRequests.get(requestId);
+      if (activeReq) {
+        try {
+          activeReq.destroy();
+        } catch {}
+        activeStreamRequests.delete(requestId);
+      }
+    }
     return callBackend('/api/inference/cancel', 'POST', { requestId });
   });
 
@@ -249,6 +282,7 @@ function registerIpcHandlers() {
       const streamTask = async () => {
         try {
           const reqBody = JSON.stringify(input);
+          const activeId = input.requestId || 'default';
           const req = http.request(
             {
               hostname: '127.0.0.1',
@@ -263,10 +297,13 @@ function registerIpcHandlers() {
               },
             },
             (res) => {
+              activeStreamRequests.set(activeId, req);
+
               if (res.statusCode && res.statusCode >= 400) {
                 let errText = '';
                 res.on('data', (d) => (errText += d.toString()));
                 res.on('end', () => {
+                  activeStreamRequests.delete(activeId);
                   if (!event.sender.isDestroyed()) {
                     event.sender.send(IPC_CHANNELS.INFERENCE_STREAM_CHUNK, {
                       requestId: input.requestId || crypto.randomUUID(),
@@ -303,6 +340,7 @@ function registerIpcHandlers() {
               });
 
               res.on('end', () => {
+                activeStreamRequests.delete(activeId);
                 if (buffer.trim().startsWith('data: ')) {
                   try {
                     const chunk: StreamChunk = JSON.parse(buffer.trim().slice(6));
@@ -313,7 +351,12 @@ function registerIpcHandlers() {
                 }
               });
 
+              res.on('close', () => {
+                activeStreamRequests.delete(activeId);
+              });
+
               res.on('error', (err) => {
+                activeStreamRequests.delete(activeId);
                 logger.error('SSE response error', err);
                 if (!event.sender.isDestroyed()) {
                   event.sender.send(IPC_CHANNELS.INFERENCE_STREAM_CHUNK, {
@@ -330,7 +373,10 @@ function registerIpcHandlers() {
             },
           );
 
+          activeStreamRequests.set(activeId, req);
+
           req.on('error', (err) => {
+            activeStreamRequests.delete(activeId);
             logger.error('Error connecting to backend inference stream', err);
             if (!event.sender.isDestroyed()) {
               event.sender.send(IPC_CHANNELS.INFERENCE_STREAM_CHUNK, {
@@ -600,6 +646,24 @@ function registerIpcHandlers() {
 
 app.whenReady().then(async () => {
   logger.info('Electron app ready. Starting Arletex...');
+
+  // Register modern media stream handler with full Range request support
+  protocol.handle('arletex-media', (request) => {
+    try {
+      const rawPath = request.url.replace(/^arletex-media:\/\//, '');
+      const decodedPath = decodeURIComponent(rawPath);
+      const normalized = path.normalize(decodedPath.startsWith('/') ? decodedPath : '/' + decodedPath);
+      if (!fs.existsSync(normalized)) {
+        logger.warn(`Media file not found: ${normalized}`);
+        return new Response('File not found', { status: 404 });
+      }
+      return net.fetch(pathToFileURL(normalized).toString());
+    } catch (err: any) {
+      logger.error('Error streaming media via arletex-media protocol:', err);
+      return new Response('Media streaming error', { status: 500 });
+    }
+  });
+
   await startBackendService();
   registerIpcHandlers();
   await createWindow();

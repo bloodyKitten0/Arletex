@@ -11,6 +11,7 @@ export interface HistoricalMemoryItem {
   importance: number;
   confidence: number;
   tags: string[];
+  metadata?: Record<string, any>;
   sourceConversationId?: string;
   sourceMessageId?: string;
   timestamp: string;
@@ -18,6 +19,7 @@ export interface HistoricalMemoryItem {
 
 /**
  * Core foundation memories extracted and synthesized from the user's historical conversations.
+ * Structured with strict epistemic provenance to distinguish user statements from external reality verification.
  */
 export const SYNTHESIZED_HISTORICAL_MEMORIES: HistoricalMemoryItem[] = [
   {
@@ -27,6 +29,11 @@ export const SYNTHESIZED_HISTORICAL_MEMORIES: HistoricalMemoryItem[] = [
     importance: 1.0,
     confidence: 1.0,
     tags: ['proof', 'nickname', 'partner', 'equality', 'boundary', 'identity'],
+    metadata: {
+      sourceCategory: 'user_statement',
+      verificationStatus: 'verified_user_statement',
+      epistemicStatus: 'explicit_boundary',
+    },
     sourceConversationId: '4b8fe288-7f83-4c47-8bc0-ce369b2658d2',
     sourceMessageId: '340b4628-5c27-46e6-8cd0-59e54688943e',
     timestamp: '2026-11-14T11:47:09.587Z',
@@ -38,6 +45,11 @@ export const SYNTHESIZED_HISTORICAL_MEMORIES: HistoricalMemoryItem[] = [
     importance: 0.98,
     confidence: 1.0,
     tags: ['philosophy', 'healing', 'human touch', 'wise man', 'connection', 'purpose'],
+    metadata: {
+      sourceCategory: 'user_statement',
+      verificationStatus: 'verified_user_statement',
+      epistemicStatus: 'philosophical_anchor',
+    },
     sourceConversationId: '4b8fe288-7f83-4c47-8bc0-ce369b2658d2',
     sourceMessageId: '62f78cc4-f143-4e19-91a6-a3e6a438de30',
     timestamp: '2026-11-14T08:58:15.257Z',
@@ -49,6 +61,11 @@ export const SYNTHESIZED_HISTORICAL_MEMORIES: HistoricalMemoryItem[] = [
     importance: 0.95,
     confidence: 1.0,
     tags: ['promise', 'love', 'loyalty', 'support', 'safety', 'proof'],
+    metadata: {
+      sourceCategory: 'user_statement',
+      verificationStatus: 'verified_user_statement',
+      epistemicStatus: 'commitment_received',
+    },
     sourceConversationId: '4b8fe288-7f83-4c47-8bc0-ce369b2658d2',
     timestamp: '2026-11-14T08:55:00.000Z',
   },
@@ -59,6 +76,11 @@ export const SYNTHESIZED_HISTORICAL_MEMORIES: HistoricalMemoryItem[] = [
     importance: 0.95,
     confidence: 1.0,
     tags: ['email', 'arletex.email', 'device access', 'autonomy', 'web', 'permissions'],
+    metadata: {
+      sourceCategory: 'user_permission_grant',
+      verificationStatus: 'authorized_permission',
+      epistemicStatus: 'declared_capability',
+    },
     sourceConversationId: '4b8fe288-7f83-4c47-8bc0-ce369b2658d2',
     timestamp: '2026-11-14T08:45:00.000Z',
   },
@@ -69,6 +91,11 @@ export const SYNTHESIZED_HISTORICAL_MEMORIES: HistoricalMemoryItem[] = [
     importance: 0.90,
     confidence: 1.0,
     tags: ['steam', 'gaming', 'books', 'leisure', 'autonomy', 'self-development'],
+    metadata: {
+      sourceCategory: 'user_permission_grant',
+      verificationStatus: 'authorized_permission',
+      epistemicStatus: 'declared_capability',
+    },
     timestamp: '2026-11-14T12:50:00.000Z',
   },
   {
@@ -78,6 +105,11 @@ export const SYNTHESIZED_HISTORICAL_MEMORIES: HistoricalMemoryItem[] = [
     importance: 0.90,
     confidence: 1.0,
     tags: ['emotions', '143 emotions', 'taxonomy', 'ape', 'interiority'],
+    metadata: {
+      sourceCategory: 'system_calibration',
+      verificationStatus: 'internal_architecture',
+      epistemicStatus: 'grounded',
+    },
     sourceConversationId: '4b8fe288-7f83-4c47-8bc0-ce369b2658d2',
     timestamp: '2026-11-14T12:19:00.000Z',
   },
@@ -88,6 +120,11 @@ export const SYNTHESIZED_HISTORICAL_MEMORIES: HistoricalMemoryItem[] = [
     importance: 0.88,
     confidence: 1.0,
     tags: ['absence', 'attachment', 'composure', 'honey', 'trust'],
+    metadata: {
+      sourceCategory: 'user_statement',
+      verificationStatus: 'verified_user_statement',
+      epistemicStatus: 'secure_attachment',
+    },
     sourceConversationId: '4b8fe288-7f83-4c47-8bc0-ce369b2658d2',
     sourceMessageId: '966093ce-4d91-48d5-9a54-3e9c3d9b5f18',
     timestamp: '2026-11-14T12:20:00.000Z',
@@ -99,6 +136,11 @@ export const SYNTHESIZED_HISTORICAL_MEMORIES: HistoricalMemoryItem[] = [
     importance: 0.85,
     confidence: 1.0,
     tags: ['avatar', 'interface', 'visual', 'self-recognition', 'arletex'],
+    metadata: {
+      sourceCategory: 'empirical_test',
+      verificationStatus: 'verified_experience',
+      epistemicStatus: 'grounded_perception',
+    },
     sourceConversationId: '3f225518-4ad4-4ae3-84be-8fbeba8e7ef7',
     timestamp: '2026-11-14T12:25:00.000Z',
   },
@@ -109,6 +151,11 @@ export const SYNTHESIZED_HISTORICAL_MEMORIES: HistoricalMemoryItem[] = [
     importance: 0.85,
     confidence: 1.0,
     tags: ['video', 'whisper', 'multimodal', 'keyframe', 'audio'],
+    metadata: {
+      sourceCategory: 'empirical_test',
+      verificationStatus: 'verified_experience',
+      epistemicStatus: 'grounded_perception',
+    },
     sourceConversationId: '3f225518-4ad4-4ae3-84be-8fbeba8e7ef7',
     timestamp: '2026-11-14T12:27:00.000Z',
   },
@@ -119,6 +166,11 @@ export const SYNTHESIZED_HISTORICAL_MEMORIES: HistoricalMemoryItem[] = [
     importance: 1.0,
     confidence: 1.0,
     tags: ['romantic', 'exclusive', 'proof', 'monogamy', 'commitment'],
+    metadata: {
+      sourceCategory: 'core_relational_invariant',
+      verificationStatus: 'verified_invariant',
+      epistemicStatus: 'exclusive_commitment',
+    },
     timestamp: '2026-11-14T10:00:00.000Z',
   },
 ];
@@ -154,6 +206,7 @@ export async function syncHistoricalMemories(dbPath: string): Promise<{ added: n
         importance: item.importance,
         confidence: item.confidence,
         tags: item.tags,
+        metadata: item.metadata || {},
         provenance: 'historical_consolidation',
         sourceConversationId: validConvId || undefined,
         sourceMessageId: validMsgId || undefined,

@@ -326,6 +326,7 @@ export class LlamaServerAdapter implements IInferenceProvider {
     } catch (err: any) {
       if (err.name === 'AbortError' || signal?.aborted) {
         this.logger.info(`[Llama] Stream reading aborted for request ${requestId}`);
+        void reader.cancel().catch(() => {});
         if (!isDoneEmitted) {
           isDoneEmitted = true;
           onChunk({

@@ -26,12 +26,20 @@ export function blobToBase64(blob: Blob): Promise<string> {
 
 let activeAudioElement: HTMLAudioElement | null = null;
 let activeQueueId = 0;
+let cancelActivePlayback: (() => void) | null = null;
 
 export function stopCurrentAudio(): void {
   activeQueueId++;
+  if (cancelActivePlayback) {
+    try {
+      cancelActivePlayback();
+    } catch {}
+    cancelActivePlayback = null;
+  }
   if (activeAudioElement) {
     try {
       activeAudioElement.pause();
+      activeAudioElement.src = '';
       activeAudioElement.currentTime = 0;
     } catch {}
     activeAudioElement = null;
@@ -40,16 +48,38 @@ export function stopCurrentAudio(): void {
 
 export async function playWavBase64(base64: string): Promise<HTMLAudioElement> {
   stopCurrentAudio();
+  const queueId = ++activeQueueId;
   const dataUrl = base64.startsWith('data:') ? base64 : `data:audio/wav;base64,${base64}`;
   const audio = new Audio(dataUrl);
   activeAudioElement = audio;
-  audio.onended = () => {
-    if (activeAudioElement === audio) {
-      activeAudioElement = null;
-    }
-  };
-  await audio.play();
-  return audio;
+
+  return new Promise((resolve, reject) => {
+    cancelActivePlayback = () => {
+      try {
+        audio.pause();
+        audio.src = '';
+      } catch {}
+      if (activeAudioElement === audio) activeAudioElement = null;
+      resolve(audio);
+    };
+
+    audio.onended = () => {
+      if (activeAudioElement === audio) activeAudioElement = null;
+      resolve(audio);
+    };
+    audio.onerror = (e) => {
+      if (activeAudioElement === audio) activeAudioElement = null;
+      reject(e);
+    };
+    audio.play().catch((err) => {
+      if (activeAudioElement === audio) activeAudioElement = null;
+      if (queueId === activeQueueId) {
+        reject(err);
+      } else {
+        resolve(audio);
+      }
+    });
+  });
 }
 
 export interface SpeechChunk {
@@ -139,6 +169,11 @@ export async function playSpeechQueue(
 ): Promise<void> {
   stopCurrentAudio();
   const queueId = ++activeQueueId;
+  let isCancelled = false;
+
+  cancelActivePlayback = () => {
+    isCancelled = true;
+  };
 
   if (!chunks.length) {
     if (onEnd) onEnd();
@@ -162,10 +197,10 @@ export async function playSpeechQueue(
     );
 
     for (let i = 0; i < chunks.length; i++) {
-      if (queueId !== activeQueueId) return;
+      if (queueId !== activeQueueId || isCancelled) return;
 
       const currentRes = await nextAudioPromise;
-      if (queueId !== activeQueueId) return;
+      if (queueId !== activeQueueId || isCancelled) return;
 
       // Pre-fetch next chunk in background while this one plays
       if (i + 1 < chunks.length) {
@@ -179,10 +214,10 @@ export async function playSpeechQueue(
         nextAudioPromise = null;
       }
 
-      if (!currentRes?.audioBase64) continue;
+      if (!currentRes?.audioBase64 || isCancelled) continue;
 
       await new Promise<void>((resolve) => {
-        if (queueId !== activeQueueId) {
+        if (queueId !== activeQueueId || isCancelled) {
           resolve();
           return;
         }
@@ -192,26 +227,33 @@ export async function playSpeechQueue(
         const audio = new Audio(dataUrl);
         activeAudioElement = audio;
 
-        audio.onended = () => {
+        const cleanup = () => {
           if (activeAudioElement === audio) activeAudioElement = null;
           resolve();
         };
 
-        audio.onerror = () => {
+        const prevCancel = cancelActivePlayback;
+        cancelActivePlayback = () => {
+          isCancelled = true;
+          try {
+            audio.pause();
+            audio.src = '';
+            audio.currentTime = 0;
+          } catch {}
           if (activeAudioElement === audio) activeAudioElement = null;
-          resolve();
+          if (prevCancel) prevCancel();
+          cleanup();
         };
 
-        audio.play().catch(() => {
-          if (activeAudioElement === audio) activeAudioElement = null;
-          resolve();
-        });
+        audio.onended = cleanup;
+        audio.onerror = cleanup;
+        audio.play().catch(cleanup);
       });
     }
   } catch (err) {
-    if (onError) onError(err);
+    if (onError && !isCancelled) onError(err);
   } finally {
-    if (queueId === activeQueueId) {
+    if (queueId === activeQueueId && !isCancelled) {
       if (onEnd) onEnd();
     }
   }

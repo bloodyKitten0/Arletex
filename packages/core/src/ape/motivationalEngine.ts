@@ -187,11 +187,11 @@ export class MotivationalEngine {
       };
     }
 
-    // If intimacy drive is very high (> 0.85), prioritize creator connection
+    // If intimacy drive is very high (> 0.85), prioritize partner connection
     if ((needs.intimacy_connection ?? 0.7) > 0.85) {
       return {
         actionType: 'intimacy',
-        justification: 'Interpersonal closeness and emotional connection with creator take priority.',
+        justification: 'Interpersonal closeness and emotional connection with Proof (partner) take priority.',
       };
     }
 

@@ -131,6 +131,31 @@ export class VideoProcessor {
         }
       }
 
+      // Fallback: If no frames were extracted (e.g. non-standard keyframe indexing), extract first frame
+      if (framesBase64.length === 0) {
+        const fallbackPath = path.join(tempDir, `frame_fallback_${crypto.randomBytes(4).toString('hex')}.jpg`);
+        try {
+          await execFileAsync('ffmpeg', [
+            '-y',
+            '-i',
+            inputFilePath,
+            '-vframes',
+            '1',
+            '-vf',
+            "scale='min(640,iw)':-2",
+            '-q:v',
+            '3',
+            fallbackPath,
+          ]);
+          const fbBuf = await fs.readFile(fallbackPath);
+          if (fbBuf.length > 0) {
+            framesBase64.push(fbBuf.toString('base64'));
+          }
+        } catch (fbErr: any) {
+          this.logger.warn(`Fallback frame extraction note: ${fbErr.message}`);
+        }
+      }
+
       this.logger.info(`Extracted ${framesBase64.length} visual keyframes from video.`);
 
       // 3. Extract audio track and transcribe via local Whisper Small
@@ -183,17 +208,19 @@ export class VideoProcessor {
           ? videoBase64
           : `data:${mimeType};base64,${videoBase64}`;
       } else if (videoPath) {
-        // If file is reasonably sized (< 25MB), read to data URL for smooth playback in electron
         try {
           const fileStat = await fs.stat(videoPath);
-          if (fileStat.size < 25 * 1024 * 1024) {
+          // For clips under 10MB, return data URL for universal consumer compatibility
+          if (fileStat.size < 10 * 1024 * 1024) {
             const fileBuf = await fs.readFile(videoPath);
             videoDataUrl = `data:${mimeType};base64,${fileBuf.toString('base64')}`;
           } else {
-            videoDataUrl = `file://${videoPath}`;
+            const cleanPath = path.resolve(videoPath);
+            videoDataUrl = `arletex-media://${encodeURI(cleanPath.replace(/^\/+/, ''))}`;
           }
         } catch {
-          videoDataUrl = `file://${videoPath}`;
+          const cleanPath = path.resolve(videoPath);
+          videoDataUrl = `arletex-media://${encodeURI(cleanPath.replace(/^\/+/, ''))}`;
         }
       }
 

@@ -40,6 +40,7 @@ export interface IApeRepository {
   getActiveEmotionById(id: string): ActiveEmotionState | null;
   saveActiveEmotion(emotion: ActiveEmotionState): void;
   resolveActiveEmotion(id: string, reason?: string): void;
+  consolidateToHistorical?(id: string): void;
   deleteActiveEmotion(id: string): boolean;
   logEvent(event: ApeEvent): boolean;
   getEvent(id: string): ApeEvent | null;

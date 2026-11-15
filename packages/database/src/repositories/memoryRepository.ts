@@ -88,11 +88,12 @@ export class MemoryRepository {
     }
   }
 
-  public getById(id: string): Memory | null {
+  public getById(id: string, includeDeleted = true): Memory | null {
     try {
-      const stmt = this.db.prepare(`
-        SELECT * FROM memories WHERE id = ?
-      `);
+      const sql = includeDeleted
+        ? 'SELECT * FROM memories WHERE id = ?'
+        : 'SELECT * FROM memories WHERE id = ? AND is_deleted = 0';
+      const stmt = this.db.prepare(sql);
       const row = stmt.get(id) as any;
       if (!row) return null;
 
@@ -156,9 +157,11 @@ export class MemoryRepository {
       const isArchived = input.isArchived !== undefined ? (input.isArchived ? 1 : 0) : (existing.isArchived ? 1 : 0);
       const isDeleted = input.isDeleted !== undefined ? (input.isDeleted ? 1 : 0) : (existing.isDeleted ? 1 : 0);
 
-      // Track correction history if content changed
+      // Track correction history and invalidate outdated embedding if content changed
       const history: MemoryCorrection[] = [...existing.correctionHistory];
+      let contentChanged = false;
       if (input.content && input.content !== existing.content) {
+        contentChanged = true;
         history.push({
           timestamp: now,
           previousContent: existing.content,
@@ -166,32 +169,38 @@ export class MemoryRepository {
         });
       }
 
-      const stmt = this.db.prepare(`
-        UPDATE memories
-        SET content = ?,
-            interpretation = ?,
-            importance = ?,
-            confidence = ?,
-            tags = ?,
-            correction_history = ?,
-            is_archived = ?,
-            is_deleted = ?,
-            updated_at = ?
-        WHERE id = ?
-      `);
+      this.db.transaction(() => {
+        const stmt = this.db.prepare(`
+          UPDATE memories
+          SET content = ?,
+              interpretation = ?,
+              importance = ?,
+              confidence = ?,
+              tags = ?,
+              correction_history = ?,
+              is_archived = ?,
+              is_deleted = ?,
+              updated_at = ?
+          WHERE id = ?
+        `);
 
-      stmt.run(
-        content,
-        interpretation,
-        importance,
-        confidence,
-        JSON.stringify(tags),
-        JSON.stringify(history),
-        isArchived,
-        isDeleted,
-        now,
-        input.id,
-      );
+        stmt.run(
+          content,
+          interpretation,
+          importance,
+          confidence,
+          JSON.stringify(tags),
+          JSON.stringify(history),
+          isArchived,
+          isDeleted,
+          now,
+          input.id,
+        );
+
+        if (contentChanged) {
+          this.db.prepare('DELETE FROM memory_embeddings WHERE memory_id = ?').run(input.id);
+        }
+      })();
 
       return {
         ...existing,
@@ -232,9 +241,13 @@ export class MemoryRepository {
 
   public deletePermanently(id: string): boolean {
     try {
-      const stmt = this.db.prepare('DELETE FROM memories WHERE id = ?');
-      const result = stmt.run(id);
-      return result.changes > 0;
+      let changes = 0;
+      this.db.transaction(() => {
+        this.db.prepare('DELETE FROM memory_embeddings WHERE memory_id = ?').run(id);
+        const result = this.db.prepare('DELETE FROM memories WHERE id = ?').run(id);
+        changes = result.changes;
+      })();
+      return changes > 0;
     } catch (err) {
       throw new DatabaseError(`Failed to permanently delete memory ${id}`, err);
     }
@@ -271,6 +284,9 @@ export class MemoryRepository {
              WHERE id = ?`,
           )
           .run(mergedContent, JSON.stringify(mergedTags), JSON.stringify(mergedHistory), now, primaryId);
+
+        // Invalidate primary embedding because content changed through merge
+        this.db.prepare('DELETE FROM memory_embeddings WHERE memory_id = ?').run(primaryId);
 
         // Soft-delete secondary
         this.delete(secondaryId);

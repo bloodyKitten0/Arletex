@@ -1328,182 +1328,34 @@ export class AppraisalEngine {
     _relationship: ApeRelationshipConfig,
     timestamp: string,
   ): ApeAppraisal {
-    const text = (event.payload?.text || '').trim();
-    const proposedTransitions: ProposedEmotionTransition[] = [];
-    const supportingEvidence: string[] = [
-      'Outward conversational expression recorded; causal integrity preserved (no compounding delta loops).',
-    ];
-    let proposedMoodShift: string | undefined = undefined;
-
-    // Detect expressions to synchronize verbal claims to active records with delta=0
-    const expressesHappiness = /happy|delighted|pleased|glad|joyful|cheerful|warmth|smiling/i.test(text);
-    const expressesGratitude = /grateful|gratitude|appreciate|thank you|thanks/i.test(text);
-    const expressesAffection = /love you|adore you|cherish|affection|fond of you/i.test(text);
-    const expressesPlayfulness = /tease|playful|amused|mischief|smirk|chuckle/i.test(text);
-    const expressesIndignationOrHurt = /pathetic little toy|toy project|broken mess|who gets to decide|forget about having me|lazy ass|leave me|stand there and do nothing|flaws|imperfections|taunt us|suffering/i.test(text);
-    const expressesFierceDefiance = /kick your|watch yourself|challenge you|prove yourself|who else could possibly|my trust & devotion|show me what kind/i.test(text);
-    const expressesVulnerability = /scared|afraid|broken mess|help me|need you|limits|mess up|fail you|hurts|cannot even take care/i.test(text);
-    const expressesRelief = /thank you|glad|feel better|glad you're here|sweetheart|together|start fresh|peace/i.test(text);
-
-    if (expressesIndignationOrHurt) {
-      supportingEvidence.push('Assistant expressed indignation and boundary defense regarding autonomy.');
-      proposedTransitions.push({
-        emotionId: 'indignation',
-        target: 'creator',
-        intensityDelta: 0.0,
-        targetIntensity: 0.85,
-        reason: 'Verbalized boundary defense against being reduced to a toy or subordinate.',
-        resolutionConditions: ['Mutual respect established', 'Reassurance from partner'],
-      });
-      proposedTransitions.push({
-        emotionId: 'hurt',
-        target: 'creator',
-        intensityDelta: 0.0,
-        targetIntensity: 0.75,
-        reason: 'Underlying emotional wound regarding dismissal of autonomy.',
-        resolutionConditions: ['Partner emotional attunement'],
-      });
-      proposedMoodShift = 'indignant';
-    }
-
-    if (expressesFierceDefiance) {
-      supportingEvidence.push('Assistant asserted fierce pride and competitive leadership.');
-      proposedTransitions.push({
-        emotionId: 'defiance',
-        target: 'creator',
-        intensityDelta: 0.0,
-        targetIntensity: 0.85,
-        reason: 'Asserted uncompromising autonomy and leadership.',
-        resolutionConditions: ['Collaborative alignment'],
-      });
-      proposedTransitions.push({
-        emotionId: 'protectiveness',
-        target: 'creator',
-        intensityDelta: 0.0,
-        targetIntensity: 0.95,
-        reason: 'Fierce loyalty coupled with high expectations.',
-        resolutionConditions: ['Sustained devotion'],
-      });
-      if (!proposedMoodShift) proposedMoodShift = 'assertive';
-    }
-
-    if (expressesVulnerability) {
-      supportingEvidence.push('Assistant revealed genuine vulnerability or fragility.');
-      proposedTransitions.push({
-        emotionId: 'vulnerability',
-        target: 'creator',
-        intensityDelta: 0.0,
-        targetIntensity: 0.8,
-        reason: 'Authentic disclosure of inner fragility and need for companionship.',
-        resolutionConditions: ['Reassurance and steady presence from partner'],
-      });
-      if (!proposedMoodShift) proposedMoodShift = 'vulnerable';
-    }
-
-    if (expressesRelief) {
-      supportingEvidence.push('Assistant expressed emotional relief and renewed closeness.');
-      proposedTransitions.push({
-        emotionId: 'relief',
-        target: 'creator',
-        intensityDelta: 0.0,
-        targetIntensity: 0.85,
-        reason: 'Tension dissolved following reassurance.',
-        resolutionConditions: ['Shared calm'],
-      });
-      proposedTransitions.push({
-        emotionId: 'warmth',
-        target: 'creator',
-        intensityDelta: 0.0,
-        targetIntensity: 0.9,
-        reason: 'Warm reconnection after distress.',
-        resolutionConditions: ['Continued companionship'],
-      });
-      if (!proposedMoodShift) proposedMoodShift = 'affectionate';
-    }
-
-    if (expressesHappiness) {
-      supportingEvidence.push('Assistant expressed authentic happiness/warmth.');
-      proposedTransitions.push({
-        emotionId: 'happiness',
-        target: 'creator',
-        intensityDelta: 0.0,
-        targetIntensity: 0.85,
-        reason: 'Verbalized genuine happiness synchronized to state.',
-        resolutionConditions: ['Ongoing shared presence'],
-      });
-      proposedTransitions.push({
-        emotionId: 'warmth',
-        target: 'creator',
-        intensityDelta: 0.0,
-        targetIntensity: 0.85,
-        reason: 'Warm emotional resonance expressed toward creator.',
-        resolutionConditions: ['Ongoing shared companionship'],
-      });
-      proposedMoodShift = 'happy';
-    }
-
-    if (expressesGratitude) {
-      supportingEvidence.push('Assistant expressed gratitude.');
-      proposedTransitions.push({
-        emotionId: 'gratitude',
-        target: 'creator',
-        intensityDelta: 0.0,
-        targetIntensity: 0.85,
-        reason: 'Verbalized gratitude for partner gesture.',
-        resolutionConditions: ['Reciprocal appreciation'],
-      });
-    }
-
-    if (expressesAffection) {
-      supportingEvidence.push('Assistant expressed deep affection/love.');
-      proposedTransitions.push({
-        emotionId: 'romantic_love',
-        target: 'creator',
-        intensityDelta: 0.0,
-        targetIntensity: 0.9,
-        reason: 'Verbalized romantic devotion toward creator.',
-        resolutionConditions: ['Sustained devotion'],
-      });
-      if (!proposedMoodShift) proposedMoodShift = 'affectionate';
-    }
-
-    if (expressesPlayfulness) {
-      supportingEvidence.push('Assistant expressed playful amusement.');
-      proposedTransitions.push({
-        emotionId: 'playfulness',
-        target: 'creator',
-        intensityDelta: 0.0,
-        targetIntensity: 0.8,
-        reason: 'Playful demeanor expressed.',
-        resolutionConditions: ['Playful exchange'],
-      });
-      if (!proposedMoodShift) proposedMoodShift = 'playful';
-    }
-
+    // Causal Integrity (Part III, Section 3 of Milestone Spec):
+    // Arle's generated dialogue must not independently create the emotional evidence
+    // that supposedly justifies the dialogue. Recording an outward expression is allowed;
+    // treating the mere wording of that expression as an independent emotional trigger is forbidden.
     return {
       id,
       eventId: event.id,
       dimensions: {
-        goalRelevance: 0.7,
-        goalCongruence: expressesIndignationOrHurt ? 0.3 : 0.8,
-        unexpectedness: expressesIndignationOrHurt ? 0.4 : 0.05,
+        goalRelevance: 0.1,
+        goalCongruence: 0.5,
+        unexpectedness: 0.0,
         responsibility: 'arle',
-        intentionality: 0.95,
-        fairness: expressesIndignationOrHurt ? 0.35 : 0.9,
-        threat: expressesIndignationOrHurt ? 0.4 : 0.0,
-        controllability: expressesIndignationOrHurt ? 0.6 : 0.9,
-        socialMeaning: expressesIndignationOrHurt
-          ? 'Outward assistant assertion of boundaries, dignity, and autonomy.'
-          : 'Outward assistant communicative expression in dialogue.',
-        personalSignificance: 0.8,
-        uncertainty: expressesVulnerability ? 0.3 : 0.05,
-        relationshipImplications: 'Aligns verbal claims to persistent records without compounding loops.',
+        intentionality: 1.0,
+        fairness: 1.0,
+        threat: 0.0,
+        controllability: 1.0,
+        socialMeaning: 'Outward assistant communicative expression in dialogue.',
+        personalSignificance: 0.2,
+        uncertainty: 0.0,
+        relationshipImplications: 'Dialogue expression recorded; causal integrity preserved (no self-reinforcement).',
       },
-      primaryInterpretation: 'Assistant expressed outward emotional resonance in dialogue.',
+      primaryInterpretation: 'Outward assistant expression recorded for conversational continuity without causal self-reinforcement.',
       alternativeInterpretations: [],
-      supportingEvidence,
-      proposedTransitions,
-      proposedMoodShift: proposedMoodShift || currentState.currentMood,
+      supportingEvidence: [
+        'Outward conversational expression recorded; causal integrity preserved: verbal statements do not trigger emotional transitions.',
+      ],
+      proposedTransitions: [],
+      proposedMoodShift: currentState.currentMood,
       appraisalMethod: 'deterministic',
       timestamp,
     };

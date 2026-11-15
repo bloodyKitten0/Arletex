@@ -34,7 +34,7 @@ export class EmotionalLifecycleEngine {
     },
     long_term: {
       halfLifeMs: 8 * 60 * 60 * 1000, // 8 hours
-      minBaselineIntensity: 0.1,
+      minBaselineIntensity: 0.0,
       autoResolves: true,
     },
     enduring: {
@@ -132,12 +132,20 @@ export class EmotionalLifecycleEngine {
       const prevStatus = em.status;
       let nextStatus: ActiveEmotionStatus = em.status;
 
-      // Determine lifecycle transition
+      // Determine lifecycle transition across the 6 states:
+      // emerging -> active -> diminishing -> dormant -> resolved -> historical
       if (newIntensity <= 0.08) {
-        nextStatus = 'resolved';
-        newIntensity = 0.0;
-      } else if (newIntensity < 0.4 && em.status === 'active') {
-        nextStatus = 'resolving';
+        if (em.resolutionConditions && em.resolutionConditions.length > 0 && persistence !== 'short_term') {
+          // Unresolved grievances, questions, or long-term attachments transition to dormant
+          nextStatus = 'dormant';
+        } else {
+          nextStatus = 'resolved';
+          newIntensity = 0.0;
+        }
+      } else if (newIntensity < 0.45 && (em.status === 'active' || em.status === 'emerging')) {
+        nextStatus = 'diminishing';
+      } else if (em.status === 'emerging' && newIntensity >= 0.45) {
+        nextStatus = 'active';
       }
 
       em.intensity = newIntensity;

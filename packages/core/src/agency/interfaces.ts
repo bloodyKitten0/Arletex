@@ -63,6 +63,7 @@ export interface IComputerProvider {
   readFile(filePath: string): Promise<string>;
   writeFile(filePath: string, content: string, overwrite?: boolean): Promise<{ success: boolean; sizeBytes: number }>;
   listFiles(dirPath: string): Promise<string[]>;
+  executeCommand?(command: string, args: string[]): Promise<{ exitCode: number; stdout: string; stderr: string }>;
 }
 
 export interface IAgencyRepository {

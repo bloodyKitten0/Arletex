@@ -243,7 +243,7 @@ describe('ApeService - Affective Foundation Engine Integration', () => {
     expect(appreciation).toBeDefined();
   });
 
-  it('processes assistant emotional expression in conversation outcome, synchronizing verbal claims to active emotion records', async () => {
+  it('processes assistant emotional expression in conversation outcome preserving causal integrity (no self-reinforcing inflation)', async () => {
     const res = await apeService.processEvent({
       category: 'conversation_outcome',
       type: 'assistant_expression',
@@ -255,21 +255,9 @@ describe('ApeService - Affective Foundation Engine Integration', () => {
     });
 
     expect(res.processed).toBe(true);
-    expect(res.state.currentMood).toBe('happy');
-
-    const active = res.state.activeEmotions;
-    const happiness = active.find((e) => e.emotionId === 'happiness');
-    const gratitude = active.find((e) => e.emotionId === 'gratitude');
-    const warmth = active.find((e) => e.emotionId === 'warmth');
-
-    expect(happiness).toBeDefined();
-    expect(happiness?.intensity).toBeGreaterThanOrEqual(0.85);
-
-    expect(gratitude).toBeDefined();
-    expect(gratitude?.intensity).toBeGreaterThanOrEqual(0.85);
-
-    expect(warmth).toBeDefined();
-    expect(warmth?.intensity).toBeGreaterThanOrEqual(0.8);
+    // Causal integrity: Assistant's outward verbal words do not create fresh emotion transitions
+    expect(res.appraisal?.proposedTransitions).toEqual([]);
+    expect(res.appraisal?.supportingEvidence[0]).toContain('causal integrity preserved');
   });
 
   it('activates emotions dynamically from dialogue cues across diverse taxonomy categories', async () => {

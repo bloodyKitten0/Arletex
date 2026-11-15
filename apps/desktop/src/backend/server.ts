@@ -102,6 +102,7 @@ export class ArletexBackendServer {
   public readonly intentTaskManager: IntentTaskManager;
 
   private activeStreams = new Map<string, AbortController>();
+  private activeTtsAbortControllers = new Set<AbortController>();
   private port = 0;
 
   private lastTtftMs: number | null = null;
@@ -145,6 +146,7 @@ export class ArletexBackendServer {
     this.planningInterface = new PlanningInterface(this.agencyRepo, logger);
     this.memorySync = new MemoryExperienceSync(this.memoryRepo as any, logger);
     this.intentTaskManager = new IntentTaskManager(this.agencyRepo, logger);
+    defaultDeviceAgency.setPermissionController(this.permissionController);
   }
 
   public getIntentTaskManager(): IntentTaskManager {
@@ -244,11 +246,15 @@ export class ArletexBackendServer {
             this.logger.warn(`Playwright observation note: ${navErr.message}`);
             pageObs = {
               url: targetUrl,
-              title: videoTitle || 'YouTube Video',
-              hasVideoElement: true,
-              isPlaying: true,
+              title: videoTitle || 'Navigation Failed',
+              hasVideoElement: false,
+              isPlaying: false,
+              playbackError: navErr.message,
             };
           }
+
+          const hasVid = Boolean(pageObs?.hasVideoElement);
+          const isPlay = Boolean(pageObs?.isPlaying);
 
           obs = {
             id: crypto.randomUUID(),
@@ -256,18 +262,18 @@ export class ArletexBackendServer {
             actionId: action.id,
             source: 'browser_page',
             timestamp: new Date().toISOString(),
-            success: pageObs?.hasVideoElement ?? true,
-            confidence: 0.95,
+            success: hasVid && isPlay,
+            confidence: hasVid ? 0.95 : 0.0,
             provenance: 'WebAgencyService.navigateToVideo + DeviceAgency.openChromeBrowser',
             data: {
               url: pageObs?.url || targetUrl,
               currentUrl: pageObs?.url || targetUrl,
               title: pageObs?.title || videoTitle || 'Loaded Webpage',
               pageTitle: pageObs?.title || videoTitle || 'Loaded Webpage',
-              hasVideoElement: pageObs?.hasVideoElement ?? true,
-              isPlaying: pageObs?.isPlaying ?? true,
+              hasVideoElement: hasVid,
+              isPlaying: isPlay,
             },
-            error: pageObs?.playbackError || null,
+            error: pageObs?.playbackError || (!hasVid ? 'No HTML5 video element discovered on target page' : null),
           };
         } else if (action.type === 'app_launch') {
           const app = String(params['app'] || params['appName'] || 'steam');
@@ -384,6 +390,7 @@ export class ArletexBackendServer {
       plan,
       observations,
       verifications,
+      allStepsSucceeded,
       success: allStepsSucceeded,
     };
   }
@@ -732,16 +739,46 @@ export class ArletexBackendServer {
     return this.inferenceGateway.getConfig();
   }
 
-  public cancelInference(requestId: string): boolean {
-    const controller = this.activeStreams.get(requestId);
-    if (controller) {
-      this.logger.info(`Cancelling inference stream ${requestId}`);
-      controller.abort();
-      this.activeStreams.delete(requestId);
-      this.isGenerating = false;
-      return true;
+  public cancelAllActiveTts(): void {
+    if (this.activeTtsAbortControllers.size > 0) {
+      this.logger.info(`Aborting ${this.activeTtsAbortControllers.size} in-flight TTS synthesis requests.`);
+      for (const ctrl of this.activeTtsAbortControllers) {
+        try {
+          ctrl.abort();
+        } catch {}
+      }
+      this.activeTtsAbortControllers.clear();
     }
-    return false;
+  }
+
+  public cancelInference(requestId?: string): boolean {
+    let cancelledAny = false;
+    if (requestId && requestId !== 'all') {
+      const controller = this.activeStreams.get(requestId);
+      if (controller) {
+        this.logger.info(`Cancelling inference stream ${requestId}`);
+        controller.abort();
+        this.activeStreams.delete(requestId);
+        cancelledAny = true;
+      }
+    }
+    // If 'all', or if specific stream not found but streams exist, forcibly abort all
+    if (!cancelledAny || requestId === 'all' || !requestId) {
+      for (const [id, ctrl] of this.activeStreams.entries()) {
+        this.logger.info(`Forcibly aborting remaining active stream ${id}`);
+        try {
+          ctrl.abort();
+        } catch {}
+        cancelledAny = true;
+      }
+      this.activeStreams.clear();
+    }
+
+    // Cancel all in-flight Kokoro TTS synthesis requests immediately
+    this.cancelAllActiveTts();
+
+    this.isGenerating = false;
+    return cancelledAny;
   }
 
   public getTelemetry(): DeviceTelemetry {
@@ -813,7 +850,7 @@ export class ArletexBackendServer {
   }
 
   public getMemory(id: string): Memory | null {
-    return this.memoryRepo.getById(id);
+    return this.memoryRepo.getById(id, false);
   }
 
   public updateMemory(input: any): Memory {
@@ -970,7 +1007,7 @@ export class ArletexBackendServer {
             const summary = execRes.verifications.map((v: any) => v.observedOutcome || v.expectedOutcome).join('; ');
             ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Action completed successfully! Details: ${summary}. Chrome or the requested application is physically running on Proof's desktop right now. Ground your response in this reality: speak naturally as an equal companion who has already carried this out. Do NOT say you 'will' do it or that Chrome is 'waiting for your command'—it is ALREADY running and active.\n`;
           } else {
-            ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Action attempted for "${userMessageContent}", but encountered an issue: ${execRes.task.failureReason || 'verification incomplete'}. State honestly what happened.\n`;
+            ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Action attempted for "${userMessageContent}", but encountered an issue: ${execRes.task.error || 'verification incomplete'}. State honestly what happened.\n`;
           }
         } catch (agencyErr: any) {
           this.logger.warn(`Digital agency chat execution note: ${agencyErr.message}`);
@@ -2132,18 +2169,32 @@ Rules:
       if (url.pathname === '/api/voice/synthesize' && method === 'POST') {
         const body = await this.readJsonBody(req);
         const input = SynthesizeSpeechInputSchema.parse(body);
+        const ttsController = new AbortController();
+        this.activeTtsAbortControllers.add(ttsController);
         try {
           const resKokoro = await fetch('http://127.0.0.1:39282/synthesize', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(input),
+            signal: ttsController.signal,
           });
           if (resKokoro.ok) {
             const data = await resKokoro.json();
             this.sendJson(res, 200, data);
             return;
           }
-        } catch {}
+        } catch (ttsErr: any) {
+          if (ttsErr.name === 'AbortError') {
+            this.sendJson(res, 200, {
+              audioBase64: null,
+              status: 'cancelled',
+              notice: 'Speech synthesis was interrupted.',
+            });
+            return;
+          }
+        } finally {
+          this.activeTtsAbortControllers.delete(ttsController);
+        }
 
         this.sendJson(res, 200, {
           audioBase64: null,
@@ -2538,6 +2589,42 @@ Rules:
         const taskId = url.pathname.replace('/api/agency/tasks/', '').replace('/cancel', '');
         const task = this.intentTaskManager.cancelTask(taskId);
         this.sendJson(res, 200, task);
+        return;
+      }
+
+      if (url.pathname === '/api/agency/emergency-shutdown' && method === 'POST') {
+        this.permissionController.emergencyShutdown();
+        // Also cancel all currently running tasks
+        const runningTasks = this.intentTaskManager.listTasks('running');
+        for (const t of runningTasks) {
+          try {
+            this.intentTaskManager.cancelTask(t.id);
+          } catch {}
+        }
+        this.logger.warn('Emergency agency shutdown executed via API.');
+        this.sendJson(res, 200, {
+          success: true,
+          shutdown: true,
+          policy: this.permissionController.getPolicy(),
+          cancelledTasksCount: runningTasks.length,
+        });
+        return;
+      }
+
+      if (url.pathname === '/api/agency/permissions/history' && method === 'GET') {
+        const history = this.permissionController.getAuthorizationHistory();
+        this.sendJson(res, 200, history);
+        return;
+      }
+
+      if (url.pathname === '/api/agency/status' && method === 'GET') {
+        const policy = this.permissionController.getPolicy();
+        const runningTasks = this.intentTaskManager.listTasks('running');
+        this.sendJson(res, 200, {
+          autonomousExecutionEnabled: policy.autonomousExecutionEnabled,
+          activeTasks: runningTasks,
+          runningCount: runningTasks.length,
+        });
         return;
       }
 

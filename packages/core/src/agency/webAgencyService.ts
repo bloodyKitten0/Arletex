@@ -12,7 +12,7 @@ export class WebAgencyService {
   private browser: IBrowserProvider;
   private logger: ILogger;
 
-  constructor(browser?: IBrowserProvider, logger: ILogger = rootLogger) {
+  constructor(browser?: IBrowserProvider | any, logger: ILogger = rootLogger) {
     if (browser && typeof (browser as any).navigate === 'function') {
       this.browser = browser;
     } else {
@@ -22,13 +22,14 @@ export class WebAgencyService {
         this.browser = {
           navigate: async (url: string) => ({
             url,
-            title: 'Video Player',
-            hasVideoElement: true,
-            isPlaying: true,
+            title: 'Browser Unavailable',
+            hasVideoElement: false,
+            isPlaying: false,
             textSnippet: '',
             headings: [],
             links: [],
-            statusCode: 200,
+            statusCode: 500,
+            playbackError: 'No Playwright browser provider available on host',
           }),
           search: async () => [],
           searchVideos: async () => [],
@@ -40,6 +41,7 @@ export class WebAgencyService {
             textSnippet: '',
             headings: [],
             links: [],
+            statusCode: 500,
           }),
           click: async () => {},
           typeText: async () => {},

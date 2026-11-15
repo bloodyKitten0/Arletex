@@ -54,6 +54,9 @@ export const CreateTaskInputSchema = AgencyTaskSchema.omit({
   totalSteps: true,
   retryCount: true,
 }).partial({
+  title: true,
+  error: true,
+  planId: true,
   status: true,
   priority: true,
   initiator: true,
@@ -72,6 +75,7 @@ export const ActionTypeSchema = z.enum([
   // Web Agency actions
   'web_search',
   'web_navigate',
+  'navigate_browser',
   'web_read_page',
   'web_extract_metadata',
   'web_extract_candidates',
@@ -84,11 +88,14 @@ export const ActionTypeSchema = z.enum([
   // Computer Agency actions
   'app_launch',
   'app_focus_window',
+  'execute_command',
   'desktop_mouse_move',
   'desktop_mouse_click',
   'desktop_key_press',
   'desktop_type_text',
   'desktop_take_screenshot',
+  'desktop_capture_screen',
+  'capture_screen',
   'system_read_file',
   'system_write_file',
   'system_list_directory',

@@ -427,4 +427,60 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_agency_ver_action ON agency_verifications(action_id);
     `,
   },
+  {
+    id: 6,
+    name: '006_ape_six_state_lifecycle',
+    up: `
+      -- 1. Upgrade ape_active_emotions table to support full 6-state lifecycle:
+      -- emerging, active, diminishing, dormant, resolved, historical
+      CREATE TABLE IF NOT EXISTS ape_active_emotions_new (
+        id TEXT PRIMARY KEY,
+        emotion_id TEXT NOT NULL,
+        intensity REAL NOT NULL,
+        confidence REAL NOT NULL DEFAULT 1.0,
+        activated_at TEXT NOT NULL,
+        last_updated_at TEXT NOT NULL,
+        duration_ms INTEGER NOT NULL DEFAULT 0,
+        persistence TEXT NOT NULL,
+        trigger_event_id TEXT NOT NULL,
+        target TEXT NOT NULL DEFAULT 'user',
+        context TEXT NOT NULL DEFAULT '',
+        interpretation TEXT NOT NULL DEFAULT '',
+        supporting_evidence TEXT NOT NULL DEFAULT '[]',
+        related_memory_ids TEXT NOT NULL DEFAULT '[]',
+        related_emotion_ids TEXT NOT NULL DEFAULT '[]',
+        resolution_conditions TEXT NOT NULL DEFAULT '[]',
+        status TEXT NOT NULL CHECK (status IN ('emerging', 'active', 'diminishing', 'dormant', 'resolved', 'historical', 'resolving', 'reappraised')),
+        FOREIGN KEY (emotion_id) REFERENCES ape_emotion_taxonomy(id) ON DELETE CASCADE
+      );
+
+      -- Copy data from existing table with backward-compatible status normalization
+      INSERT OR IGNORE INTO ape_active_emotions_new (
+        id, emotion_id, intensity, confidence, activated_at, last_updated_at,
+        duration_ms, persistence, trigger_event_id, target, context,
+        interpretation, supporting_evidence, related_memory_ids,
+        related_emotion_ids, resolution_conditions, status
+      )
+      SELECT
+        id, emotion_id, intensity, confidence, activated_at, last_updated_at,
+        duration_ms, persistence, trigger_event_id, target, context,
+        interpretation, supporting_evidence, related_memory_ids,
+        related_emotion_ids, resolution_conditions,
+        CASE
+          WHEN status = 'resolving' THEN 'diminishing'
+          ELSE status
+        END
+      FROM ape_active_emotions;
+
+      DROP TABLE ape_active_emotions;
+      ALTER TABLE ape_active_emotions_new RENAME TO ape_active_emotions;
+
+      CREATE INDEX IF NOT EXISTS idx_ape_active_status ON ape_active_emotions(status);
+      CREATE INDEX IF NOT EXISTS idx_ape_active_emotion ON ape_active_emotions(emotion_id);
+      CREATE INDEX IF NOT EXISTS idx_ape_active_intensity ON ape_active_emotions(intensity DESC);
+
+      -- Update relationship default to Proof rather than creator
+      UPDATE ape_relationship_config SET target_user_id = 'Proof' WHERE target_user_id = 'creator';
+    `,
+  },
 ];

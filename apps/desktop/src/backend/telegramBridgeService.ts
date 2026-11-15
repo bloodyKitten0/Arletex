@@ -16,6 +16,8 @@ export class TelegramBridgeService {
   private logger: ILogger;
   private botToken: string | null = null;
   private targetChatId: string | null = null;
+  private allowedChatIds: Set<string> = new Set();
+  private allowedUserIds: Set<number> = new Set();
   private isPolling = false;
   private lastUpdateId = 0;
   private abortController: AbortController | null = null;
@@ -25,14 +27,28 @@ export class TelegramBridgeService {
     this.logger = logger.child('TelegramBridgeService');
   }
 
-  public configure(botToken: string, targetChatId?: string): void {
+  public configure(botToken: string, targetChatId?: string, allowedChatIds?: (string | number)[]): void {
     this.botToken = botToken.trim() || null;
     if (targetChatId) {
       this.targetChatId = targetChatId.trim();
+      this.allowedChatIds.add(this.targetChatId);
+    }
+    if (allowedChatIds) {
+      for (const id of allowedChatIds) {
+        this.allowedChatIds.add(String(id).trim());
+      }
     }
     this.logger.info(
-      `Telegram configured. Token present: ${!!this.botToken}, Target Chat ID: ${this.targetChatId || 'Not set'}`,
+      `Telegram configured. Token present: ${!!this.botToken}, Target Chat ID: ${this.targetChatId || 'Not set'}, Allowlisted Chats: ${Array.from(this.allowedChatIds).join(', ') || 'None'}`
     );
+  }
+
+  public setAllowlist(chatIds: (string | number)[], userIds?: number[]): void {
+    this.allowedChatIds = new Set(chatIds.map((id) => String(id).trim()));
+    if (userIds) {
+      this.allowedUserIds = new Set(userIds);
+    }
+    this.logger.info(`Updated Telegram allowlist: ${this.allowedChatIds.size} chats, ${this.allowedUserIds.size} users`);
   }
 
   public getStatus(): { isConfigured: boolean; isPolling: boolean; targetChatId: string | null } {
@@ -95,12 +111,24 @@ export class TelegramBridgeService {
                   date: msg.date,
                 };
 
-                // Remember target chat id if not set
-                if (!this.targetChatId) {
-                  this.targetChatId = String(inbound.chatId);
+                // Strict privacy boundary: Only process messages from allowlisted chats / users
+                const chatIdStr = String(inbound.chatId);
+                const isChatAllowed = this.allowedChatIds.size === 0 || this.allowedChatIds.has(chatIdStr);
+                const isUserAllowed = this.allowedUserIds.size === 0 || (inbound.fromId && this.allowedUserIds.has(inbound.fromId));
+
+                if (!isChatAllowed || !isUserAllowed) {
+                  this.logger.warn(
+                    `Rejected unauthorized inbound Telegram message from user=${inbound.fromId} (${inbound.fromName}) in chat=${inbound.chatId}. Not in allowlist.`
+                  );
+                  continue;
                 }
 
-                this.logger.info(`Received Telegram message from ${inbound.fromName}: "${inbound.text}"`);
+                // If targetChatId is not set, set it from first verified allowlisted message
+                if (!this.targetChatId && this.allowedChatIds.has(chatIdStr)) {
+                  this.targetChatId = chatIdStr;
+                }
+
+                this.logger.info(`Received Telegram message from authorized ${inbound.fromName}: "${inbound.text}"`);
 
                 for (const listener of this.messageListeners) {
                   try {

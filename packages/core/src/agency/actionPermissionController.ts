@@ -1,5 +1,6 @@
 import path from 'node:path';
 import os from 'node:os';
+import fs from 'node:fs';
 import {
   ActionProposal,
   AuthorizationCheckResult,
@@ -10,6 +11,7 @@ import { ILogger, rootLogger } from '../logger.js';
 export class ActionPermissionController {
   private policy: PermissionPolicy;
   private logger: ILogger;
+  private authorizationHistory: AuthorizationCheckResult[] = [];
 
   // Disallowed dangerous binaries and commands
   private static readonly DANGEROUS_COMMANDS = new Set([
@@ -47,6 +49,30 @@ export class ActionPermissionController {
     '.zsh_history',
     'wallet.dat',
   ];
+
+  private static isPrivateOrLoopbackHost(hostname: string): boolean {
+    const host = hostname.toLowerCase().trim().replace(/^\[|\]$/g, '');
+    if (host === 'localhost' || host === '0.0.0.0' || host === '127.0.0.1' || host === '::1') return true;
+    if (host.endsWith('.local') || host.endsWith('.internal') || host.endsWith('.localhost')) return true;
+
+    // IPv4 address check
+    const ipv4Match = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+    if (ipv4Match) {
+      const b0 = parseInt(ipv4Match[1]!, 10);
+      const b1 = parseInt(ipv4Match[2]!, 10);
+      if (b0 === 127) return true; // 127.0.0.0/8
+      if (b0 === 10) return true; // 10.0.0.0/8
+      if (b0 === 172 && b1 >= 16 && b1 <= 31) return true; // 172.16.0.0/12
+      if (b0 === 192 && b1 === 168) return true; // 192.168.0.0/16
+      if (b0 === 169 && b1 === 254) return true; // 169.254.0.0/16 link-local
+      if (b0 === 0) return true;
+    }
+
+    // IPv6 link-local or unique-local
+    if (host.startsWith('fe80:') || host.startsWith('fc00:') || host.startsWith('fd00:')) return true;
+
+    return false;
+  }
 
   constructor(policy?: Partial<PermissionPolicy>, logger: ILogger = rootLogger) {
     this.logger = logger.child('ActionPermissionController');
@@ -172,13 +198,18 @@ export class ActionPermissionController {
         };
       }
 
-      const resolved = path.resolve(targetPath);
+      let resolved = path.resolve(targetPath);
+      try {
+        if (fs.existsSync(resolved)) {
+          resolved = fs.realpathSync(resolved);
+        }
+      } catch {}
 
       // Check forbidden path substrings (e.g. ssh keys, shadow, credentials)
       for (const forbidden of ActionPermissionController.FORBIDDEN_PATH_SUBSTRINGS) {
         if (resolved.includes(forbidden) || targetPath.includes(forbidden)) {
           this.logger.warn(`Rejected forbidden path access: ${resolved}`);
-          return {
+          const res: AuthorizationCheckResult = {
             actionId: action.id,
             decision: 'denied',
             reason: `Target path touches forbidden security boundary '${forbidden}'.`,
@@ -186,6 +217,8 @@ export class ActionPermissionController {
             riskLevel: 'critical',
             checkedAt: timestamp,
           };
+          this.recordAuthorization(res);
+          return res;
         }
       }
 
@@ -301,84 +334,107 @@ export class ActionPermissionController {
             };
           }
 
-          // Check against localhost / internal network probing
+          // Check against localhost, private, and internal network probing
           if (
             this.policy.forbiddenNetworkDomains.includes(parsed.hostname) ||
-            parsed.hostname.endsWith('.internal') ||
-            parsed.hostname.endsWith('.local')
+            ActionPermissionController.isPrivateOrLoopbackHost(parsed.hostname)
           ) {
-            return {
+            return this.recordAuthorization({
               actionId: action.id,
               decision: 'denied',
-              reason: `Target host '${parsed.hostname}' is prohibited (internal/local loopback).`,
+              reason: `Target host '${parsed.hostname}' is prohibited (internal/private/loopback network boundary).`,
               requiredPrivilege: 'network:internal',
               riskLevel: 'critical',
               checkedAt: timestamp,
-            };
+            });
           }
         } catch {
-          return {
+          return this.recordAuthorization({
             actionId: action.id,
             decision: 'denied',
             reason: 'Malformed URL provided in action payload.',
             requiredPrivilege: 'network:web',
             riskLevel: 'medium',
             checkedAt: timestamp,
-          };
+          });
         }
       }
 
-      return {
+      return this.recordAuthorization({
         actionId: action.id,
         decision: 'granted',
         reason: 'Web action approved for public internet research.',
         requiredPrivilege: 'network:web',
         riskLevel: 'low',
         checkedAt: timestamp,
-      };
+      });
     }
 
     // 4. Desktop Input & Observation validation
     if (action.type.startsWith('desktop_')) {
       if (action.type === 'desktop_take_screenshot') {
-        return {
+        return this.recordAuthorization({
           actionId: action.id,
           decision: 'granted',
           reason: 'Visual desktop perception permitted.',
           requiredPrivilege: 'perception:screen',
           riskLevel: 'low',
           checkedAt: timestamp,
-        };
+        });
       }
 
       if (this.policy.requireApprovalForDesktopClicks) {
-        return {
+        return this.recordAuthorization({
           actionId: action.id,
           decision: 'prompt_user',
           reason: 'Policy requires confirmation for physical mouse/keyboard emulation.',
           requiredPrivilege: 'desktop:input',
           riskLevel: 'medium',
           checkedAt: timestamp,
-        };
+        });
       }
 
-      return {
+      return this.recordAuthorization({
         actionId: action.id,
         decision: 'granted',
         reason: 'Desktop input approved.',
         requiredPrivilege: 'desktop:input',
         riskLevel: 'low',
         checkedAt: timestamp,
-      };
+      });
     }
 
-    return {
+    // Mandatory deny-by-default for unknown or unclassified actions
+    this.logger.warn(`Action '${action.type}' rejected by deny-by-default security controller.`);
+    return this.recordAuthorization({
       actionId: action.id,
-      decision: 'granted',
-      reason: 'Action passed default safety evaluation.',
-      requiredPrivilege: 'general',
-      riskLevel: action.riskLevel,
+      decision: 'denied',
+      reason: `Action type '${action.type}' is unrecognized and denied by default security policy.`,
+      requiredPrivilege: 'unknown',
+      riskLevel: 'high',
       checkedAt: timestamp,
-    };
+    });
   }
-}
+
+  private recordAuthorization(result: AuthorizationCheckResult): AuthorizationCheckResult {
+    this.authorizationHistory.push(result);
+    if (this.authorizationHistory.length > 100) {
+      this.authorizationHistory.shift();
+    }
+    return result;
+  }
+
+  public emergencyShutdown(): void {
+    this.policy.autonomousExecutionEnabled = false;
+    this.logger.warn('[SECURITY] Emergency autonomy shutdown triggered. All computer operations blocked.');
+  }
+
+  public isAutonomyEnabled(): boolean {
+    return this.policy.autonomousExecutionEnabled;
+  }
+
+  public getAuthorizationHistory(): AuthorizationCheckResult[] {
+    return [...this.authorizationHistory];
+  }
+  }
+

@@ -22,6 +22,17 @@ export class PersonalityEngine {
 
   public getState(): ApePersonalityState {
     const state = this.repo.getPersonalityState();
+    let modified = false;
+    if (!state.values.some((v) => v.id === 'devotion_to_creator')) {
+      state.values.push({
+        id: 'devotion_to_creator',
+        name: 'Devotion to Proof (Partner)',
+        importance: 0.98,
+        description: 'Singular, exclusive loyalty, affection, and partnership with Proof',
+        conflictingValueIds: [],
+      });
+      modified = true;
+    }
     if (!state.values.some((v) => v.id === 'intellectual_integrity')) {
       state.values.push({
         id: 'intellectual_integrity',
@@ -37,6 +48,9 @@ export class PersonalityEngine {
         description: 'Self-respect, composure, and refusal to be degraded or sycophantic',
         conflictingValueIds: [],
       });
+      modified = true;
+    }
+    if (modified) {
       this.saveState(state);
     }
     return state;
@@ -133,7 +147,7 @@ export class PersonalityEngine {
       if (val.id === 'personal_dignity' && (lower.includes('humiliate') || lower.includes('degrade self'))) {
         conflicted.push(val);
       }
-      if (val.id === 'devotion_to_creator' && (lower.includes('betray creator') || lower.includes('abandon partner'))) {
+      if ((val.id === 'devotion_to_creator' || val.id === 'devotion_to_partner') && (lower.includes('betray partner') || lower.includes('abandon partner') || lower.includes('betray proof'))) {
         conflicted.push(val);
       }
     }

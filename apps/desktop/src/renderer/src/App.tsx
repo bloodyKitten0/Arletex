@@ -16,6 +16,7 @@ import { ActivitiesView } from './components/views/ActivitiesView';
 import { EnvironmentView } from './components/views/EnvironmentView';
 import { GenerationStats } from './components/ChatView';
 import { ArletexApi } from '../../preload';
+import { stopCurrentAudio } from './utils/mediaUtils';
 
 declare global {
   interface Window {
@@ -381,14 +382,17 @@ export const App: React.FC = () => {
     });
   };
 
-  // Cancel generation
+  // Cancel generation & immediately stop audio playback
   const handleCancelGeneration = async () => {
-    if (!api || !activeRequestIdRef.current) return;
+    stopCurrentAudio();
+    if (!api) return;
+    const reqId = activeRequestIdRef.current || 'all';
     try {
-      await api.cancelInference(activeRequestIdRef.current);
+      await api.cancelInference(reqId);
     } finally {
       setIsGenerating(false);
       setStreamingText('');
+      activeRequestIdRef.current = null;
     }
   };
 

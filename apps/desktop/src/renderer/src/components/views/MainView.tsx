@@ -238,14 +238,18 @@ export const MainView: React.FC<MainViewProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const base64 = await blobToBase64(file);
       const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|mkv|avi)$/i.test(file.name);
+      const filePath = (file as any).path as string | undefined;
+      let base64 = '';
+      if (!isVideo || !filePath) {
+        base64 = await blobToBase64(file);
+      }
       setAttachedMedia({
         type: isVideo ? 'video' : 'image',
         base64,
         mimeType: file.type || (isVideo ? 'video/mp4' : 'image/jpeg'),
         name: file.name,
-        videoPath: (file as any).path,
+        videoPath: filePath,
       });
     } catch (err) {
       console.error('Failed to read media file:', err);
@@ -320,13 +324,17 @@ export const MainView: React.FC<MainViewProps> = ({
       const isImage = file.type.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp)$/i.test(file.name);
 
       if (isVideo || isImage) {
-        const base64 = await blobToBase64(file);
+        const filePath = (file as any).path as string | undefined;
+        let base64 = '';
+        if (!isVideo || !filePath) {
+          base64 = await blobToBase64(file);
+        }
         setAttachedMedia({
           type: isVideo ? 'video' : 'image',
           base64,
           mimeType: file.type || (isVideo ? 'video/mp4' : 'image/jpeg'),
           name: file.name,
-          videoPath: (file as any).path,
+          videoPath: filePath,
         });
       }
     } catch (err) {
@@ -381,6 +389,12 @@ export const MainView: React.FC<MainViewProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Escape' && isGenerating) {
+      e.preventDefault();
+      stopCurrentAudio();
+      onCancelGeneration();
+      return;
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -388,6 +402,7 @@ export const MainView: React.FC<MainViewProps> = ({
   };
 
   const handleSend = () => {
+    stopCurrentAudio();
     if ((!inputContent.trim() && !attachedMedia) || isGenerating) return;
 
     const mediaPayload = attachedMedia
@@ -702,13 +717,25 @@ export const MainView: React.FC<MainViewProps> = ({
                 )}
 
                 {/* Render attached video player if message contains a video */}
-                {msg.metadata && ((msg.metadata as any).videoBase64 || (msg.metadata as any).hasVideo) && (
+                {msg.metadata && ((msg.metadata as any).videoBase64 || (msg.metadata as any).videoPath || (msg.metadata as any).hasVideo) && (
                   <div style={{ marginBottom: '10px' }}>
                     <video
                       controls
                       playsInline
                       preload="metadata"
-                      src={(msg.metadata as any).videoBase64}
+                      src={
+                        (msg.metadata as any).videoPath
+                          ? `arletex-media://${encodeURI(String((msg.metadata as any).videoPath).replace(/^\/+/, ''))}`
+                          : String((msg.metadata as any).videoBase64 || '').startsWith('file://')
+                            ? String((msg.metadata as any).videoBase64).replace(/^file:\/\//, 'arletex-media://')
+                            : String((msg.metadata as any).videoBase64 || '').startsWith('arletex-media://')
+                              ? (msg.metadata as any).videoBase64
+                              : String((msg.metadata as any).videoBase64 || '').startsWith('data:')
+                                ? (msg.metadata as any).videoBase64
+                                : (msg.metadata as any).videoBase64
+                                  ? `data:video/mp4;base64,${(msg.metadata as any).videoBase64}`
+                                  : undefined
+                      }
                       style={{
                         maxWidth: '100%',
                         maxHeight: '300px',
@@ -1141,7 +1168,10 @@ export const MainView: React.FC<MainViewProps> = ({
           {isGenerating ? (
             <button
               type="button"
-              onClick={onCancelGeneration}
+              onClick={() => {
+                stopCurrentAudio();
+                onCancelGeneration();
+              }}
               title="Interrupt Generation"
               style={{
                 width: '32px',

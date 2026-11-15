@@ -1,12 +1,25 @@
-import { exec, spawn } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import util from 'node:util';
 import fs from 'node:fs';
 import path from 'node:path';
-import { rootLogger } from '@arletex/core';
+import crypto from 'node:crypto';
+import { rootLogger, ActionPermissionController } from '@arletex/core';
 
-const execPromise = util.promisify(exec);
+const execFilePromise = util.promisify(execFile);
 const logger = rootLogger.child('DeviceAgencyService');
-const reflexEnginePath = path.resolve('/home/proof/Documents/A man\'s dream will never die/projects/Arletex/apps/desktop/src/backend/native/reflex_engine');
+
+function findReflexEngine(): string {
+  if (process.env['REFLEX_ENGINE_PATH'] && fs.existsSync(process.env['REFLEX_ENGINE_PATH'])) {
+    return process.env['REFLEX_ENGINE_PATH'];
+  }
+  const local = path.resolve(__dirname, 'native/reflex_engine');
+  if (fs.existsSync(local)) return local;
+  const devPath = path.resolve(__dirname, '../../src/backend/native/reflex_engine');
+  if (fs.existsSync(devPath)) return devPath;
+  const buildPath = path.resolve(__dirname, '../../../native/build/reflex_engine');
+  if (fs.existsSync(buildPath)) return buildPath;
+  return local;
+}
 
 export interface ScreenCaptureResult {
   imagePath: string;
@@ -31,16 +44,48 @@ export class DeviceAgencyService {
   private chromeProfile = 'Profile 7'; // arletex.email@gmail.com
   private lastOpenedUrl: string | null = null;
   private lastOpenedTime = 0;
+  private permissionController: ActionPermissionController;
 
-  constructor(display = ':0') {
-    this.display = display;
+  constructor(
+    permissionControllerOrDisplay?: ActionPermissionController | string,
+    maybeDisplay = ':0'
+  ) {
+    if (typeof permissionControllerOrDisplay === 'string') {
+      this.permissionController = new ActionPermissionController();
+      this.display = permissionControllerOrDisplay;
+    } else {
+      this.permissionController = permissionControllerOrDisplay ?? new ActionPermissionController();
+      this.display = maybeDisplay;
+    }
+  }
+
+  public setPermissionController(controller: ActionPermissionController): void {
+    this.permissionController = controller;
   }
 
   /**
    * Captures the current active screen/monitor using spectacle (Wayland) or ffmpeg (X11).
-   * Returns base64 image data suitable for vision appraisal.
+   * Validated through mandatory ActionPermissionController.
    */
   public async captureScreen(): Promise<ScreenCaptureResult> {
+    const auth = this.permissionController.authorize({
+      id: crypto.randomUUID(),
+      taskId: crypto.randomUUID(),
+      stepIndex: 0,
+      type: 'desktop_take_screenshot',
+      rationale: 'Capture screen monitor frame for vision appraisal',
+      expectedOutcome: 'Valid screen image captured',
+      requiresExplicitApproval: false,
+      riskLevel: 'low',
+      payload: {},
+      createdAt: new Date().toISOString(),
+    });
+
+    if (!auth.allowed) {
+      logger.warn(`Screen capture rejected by permission controller: ${auth.denialReason}`);
+      throw new Error(`Screen capture disallowed: ${auth.denialReason || 'Unauthorized'}`);
+    }
+
     const timestamp = Date.now();
     const tempDir = '/tmp/arletex_vision';
     if (!fs.existsSync(tempDir)) {
@@ -53,7 +98,7 @@ export class DeviceAgencyService {
 
       // 1. In KDE Wayland environments (Bazzite / Plasma), spectacle provides instant non-blocking capture of the true desktop
       try {
-        await execPromise(`spectacle -b -n -f -o "${outputPath}"`);
+        await execFilePromise('spectacle', ['-b', '-n', '-f', '-o', outputPath]);
         if (fs.existsSync(outputPath) && fs.statSync(outputPath).size > 1000) {
           captured = true;
         }
@@ -63,14 +108,33 @@ export class DeviceAgencyService {
 
       // 2. Fallback to ffmpeg x11grab
       if (!captured) {
-        const cmd = `DISPLAY=${this.display} ffmpeg -y -f x11grab -i ${this.display}.0 -vframes 1 "${outputPath}"`;
-        await execPromise(cmd);
+        await execFilePromise('ffmpeg', [
+          '-y',
+          '-f',
+          'x11grab',
+          '-i',
+          `${this.display}.0`,
+          '-vframes',
+          '1',
+          outputPath,
+        ], {
+          env: { ...process.env, DISPLAY: this.display },
+        });
       }
 
       // Convert and downscale to efficient 960x540 JPEG for rapid, token-efficient vision appraisal
       const jpgPath = path.join(tempDir, `screen_${timestamp}_small.jpg`);
       try {
-        await execPromise(`ffmpeg -y -i "${outputPath}" -vf scale=960:-1 -q:v 3 "${jpgPath}" 2>/dev/null`);
+        await execFilePromise('ffmpeg', [
+          '-y',
+          '-i',
+          outputPath,
+          '-vf',
+          'scale=960:-1',
+          '-q:v',
+          '3',
+          jpgPath,
+        ]);
       } catch {}
 
       const finalPath = fs.existsSync(jpgPath) ? jpgPath : outputPath;
@@ -87,8 +151,17 @@ export class DeviceAgencyService {
       let width = 1920;
       let height = 1080;
       try {
-        const probeCmd = `ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "${outputPath}"`;
-        const { stdout } = await execPromise(probeCmd);
+        const { stdout } = await execFilePromise('ffprobe', [
+          '-v',
+          'error',
+          '-select_streams',
+          'v:0',
+          '-show_entries',
+          'stream=width,height',
+          '-of',
+          'csv=s=x:p=0',
+          finalPath,
+        ]);
         const parts = stdout.trim().split('x');
         if (parts.length === 2) {
           width = parseInt(parts[0]!, 10);
@@ -109,21 +182,46 @@ export class DeviceAgencyService {
   }
 
   /**
-   * Executes keyboard and mouse automation using xdotool.
+   * Executes keyboard and mouse automation via reflex_engine or xdotool.
+   * Every action must pass through ActionPermissionController.
    */
   public async executeDeviceAction(input: DeviceActionInput): Promise<{ success: boolean; message: string }> {
+    const auth = this.permissionController.authorize({
+      id: crypto.randomUUID(),
+      taskId: crypto.randomUUID(),
+      stepIndex: 0,
+      type: `desktop_${input.action}` as any,
+      rationale: `Execute ${input.action} action`,
+      expectedOutcome: `Successfully performed ${input.action}`,
+      requiresExplicitApproval: false,
+      riskLevel: 'medium',
+      payload: { ...input },
+      createdAt: new Date().toISOString(),
+    });
+
+    if (!auth.allowed) {
+      logger.warn(`Device action '${input.action}' rejected by permission controller: ${auth.denialReason}`);
+      return { success: false, message: `Permission Denied: ${auth.denialReason || 'Unauthorized action'}` };
+    }
+
     try {
-      const hasReflex = fs.existsSync(reflexEnginePath);
+      const reflexBin = findReflexEngine();
+      const hasReflex = fs.existsSync(reflexBin);
+
       switch (input.action) {
         case 'mouse_move': {
           if (input.x === undefined || input.y === undefined) {
             throw new Error('x and y coordinates required for mouse_move');
           }
           if (hasReflex) {
-            await execPromise(`DISPLAY=${this.display} "${reflexEnginePath}" mouse_move ${input.x} ${input.y}`);
+            await execFilePromise(reflexBin, ['mouse_move', String(input.x), String(input.y)], {
+              env: { ...process.env, DISPLAY: this.display },
+            });
             return { success: true, message: `Moved mouse to (${input.x}, ${input.y}) [C++ Reflex]` };
           }
-          await execPromise(`DISPLAY=${this.display} xdotool mousemove ${input.x} ${input.y}`);
+          await execFilePromise('xdotool', ['mousemove', String(input.x), String(input.y)], {
+            env: { ...process.env, DISPLAY: this.display },
+          });
           return { success: true, message: `Moved mouse to (${input.x}, ${input.y})` };
         }
 
@@ -132,35 +230,49 @@ export class DeviceAgencyService {
           const x = input.x ?? -1;
           const y = input.y ?? -1;
           if (hasReflex) {
-            await execPromise(`DISPLAY=${this.display} "${reflexEnginePath}" mouse_click ${x} ${y} ${btn}`);
+            await execFilePromise(reflexBin, ['mouse_click', String(x), String(y), String(btn)], {
+              env: { ...process.env, DISPLAY: this.display },
+            });
             return { success: true, message: `Clicked mouse button ${btn} [C++ Reflex]` };
           }
           if (x >= 0 && y >= 0) {
-            await execPromise(`DISPLAY=${this.display} xdotool mousemove ${x} ${y} click ${btn}`);
+            await execFilePromise('xdotool', ['mousemove', String(x), String(y), 'click', String(btn)], {
+              env: { ...process.env, DISPLAY: this.display },
+            });
           } else {
-            await execPromise(`DISPLAY=${this.display} xdotool click ${btn}`);
+            await execFilePromise('xdotool', ['click', String(btn)], {
+              env: { ...process.env, DISPLAY: this.display },
+            });
           }
           return { success: true, message: `Clicked mouse button ${btn}` };
         }
 
         case 'type_text': {
           if (!input.text) throw new Error('text required for type_text');
-          const sanitized = String(input.text).replace(/"/g, '\\"');
+          const textVal = String(input.text);
           if (hasReflex) {
-            await execPromise(`DISPLAY=${this.display} "${reflexEnginePath}" type_text "${sanitized}"`);
-            return { success: true, message: `Typed text: "${input.text}" [C++ Reflex]` };
+            await execFilePromise(reflexBin, ['type_text', textVal], {
+              env: { ...process.env, DISPLAY: this.display },
+            });
+            return { success: true, message: `Typed text: "${textVal}" [C++ Reflex]` };
           }
-          await execPromise(`DISPLAY=${this.display} xdotool type --delay 20 "${sanitized}"`);
-          return { success: true, message: `Typed text: "${input.text}"` };
+          await execFilePromise('xdotool', ['type', '--delay', '20', textVal], {
+            env: { ...process.env, DISPLAY: this.display },
+          });
+          return { success: true, message: `Typed text: "${textVal}"` };
         }
 
         case 'key_press': {
           if (!input.key) throw new Error('key required for key_press');
           if (hasReflex) {
-            await execPromise(`DISPLAY=${this.display} "${reflexEnginePath}" key_press "${input.key}"`);
+            await execFilePromise(reflexBin, ['key_press', input.key], {
+              env: { ...process.env, DISPLAY: this.display },
+            });
             return { success: true, message: `Pressed key: ${input.key} [C++ Reflex]` };
           }
-          await execPromise(`DISPLAY=${this.display} xdotool key --clearmodifiers "${input.key}"`);
+          await execFilePromise('xdotool', ['key', '--clearmodifiers', input.key], {
+            env: { ...process.env, DISPLAY: this.display },
+          });
           return { success: true, message: `Pressed key: ${input.key}` };
         }
 
@@ -182,11 +294,30 @@ export class DeviceAgencyService {
   }
 
   /**
-   * Opens Google Chrome under Arle's dedicated profile (Profile 7 - arletex.email@gmail.com).
+   * Opens Google Chrome under Arle's dedicated profile.
+   * Gated through ActionPermissionController.
    */
   public async openChromeBrowser(targetUrl = 'https://google.com'): Promise<{ success: boolean; message: string }> {
+    const url = targetUrl || 'https://google.com';
+    const auth = this.permissionController.authorize({
+      id: crypto.randomUUID(),
+      taskId: crypto.randomUUID(),
+      stepIndex: 0,
+      type: 'web_navigate',
+      rationale: `Navigate to URL: ${url}`,
+      expectedOutcome: 'Open browser tab to destination URL',
+      requiresExplicitApproval: false,
+      riskLevel: 'low',
+      payload: { url },
+      createdAt: new Date().toISOString(),
+    });
+
+    if (!auth.allowed) {
+      logger.warn(`Browser navigation to ${url} rejected: ${auth.denialReason}`);
+      return { success: false, message: `Permission Denied: ${auth.denialReason || 'Unauthorized navigation'}` };
+    }
+
     try {
-      const url = targetUrl || 'https://google.com';
       const now = Date.now();
 
       // De-duplicate: do not spam open tabs if navigated recently within 25 seconds
@@ -196,12 +327,6 @@ export class DeviceAgencyService {
 
       if (isDuplicate && now - this.lastOpenedTime < 25000) {
         logger.info(`Chrome already navigated to ${url} recently. Suppressing duplicate tab opening.`);
-        // Ensure Chrome is brought to the foreground (click Chrome icon on KDE panel at 278, 1060)
-        if (fs.existsSync(reflexEnginePath)) {
-          await execPromise(`DISPLAY=${this.display} "${reflexEnginePath}" mouse_click 278 1060 1`).catch(() => {});
-        } else {
-          await execPromise(`DISPLAY=${this.display} xdotool mousemove 278 1060 click 1`).catch(() => {});
-        }
         return {
           success: true,
           message: `Browser already open at ${url} (duplicate opening suppressed, brought to focus)`,
@@ -220,15 +345,18 @@ export class DeviceAgencyService {
         XDG_SESSION_TYPE: 'wayland',
       };
 
-      // Check if Chrome is already active on host
-      const checkRes = await execPromise(`pgrep -u proof -f chrome 2>/dev/null || true`);
-      const isChromeRunning = checkRes.stdout.trim().length > 0;
+      // Check if Chrome is already active on host (no hardcoded username!)
+      let isChromeRunning = false;
+      try {
+        const checkRes = await execFilePromise('pgrep', ['-f', 'chrome']);
+        isChromeRunning = checkRes.stdout.trim().length > 0;
+      } catch {}
 
       const chromeArgs = isChromeRunning
         ? ['run', 'com.google.Chrome', url]
         : ['run', 'com.google.Chrome', `--profile-directory=${this.chromeProfile}`, url];
 
-      // Spawn flatpak Google Chrome asynchronously so it does not block the backend process
+      // Spawn flatpak Google Chrome asynchronously with argument arrays
       const child = spawn(
         'flatpak',
         chromeArgs,
@@ -239,26 +367,6 @@ export class DeviceAgencyService {
         },
       );
       child.unref();
-
-      // Ensure Chrome window is focused on screen
-      setTimeout(async () => {
-        // Bring Chrome to the front by clicking Chrome on KDE panel (278, 1060)
-        if (fs.existsSync(reflexEnginePath)) {
-          await execPromise(`DISPLAY=${this.display} "${reflexEnginePath}" mouse_click 278 1060 1`).catch(() => {});
-        } else {
-          await execPromise(`DISPLAY=${this.display} xdotool mousemove 278 1060 click 1`).catch(() => {});
-        }
-        // If media/youtube, trigger spacebar to initiate playback
-        if (url.includes('youtube.com')) {
-          setTimeout(async () => {
-            if (fs.existsSync(reflexEnginePath)) {
-              await execPromise(`DISPLAY=${this.display} "${reflexEnginePath}" key_press "space"`).catch(() => {});
-            } else {
-              await execPromise(`DISPLAY=${this.display} xdotool key space`).catch(() => {});
-            }
-          }, 1200);
-        }
-      }, 700);
 
       return {
         success: true,
@@ -272,12 +380,31 @@ export class DeviceAgencyService {
 
   /**
    * Launches Steam or runs a specific game via Steam URL protocol.
+   * Gated through ActionPermissionController.
    */
   public async launchSteam(appId?: string): Promise<{ success: boolean; message: string }> {
+    const auth = this.permissionController.authorize({
+      id: crypto.randomUUID(),
+      taskId: crypto.randomUUID(),
+      stepIndex: 0,
+      type: 'app_launch',
+      rationale: 'Launch Steam client or game',
+      expectedOutcome: 'Steam process running',
+      requiresExplicitApproval: false,
+      riskLevel: 'low',
+      payload: { appName: 'steam', args: appId ? [`steam://run/${appId}`] : [] },
+      createdAt: new Date().toISOString(),
+    });
+
+    if (!auth.allowed) {
+      logger.warn(`Steam launch rejected: ${auth.denialReason}`);
+      return { success: false, message: `Permission Denied: ${auth.denialReason || 'Unauthorized launch'}` };
+    }
+
     try {
       if (!appId) {
         try {
-          const check = await execPromise('pgrep -u proof -x steam || pgrep -u proof steam');
+          const check = await execFilePromise('pgrep', ['-x', 'steam']);
           if (check.stdout.trim().length > 0) {
             logger.info('Steam client is already running on host.');
             return { success: true, message: 'Steam client is already running' };

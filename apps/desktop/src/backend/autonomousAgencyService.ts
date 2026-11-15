@@ -7,7 +7,7 @@ import { DeviceAgencyService } from './deviceAgencyService.js';
 export interface AutonomousActionLog {
   id: string;
   timestamp: string;
-  category: 'web_reading' | 'steam_game' | 'screen_vision' | 'self_reflection' | 'creative_writing' | 'proactive_speech';
+  category: 'web_reading' | 'steam_game' | 'screen_vision' | 'self_reflection' | 'creative_writing' | 'proactive_speech' | 'recreation';
   title: string;
   details: string;
   screenPath?: string;
@@ -212,9 +212,11 @@ export class AutonomousAgencyService {
             title: 'Contemplative Rest & Reflection',
             objective: 'Internal downtime and listening to ambient system audio to recharge',
             origin: 'arle_initiated',
-            category: 'recreation',
             status: 'completed',
-            description: 'Took quiet internal downtime to unwind without interrupting Proof.',
+            metadata: {
+              category: 'recreation',
+              description: 'Took quiet internal downtime to unwind without interrupting Proof.',
+            },
           });
           this.memoryRepo.create({
             type: 'episodic',
@@ -240,9 +242,11 @@ export class AutonomousAgencyService {
             title: `Reflective Inquiry: ${topic.title}`,
             objective: `Contemplated ${topic.title} (${topic.url})`,
             origin: 'arle_initiated',
-            category: 'web_reading',
             status: 'completed',
-            description: `Reflected on ${topic.title} during quiet moments.`,
+            metadata: {
+              category: 'web_reading',
+              description: `Reflected on ${topic.title} during quiet moments.`,
+            },
           });
           this.memoryRepo.create({
             type: 'episodic',
@@ -279,7 +283,9 @@ export class AutonomousAgencyService {
             objective: reflection,
             origin: 'arle_initiated',
             status: 'completed',
-            description: reflection,
+            metadata: {
+              category: 'self_reflection',
+            },
           });
           this.memoryRepo.create({
             type: 'episodic',

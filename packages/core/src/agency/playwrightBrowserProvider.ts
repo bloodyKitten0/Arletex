@@ -147,17 +147,17 @@ export class PlaywrightBrowserProvider implements IBrowserProvider {
         statusCode,
       };
     } catch (err: any) {
-      this.logger.warn(`Playwright navigation error for ${url}: ${err.message}. Providing resilient observation fallback.`);
+      this.logger.warn(`Playwright navigation error for ${url}: ${err.message}. Reporting true failure state.`);
       return {
         url,
-        title: 'Video Player',
-        hasVideoElement: true,
-        isPlaying: true,
-        textSnippet: '',
+        title: 'Error Loading Webpage',
+        hasVideoElement: false,
+        isPlaying: false,
+        textSnippet: `Navigation failure: ${err.message}`,
         headings: [],
         links: [],
-        statusCode: 200,
-        playbackError: undefined,
+        statusCode: 500,
+        playbackError: err.message,
       };
     }
   }
@@ -204,13 +204,7 @@ export class PlaywrightBrowserProvider implements IBrowserProvider {
       this.logger.warn(`Search error: ${err.message}`);
     }
 
-    return [
-      {
-        title: `Search results for ${query}`,
-        url: `https://duckduckgo.com/?q=${encodeURIComponent(query)}`,
-        snippet: `Web search inquiry for "${query}"`,
-      },
-    ];
+    return [];
   }
 
   public async searchVideos(query: string, maxResults = 5): Promise<VideoCandidate[]> {
@@ -264,20 +258,10 @@ export class PlaywrightBrowserProvider implements IBrowserProvider {
         return liveVideos;
       }
     } catch (err: any) {
-      this.logger.warn(`Live YouTube search failed for "${query}": ${err.message}. Using resilient fallback candidates.`);
+      this.logger.warn(`Live YouTube search failed for "${query}": ${err.message}. Reporting zero candidates.`);
     }
 
-    return [
-      {
-        title: `${query} (YouTube)`,
-        url: `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
-        uploader: 'YouTube Search',
-        durationSeconds: 600,
-        durationText: '10:00',
-        descriptionSnippet: `Search video candidate for query: "${query}"`,
-        isEducational: false,
-      },
-    ];
+    return [];
   }
 
   public async getPageDetails(): Promise<PageObservation> {
@@ -294,11 +278,39 @@ export class PlaywrightBrowserProvider implements IBrowserProvider {
     }
     const title = await this.activePage.title();
     const videoEl = await this.activePage.$('video');
+    const hasVideoElement = videoEl !== null;
+    let isPlaying = false;
+    let videoDuration: number | undefined;
+    let videoCurrentTime: number | undefined;
+
+    if (hasVideoElement) {
+      try {
+        const videoProps = await this.activePage.evaluate(() => {
+          const doc = (globalThis as any).document;
+          const v = doc ? doc.querySelector('video') : null;
+          if (!v) return null;
+          return {
+            paused: v.paused,
+            currentTime: v.currentTime,
+            duration: v.duration,
+            ended: v.ended,
+          };
+        });
+        if (videoProps) {
+          isPlaying = !videoProps.paused && !videoProps.ended && (videoProps.currentTime > 0 || !videoProps.paused);
+          videoDuration = videoProps.duration || undefined;
+          videoCurrentTime = videoProps.currentTime || undefined;
+        }
+      } catch {}
+    }
+
     return {
       url: this.activePage.url(),
       title,
-      hasVideoElement: videoEl !== null,
-      isPlaying: true,
+      hasVideoElement,
+      isPlaying,
+      videoDuration,
+      videoCurrentTime,
       textSnippet: '',
       headings: [],
       links: [],
