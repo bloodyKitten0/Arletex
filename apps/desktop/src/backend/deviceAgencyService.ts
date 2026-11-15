@@ -40,7 +40,7 @@ export interface DeviceActionInput {
 }
 
 export class DeviceAgencyService {
-  private display = ':0';
+  private display = process.env.DISPLAY || ':0';
   private chromeProfile = 'Profile 7'; // arletex.email@gmail.com
   private lastOpenedUrl: string | null = null;
   private lastOpenedTime = 0;
@@ -48,14 +48,18 @@ export class DeviceAgencyService {
 
   constructor(
     permissionControllerOrDisplay?: ActionPermissionController | string,
-    maybeDisplay = ':0'
+    maybeDisplay?: string
   ) {
     if (typeof permissionControllerOrDisplay === 'string') {
       this.permissionController = new ActionPermissionController();
-      this.display = permissionControllerOrDisplay;
+      this.display = (permissionControllerOrDisplay === ':0' && process.env.DISPLAY)
+        ? process.env.DISPLAY
+        : (permissionControllerOrDisplay || process.env.DISPLAY || ':0');
     } else {
       this.permissionController = permissionControllerOrDisplay ?? new ActionPermissionController();
-      this.display = maybeDisplay;
+      this.display = (maybeDisplay === ':0' && process.env.DISPLAY)
+        ? process.env.DISPLAY
+        : (maybeDisplay || process.env.DISPLAY || ':0');
     }
   }
 
