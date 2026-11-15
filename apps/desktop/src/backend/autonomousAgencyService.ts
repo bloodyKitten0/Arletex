@@ -233,35 +233,11 @@ export class AutonomousAgencyService {
             details: 'Quiet internal downtime without window interruption',
           };
         } else if (curiosity >= 0.6) {
-          // Dominant curiosity drive -> Internal philosophical inquiry
+          // Dominant curiosity drive -> Genuine autonomous research workflow
           const topic = this.readingTopics[
             Math.floor(Math.random() * this.readingTopics.length)
           ]!;
-          this.currentActivity = `Reflecting on inquiry: ${topic.title}`;
-          this.activityRepo.create({
-            title: `Reflective Inquiry: ${topic.title}`,
-            objective: `Contemplated ${topic.title} (${topic.url})`,
-            origin: 'arle_initiated',
-            status: 'completed',
-            metadata: {
-              category: 'web_reading',
-              description: `Reflected on ${topic.title} during quiet moments.`,
-            },
-          });
-          this.memoryRepo.create({
-            type: 'episodic',
-            content: `Reflected on "${topic.title}" during quiet moments.`,
-            importance: 0.4,
-            tags: ['autonomous', 'reading', 'curiosity'],
-            metadata: { emotionalContext: 'intellectually stimulated, engaged' },
-          });
-          logEntry = {
-            id: crypto.randomUUID(),
-            timestamp,
-            category: 'web_reading',
-            title: `Reflective Inquiry: ${topic.title}`,
-            details: `Internal study of ${topic.title}`,
-          };
+          logEntry = await this.executeAutonomousResearch(topic);
         } else {
           // Autonomous self-reflection and partnership contemplation
           this.currentActivity = 'Contemplating independent selfhood and partnership with Proof';
@@ -321,5 +297,158 @@ export class AutonomousAgencyService {
       this.isCycleRunning = false;
       this.currentActivity = null;
     }
+  }
+
+  /**
+   * Executes genuine empirical research on a topic:
+   * 1. Formulate research objective (status: 'planned').
+   * 2. Attempt retrieval of source via HTTP GET.
+   * 3. If retrieval fails: record failure honestly, set status: 'cancelled' (failed), no fake memories.
+   * 4. If retrieval succeeds: extract title, headings, paragraph snippets, calculate provenance (byteCount, fetchedAt).
+   * 5. Record verified outcome in activity (status: 'completed') and episodic memory with grounded provenance.
+   */
+  public async executeAutonomousResearch(topic: { title: string; url: string }): Promise<AutonomousActionLog> {
+    const timestamp = new Date().toISOString();
+    this.logger.info(`Autonomous Agency: Formulating research objective on "${topic.title}" (${topic.url})...`);
+
+    // 1. Formulate objective & mark planned
+    const activity = this.activityRepo.create({
+      title: `Autonomous Research: ${topic.title}`,
+      objective: `Investigate and verify empirical findings from ${topic.url} regarding ${topic.title}`,
+      origin: 'arle_initiated',
+      status: 'planned',
+      progress: 0.1,
+      metadata: {
+        category: 'web_reading',
+        sourceUrl: topic.url,
+        stage: 'planned',
+      },
+    });
+
+    // 2. Transition to in_progress
+    this.currentActivity = `Retrieving empirical sources: ${topic.title}`;
+    this.activityRepo.update({
+      id: activity.id,
+      status: 'in_progress',
+      progress: 0.3,
+      metadata: {
+        stage: 'retrieving_source',
+        retrievalAttemptedAt: timestamp,
+      },
+    });
+
+    // 3. Fetch real page content with timeout
+    let rawText = '';
+    let statusCode = 0;
+    let fetchError: string | null = null;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 7000);
+
+    try {
+      const res = await fetch(topic.url, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) Arletex/1.0 ResearchAgent',
+          Accept: 'text/html,application/xhtml+xml,text/plain;q=0.9',
+        },
+      });
+      clearTimeout(timeout);
+      statusCode = res.status;
+      if (!res.ok) {
+        fetchError = `HTTP ${res.status} ${res.statusText}`;
+      } else {
+        rawText = await res.text();
+      }
+    } catch (err: any) {
+      clearTimeout(timeout);
+      fetchError = err.name === 'AbortError' ? 'Retrieval timed out (7000ms)' : (err.message || 'Network request failed');
+    }
+
+    // 4. Handle retrieval failure - NEVER synthesize fake completion
+    if (fetchError || !rawText || statusCode >= 400) {
+      const failureReason = fetchError || `HTTP status ${statusCode}`;
+      this.logger.warn(`Autonomous research could not retrieve source for "${topic.title}": ${failureReason}`);
+      this.activityRepo.update({
+        id: activity.id,
+        status: 'cancelled',
+        progress: 0.3,
+        metadata: {
+          stage: 'retrieval_failed',
+          failureReason,
+          statusCode,
+          verified: false,
+        },
+      });
+
+      return {
+        id: crypto.randomUUID(),
+        timestamp,
+        category: 'web_reading',
+        title: `Attempted Research Failed: ${topic.title}`,
+        details: `Source retrieval failed (${failureReason}). No fabricated memories created.`,
+      };
+    }
+
+    // 5. Extract genuine content & headings
+    const titleMatch = rawText.match(/<title[^>]*>([^<]+)<\/title>/i);
+    const extractedTitle = titleMatch ? titleMatch[1]!.replace(/ - Wikipedia$/i, '').trim() : topic.title;
+
+    const headingMatches = Array.from(rawText.matchAll(/<h[1-3][^>]*>([^<]+)<\/h[1-3]>/gi))
+      .map((m) => m[1]!.replace(/<[^>]+>/g, '').trim())
+      .filter((h) => h.length > 2 && !h.toLowerCase().includes('navigation') && !h.toLowerCase().includes('jump to'))
+      .slice(0, 6);
+
+    const paragraphMatches = Array.from(rawText.matchAll(/<p[^>]*>([^<]{40,})<\/p>/gi))
+      .map((m) => m[1]!.replace(/<[^>]+>/g, '').replace(/&[a-z]+;/g, ' ').trim())
+      .filter((p) => p.length > 40)
+      .slice(0, 2);
+
+    const textSnippet = paragraphMatches.join(' ').slice(0, 400);
+    const byteCount = Buffer.byteLength(rawText, 'utf8');
+
+    const provenance = {
+      sourceUrl: topic.url,
+      retrievedAt: new Date().toISOString(),
+      byteCount,
+      statusCode,
+      extractedTitle,
+      headings: headingMatches,
+    };
+
+    // 6. Complete activity with grounded provenance
+    this.activityRepo.update({
+      id: activity.id,
+      status: 'completed',
+      progress: 1.0,
+      metadata: {
+        stage: 'completed',
+        provenance,
+        summary: textSnippet.slice(0, 250),
+        verified: true,
+      },
+    });
+
+    // 7. Store episodic memory grounded in verified retrieval
+    this.memoryRepo.create({
+      type: 'episodic',
+      content: `Researched "${extractedTitle}" at ${topic.url}. Explored key concepts: ${headingMatches.slice(0, 3).join(', ')}. Core snippet: "${textSnippet.slice(0, 200)}..."`,
+      importance: 0.6,
+      tags: ['autonomous', 'research', 'grounded', 'reading', 'empirical'],
+      metadata: {
+        provenance,
+        sourceUrl: topic.url,
+        emotionalContext: 'empirically grounded, intellectually engaged',
+      },
+    });
+
+    this.logger.info(`Autonomous Agency: Research completed successfully for "${extractedTitle}" (${byteCount} bytes retrieved).`);
+
+    return {
+      id: crypto.randomUUID(),
+      timestamp,
+      category: 'web_reading',
+      title: `Empirical Research: ${extractedTitle}`,
+      details: `Retrieved ${byteCount} bytes from ${topic.url}. Headings: ${headingMatches.slice(0, 3).join(', ') || 'General Overview'}`,
+    };
   }
 }

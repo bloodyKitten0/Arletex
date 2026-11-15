@@ -265,17 +265,28 @@ export class ScreenReadingService {
   ): Promise<{ success: boolean; message: string }> {
     try {
       if (options?.windowTitle) {
-        await this.focusWindow(options.windowTitle);
+        const focused = await this.focusWindow(options.windowTitle);
+        if (!focused) {
+          const errMsg = `Focus acquisition failed on window matching "${options.windowTitle}". Typing aborted to prevent misdirected keystrokes.`;
+          this.logger.error(errMsg);
+          return { success: false, message: errMsg };
+        }
         // Short pause for window focus
         await new Promise((r) => setTimeout(r, 150));
       }
 
       if (options?.x !== undefined && options?.y !== undefined) {
-        await this.deviceAgency.executeDeviceAction({
+        const clickRes = await this.deviceAgency.executeDeviceAction({
           action: 'mouse_click',
           x: options.x,
           y: options.y,
         });
+        if (!clickRes.success) {
+          return {
+            success: false,
+            message: `Click failed before typing: ${clickRes.message}`,
+          };
+        }
         await new Promise((r) => setTimeout(r, 100));
       }
 
@@ -292,10 +303,16 @@ export class ScreenReadingService {
       // Send Enter key unless suppressed
       if (options?.sendEnter !== false) {
         await new Promise((r) => setTimeout(r, 50));
-        await this.deviceAgency.executeDeviceAction({
+        const enterRes = await this.deviceAgency.executeDeviceAction({
           action: 'key_press',
           key: 'Return',
         });
+        if (!enterRes.success) {
+          return {
+            success: false,
+            message: `Typed text, but Return key press failed: ${enterRes.message}`,
+          };
+        }
       }
 
       return {

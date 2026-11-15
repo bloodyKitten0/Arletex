@@ -12,6 +12,9 @@ export interface PageObservation {
   isPlaying: boolean;
   videoDuration?: number;
   videoCurrentTime?: number;
+  playbackProgressing?: boolean;
+  playbackState?: 'playing' | 'paused' | 'stalled' | 'ended' | 'error' | 'not_present';
+  timeObservations?: Array<{ timestamp: number; currentTime: number }>;
   textSnippet: string;
   headings: string[];
   links: Array<{ text: string; href: string }>;
@@ -31,7 +34,7 @@ export interface VideoCandidate {
 }
 
 export interface VideoSelectionDecision {
-  selectedCandidate: VideoCandidate;
+  selectedCandidate: VideoCandidate | null;
   candidatesEvaluated: number;
   rationale: string;
   rejectionReasons: Record<string, string>;

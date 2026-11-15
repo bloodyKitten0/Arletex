@@ -30,9 +30,11 @@ export class VerificationEngine {
         observedOutcome: 'No observation could be obtained from the system.',
         verified: false,
         confidence: 1.0,
+        status: 'failed',
         failureReason: 'Missing observation probe.',
         isRecoverable: true,
         recommendedStrategy: 'retry_with_backoff',
+        evidence: {},
         timestamp,
       };
     }
@@ -44,9 +46,11 @@ export class VerificationEngine {
         observedOutcome: `Observation reported failure: ${observation.error || 'Unknown error'}`,
         verified: false,
         confidence: 0.9,
+        status: 'failed',
         failureReason: observation.error || 'Target environment reported execution error',
         isRecoverable: true,
         recommendedStrategy: 'replan_sub_steps',
+        evidence: observation.data || {},
         timestamp,
       };
     }
@@ -60,6 +64,9 @@ export class VerificationEngine {
       const pageTitle = (observation.data?.pageTitle as string || observation.data?.title as string || '').toLowerCase();
       const isVideoPresent = Boolean(observation.data?.hasVideoElement);
       const isPlaying = Boolean(observation.data?.isPlaying);
+      const isProgressing = Boolean(observation.data?.playbackProgressing ?? isPlaying);
+      const playbackState = (observation.data?.playbackState as string) || (isPlaying ? 'playing' : 'paused');
+      const timeObservations = observation.data?.timeObservations || [];
       const playbackError = observation.data?.playbackError as string | undefined;
 
       // URL Verification
@@ -77,9 +84,11 @@ export class VerificationEngine {
           observedOutcome: `Navigated to unexpected URL: ${currentUrl} - Title: ${pageTitle}`,
           verified: false,
           confidence: 0.95,
+          status: 'failed',
           failureReason: 'Page URL and title do not match the selected candidate.',
           isRecoverable: true,
           recommendedStrategy: 'switch_candidate',
+          evidence: { currentUrl, pageTitle, expectedTitle, targetUrl },
           timestamp,
         };
       }
@@ -91,23 +100,52 @@ export class VerificationEngine {
           observedOutcome: 'No video element detected on the loaded page.',
           verified: false,
           confidence: 0.9,
+          status: 'failed',
           failureReason: 'The target page is not an active video playback interface.',
           isRecoverable: true,
           recommendedStrategy: 'switch_candidate',
+          evidence: { currentUrl, pageTitle, isVideoPresent: false },
           timestamp,
         };
       }
 
-      if (playbackError) {
+      if (playbackError || playbackState === 'error') {
         return {
           actionId: action.id,
           expectedOutcome: 'Video playing cleanly',
-          observedOutcome: `Player error: ${playbackError}`,
+          observedOutcome: `Player error: ${playbackError || 'Media decode or network error'}`,
           verified: false,
           confidence: 0.95,
-          failureReason: `Video playback blocked or unavailable: ${playbackError}`,
+          status: 'failed',
+          failureReason: `Video playback blocked or unavailable: ${playbackError || 'Playback error'}`,
           isRecoverable: true,
           recommendedStrategy: 'switch_candidate',
+          evidence: { currentUrl, pageTitle, playbackError, playbackState },
+          timestamp,
+        };
+      }
+
+      // Check if player is present but playback is paused, stalled, or not progressing
+      if (!isPlaying || !isProgressing) {
+        return {
+          actionId: action.id,
+          expectedOutcome: 'Active progressing video playback verified',
+          observedOutcome: `Video player is open at ${currentUrl}, but playback is ${playbackState} (progress unverified). Title: "${pageTitle}"`,
+          verified: false,
+          confidence: 0.95,
+          status: 'partially_successful',
+          failureReason: `Video player element detected but playback is not progressing (state: ${playbackState}).`,
+          isRecoverable: true,
+          recommendedStrategy: 'retry_with_backoff',
+          evidence: {
+            currentUrl,
+            pageTitle,
+            hasVideoElement: isVideoPresent,
+            isPlaying,
+            playbackProgressing: isProgressing,
+            playbackState,
+            timeObservations,
+          },
           timestamp,
         };
       }
@@ -115,11 +153,21 @@ export class VerificationEngine {
       return {
         actionId: action.id,
         expectedOutcome: action.expectedOutcome,
-        observedOutcome: `Video player is open and playback confirmed at ${currentUrl}. Title: "${pageTitle}". Playing: ${isPlaying}`,
+        observedOutcome: `Video player is open and progressing playback confirmed at ${currentUrl}. Title: "${pageTitle}". State: playing.`,
         verified: true,
-        confidence: 0.95,
+        confidence: 0.98,
+        status: 'verified_successful',
         failureReason: null,
         isRecoverable: false,
+        evidence: {
+          currentUrl,
+          pageTitle,
+          hasVideoElement: isVideoPresent,
+          isPlaying: true,
+          playbackProgressing: true,
+          playbackState: 'playing',
+          timeObservations,
+        },
         timestamp,
       };
     }
@@ -137,9 +185,11 @@ export class VerificationEngine {
           observedOutcome: `HTTP ${statusCode} on navigation`,
           verified: false,
           confidence: 1.0,
+          status: 'failed',
           failureReason: `Web server returned status ${statusCode}`,
           isRecoverable: true,
           recommendedStrategy: 'switch_candidate',
+          evidence: { targetUrl, currentUrl, statusCode },
           timestamp,
         };
       }
@@ -151,9 +201,11 @@ export class VerificationEngine {
         observedOutcome: `Active page ${currentUrl}`,
         verified: match,
         confidence: match ? 0.95 : 0.8,
+        status: match ? 'verified_successful' : 'failed',
         failureReason: match ? null : 'Browser did not settle on expected URL destination',
         isRecoverable: !match,
         recommendedStrategy: match ? undefined : 'retry_with_backoff',
+        evidence: { targetUrl, currentUrl, statusCode },
         timestamp,
       };
     }
@@ -163,16 +215,63 @@ export class VerificationEngine {
       const appName = String(action.payload?.appName || action.payload?.app || (action as any).parameters?.app || 'application');
       const pid = observation.data?.pid as number | undefined;
       const isRunning = Boolean(observation.data?.isRunning ?? observation.success ?? (pid && pid > 0));
+      const windowFound = observation.data?.windowFound as boolean | undefined;
+
+      // Spawning a process successfully does not establish that the requested application window opened.
+      if (isRunning && windowFound === false) {
+        return {
+          actionId: action.id,
+          expectedOutcome: `Application '${appName}' running and active window created`,
+          observedOutcome: `Process started (PID ${pid || 'unknown'}), but application window was not detected in window manager`,
+          verified: false,
+          confidence: 0.9,
+          status: 'partially_successful',
+          failureReason: `Application window for '${appName}' not visible or failed to map`,
+          isRecoverable: true,
+          recommendedStrategy: 'retry_with_backoff',
+          evidence: observation.data || {},
+          timestamp,
+        };
+      }
 
       return {
         actionId: action.id,
-        expectedOutcome: `Application '${appName}' running in process table`,
-        observedOutcome: isRunning ? `Process confirmed running (PID ${pid})` : 'Process not found in system table',
+        expectedOutcome: `Application '${appName}' running with verified window`,
+        observedOutcome: isRunning
+          ? `Process confirmed running (PID ${pid})${windowFound ? ' and window verified' : ''}`
+          : 'Process not found in system table',
         verified: isRunning,
-        confidence: 0.95,
+        confidence: windowFound ? 0.98 : 0.85,
+        status: isRunning ? (windowFound ? 'verified_successful' : 'executed_unverified') : 'failed',
         failureReason: isRunning ? null : `Failed to launch application binary '${appName}'`,
         isRecoverable: !isRunning,
         recommendedStrategy: isRunning ? undefined : 'retry_with_backoff',
+        evidence: observation.data || {},
+        timestamp,
+      };
+    }
+
+    // 4. Web Search Verification (Search issued != Research completed)
+    if (action.type === 'web_search') {
+      const candidatesCount = Number(
+        observation.data?.candidatesEvaluated ||
+        (Array.isArray(observation.data?.candidates) ? observation.data.candidates.length : 0) ||
+        (Array.isArray(observation.data?.results) ? observation.data.results.length : 0),
+      );
+      const verified = candidatesCount > 0;
+      return {
+        actionId: action.id,
+        expectedOutcome: action.expectedOutcome,
+        observedOutcome: verified
+          ? `Discovered ${candidatesCount} relevant search candidate(s)`
+          : 'Zero search results or candidates returned from source',
+        verified,
+        confidence: verified ? 0.95 : 0.9,
+        status: verified ? 'verified_successful' : 'failed',
+        failureReason: verified ? null : 'No candidates or sources discovered for search query',
+        isRecoverable: !verified,
+        recommendedStrategy: verified ? undefined : 'switch_candidate',
+        evidence: observation.data || {},
         timestamp,
       };
     }
@@ -192,9 +291,11 @@ export class VerificationEngine {
           : 'File missing or zero length on disk',
         verified,
         confidence: 1.0,
+        status: verified ? 'verified_successful' : 'failed',
         failureReason: verified ? null : 'Filesystem write could not be verified on disk',
         isRecoverable: !verified,
         recommendedStrategy: verified ? undefined : 'replan_sub_steps',
+        evidence: observation.data || {},
         timestamp,
       };
     }
@@ -206,9 +307,11 @@ export class VerificationEngine {
       observedOutcome: 'Observation verified with default heuristic',
       verified: observation.success,
       confidence: 0.85,
+      status: observation.success ? 'executed_unverified' : 'failed',
       failureReason: observation.success ? null : 'Observation reported unverified state',
       isRecoverable: !observation.success,
       recommendedStrategy: observation.success ? undefined : 'retry_with_backoff',
+      evidence: observation.data || {},
       timestamp,
     };
   }

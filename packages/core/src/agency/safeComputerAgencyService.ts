@@ -5,6 +5,23 @@ import { ILogger, rootLogger } from '../logger.js';
 import { IComputerProvider } from './interfaces.js';
 import { ActionPermissionController } from './actionPermissionController.js';
 
+export const SUPPORTED_APPLICATIONS = new Set([
+  'google-chrome',
+  'google-chrome-stable',
+  'chromium',
+  'chromium-browser',
+  'firefox',
+  'steam',
+  'kate',
+  'kwrite',
+  'dolphin',
+  'konsole',
+  'vlc',
+  'code',
+  'spectacle',
+  'flatpak',
+]);
+
 export class SafeComputerAgencyService implements IComputerProvider {
   private logger: ILogger;
   private permissionController: ActionPermissionController;
@@ -26,11 +43,21 @@ export class SafeComputerAgencyService implements IComputerProvider {
 
   /**
    * Launches an application using argument arrays (spawn), completely eliminating shell string injection.
+   * Validates against the supported applications allowlist and detects immediate process startup failure.
    */
   public async launchApp(appName: string, args: string[] = []): Promise<{ pid: number; isRunning: boolean }> {
+    if (!SUPPORTED_APPLICATIONS.has(appName)) {
+      const err = new Error(
+        `Unsupported application: "${appName}". Only authorized applications in the supported allowlist may be launched: [${Array.from(SUPPORTED_APPLICATIONS).join(', ')}]`,
+      );
+      this.logger.error(err.message);
+      throw err;
+    }
+
     this.logger.info(`Safely launching application: ${appName} with args: [${args.join(', ')}]`);
 
     return new Promise((resolve, reject) => {
+      let settled = false;
       try {
         const env = {
           ...process.env,
@@ -46,19 +73,37 @@ export class SafeComputerAgencyService implements IComputerProvider {
         });
 
         child.on('error', (err) => {
-          this.logger.error(`Failed to launch ${appName}`, err);
-          reject(err);
+          if (!settled) {
+            settled = true;
+            this.logger.error(`Failed to launch ${appName}`, err);
+            reject(err);
+          }
+        });
+
+        child.on('exit', (code, signal) => {
+          if (!settled) {
+            settled = true;
+            const msg = `Application "${appName}" failed startup and exited immediately with code ${code ?? 'null'} (signal: ${signal ?? 'none'}).`;
+            this.logger.error(msg);
+            reject(new Error(msg));
+          }
         });
 
         const pid = child.pid || 0;
         child.unref();
 
-        // Brief delay to allow process table registration
+        // Verification probe: detect premature startup failure within 400ms
         setTimeout(() => {
-          resolve({ pid, isRunning: pid > 0 });
-        }, 300);
+          if (!settled) {
+            settled = true;
+            resolve({ pid, isRunning: pid > 0 });
+          }
+        }, 400);
       } catch (err: any) {
-        reject(err);
+        if (!settled) {
+          settled = true;
+          reject(err);
+        }
       }
     });
   }

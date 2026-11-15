@@ -63,6 +63,7 @@ describe('Embodied Screen Reading, Mouse/Keyboard Agency & Cross-Chat Memory', (
         success: true,
         message: 'Mock action executed',
       });
+      const mockFocus = vi.spyOn(screenReading, 'focusWindow').mockResolvedValue(true);
 
       const result = await screenReading.typeAndSend('Hello Proof, I see the message', {
         windowTitle: 'Telegram',
@@ -77,6 +78,7 @@ describe('Embodied Screen Reading, Mouse/Keyboard Agency & Cross-Chat Memory', (
         expect.objectContaining({ action: 'key_press', key: 'Return' }),
       );
 
+      mockFocus.mockRestore();
       mockExec.mockRestore();
     });
 

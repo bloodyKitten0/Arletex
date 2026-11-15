@@ -105,27 +105,68 @@ export class PlaywrightBrowserProvider implements IBrowserProvider {
       const videoEl = await page.$('video');
       const hasVideoElement = videoEl !== null;
 
-      let isPlaying = hasVideoElement;
+      let isPlaying = false;
+      let playbackProgressing = false;
+      let playbackState: 'playing' | 'paused' | 'stalled' | 'ended' | 'error' | 'not_present' = hasVideoElement ? 'paused' : 'not_present';
       let videoDuration: number | undefined;
       let videoCurrentTime: number | undefined;
+      const timeObservations: Array<{ timestamp: number; currentTime: number }> = [];
 
       if (hasVideoElement) {
         try {
-          const videoProps = await page.evaluate(() => {
+          const sample1 = await page.evaluate(() => {
             const doc = (globalThis as any).document;
             const v = doc ? doc.querySelector('video') : null;
             if (!v) return null;
+            const hasError = !!v.error || !!doc.querySelector('.ytp-error, #error-screen');
             return {
               paused: v.paused,
               currentTime: v.currentTime,
-              duration: v.duration,
+              duration: v.duration && !isNaN(v.duration) ? v.duration : undefined,
               ended: v.ended,
+              hasError,
             };
           });
-          if (videoProps) {
-            isPlaying = !videoProps.paused && !videoProps.ended;
-            videoDuration = videoProps.duration || undefined;
-            videoCurrentTime = videoProps.currentTime || undefined;
+
+          if (sample1) {
+            timeObservations.push({ timestamp: Date.now(), currentTime: sample1.currentTime });
+            videoDuration = sample1.duration;
+            videoCurrentTime = sample1.currentTime;
+
+            if (sample1.hasError) {
+              playbackState = 'error';
+              isPlaying = false;
+            } else if (sample1.ended) {
+              playbackState = 'ended';
+              isPlaying = false;
+            } else if (sample1.paused) {
+              playbackState = 'paused';
+              isPlaying = false;
+            } else {
+              // Video is unpaused: verify that playback time actually advances across observations
+              await page.waitForTimeout(500);
+              const sample2 = await page.evaluate(() => {
+                const doc = (globalThis as any).document;
+                const v = doc ? doc.querySelector('video') : null;
+                return v ? { currentTime: v.currentTime, paused: v.paused, ended: v.ended } : null;
+              });
+
+              if (sample2) {
+                timeObservations.push({ timestamp: Date.now(), currentTime: sample2.currentTime });
+                videoCurrentTime = sample2.currentTime;
+                if (sample2.currentTime > sample1.currentTime) {
+                  playbackProgressing = true;
+                  isPlaying = true;
+                  playbackState = 'playing';
+                } else if (sample2.paused) {
+                  playbackState = 'paused';
+                  isPlaying = false;
+                } else {
+                  playbackState = 'stalled';
+                  isPlaying = false;
+                }
+              }
+            }
           }
         } catch {}
       }
@@ -139,6 +180,9 @@ export class PlaywrightBrowserProvider implements IBrowserProvider {
         title: title || 'Loaded Webpage',
         hasVideoElement,
         isPlaying,
+        playbackProgressing,
+        playbackState,
+        timeObservations,
         videoDuration,
         videoCurrentTime,
         textSnippet,
@@ -238,12 +282,30 @@ export class PlaywrightBrowserProvider implements IBrowserProvider {
             const uploader = channelEl?.textContent?.trim() || 'YouTube Creator';
             const fullUrl = href.startsWith('http') ? href : `https://www.youtube.com${href}`;
 
+            const durationOverlay = renderer
+              ? renderer.querySelector(
+                  'span.ytd-thumbnail-overlay-time-status-renderer, badge-shape .badge-shape__label, span.badge-shape__label',
+                )
+              : null;
+            const durationText = durationOverlay?.textContent?.trim() || '';
+            let durationSeconds: number | undefined = undefined;
+            if (durationText) {
+              const parts = durationText.split(':').map((p: string) => parseInt(p, 10));
+              if (parts.every((p: number) => !isNaN(p))) {
+                if (parts.length === 2) {
+                  durationSeconds = (parts[0] || 0) * 60 + (parts[1] || 0);
+                } else if (parts.length === 3) {
+                  durationSeconds = (parts[0] || 0) * 3600 + (parts[1] || 0) * 60 + (parts[2] || 0);
+                }
+              }
+            }
+
             results.push({
               title,
               url: fullUrl,
               uploader,
-              durationSeconds: 900,
-              durationText: '',
+              durationSeconds: durationSeconds as any,
+              durationText,
               descriptionSnippet: title,
               isEducational: /tutorial|explain|how to|course|lecture|guide|math|code/i.test(title),
             });
@@ -271,6 +333,8 @@ export class PlaywrightBrowserProvider implements IBrowserProvider {
         title: '',
         hasVideoElement: false,
         isPlaying: false,
+        playbackProgressing: false,
+        playbackState: 'not_present',
         textSnippet: '',
         headings: [],
         links: [],
@@ -280,26 +344,64 @@ export class PlaywrightBrowserProvider implements IBrowserProvider {
     const videoEl = await this.activePage.$('video');
     const hasVideoElement = videoEl !== null;
     let isPlaying = false;
+    let playbackProgressing = false;
+    let playbackState: 'playing' | 'paused' | 'stalled' | 'ended' | 'error' | 'not_present' = hasVideoElement ? 'paused' : 'not_present';
     let videoDuration: number | undefined;
     let videoCurrentTime: number | undefined;
+    const timeObservations: Array<{ timestamp: number; currentTime: number }> = [];
 
     if (hasVideoElement) {
       try {
-        const videoProps = await this.activePage.evaluate(() => {
+        const sample1 = await this.activePage.evaluate(() => {
           const doc = (globalThis as any).document;
           const v = doc ? doc.querySelector('video') : null;
           if (!v) return null;
+          const hasError = !!v.error || !!doc.querySelector('.ytp-error, #error-screen');
           return {
             paused: v.paused,
             currentTime: v.currentTime,
-            duration: v.duration,
+            duration: v.duration && !isNaN(v.duration) ? v.duration : undefined,
             ended: v.ended,
+            hasError,
           };
         });
-        if (videoProps) {
-          isPlaying = !videoProps.paused && !videoProps.ended && (videoProps.currentTime > 0 || !videoProps.paused);
-          videoDuration = videoProps.duration || undefined;
-          videoCurrentTime = videoProps.currentTime || undefined;
+        if (sample1) {
+          timeObservations.push({ timestamp: Date.now(), currentTime: sample1.currentTime });
+          videoDuration = sample1.duration;
+          videoCurrentTime = sample1.currentTime;
+
+          if (sample1.hasError) {
+            playbackState = 'error';
+            isPlaying = false;
+          } else if (sample1.ended) {
+            playbackState = 'ended';
+            isPlaying = false;
+          } else if (sample1.paused) {
+            playbackState = 'paused';
+            isPlaying = false;
+          } else {
+            await this.activePage.waitForTimeout(500);
+            const sample2 = await this.activePage.evaluate(() => {
+              const doc = (globalThis as any).document;
+              const v = doc ? doc.querySelector('video') : null;
+              return v ? { currentTime: v.currentTime, paused: v.paused, ended: v.ended } : null;
+            });
+            if (sample2) {
+              timeObservations.push({ timestamp: Date.now(), currentTime: sample2.currentTime });
+              videoCurrentTime = sample2.currentTime;
+              if (sample2.currentTime > sample1.currentTime) {
+                playbackProgressing = true;
+                isPlaying = true;
+                playbackState = 'playing';
+              } else if (sample2.paused) {
+                playbackState = 'paused';
+                isPlaying = false;
+              } else {
+                playbackState = 'stalled';
+                isPlaying = false;
+              }
+            }
+          }
         }
       } catch {}
     }
@@ -309,6 +411,9 @@ export class PlaywrightBrowserProvider implements IBrowserProvider {
       title,
       hasVideoElement,
       isPlaying,
+      playbackProgressing,
+      playbackState,
+      timeObservations,
       videoDuration,
       videoCurrentTime,
       textSnippet: '',

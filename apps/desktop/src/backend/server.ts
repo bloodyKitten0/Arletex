@@ -199,8 +199,10 @@ export class ArletexBackendServer {
           observedOutcome: `Action denied by policy: ${auth.denialReason}`,
           verified: false,
           confidence: 1.0,
+          status: 'failed' as const,
           failureReason: auth.denialReason || 'Unauthorized action proposal',
           isRecoverable: false,
+          evidence: { denialReason: auth.denialReason },
           timestamp: new Date().toISOString(),
         };
         this.agencyRepo.saveVerification(ver);
@@ -225,9 +227,13 @@ export class ArletexBackendServer {
             if (previousSearchObs && previousSearchObs.data.candidates.length > 0) {
               const candidates = previousSearchObs.data.candidates;
               const decision = this.webAgency.evaluateAndSelectBestVideo(candidates, task.objective);
-              targetUrl = decision.selectedCandidate.url;
-              videoTitle = decision.selectedCandidate.title;
-              this.logger.info(`Live candidate selection: "${videoTitle}" -> ${targetUrl}`);
+              if (decision.selectedCandidate) {
+                targetUrl = decision.selectedCandidate.url;
+                videoTitle = decision.selectedCandidate.title;
+                this.logger.info(`Live candidate selection: "${videoTitle}" -> ${targetUrl}`);
+              } else {
+                this.logger.warn(`Candidate selection found no qualifying candidates: ${decision.rationale}`);
+              }
             }
           }
 

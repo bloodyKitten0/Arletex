@@ -182,9 +182,14 @@ export class WebAgencyService {
     }
 
     if (!bestCandidate) {
-      // Fallback to first non-rejected candidate
-      bestCandidate = candidates[0]!;
-      selectedRationale = `Fallback candidate selected under high uncertainty: "${bestCandidate.title}". Insufficient signals to distinguish higher-tier explanatory depth.`;
+      selectedRationale = `All ${candidates.length} evaluated candidates failed quality/topical criteria. No suitable video selected.`;
+      return {
+        selectedCandidate: null,
+        candidatesEvaluated: candidates.length,
+        rationale: selectedRationale,
+        rejectionReasons,
+        confidence: 0,
+      };
     }
 
     return {
@@ -203,6 +208,7 @@ export class WebAgencyService {
     success: boolean;
     observation: PageObservation;
     verified: boolean;
+    partiallySuccessful?: boolean;
     rationale: string;
     error?: string;
   }> {
@@ -211,23 +217,32 @@ export class WebAgencyService {
     const pageObs = await this.browser.navigate(candidate.url, 15000);
 
     // Verification probe: check URL match, video element presence, and playback status
-    const isUrlMatch = pageObs.url.includes(candidate.url) || candidate.url.includes(pageObs.url);
-    const hasPlayer = pageObs.hasVideoElement;
-    const hasPlaybackError = Boolean(pageObs.playbackError);
+    const isUrlMatch = Boolean(
+      pageObs.url && candidate.url && (pageObs.url.includes(candidate.url) || candidate.url.includes(pageObs.url)),
+    );
+    const hasPlayer = Boolean(pageObs.hasVideoElement);
+    const isPlaying = Boolean(pageObs.isPlaying);
+    const isProgressing = Boolean(pageObs.playbackProgressing ?? isPlaying);
+    const hasPlaybackError = Boolean(pageObs.playbackError || pageObs.playbackState === 'error');
 
-    const verified = isUrlMatch && hasPlayer && !hasPlaybackError;
+    // Truly verified ONLY if player exists, URL matches, and playback is progressing without errors
+    const verified = isUrlMatch && hasPlayer && isPlaying && isProgressing && !hasPlaybackError;
+    const partiallySuccessful = isUrlMatch && hasPlayer && !hasPlaybackError && !isProgressing;
 
     let rationale = '';
     if (verified) {
-      rationale = `Verified: Browser navigated to ${pageObs.url}. HTML Video player initialized. Title: "${pageObs.title}". Playing: ${pageObs.isPlaying}.`;
+      rationale = `Verified: Browser navigated to ${pageObs.url}. HTML video playback progressing. Title: "${pageObs.title}". State: ${pageObs.playbackState || 'playing'}.`;
+    } else if (partiallySuccessful) {
+      rationale = `Partially successful: Video player initialized at ${pageObs.url}, but playback is ${pageObs.playbackState || 'paused/stalled'} (progress unverified).`;
     } else {
-      rationale = `Verification failed: URL match=${isUrlMatch}, Has video player=${hasPlayer}, Playback error=${pageObs.playbackError || 'None'}.`;
+      rationale = `Verification failed: URL match=${isUrlMatch}, Has video player=${hasPlayer}, State=${pageObs.playbackState || 'unknown'}, Error=${pageObs.playbackError || 'None'}.`;
     }
 
     return {
       success: pageObs.statusCode ? pageObs.statusCode < 400 : true,
       observation: pageObs,
       verified,
+      partiallySuccessful,
       rationale,
       error: hasPlaybackError ? pageObs.playbackError : undefined,
     };

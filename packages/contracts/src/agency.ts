@@ -170,13 +170,34 @@ export type SystemFileWritePayload = z.infer<typeof SystemFileWritePayloadSchema
 // 3. Plan & Step Contracts
 // ==========================================
 
+export const ExecutionStatusSchema = z.enum([
+  'planned',
+  'awaiting_authorization',
+  'authorized',
+  'executing',
+  'executed_unverified',
+  'verified_successful',
+  'partially_successful',
+  'failed',
+  'cancelled',
+  'timed_out',
+]);
+export type ExecutionStatus = z.infer<typeof ExecutionStatusSchema>;
+
 export const PlanStepStatusSchema = z.enum([
   'pending',
   'awaiting_authorization',
+  'authorized',
   'running',
+  'executing',
+  'executed_unverified',
   'verified',
+  'verified_successful',
+  'partially_successful',
   'failed',
   'skipped',
+  'cancelled',
+  'timed_out',
 ]);
 export type PlanStepStatus = z.infer<typeof PlanStepStatusSchema>;
 
@@ -263,9 +284,11 @@ export const VerificationResultSchema = z.object({
   observedOutcome: z.string(),
   verified: z.boolean(),
   confidence: z.number().min(0).max(1),
+  status: ExecutionStatusSchema.optional(),
   failureReason: z.string().nullable().default(null),
   isRecoverable: z.boolean().default(false),
   recommendedStrategy: RecoveryStrategySchema.optional(),
+  evidence: z.record(z.string(), z.any()).optional().default({}),
   timestamp: z.string(),
 });
 export type VerificationResult = z.infer<typeof VerificationResultSchema>;
