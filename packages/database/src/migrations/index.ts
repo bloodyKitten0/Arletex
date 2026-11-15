@@ -483,4 +483,37 @@ export const MIGRATIONS: Migration[] = [
       UPDATE ape_relationship_config SET target_user_id = 'Proof' WHERE target_user_id = 'creator';
     `,
   },
+  {
+    id: 7,
+    name: '007_memory_embedding_lifecycle_and_provenance',
+    up: `
+      -- Upgrade memory_embeddings table to support full embedding lifecycle:
+      -- status: pending, indexed, stale, failed
+      CREATE TABLE IF NOT EXISTS memory_embeddings_new (
+        memory_id TEXT PRIMARY KEY,
+        model_name TEXT NOT NULL,
+        dimensions INTEGER NOT NULL,
+        vector BLOB NOT NULL,
+        status TEXT NOT NULL DEFAULT 'indexed' CHECK (status IN ('pending', 'indexed', 'stale', 'failed')),
+        content_hash TEXT,
+        error_message TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (memory_id) REFERENCES memories(id) ON DELETE CASCADE
+      );
+
+      INSERT OR IGNORE INTO memory_embeddings_new (
+        memory_id, model_name, dimensions, vector, status, content_hash, error_message, created_at, updated_at
+      )
+      SELECT
+        memory_id, model_name, dimensions, vector, 'indexed', NULL, NULL, created_at, created_at
+      FROM memory_embeddings;
+
+      DROP TABLE memory_embeddings;
+      ALTER TABLE memory_embeddings_new RENAME TO memory_embeddings;
+
+      CREATE INDEX IF NOT EXISTS idx_memory_embeddings_status ON memory_embeddings(status);
+      CREATE INDEX IF NOT EXISTS idx_memory_embeddings_model ON memory_embeddings(model_name);
+    `,
+  },
 ];

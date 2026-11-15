@@ -172,13 +172,48 @@ export const MemoryCorrectionSchema = z.object({
 
 export type MemoryCorrection = z.infer<typeof MemoryCorrectionSchema>;
 
+export const MemoryProvenanceSchema = z.enum([
+  'raw_observation',
+  'user_statement',
+  'user_reported',
+  'inferred_interpretation',
+  'verified_fact',
+  'autobiographical_experience',
+  'uncertain_information',
+  'conflicting_information',
+  'interaction',
+  'digital_agency',
+  'historical_consolidation',
+]);
+export type MemoryProvenance = z.infer<typeof MemoryProvenanceSchema>;
+
+export const EmbeddingStatusSchema = z.enum([
+  'pending',
+  'indexed',
+  'stale',
+  'failed',
+]);
+export type EmbeddingStatus = z.infer<typeof EmbeddingStatusSchema>;
+
+export const MemoryEmbeddingRecordSchema = z.object({
+  memoryId: z.string().uuid(),
+  modelName: z.string(),
+  dimensions: z.number(),
+  status: EmbeddingStatusSchema,
+  vector: z.instanceof(Float32Array).optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  errorMessage: z.string().nullable().optional(),
+});
+export type MemoryEmbeddingRecord = z.infer<typeof MemoryEmbeddingRecordSchema>;
+
 export const MemorySchema = z.object({
   id: z.string().uuid(),
   type: MemoryTypeSchema,
   content: z.string().min(1),
   rawObservation: z.string().nullable().default(null),
   interpretation: z.string().nullable().default(null),
-  confidence: z.number().min(0).max(1).default(1.0),
+  confidence: z.number().min(0).max(1).default(0.75),
   importance: z.number().min(0).max(1).default(0.5),
   timestamp: z.string(),
   provenance: z.string().default('interaction'),
@@ -201,7 +236,7 @@ export const CreateMemoryInputSchema = z.object({
   content: z.string().min(1),
   rawObservation: z.string().optional(),
   interpretation: z.string().optional(),
-  confidence: z.number().min(0).max(1).optional().default(1.0),
+  confidence: z.number().min(0).max(1).optional(),
   importance: z.number().min(0).max(1).optional().default(0.5),
   timestamp: z.string().optional(),
   provenance: z.string().optional().default('interaction'),

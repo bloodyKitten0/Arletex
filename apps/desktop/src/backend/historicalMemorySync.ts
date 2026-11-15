@@ -220,7 +220,7 @@ export async function syncHistoricalMemories(dbPath: string): Promise<{ added: n
     }
 
     // Generate and persist EmbeddingGemma 300M vector
-    const hasEmbedding = db.prepare('SELECT memory_id FROM memory_embeddings WHERE memory_id = ?').get(memoryId);
+    const hasEmbedding = db.prepare("SELECT memory_id FROM memory_embeddings WHERE memory_id = ? AND status = 'indexed'").get(memoryId);
     if (!hasEmbedding) {
       try {
         const textToEmbed = `${item.content} ${item.interpretation || ''} ${item.tags.join(' ')}`.trim();
