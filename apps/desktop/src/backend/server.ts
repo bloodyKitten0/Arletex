@@ -1512,8 +1512,12 @@ export class ArletexBackendServer {
 
     if (targetUrl) {
       try {
-        await defaultDeviceAgency.openChromeBrowser(targetUrl);
-        executedActions.push(`Opened Chrome (arletex.email@gmail.com) at ${targetUrl}`);
+        const res = await defaultDeviceAgency.openChromeBrowser(targetUrl);
+        if (res.success) {
+          executedActions.push(`Opened Chrome (arletex.email@gmail.com) at ${targetUrl}`);
+        } else {
+          this.logger.warn(`Browser action disallowed or failed: ${res.message}`);
+        }
       } catch (err: any) {
         this.logger.error(`Failed to execute browser action: ${err.message}`);
       }
@@ -1531,8 +1535,12 @@ export class ArletexBackendServer {
     if (shouldLaunchSteam && !targetUrl) {
       try {
         const appId = steamMatch ? steamMatch[1] : undefined;
-        await defaultDeviceAgency.launchSteam(appId);
-        executedActions.push(`Launched Steam ${appId ? `(Game ID: ${appId})` : 'client'}`);
+        const res = await defaultDeviceAgency.launchSteam(appId);
+        if (res.success) {
+          executedActions.push(`Launched Steam ${appId ? `(Game ID: ${appId})` : 'client'}`);
+        } else {
+          this.logger.warn(`Steam action disallowed or failed: ${res.message}`);
+        }
       } catch (err: any) {
         this.logger.error(`Failed to execute Steam action: ${err.message}`);
       }
@@ -1558,8 +1566,12 @@ export class ArletexBackendServer {
 
     if (typeMatch && typeMatch[1]) {
       try {
-        await defaultDeviceAgency.executeDeviceAction({ action: 'type_text', text: typeMatch[1] });
-        executedActions.push(`Typed text: "${typeMatch[1]}"`);
+        const res = await defaultDeviceAgency.executeDeviceAction({ action: 'type_text', text: typeMatch[1] });
+        if (res.success) {
+          executedActions.push(`Typed text: "${typeMatch[1]}"`);
+        } else {
+          this.logger.warn(`Type text action disallowed or failed: ${res.message}`);
+        }
       } catch (err: any) {
         this.logger.error(`Failed to type text: ${err.message}`);
       }
@@ -1567,8 +1579,12 @@ export class ArletexBackendServer {
 
     if (keyMatch && keyMatch[1]) {
       try {
-        await defaultDeviceAgency.executeDeviceAction({ action: 'key_press', key: keyMatch[1] });
-        executedActions.push(`Pressed key: ${keyMatch[1]}`);
+        const res = await defaultDeviceAgency.executeDeviceAction({ action: 'key_press', key: keyMatch[1] });
+        if (res.success) {
+          executedActions.push(`Pressed key: ${keyMatch[1]}`);
+        } else {
+          this.logger.warn(`Key press action disallowed or failed: ${res.message}`);
+        }
       } catch (err: any) {
         this.logger.error(`Failed to press key: ${err.message}`);
       }
@@ -1579,8 +1595,12 @@ export class ArletexBackendServer {
         const x = clickMatch[1] ? parseInt(clickMatch[1], 10) : undefined;
         const y = clickMatch[2] ? parseInt(clickMatch[2], 10) : undefined;
         const button = clickMatch[3] ? parseInt(clickMatch[3], 10) : 1;
-        await defaultDeviceAgency.executeDeviceAction({ action: 'mouse_click', x, y, button });
-        executedActions.push(`Clicked mouse at (${x}, ${y})`);
+        const res = await defaultDeviceAgency.executeDeviceAction({ action: 'mouse_click', x, y, button });
+        if (res.success) {
+          executedActions.push(`Clicked mouse at (${x}, ${y})`);
+        } else {
+          this.logger.warn(`Mouse click action disallowed or failed: ${res.message}`);
+        }
       } catch (err: any) {
         this.logger.error(`Failed to click mouse: ${err.message}`);
       }
@@ -2592,20 +2612,109 @@ Rules:
       }
 
       if (url.pathname === '/api/agency/emergency-shutdown' && method === 'POST') {
-        this.permissionController.emergencyShutdown();
-        // Also cancel all currently running tasks
-        const runningTasks = this.intentTaskManager.listTasks('running');
-        for (const t of runningTasks) {
+        const body = (await this.readJsonBody(req).catch(() => ({}))) as { reason?: string };
+        const shutdownReason = body?.reason || 'API emergency shutdown';
+
+        // 1. Immediately activate emergency shutdown in ActionPermissionController
+        this.permissionController.emergencyShutdown(shutdownReason);
+
+        // 2. Stop autonomous proactive cycle & agent loop
+        if (this.autonomousAgency) {
+          try {
+            this.autonomousAgency.stopLoop();
+            this.autonomousAgency.setEnabled(false);
+          } catch (loopErr) {
+            this.logger.error('Error stopping autonomous loop during shutdown', loopErr);
+          }
+        }
+
+        // 3. Cancel all pending, authorized, and running agency tasks
+        const activeTasks = [
+          ...this.intentTaskManager.listTasks('running'),
+          ...this.intentTaskManager.listTasks('authorized'),
+          ...this.intentTaskManager.listTasks('awaiting_authorization'),
+          ...this.intentTaskManager.listTasks('proposed'),
+        ];
+        for (const t of activeTasks) {
           try {
             this.intentTaskManager.cancelTask(t.id);
           } catch {}
         }
-        this.logger.warn('Emergency agency shutdown executed via API.');
+
+        // 4. Cancel active inference streams
+        for (const [, controller] of this.activeStreams.entries()) {
+          try {
+            controller.abort();
+          } catch {}
+        }
+        this.activeStreams.clear();
+
+        // 5. Record audit log event
+        try {
+          await this.activityRepo.create({
+            title: 'EMERGENCY_SHUTDOWN',
+            objective: `Emergency agency shutdown triggered. Reason: ${shutdownReason}`,
+            status: 'cancelled',
+            origin: 'arle_initiated',
+            metadata: {
+              reason: shutdownReason,
+              timestamp: new Date().toISOString(),
+              cancelledTasksCount: activeTasks.length,
+            },
+          });
+        } catch (auditErr) {
+          this.logger.error('Failed to record emergency shutdown audit event', auditErr);
+        }
+
+        this.logger.warn(`Emergency agency shutdown executed via API. Reason: ${shutdownReason}`);
         this.sendJson(res, 200, {
           success: true,
           shutdown: true,
           policy: this.permissionController.getPolicy(),
-          cancelledTasksCount: runningTasks.length,
+          cancelledTasksCount: activeTasks.length,
+          reason: shutdownReason,
+        });
+        return;
+      }
+
+      if (url.pathname === '/api/agency/reactivate-autonomy' && method === 'POST') {
+        const body = (await this.readJsonBody(req).catch(() => ({}))) as { confirmation?: string };
+        const confirmation = body?.confirmation || '';
+        const reactivateRes = this.permissionController.reactivateAutonomy(confirmation);
+
+        if (!reactivateRes.success) {
+          this.sendJson(res, 403, {
+            success: false,
+            error: reactivateRes.message,
+          });
+          return;
+        }
+
+        // Re-enable autonomous agency loop
+        if (this.autonomousAgency) {
+          this.autonomousAgency.setEnabled(true);
+          this.autonomousAgency.startLoop();
+        }
+
+        try {
+          await this.activityRepo.create({
+            title: 'AUTONOMY_REACTIVATED',
+            objective: 'Autonomous digital agency has been explicitly reactivated after emergency shutdown.',
+            status: 'completed',
+            origin: 'user_assigned',
+            metadata: {
+              timestamp: new Date().toISOString(),
+            },
+          });
+        } catch (auditErr) {
+          this.logger.error('Failed to record autonomy reactivation audit event', auditErr);
+        }
+
+        this.logger.info('Autonomous agency reactivated successfully.');
+        this.sendJson(res, 200, {
+          success: true,
+          message: reactivateRes.message,
+          policy: this.permissionController.getPolicy(),
         });
         return;
       }
@@ -2619,8 +2728,12 @@ Rules:
       if (url.pathname === '/api/agency/status' && method === 'GET') {
         const policy = this.permissionController.getPolicy();
         const runningTasks = this.intentTaskManager.listTasks('running');
+        const emergencyInfo = this.permissionController.getEmergencyShutdownInfo();
         this.sendJson(res, 200, {
           autonomousExecutionEnabled: policy.autonomousExecutionEnabled,
+          isEmergencyShutdown: emergencyInfo.active,
+          emergencyShutdownReason: emergencyInfo.reason,
+          emergencyShutdownTimestamp: emergencyInfo.timestamp,
           activeTasks: runningTasks,
           runningCount: runningTasks.length,
         });

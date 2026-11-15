@@ -12,6 +12,7 @@ import {
   StreamChunk,
 } from '@arletex/contracts';
 import { rootLogger } from '@arletex/core';
+import { validateMediaFilePath, isAuthorizedSender as isAuthorizedSenderHelper } from './mediaSecurity.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,9 +27,9 @@ protocol.registerSchemesAsPrivileged([
       standard: true,
       secure: true,
       supportFetchAPI: true,
-      corsEnabled: true,
+      corsEnabled: false,
       stream: true,
-      bypassCSP: true,
+      bypassCSP: false,
     },
   },
 ]);
@@ -190,7 +191,26 @@ async function createWindow() {
   });
 }
 
+export function isAuthorizedSender(
+  event?: { sender?: { id: number } } | null,
+  targetWindow: BrowserWindow | null = mainWindow,
+): boolean {
+  return isAuthorizedSenderHelper(event, targetWindow);
+}
+
 function registerIpcHandlers() {
+  const handleSecure = (
+    channel: string,
+    handler: (event: Electron.IpcMainInvokeEvent, ...args: any[]) => Promise<any> | any,
+  ) => {
+    ipcMain.handle(channel, async (event, ...args) => {
+      if (!isAuthorizedSender(event)) {
+        logger.warn(`Rejected unauthorized IPC message on channel ${channel} from sender ${event?.sender?.id}`);
+        return { success: false, error: 'Unauthorized IPC sender', code: 'UNAUTHORIZED_SENDER' };
+      }
+      return handler(event, ...args);
+    });
+  };
   const callBackend = async <T>(
     endpoint: string,
     method = 'GET',
@@ -219,42 +239,42 @@ function registerIpcHandlers() {
   };
 
   // Conversations
-  ipcMain.handle(IPC_CHANNELS.CONVERSATIONS_LIST, async () => {
+  handleSecure(IPC_CHANNELS.CONVERSATIONS_LIST, async () => {
     return callBackend('/api/conversations');
   });
 
-  ipcMain.handle(IPC_CHANNELS.CONVERSATIONS_CREATE, async (_, title?: string, isPinned = false) => {
+  handleSecure(IPC_CHANNELS.CONVERSATIONS_CREATE, async (_, title?: string, isPinned = false) => {
     return callBackend('/api/conversations', 'POST', { title: title || 'New Conversation', isPinned });
   });
 
-  ipcMain.handle(IPC_CHANNELS.CONVERSATIONS_GET, async (_, id: string) => {
+  handleSecure(IPC_CHANNELS.CONVERSATIONS_GET, async (_, id: string) => {
     return callBackend(`/api/conversations/${id}`);
   });
 
-  ipcMain.handle(IPC_CHANNELS.CONVERSATIONS_UPDATE, async (_, id: string, title?: string, isPinned?: boolean) => {
+  handleSecure(IPC_CHANNELS.CONVERSATIONS_UPDATE, async (_, id: string, title?: string, isPinned?: boolean) => {
     return callBackend(`/api/conversations/${id}`, 'PATCH', { title, isPinned });
   });
 
-  ipcMain.handle(IPC_CHANNELS.CONVERSATIONS_DELETE, async (_, id: string) => {
+  handleSecure(IPC_CHANNELS.CONVERSATIONS_DELETE, async (_, id: string) => {
     return callBackend(`/api/conversations/${id}`, 'DELETE');
   });
 
   // Messages
-  ipcMain.handle(IPC_CHANNELS.MESSAGES_LIST, async (_, conversationId: string) => {
+  handleSecure(IPC_CHANNELS.MESSAGES_LIST, async (_, conversationId: string) => {
     return callBackend(`/api/conversations/${conversationId}/messages`);
   });
 
   // Inference Health & Config
-  ipcMain.handle(IPC_CHANNELS.INFERENCE_HEALTH, async () => {
+  handleSecure(IPC_CHANNELS.INFERENCE_HEALTH, async () => {
     return callBackend('/api/inference/health');
   });
 
-  ipcMain.handle(IPC_CHANNELS.CONFIG_UPDATE, async (_, config) => {
+  handleSecure(IPC_CHANNELS.CONFIG_UPDATE, async (_, config) => {
     return callBackend('/api/inference/config', 'POST', config);
   });
 
   // Stream Cancellation
-  ipcMain.handle(IPC_CHANNELS.INFERENCE_STREAM_CANCEL, async (_, requestId: string) => {
+  handleSecure(IPC_CHANNELS.INFERENCE_STREAM_CANCEL, async (_, requestId: string) => {
     logger.info(`IPC Cancel received for inference stream: ${requestId}`);
     if (requestId === 'all' || !requestId) {
       for (const [, activeReq] of activeStreamRequests.entries()) {
@@ -276,7 +296,7 @@ function registerIpcHandlers() {
   });
 
   // Stream Inference Start
-  ipcMain.handle(
+  handleSecure(
     IPC_CHANNELS.INFERENCE_STREAM_START,
     async (event, input: StartInferenceStreamInput) => {
       const streamTask = async () => {
@@ -404,27 +424,27 @@ function registerIpcHandlers() {
   );
 
   // Memory Handlers
-  ipcMain.handle(IPC_CHANNELS.MEMORIES_LIST, async (_, options) => {
+  handleSecure(IPC_CHANNELS.MEMORIES_LIST, async (_, options) => {
     return callBackend('/api/memories/query', 'POST', options || {});
   });
 
-  ipcMain.handle(IPC_CHANNELS.MEMORIES_CREATE, async (_, input) => {
+  handleSecure(IPC_CHANNELS.MEMORIES_CREATE, async (_, input) => {
     return callBackend('/api/memories', 'POST', input);
   });
 
-  ipcMain.handle(IPC_CHANNELS.MEMORIES_GET, async (_, id: string) => {
+  handleSecure(IPC_CHANNELS.MEMORIES_GET, async (_, id: string) => {
     return callBackend(`/api/memories/${id}`);
   });
 
-  ipcMain.handle(IPC_CHANNELS.MEMORIES_UPDATE, async (_, input) => {
+  handleSecure(IPC_CHANNELS.MEMORIES_UPDATE, async (_, input) => {
     return callBackend(`/api/memories/${input.id}`, 'PATCH', input);
   });
 
-  ipcMain.handle(IPC_CHANNELS.MEMORIES_DELETE, async (_, id: string) => {
+  handleSecure(IPC_CHANNELS.MEMORIES_DELETE, async (_, id: string) => {
     return callBackend(`/api/memories/${id}`, 'DELETE');
   });
 
-  ipcMain.handle(IPC_CHANNELS.MEMORIES_QUERY, async (_, input) => {
+  handleSecure(IPC_CHANNELS.MEMORIES_QUERY, async (_, input) => {
     if (input.primaryId && input.secondaryId) {
       return callBackend(`/api/memories/${input.primaryId}/merge`, 'POST', { secondaryId: input.secondaryId });
     }
@@ -432,7 +452,7 @@ function registerIpcHandlers() {
   });
 
   // Activities Handlers
-  ipcMain.handle(IPC_CHANNELS.ACTIVITIES_LIST, async (_, status, origin) => {
+  handleSecure(IPC_CHANNELS.ACTIVITIES_LIST, async (_, status, origin) => {
     const params = new URLSearchParams();
     if (status) params.set('status', status);
     if (origin) params.set('origin', origin);
@@ -440,206 +460,206 @@ function registerIpcHandlers() {
     return callBackend(`/api/activities${qs}`);
   });
 
-  ipcMain.handle(IPC_CHANNELS.ACTIVITIES_CREATE, async (_, input) => {
+  handleSecure(IPC_CHANNELS.ACTIVITIES_CREATE, async (_, input) => {
     return callBackend('/api/activities', 'POST', input);
   });
 
-  ipcMain.handle(IPC_CHANNELS.ACTIVITIES_UPDATE, async (_, input) => {
+  handleSecure(IPC_CHANNELS.ACTIVITIES_UPDATE, async (_, input) => {
     return callBackend(`/api/activities/${input.id}`, 'PATCH', input);
   });
 
-  ipcMain.handle(IPC_CHANNELS.ACTIVITIES_DELETE, async (_, id: string) => {
+  handleSecure(IPC_CHANNELS.ACTIVITIES_DELETE, async (_, id: string) => {
     return callBackend(`/api/activities/${id}`, 'DELETE');
   });
 
   // Telemetry & Preferences
-  ipcMain.handle(IPC_CHANNELS.TELEMETRY_GET, async () => {
+  handleSecure(IPC_CHANNELS.TELEMETRY_GET, async () => {
     return callBackend('/api/telemetry');
   });
 
-  ipcMain.handle(IPC_CHANNELS.PREFERENCES_GET, async () => {
+  handleSecure(IPC_CHANNELS.PREFERENCES_GET, async () => {
     return callBackend('/api/preferences');
   });
 
-  ipcMain.handle(IPC_CHANNELS.PREFERENCES_SET, async (_, key: string, value: string) => {
+  handleSecure(IPC_CHANNELS.PREFERENCES_SET, async (_, key: string, value: string) => {
     return callBackend('/api/preferences', 'POST', { key, value });
   });
 
   // Voice & Vision
-  ipcMain.handle(IPC_CHANNELS.VOICE_TRANSCRIBE, async (_, input) => {
+  handleSecure(IPC_CHANNELS.VOICE_TRANSCRIBE, async (_, input) => {
     return callBackend('/api/voice/transcribe', 'POST', input);
   });
 
-  ipcMain.handle(IPC_CHANNELS.VOICE_SYNTHESIZE, async (_, input) => {
+  handleSecure(IPC_CHANNELS.VOICE_SYNTHESIZE, async (_, input) => {
     return callBackend('/api/voice/synthesize', 'POST', input);
   });
 
-  ipcMain.handle(IPC_CHANNELS.VISION_INSPECT, async (_, input) => {
+  handleSecure(IPC_CHANNELS.VISION_INSPECT, async (_, input) => {
     return callBackend('/api/vision/inspect', 'POST', input);
   });
 
-  ipcMain.handle(IPC_CHANNELS.VIDEO_INSPECT, async (_, input) => {
+  handleSecure(IPC_CHANNELS.VIDEO_INSPECT, async (_, input) => {
     return callBackend('/api/video/inspect', 'POST', input);
   });
 
   // APE (Artificial Psychology Engine)
-  ipcMain.handle(IPC_CHANNELS.APE_STATE_GET, async () => {
+  handleSecure(IPC_CHANNELS.APE_STATE_GET, async () => {
     return callBackend('/api/ape/state');
   });
 
-  ipcMain.handle(IPC_CHANNELS.APE_HISTORY_GET, async () => {
+  handleSecure(IPC_CHANNELS.APE_HISTORY_GET, async () => {
     return callBackend('/api/ape/history');
   });
 
-  ipcMain.handle(IPC_CHANNELS.APE_TAXONOMY_GET, async () => {
+  handleSecure(IPC_CHANNELS.APE_TAXONOMY_GET, async () => {
     return callBackend('/api/ape/taxonomy');
   });
 
-  ipcMain.handle(IPC_CHANNELS.APE_EVENT_PROCESS, async (_, event) => {
+  handleSecure(IPC_CHANNELS.APE_EVENT_PROCESS, async (_, event) => {
     return callBackend('/api/ape/events', 'POST', event);
   });
 
-  ipcMain.handle(IPC_CHANNELS.APE_RELATIONSHIP_GET, async () => {
+  handleSecure(IPC_CHANNELS.APE_RELATIONSHIP_GET, async () => {
     return callBackend('/api/ape/relationship');
   });
 
-  ipcMain.handle(IPC_CHANNELS.APE_RELATIONSHIP_UPDATE, async (_, config) => {
+  handleSecure(IPC_CHANNELS.APE_RELATIONSHIP_UPDATE, async (_, config) => {
     return callBackend('/api/ape/relationship', 'PATCH', config);
   });
 
   // Master Six-Engine Handlers
-  ipcMain.handle(IPC_CHANNELS.APE_MASTER_STATE_GET, async () => {
+  handleSecure(IPC_CHANNELS.APE_MASTER_STATE_GET, async () => {
     return callBackend('/api/ape/master');
   });
 
-  ipcMain.handle(IPC_CHANNELS.APE_PERSONALITY_GET, async () => {
+  handleSecure(IPC_CHANNELS.APE_PERSONALITY_GET, async () => {
     return callBackend('/api/ape/personality');
   });
 
-  ipcMain.handle(IPC_CHANNELS.APE_PERSONALITY_UPDATE, async (_, data) => {
+  handleSecure(IPC_CHANNELS.APE_PERSONALITY_UPDATE, async (_, data) => {
     return callBackend('/api/ape/personality', 'PATCH', data);
   });
 
-  ipcMain.handle(IPC_CHANNELS.APE_MOTIVATIONAL_GET, async () => {
+  handleSecure(IPC_CHANNELS.APE_MOTIVATIONAL_GET, async () => {
     return callBackend('/api/ape/motivational');
   });
 
-  ipcMain.handle(IPC_CHANNELS.APE_MOTIVATIONAL_UPDATE, async (_, data) => {
+  handleSecure(IPC_CHANNELS.APE_MOTIVATIONAL_UPDATE, async (_, data) => {
     return callBackend('/api/ape/motivational', 'PATCH', data);
   });
 
-  ipcMain.handle(IPC_CHANNELS.APE_RELATIONSHIP_EXT_GET, async () => {
+  handleSecure(IPC_CHANNELS.APE_RELATIONSHIP_EXT_GET, async () => {
     return callBackend('/api/ape/relationship/extended');
   });
 
-  ipcMain.handle(IPC_CHANNELS.APE_RELATIONSHIP_EXT_UPDATE, async (_, data) => {
+  handleSecure(IPC_CHANNELS.APE_RELATIONSHIP_EXT_UPDATE, async (_, data) => {
     return callBackend('/api/ape/relationship/extended', 'PATCH', data);
   });
 
-  ipcMain.handle(IPC_CHANNELS.APE_SELF_MODEL_GET, async () => {
+  handleSecure(IPC_CHANNELS.APE_SELF_MODEL_GET, async () => {
     return callBackend('/api/ape/self-model');
   });
 
-  ipcMain.handle(IPC_CHANNELS.APE_SELF_MODEL_UPDATE, async (_, data) => {
+  handleSecure(IPC_CHANNELS.APE_SELF_MODEL_UPDATE, async (_, data) => {
     return callBackend('/api/ape/self-model', 'PATCH', data);
   });
 
-  ipcMain.handle(IPC_CHANNELS.APE_DEVELOPMENT_GET, async () => {
+  handleSecure(IPC_CHANNELS.APE_DEVELOPMENT_GET, async () => {
     return callBackend('/api/ape/development');
   });
 
-  ipcMain.handle(IPC_CHANNELS.APE_DEVELOPMENT_UPDATE, async (_, data) => {
+  handleSecure(IPC_CHANNELS.APE_DEVELOPMENT_UPDATE, async (_, data) => {
     return callBackend('/api/ape/development', 'PATCH', data);
   });
 
   // Autonomy & Device Agency IPC Handlers
-  ipcMain.handle(IPC_CHANNELS.AUTONOMY_STATUS_GET, async () => {
+  handleSecure(IPC_CHANNELS.AUTONOMY_STATUS_GET, async () => {
     return callBackend('/api/autonomy/status');
   });
 
-  ipcMain.handle(IPC_CHANNELS.AUTONOMY_TOGGLE, async (_, enabled: boolean) => {
+  handleSecure(IPC_CHANNELS.AUTONOMY_TOGGLE, async (_, enabled: boolean) => {
     return callBackend('/api/autonomy/toggle', 'POST', { enabled });
   });
 
-  ipcMain.handle(IPC_CHANNELS.AUTONOMY_CYCLE_TRIGGER, async () => {
+  handleSecure(IPC_CHANNELS.AUTONOMY_CYCLE_TRIGGER, async () => {
     return callBackend('/api/autonomy/cycle', 'POST');
   });
 
-  ipcMain.handle(IPC_CHANNELS.DEVICE_SCREEN_CAPTURE, async () => {
+  handleSecure(IPC_CHANNELS.DEVICE_SCREEN_CAPTURE, async () => {
     return callBackend('/api/device/screen', 'POST');
   });
 
-  ipcMain.handle(IPC_CHANNELS.DEVICE_ACTION_EXECUTE, async (_, input) => {
+  handleSecure(IPC_CHANNELS.DEVICE_ACTION_EXECUTE, async (_, input) => {
     return callBackend('/api/device/action', 'POST', input);
   });
 
-  ipcMain.handle(IPC_CHANNELS.DEVICE_BROWSER_OPEN, async (_, input) => {
+  handleSecure(IPC_CHANNELS.DEVICE_BROWSER_OPEN, async (_, input) => {
     return callBackend('/api/device/browser', 'POST', input || {});
   });
 
-  ipcMain.handle(IPC_CHANNELS.DEVICE_STEAM_LAUNCH, async (_, input) => {
+  handleSecure(IPC_CHANNELS.DEVICE_STEAM_LAUNCH, async (_, input) => {
     return callBackend('/api/device/steam', 'POST', input || {});
   });
 
-  ipcMain.handle(IPC_CHANNELS.SCREEN_READ_ANALYZE, async (_, input) => {
+  handleSecure(IPC_CHANNELS.SCREEN_READ_ANALYZE, async (_, input) => {
     return callBackend('/api/screen/read', 'POST', input || {});
   });
 
-  ipcMain.handle(IPC_CHANNELS.SCREEN_WINDOWS_GET, async () => {
+  handleSecure(IPC_CHANNELS.SCREEN_WINDOWS_GET, async () => {
     return callBackend('/api/screen/windows', 'GET');
   });
 
-  ipcMain.handle(IPC_CHANNELS.SCREEN_INTERACT, async (_, input) => {
+  handleSecure(IPC_CHANNELS.SCREEN_INTERACT, async (_, input) => {
     return callBackend('/api/screen/interact', 'POST', input || {});
   });
 
-  ipcMain.handle(IPC_CHANNELS.NOTIFICATIONS_STATUS_GET, async () => {
+  handleSecure(IPC_CHANNELS.NOTIFICATIONS_STATUS_GET, async () => {
     return callBackend('/api/notifications/status');
   });
 
-  ipcMain.handle(IPC_CHANNELS.NOTIFICATIONS_SIMULATE, async (_, input) => {
+  handleSecure(IPC_CHANNELS.NOTIFICATIONS_SIMULATE, async (_, input) => {
     return callBackend('/api/notifications/simulate', 'POST', input);
   });
 
-  ipcMain.handle(IPC_CHANNELS.TELEGRAM_STATUS_GET, async () => {
+  handleSecure(IPC_CHANNELS.TELEGRAM_STATUS_GET, async () => {
     return callBackend('/api/telegram/status');
   });
 
-  ipcMain.handle(IPC_CHANNELS.TELEGRAM_CONFIGURE, async (_, input) => {
+  handleSecure(IPC_CHANNELS.TELEGRAM_CONFIGURE, async (_, input) => {
     return callBackend('/api/telegram/configure', 'POST', input);
   });
 
-  ipcMain.handle(IPC_CHANNELS.TELEGRAM_SEND, async (_, input) => {
+  handleSecure(IPC_CHANNELS.TELEGRAM_SEND, async (_, input) => {
     return callBackend('/api/telegram/send', 'POST', input);
   });
 
   // Digital Agency Handlers
-  ipcMain.handle(IPC_CHANNELS.AGENCY_TASKS_LIST, async (_, status?: string) => {
+  handleSecure(IPC_CHANNELS.AGENCY_TASKS_LIST, async (_, status?: string) => {
     const query = status ? `?status=${encodeURIComponent(status)}` : '';
     return callBackend(`/api/agency/tasks${query}`);
   });
 
-  ipcMain.handle(IPC_CHANNELS.AGENCY_TASK_GET, async (_, id: string) => {
+  handleSecure(IPC_CHANNELS.AGENCY_TASK_GET, async (_, id: string) => {
     return callBackend(`/api/agency/tasks/${encodeURIComponent(id)}`);
   });
 
-  ipcMain.handle(IPC_CHANNELS.AGENCY_TASK_SUBMIT, async (_, input) => {
+  handleSecure(IPC_CHANNELS.AGENCY_TASK_SUBMIT, async (_, input) => {
     return callBackend('/api/agency/intent', 'POST', input);
   });
 
-  ipcMain.handle(IPC_CHANNELS.AGENCY_TASK_EXECUTE, async (_, taskId: string) => {
+  handleSecure(IPC_CHANNELS.AGENCY_TASK_EXECUTE, async (_, taskId: string) => {
     return callBackend(`/api/agency/tasks/${encodeURIComponent(taskId)}/execute`, 'POST');
   });
 
-  ipcMain.handle(IPC_CHANNELS.AGENCY_TASK_CANCEL, async (_, taskId: string) => {
+  handleSecure(IPC_CHANNELS.AGENCY_TASK_CANCEL, async (_, taskId: string) => {
     return callBackend(`/api/agency/tasks/${encodeURIComponent(taskId)}/cancel`, 'POST');
   });
 
-  ipcMain.handle(IPC_CHANNELS.AGENCY_POLICY_GET, async () => {
+  handleSecure(IPC_CHANNELS.AGENCY_POLICY_GET, async () => {
     return callBackend('/api/agency/policy');
   });
 
-  ipcMain.handle(IPC_CHANNELS.AGENCY_POLICY_UPDATE, async (_, policy) => {
+  handleSecure(IPC_CHANNELS.AGENCY_POLICY_UPDATE, async (_, policy) => {
     return callBackend('/api/agency/policy', 'POST', policy);
   });
 }
@@ -647,17 +667,21 @@ function registerIpcHandlers() {
 app.whenReady().then(async () => {
   logger.info('Electron app ready. Starting Arletex...');
 
-  // Register modern media stream handler with full Range request support
+  // Register modern media stream handler with full containment validation and Range request support
   protocol.handle('arletex-media', (request) => {
     try {
       const rawPath = request.url.replace(/^arletex-media:\/\//, '');
       const decodedPath = decodeURIComponent(rawPath);
-      const normalized = path.normalize(decodedPath.startsWith('/') ? decodedPath : '/' + decodedPath);
-      if (!fs.existsSync(normalized)) {
-        logger.warn(`Media file not found: ${normalized}`);
-        return new Response('File not found', { status: 404 });
+      const validation = validateMediaFilePath(decodedPath);
+      if (!validation.allowed || !validation.canonicalPath) {
+        logger.warn(`Rejected unauthorized arletex-media request for '${decodedPath}': ${validation.reason}`);
+        return new Response(validation.reason || 'Forbidden', {
+          status: validation.statusCode || 403,
+          headers: { 'Content-Type': 'text/plain' },
+        });
       }
-      return net.fetch(pathToFileURL(normalized).toString());
+
+      return net.fetch(pathToFileURL(validation.canonicalPath).toString());
     } catch (err: any) {
       logger.error('Error streaming media via arletex-media protocol:', err);
       return new Response('Media streaming error', { status: 500 });

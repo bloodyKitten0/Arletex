@@ -1,9 +1,9 @@
-import { exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import util from 'node:util';
 import fs from 'node:fs';
 import { rootLogger, ILogger } from '@arletex/core';
 
-const execPromise = util.promisify(exec);
+const execFilePromise = util.promisify(execFile);
 
 export interface AudioCaptureResult {
   audioPath: string;
@@ -45,10 +45,25 @@ export class AudioPerceptionService {
     const outPath = `/tmp/sys_audio_${Date.now()}_${Math.random().toString(36).substring(7)}.wav`;
 
     try {
-      // Record 16kHz mono WAV from PulseAudio / PipeWire default sink monitor
-      await execPromise(
-        `ffmpeg -y -f pulse -i default.monitor -t ${dur} -ac 1 -ar 16000 "${outPath}" 2>/dev/null || (parec -d @DEFAULT_SINK@.monitor --file-format=wav "${outPath}" & PID=$!; sleep ${dur}; kill $PID 2>/dev/null)`,
-      );
+      // Record 16kHz mono WAV from PulseAudio / PipeWire default sink monitor safely with execFile
+      try {
+        await execFilePromise('ffmpeg', [
+          '-y',
+          '-f', 'pulse',
+          '-i', 'default.monitor',
+          '-t', String(dur),
+          '-ac', '1',
+          '-ar', '16000',
+          outPath,
+        ]);
+      } catch {
+        // Fallback to parec
+        await execFilePromise(
+          'parec',
+          ['-d', '@DEFAULT_SINK@.monitor', '--file-format=wav', outPath],
+          { timeout: (dur + 1) * 1000 },
+        );
+      }
 
       if (!fs.existsSync(outPath) || fs.statSync(outPath).size < 1000) {
         throw new Error('Recorded audio file is empty or missing');
@@ -71,22 +86,33 @@ export class AudioPerceptionService {
    */
   public async getMprisMediaMetadata(): Promise<{ title?: string; artist?: string; album?: string } | null> {
     try {
-      const { stdout: busList } = await execPromise('busctl --user list 2>/dev/null || true');
-      const services = [...busList.matchAll(/org\.mpris\.MediaPlayer2\.[^\s]+/g)].map((m) => m[0]);
+      let busList = '';
+      try {
+        const res = await execFilePromise('busctl', ['--user', 'list'], { timeout: 3000 });
+        busList = res.stdout;
+      } catch {
+        return null;
+      }
+      const services = [...busList.matchAll(/org\.mpris\.MediaPlayer2\.[a-zA-Z0-9_.-]+/g)].map((m) => m[0]);
 
       for (const service of services) {
         try {
           // Strictly verify that media is actively PLAYING, not paused or stopped in a background tab
-          const { stdout: statusOut } = await execPromise(
-            `busctl --user get-property ${service} /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player PlaybackStatus 2>/dev/null || true`,
+          const statusRes = await execFilePromise(
+            'busctl',
+            ['--user', 'get-property', service, '/org/mpris/MediaPlayer2', 'org.mpris.MediaPlayer2.Player', 'PlaybackStatus'],
+            { timeout: 2000 },
           );
-          if (!/s\s+"Playing"/i.test(statusOut)) {
+          if (!/s\s+"Playing"/i.test(statusRes.stdout)) {
             continue;
           }
 
-          const { stdout: metaOut } = await execPromise(
-            `busctl --user get-property ${service} /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player Metadata 2>/dev/null || true`,
+          const metaRes = await execFilePromise(
+            'busctl',
+            ['--user', 'get-property', service, '/org/mpris/MediaPlayer2', 'org.mpris.MediaPlayer2.Player', 'Metadata'],
+            { timeout: 2000 },
           );
+          const metaOut = metaRes.stdout;
           const titleMatch = metaOut.match(/"xesam:title"\s+s\s+"([^"]+)"/);
           const artistMatch = metaOut.match(/"xesam:artist"\s+as\s+\d+\s+"([^"]+)"/);
           const albumMatch = metaOut.match(/"xesam:album"\s+s\s+"([^"]+)"/);

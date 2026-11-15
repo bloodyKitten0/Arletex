@@ -1,9 +1,9 @@
-import { exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import util from 'node:util';
 import { rootLogger, ILogger } from '@arletex/core';
 import { defaultDeviceAgency, DeviceAgencyService } from './deviceAgencyService.js';
 
-const execPromise = util.promisify(exec);
+const execFilePromise = util.promisify(execFile);
 
 export interface VisibleWindowInfo {
   id: string;
@@ -46,14 +46,33 @@ export class ScreenReadingService {
    */
   public async getActiveMediaInfo(): Promise<{ isPlaying: boolean; title?: string; artist?: string } | null> {
     try {
-      const { stdout: busList } = await execPromise('busctl --user list 2>/dev/null || true');
-      const services = [...busList.matchAll(/org\.mpris\.MediaPlayer2\.[^\s]+/g)].map((m) => m[0]);
+      let busList = '';
+      try {
+        const res = await execFilePromise('busctl', ['--user', 'list'], { timeout: 3000 });
+        busList = res.stdout;
+      } catch {
+        return null;
+      }
+      const services = [...busList.matchAll(/org\.mpris\.MediaPlayer2\.[a-zA-Z0-9_.-]+/g)].map((m) => m[0]);
 
       for (const service of services) {
         try {
-          const { stdout: metaOut } = await execPromise(
-            `busctl --user get-property ${service} /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player Metadata 2>/dev/null || true`,
+          // Strictly verify active playback status
+          const statusRes = await execFilePromise(
+            'busctl',
+            ['--user', 'get-property', service, '/org/mpris/MediaPlayer2', 'org.mpris.MediaPlayer2.Player', 'PlaybackStatus'],
+            { timeout: 2000 },
           );
+          if (!/s\s+"Playing"/i.test(statusRes.stdout)) {
+            continue;
+          }
+
+          const metaRes = await execFilePromise(
+            'busctl',
+            ['--user', 'get-property', service, '/org/mpris/MediaPlayer2', 'org.mpris.MediaPlayer2.Player', 'Metadata'],
+            { timeout: 2000 },
+          );
+          const metaOut = metaRes.stdout;
           const titleMatch = metaOut.match(/"xesam:title"\s+s\s+"([^"]+)"/);
           const artistMatch = metaOut.match(/"xesam:artist"\s+as\s+\d+\s+"([^"]+)"/);
 
@@ -87,7 +106,16 @@ export class ScreenReadingService {
    */
   public async getVisibleWindows(): Promise<VisibleWindowInfo[]> {
     try {
-      const { stdout } = await execPromise(`DISPLAY=${this.display} wmctrl -l 2>/dev/null || true`);
+      let stdout = '';
+      try {
+        const res = await execFilePromise('wmctrl', ['-l'], {
+          env: { ...process.env, DISPLAY: this.display },
+          timeout: 4000,
+        });
+        stdout = res.stdout;
+      } catch {
+        return [];
+      }
       const lines = stdout.trim().split('\n').filter(Boolean);
       const windows: VisibleWindowInfo[] = [];
 
@@ -110,24 +138,39 @@ export class ScreenReadingService {
 
   /**
    * Focuses an application window by title or class name using wmctrl/xdotool.
+   * Safe execution using argument arrays to prevent shell interpolation.
    */
   public async focusWindow(query: string): Promise<boolean> {
+    if (!query || typeof query !== 'string') return false;
     try {
       this.logger.info(`Focusing window matching: "${query}"`);
-      // Try wmctrl first
+      // 1. Try wmctrl with direct argument array
       try {
-        await execPromise(`DISPLAY=${this.display} wmctrl -a "${query}"`);
+        await execFilePromise('wmctrl', ['-a', query], {
+          env: { ...process.env, DISPLAY: this.display },
+          timeout: 4000,
+        });
         return true;
       } catch {
-        // Fallback to xdotool search and windowactivate
-        const { stdout } = await execPromise(
-          `DISPLAY=${this.display} xdotool search --onlyvisible --name "${query}" | head -n 1`,
-        );
-        const winId = stdout.trim();
-        if (winId) {
-          await execPromise(`DISPLAY=${this.display} xdotool windowactivate ${winId}`);
-          return true;
-        }
+        // 2. Fallback to xdotool search
+        try {
+          const { stdout } = await execFilePromise(
+            'xdotool',
+            ['search', '--onlyvisible', '--name', query],
+            {
+              env: { ...process.env, DISPLAY: this.display },
+              timeout: 4000,
+            },
+          );
+          const firstLine = stdout.trim().split('\n')[0]?.trim();
+          if (firstLine && /^\d+$/.test(firstLine)) {
+            await execFilePromise('xdotool', ['windowactivate', firstLine], {
+              env: { ...process.env, DISPLAY: this.display },
+              timeout: 4000,
+            });
+            return true;
+          }
+        } catch {}
       }
       return false;
     } catch (err: any) {

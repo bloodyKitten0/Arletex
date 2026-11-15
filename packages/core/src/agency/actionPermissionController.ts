@@ -12,6 +12,9 @@ export class ActionPermissionController {
   private policy: PermissionPolicy;
   private logger: ILogger;
   private authorizationHistory: AuthorizationCheckResult[] = [];
+  private isEmergencyShutdownActive = false;
+  private emergencyShutdownReason?: string;
+  private emergencyShutdownTimestamp?: string;
 
   // Disallowed dangerous binaries and commands
   private static readonly DANGEROUS_COMMANDS = new Set([
@@ -113,6 +116,12 @@ export class ActionPermissionController {
   }
 
   public updatePolicy(updates: Partial<PermissionPolicy>): void {
+    if (this.isEmergencyShutdownActive && updates.autonomousExecutionEnabled === true) {
+      this.logger.warn(
+        '[SECURITY] Cannot re-enable autonomous execution while emergency shutdown is active. Call reactivateAutonomy() first.',
+      );
+      updates = { ...updates, autonomousExecutionEnabled: false };
+    }
     this.policy = { ...this.policy, ...updates };
     this.logger.info('Permission policy updated');
   }
@@ -141,6 +150,19 @@ export class ActionPermissionController {
     const timestamp = new Date().toISOString();
     const payload = action.payload || (action as any).parameters || {};
     const actionType = action.type as string;
+
+    if (this.isEmergencyShutdownActive) {
+      const res: AuthorizationCheckResult = {
+        actionId: action.id,
+        decision: 'denied',
+        reason: `Emergency shutdown is active. All actions are blocked [reason: ${this.emergencyShutdownReason || 'Emergency shutdown initiated'}]. Explicit reactivation required.`,
+        requiredPrivilege: 'system:reactivation',
+        riskLevel: 'critical',
+        checkedAt: timestamp,
+      };
+      this.recordAuthorization(res);
+      return res;
+    }
 
     if (!this.policy.autonomousExecutionEnabled) {
       return {
@@ -424,9 +446,48 @@ export class ActionPermissionController {
     return result;
   }
 
-  public emergencyShutdown(): void {
+  public emergencyShutdown(reason?: string): void {
+    this.isEmergencyShutdownActive = true;
     this.policy.autonomousExecutionEnabled = false;
-    this.logger.warn('[SECURITY] Emergency autonomy shutdown triggered. All computer operations blocked.');
+    this.emergencyShutdownTimestamp = new Date().toISOString();
+    this.emergencyShutdownReason = reason || 'Emergency autonomy shutdown triggered';
+    this.logger.warn(
+      `[SECURITY] Emergency autonomy shutdown triggered. All computer operations blocked. Reason: ${this.emergencyShutdownReason}`,
+    );
+  }
+
+  public reactivateAutonomy(token: string): { success: boolean; message: string } {
+    if (token !== 'CONFIRM_REACTIVATION') {
+      return {
+        success: false,
+        message: 'Invalid reactivation confirmation token. Required: "CONFIRM_REACTIVATION".',
+      };
+    }
+    this.isEmergencyShutdownActive = false;
+    this.policy.autonomousExecutionEnabled = true;
+    this.emergencyShutdownReason = undefined;
+    this.emergencyShutdownTimestamp = undefined;
+    this.logger.warn('[SECURITY] Autonomy reactivated via explicit confirmation token.');
+    return {
+      success: true,
+      message: 'Autonomous agency safely reactivated.',
+    };
+  }
+
+  public isEmergencyShutdown(): boolean {
+    return this.isEmergencyShutdownActive;
+  }
+
+  public getEmergencyShutdownInfo(): {
+    active: boolean;
+    reason?: string;
+    timestamp?: string;
+  } {
+    return {
+      active: this.isEmergencyShutdownActive,
+      reason: this.emergencyShutdownReason,
+      timestamp: this.emergencyShutdownTimestamp,
+    };
   }
 
   public isAutonomyEnabled(): boolean {

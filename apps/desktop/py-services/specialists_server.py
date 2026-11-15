@@ -14,10 +14,11 @@ import base64
 import tempfile
 import io
 import wave
+import re
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 # Paths to models
-BASE_MODELS_DIR = "/home/proof/models/arle-specialists"
+BASE_MODELS_DIR = os.getenv("ARLETEX_SPECIALISTS_DIR", "/home/proof/models/arle-specialists")
 EMBEDDING_MODEL_DIR = os.path.join(BASE_MODELS_DIR, "embeddinggemma-300m")
 WHISPER_MODEL_DIR = os.path.join(BASE_MODELS_DIR, "whisper-small")
 KOKORO_MODEL_DIR = os.path.join(BASE_MODELS_DIR, "kokoro-82m")
@@ -65,13 +66,26 @@ def get_whisper():
 # 3. Lazy Kokoro Loader
 kokoro_pipeline = None
 voice_cache = {}
+ALLOWED_VOICE_REGEX = re.compile(r'^[a-zA-Z0-9_-]+$')
 
 def get_voice_tensor(voice_name: str):
     if not voice_name:
         voice_name = "arlecchino"
+    if not ALLOWED_VOICE_REGEX.match(voice_name):
+        print(f"[Specialists] Rejected invalid/traversal voice identifier: {voice_name}")
+        return "arlecchino"
     if voice_name in voice_cache:
         return voice_cache[voice_name]
-    custom_path = os.path.join(KOKORO_MODEL_DIR, "voices", f"{voice_name}.pt" if not voice_name.endswith(".pt") else voice_name)
+
+    voices_dir = os.path.realpath(os.path.join(KOKORO_MODEL_DIR, "voices"))
+    raw_target = os.path.join(voices_dir, f"{voice_name}.pt" if not voice_name.endswith(".pt") else voice_name)
+    custom_path = os.path.realpath(raw_target)
+
+    # Enforce directory containment to prevent path traversal
+    if not custom_path.startswith(voices_dir + os.sep) and custom_path != voices_dir:
+        print(f"[Specialists] Rejected path traversal voice attempt: {custom_path}")
+        return "arlecchino"
+
     if os.path.exists(custom_path):
         try:
             import torch
@@ -140,19 +154,26 @@ class SpecialistRequestHandler(BaseHTTPRequestHandler):
         # Quiet standard HTTP logging to avoid log noise
         pass
 
+    def _get_allowed_origin(self):
+        origin = self.headers.get("Origin", "")
+        # Strictly restrict origins to local loopback
+        if origin and (origin.startswith("http://127.0.0.1") or origin.startswith("http://localhost")):
+            return origin
+        return "http://127.0.0.1"
+
     def send_json(self, status_code, data):
         body = json.dumps(data).encode("utf-8")
         self.send_response(status_code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Origin", self._get_allowed_origin())
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
         self.wfile.write(body)
 
     def do_OPTIONS(self):
         self.send_response(204)
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Origin", self._get_allowed_origin())
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
@@ -161,9 +182,18 @@ class SpecialistRequestHandler(BaseHTTPRequestHandler):
         if self.path == "/health":
             self.send_json(200, {
                 "status": "connected",
-                "embeddingGemma": embedding_model is not None,
-                "whisper": os.path.exists(WHISPER_MODEL_DIR),
-                "kokoro": os.path.exists(KOKORO_MODEL_DIR)
+                "modelsInstalled": {
+                    "embeddingGemma": os.path.exists(EMBEDDING_MODEL_DIR),
+                    "whisper": os.path.exists(WHISPER_MODEL_DIR),
+                    "kokoro": os.path.exists(KOKORO_MODEL_DIR),
+                    "rvc": os.path.exists(RVC_MODEL_PATH)
+                },
+                "modelsLoaded": {
+                    "embeddingGemma": embedding_model is not None,
+                    "whisper": whisper_model is not None,
+                    "kokoro": kokoro_pipeline is not None,
+                    "rvc": rvc_converter is not None
+                }
             })
             return
         self.send_json(404, {"error": "Not found"})
@@ -294,8 +324,10 @@ class SpecialistRequestHandler(BaseHTTPRequestHandler):
                         final_sample_rate = sample_rate
 
                         if rvc is not None:
-                            temp_in = tempfile.mktemp(suffix=".wav")
+                            temp_in = None
                             try:
+                                with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+                                    temp_in = f.name
                                 sf.write(temp_in, combined, sample_rate, format='WAV')
                                 rvc.apply_conf(
                                     tag="arlecchino",
@@ -327,7 +359,7 @@ class SpecialistRequestHandler(BaseHTTPRequestHandler):
                             except Exception as rvc_err:
                                 print(f"[Specialists] RVC conversion fallback: {rvc_err}")
                             finally:
-                                if os.path.exists(temp_in):
+                                if temp_in and os.path.exists(temp_in):
                                     try:
                                         os.remove(temp_in)
                                     except Exception:

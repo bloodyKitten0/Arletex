@@ -1,10 +1,9 @@
-import { spawn, ChildProcessWithoutNullStreams } from 'node:child_process';
-import { exec } from 'node:child_process';
+import { spawn, execFile, ChildProcessWithoutNullStreams } from 'node:child_process';
 import util from 'node:util';
 import crypto from 'node:crypto';
 import { rootLogger, ILogger } from '@arletex/core';
 
-const execPromise = util.promisify(exec);
+const execFilePromise = util.promisify(execFile);
 
 export interface DesktopNotification {
   id: string;
@@ -198,10 +197,15 @@ export class NotificationListenerService {
     urgency: 'low' | 'normal' | 'critical' = 'normal',
   ): Promise<boolean> {
     try {
-      const sanitizedTitle = title.replace(/"/g, '\\"');
-      const sanitizedMsg = message.replace(/"/g, '\\"');
-      await execPromise(
-        `DISPLAY=:0 notify-send -a "Arle" -u ${urgency} "${sanitizedTitle}" "${sanitizedMsg}"`,
+      const validUrgency = ['low', 'normal', 'critical'].includes(urgency) ? urgency : 'normal';
+      const display = process.env.DISPLAY || ':0';
+      await execFilePromise(
+        'notify-send',
+        ['-a', 'Arle', '-u', validUrgency, String(title), String(message)],
+        {
+          env: { ...process.env, DISPLAY: display },
+          timeout: 5000,
+        },
       );
       return true;
     } catch (err: any) {

@@ -56,7 +56,22 @@ export class VideoProcessor {
 
     try {
       if (videoPath) {
-        inputFilePath = videoPath;
+        const mediaDir = path.join(os.homedir(), '.arletex', 'media', 'videos');
+        await fs.mkdir(mediaDir, { recursive: true });
+        const canonicalInput = path.resolve(videoPath);
+        // If file is already inside approved media directory or tmp, keep it as is
+        if (canonicalInput.startsWith(path.resolve(mediaDir)) || canonicalInput.startsWith(path.resolve(os.tmpdir()))) {
+          inputFilePath = canonicalInput;
+          resolvedVideoPath = canonicalInput;
+        } else {
+          // Ingest external video into secure persistent media storage
+          const ext = path.extname(videoPath) || '.mp4';
+          const persistentCopy = path.join(mediaDir, `imported_${Date.now()}_${crypto.randomBytes(4).toString('hex')}${ext}`);
+          await fs.copyFile(canonicalInput, persistentCopy);
+          inputFilePath = persistentCopy;
+          resolvedVideoPath = persistentCopy;
+          this.logger.info(`Ingested external video into secure media storage: ${persistentCopy}`);
+        }
       } else {
         const ext = mimeType.includes('webm') ? '.webm' : mimeType.includes('mov') ? '.mov' : '.mp4';
         const mediaDir = path.join(os.homedir(), '.arletex', 'media', 'videos');
