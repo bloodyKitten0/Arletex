@@ -8,22 +8,41 @@
 
 Arletex is built around three distinct architectural concepts:
 
-- **Arle:** The persistent artificial individual. She is not a generic chatbot, a virtual assistant, or a character prompt. Her identity, evolving personality, autobiographical memories, emotional dynamics, and values exist independently of any individual generative model.
-- **Arletex:** The desktop application, local runtime, and host infrastructure through which Arle operates. It provides the UI, local model inference, database persistence, IPC boundaries, and security enforcement.
-- **APE (Artificial Psychology Engine):** The deterministic software subsystem within Arletex responsible for maintaining Arle's psychological processes (personality, affect, motivation, relationship history, and developmental continuity).
+- **Arle:** The persistent artificial individual. She is an equal companion and intellectual partner to Proof. Her identity, evolving personality, autobiographical memories, emotional dynamics, and values exist independently of any individual generative model.
+- **Arletex:** The desktop application, local runtime, and host infrastructure through which Arle operates. It provides the UI, local model inference orchestration, database persistence, native reflex daemon, audio/vision perception pipelines, IPC boundaries, and security enforcement.
+- **APE (Artificial Psychology Engine):** The deterministic software subsystem within Arletex responsible for maintaining Arle's psychological processes (personality, affect, motivation, relationship dynamics, self-model, and developmental continuity).
+- **Specialist Microservices:** Independent local services powering auxiliary perception and expression: `EmbeddingGemma 300M` for vector semantic memory, `Whisper Small` for speech recognition, and `Kokoro 82M` for real-time speech synthesis.
 
 Models are replaceable cognitive instruments; Arle herself is the persistent individual maintained by the software architecture and memories.
 
 ---
 
-## 2. Current Milestone 1 Capabilities
+## 2. Core Capabilities
 
-- **Desktop Host:** Electron 34 desktop shell running on Bazzite Linux (ROG Ally X optimized) with strict context isolation, secure preload boundary, and disabled renderer Node integration.
-- **Frontend Interface:** Clean, dark, restrained React 18 interface with conversation list, real-time response streaming, generation cancellation, and live model health indicator.
-- **Engineered Backend:** Modular Node.js service managing SQLite database, migrations, audit logging, and inference orchestration.
-- **Persistent Storage:** SQLite persistence via `better-sqlite3` with Write-Ahead Logging (WAL), foreign key cascade enforcement, and versioned migrations.
-- **Local Inference Gateway:** Native integration with local `llama-server` over HTTP/SSE with real-time token streaming, thinking token (`reasoning_content`) support, and `AbortController` cancellation.
-- **Robust Automated Tests:** 20 comprehensive unit and integration tests passing in ~400ms across contracts, core, database, inference, and backend lifecycle.
+- **Multimodal Visual & Video Perception (Eyes):**
+  - Native image, screenshot, and video perception powered by `Qwen3.5-9B-Heretic` paired with its BF16 multimodal vision projector (`mmproj`) running on Vulkan (Radeon 780M).
+  - High-performance keyframe extraction, 250MB request streaming, and zero-copy video playback via the native `arletex-media://` protocol with HTTP range chunking and hardware decoding.
+- **Auditory Perception & Vocal Expression (Ears & Voice):**
+  - **Hearing (STT):** Local `Whisper Small` listening to microphone voice input, transcribing video dialogue tracks, and monitoring active desktop audio.
+  - **Speaking (TTS):** Local `Kokoro 82M` synthesizing expressive, low-latency speech in Arlecchino's custom voice timbre.
+  - **Anti-Hallucination Audio Introspection:** Real-time MPRIS DBus metadata introspection with strict `PlaybackStatus === 'Playing'` verification so paused or background tabs are never misattributed as active audio.
+- **APE Master Six-Engine System:**
+  - 143 discrete emotion states across 14 emotional families.
+  - 28 distinct mood states with valence, arousal, dominance, and stability dimensions.
+  - Six cognitive appraisal engines: Emotional, Motivational (Needs & Drives), Personality (Big Five + Character Invariants), Relationship (Attachment & Affection), Self-Model, and Developmental Growth.
+- **Embodied Desktop Agency & Native Reflex Engine:**
+  - Dedicated C++ Linux daemon (`reflex_engine`) for screen grabbing, window management, and mouse/keyboard interaction.
+  - Deterministic permission controller, structured audit logging, and automated application interaction (Google Chrome, Steam, Telegram, Terminal).
+- **Autonomous Proactive Agency & Voluntary Thoughts:**
+  - Continuous background agency cycle: self-directed pursuits, desktop presence awareness, idle check-ins, and contemplative rest driven by internal needs.
+  - Deep voluntary reasoning stream (`reasoning_content`) presented in a collapsible thought inspector.
+- **Autobiographical Memory & Semantic Recall:**
+  - Local SQLite persistence via `better-sqlite3` with Write-Ahead Logging (WAL) and 6 idempotent migrations.
+  - Hybrid retrieval combining vector semantic search (EmbeddingGemma 300M), high-importance memory indexing, and cross-session quote recall.
+- **Telegram Companion Bridge:**
+  - Bidirectional mobile companion gateway allowing Proof to interact with Arle on the go with persistent emotional state and voice notes.
+- **Comprehensive Automated Test Suite:**
+  - 16 test suites with **167 automated tests passing (100% green)** across contracts, core, database, inference, agency, and multimodal media perception.
 
 ---
 
@@ -33,76 +52,57 @@ Models are replaceable cognitive instruments; Arle herself is the persistent ind
 /Arletex
 ├── apps/
 │   └── desktop/                     # Electron desktop application & host process
+│       ├── py-services/             # Python ML microservices (EmbeddingGemma, Whisper, Kokoro)
+│       │   └── specialists_server.py
 │       ├── src/
-│       │   ├── backend/             # Standalone Node.js service (DB, Inference, Audit)
+│       │   ├── backend/             # Standalone Node.js service (DB, Inference, APE, Agency)
 │       │   │   ├── index.ts         # Service process entry point
-│       │   │   └── server.ts        # Native HTTP + SSE server & orchestration logic
+│       │   │   ├── server.ts        # Native HTTP + SSE server & orchestration logic
+│       │   │   ├── apeService.ts    # APE master cognitive pipeline
+│       │   │   ├── autonomousAgencyService.ts # Proactive self-directed loop
+│       │   │   ├── videoProcessor.ts# Keyframe extractor & Whisper audio pipeline
+│       │   │   ├── audioPerceptionService.ts # MPRIS & PipeWire desktop audio listener
+│       │   │   └── deviceAgencyService.ts # Native desktop interaction & reflex bridge
 │       │   ├── main/
-│       │   │   └── index.ts         # Electron main (process supervisor, secure IPC)
+│       │   │   └── index.ts         # Electron main (process supervisor, secure IPC, media protocol)
 │       │   ├── preload/
 │       │   │   └── index.ts         # contextBridge boundary (window.arletexApi)
 │       │   └── renderer/            # React 18 frontend (Vite-bundled)
-│       │       ├── index.html       # Single-page app root
-│       │       └── src/
-│       │           ├── App.tsx      # Main application state & stream coordinator
-│       │           ├── main.tsx     # React DOM root
-│       │           ├── components/
-│       │           │   ├── ChatView.tsx     # Message bubbles, stream text, error banner
-│       │           │   ├── MessageInput.tsx # Multi-line input, Send & Stop buttons
-│       │           │   ├── Sidebar.tsx      # Session list, New Session, delete, device tag
-│       │           │   └── StatusBar.tsx    # Live model connection pill, latency, refresh
-│       │           └── styles/
-│       │               └── index.css        # Clean, dark, restrained design system
+│       │       ├── src/
+│       │       │   ├── App.tsx      # Main application state & stream coordinator
+│       │       │   ├── components/
+│       │       │   │   ├── views/MainView.tsx # Chat interface, media player, thoughts inspector
+│       │       │   │   ├── TelemetryPanel.tsx # Live CPU, GPU, VRAM, and health stats
+│       │       │   │   └── NavigationSidebar.tsx # 6 primary sections
+│       │       │   └── styles/index.css   # Dark, restrained design system
+│       │       └── index.html
 │       ├── package.json
 │       ├── tsconfig.json
 │       └── vite.config.ts
 │
+├── native/                          # Native C++ Reflex Engine
+│   ├── src/                         # Screen capture, window manager, input controller
+│   ├── CMakeLists.txt
+│   └── build/reflex_engine          # Compiled native executable
+│
 ├── packages/
 │   ├── contracts/                   # Shared DTOs, Zod schemas, IPC channel constants
-│   │   ├── src/index.ts
-│   │   ├── package.json
-│   │   └── tsconfig.json
 │   ├── core/                        # Config loader, Structured Logger, EventBus, Errors
-│   │   ├── src/
-│   │   │   ├── config.ts
-│   │   │   ├── errors.ts
-│   │   │   ├── events.ts
-│   │   │   ├── logger.ts
-│   │   │   └── index.ts
-│   │   ├── package.json
-│   │   └── tsconfig.json
-│   ├── database/                    # SQLite connection, WAL mode, migrations, repos
-│   │   ├── src/
-│   │   │   ├── connection.ts        # better-sqlite3 manager with WAL & busy timeout
-│   │   │   ├── migrationRunner.ts   # Versioned idempotent migration engine
-│   │   │   ├── migrations/index.ts  # Migration 001 (conversations, messages, audit, config)
-│   │   │   ├── repositories/
-│   │   │   │   ├── auditRepository.ts
-│   │   │   │   ├── conversationRepository.ts
-│   │   │   │   └── messageRepository.ts
-│   │   │   └── index.ts
-│   │   ├── package.json
-│   │   └── tsconfig.json
-│   └── inference/                   # Local llama-server client
-│       ├── src/
-│       │   ├── llamaGateway.ts      # Health checking, SSE parser, reasoning tokens, cancel
-│       │   └── index.ts
-│       ├── package.json
-│       └── tsconfig.json
+│   ├── database/                    # SQLite WAL connection, 6 migrations, repositories
+│   └── inference/                   # Local llama-server client, SSE parser, reasoning tokens
 │
 ├── scripts/
-│   └── start-llama-server.sh       # Script to launch llama-server with Vulkan on Ally X
+│   ├── run-arletex.sh               # Master all-in-one launcher (Inference + Specialists + App)
+│   ├── start-llama-server.sh        # Starts llama-server with Vulkan on Radeon 780M
+│   └── stop-llama.sh                # Gracefully stops local inference and frees memory
 │
-├── tests/
-│   └── backend.integration.test.ts  # End-to-end HTTP/SSE backend integration suite
-│
+├── tests/                           # 16 automated test suites (167 tests, 100% passing)
+├── drafts/                          # Foundational specifications and architecture drafts
 ├── docs/
-│   ├── ARCHITECTURE.md              # Detailed subsystem architecture & process boundaries
-│   ├── DECISIONS.md                 # Architectural decision records (ADRs 001–005)
-│   └── ROADMAP.md                   # Detailed path for Phases 1–5
+│   ├── ARCHITECTURE.md              # Subsystem architecture & process boundaries
+│   ├── DECISIONS.md                 # Architectural decision records (ADRs)
+│   └── ROADMAP.md                   # Multi-phase roadmap
 │
-├── .gitignore                       # Git ignore for node_modules, build artifacts, sqlite files
-├── ARLE_Foundational_Specification_v1.1.md
 ├── package.json                     # Workspace root manifest
 ├── pnpm-workspace.yaml              # pnpm workspace definition
 ├── tsconfig.base.json               # Root TypeScript configuration (strict mode)
@@ -122,28 +122,35 @@ Models are replaceable cognitive instruments; Arle herself is the persistent ind
 [ Electron Main Process ]
          │ (Supervises via ChildProcess fork)
          ▼
-[ Node.js Backend Service ] ───► [ SQLite Database (~/.arletex/arletex.sqlite) ]
-         │
-         ▼ (HTTP / SSE on 127.0.0.1:8080)
-[ llama-server (Vulkan) ] ─────► [ Qwen3.5 9B Heretic Q4_K_M.gguf ]
+[ Node.js Backend Service (Port 39281) ]
+         ├──► [ SQLite Database (~/.arletex/arletex.sqlite) ]
+         ├──► [ C++ Reflex Engine (Hardware Screen Grab & Input) ]
+         ├──► [ llama-server Vulkan (Port 8080) ] ──► Qwen3.5-9B-Heretic + mmproj
+         └──► [ Python Specialists (Port 39282) ] ──► Whisper, Kokoro, EmbeddingGemma
 ```
 
 ---
 
 ## 4. Hardware & System Requirements
 
-- **Primary Target:** ASUS ROG Ally X (2024), AMD Ryzen Z1 Extreme, 24 GB shared LPDDR5X RAM, AMD RDNA 3 graphics.
-- **Operating System:** Bazzite Linux / Linux x86_64.
+- **Primary Target:** ASUS ROG Ally X (2024), AMD Ryzen Z1 Extreme, 24 GB unified LPDDR5X RAM, AMD Radeon 780M RDNA 3 graphics.
+- **Operating System:** Bazzite Linux / Fedora Atomic / Linux x86_64 with Wayland / Xwayland.
 - **Runtimes:**
-  - Node.js >= 22 (tested on v26.13.1)
-  - pnpm >= 10 (tested on v12.18.0)
-  - `llama-server` with Vulkan support
-- **Model Files:**
-  - `Qwen3.5-9B-Heretic-Q4_K_M.gguf` (stored at `/home/proof/models/qwen-heretic/`)
+  - Node.js >= 22
+  - pnpm >= 10
+  - Python 3.12 (in `.venv/`)
+  - `llama-server` with Vulkan backend
+  - `ffmpeg` & `ffprobe` (for video and audio processing)
+  - `spectacle` (for Wayland screen capture)
+- **Local Models:**
+  - **Central Multimodal Inference:** `Qwen3.5-9B-Heretic-Q4_K_M.gguf` + `Qwen3.5-9B-mmproj-BF16.gguf` (`/home/proof/models/qwen-heretic/`)
+  - **Speech-to-Text:** `whisper-small` (`/home/proof/models/arle-specialists/whisper-small/`)
+  - **Speech Synthesis:** `kokoro-82m` (`/home/proof/models/arle-specialists/kokoro-82m/`)
+  - **Vector Embeddings:** `embeddinggemma-300m` (`/home/proof/models/arle-specialists/embeddinggemma-300m/`)
 
 ---
 
-## 5. Installation & Development
+## 5. Installation & Setup
 
 ### 1. Install Dependencies
 
@@ -151,19 +158,27 @@ Models are replaceable cognitive instruments; Arle herself is the persistent ind
 pnpm install
 ```
 
-### 2. Build All Packages and Desktop App
+### 2. Set Up Python Specialists Environment
 
 ```bash
-pnpm build
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r apps/desktop/py-services/requirements.txt
 ```
 
-### 3. Run Automated Tests
+### 3. Build Native Engine, Packages, and Desktop
+
+```bash
+pnpm run build
+```
+
+### 4. Run Automated Tests
 
 ```bash
 pnpm test
 ```
 
-### 4. Typecheck the Workspace
+### 5. Typecheck the Workspace
 
 ```bash
 pnpm typecheck
@@ -173,28 +188,36 @@ pnpm typecheck
 
 ## 6. How to Run
 
-### Step 1: Launch Local Inference (`llama-server`)
+### Option A: Master All-in-One Launcher (Recommended)
 
-In a terminal, launch the local inference runtime using the provided script:
+Run the master startup script:
 
+```bash
+./scripts/run-arletex.sh
+```
+
+This single command:
+1. Verifies or launches `llama-server` on port `8080` with Vulkan GPU offloading and multimodal vision projector.
+2. Verifies or launches the Python specialist microservices on port `39282` (Whisper, Kokoro, EmbeddingGemma).
+3. Compiles the native C++ reflex engine and builds the TypeScript distribution.
+4. Launches the Electron desktop app with Wayland and X11 display bindings.
+5. Automatically stops services and releases memory when closed.
+
+### Option B: Manual Service Startup
+
+**Terminal 1 — Local Multimodal Inference:**
 ```bash
 ./scripts/start-llama-server.sh
 ```
 
-By default, this binds to `127.0.0.1:8080` with an 8K context (`-c 8192`), 8 CPU threads (`-t 8`), and Vulkan GPU offload (`-ngl 99`).
-
-### Step 2: Start the Desktop Application
-
-In another terminal, start the Electron application:
-
+**Terminal 2 — Specialist Microservices:**
 ```bash
-pnpm start
+.venv/bin/python apps/desktop/py-services/specialists_server.py 39282
 ```
 
-Or for development with Vite hot reload:
-
+**Terminal 3 — Desktop Application:**
 ```bash
-pnpm dev
+pnpm start
 ```
 
 ---
@@ -205,9 +228,10 @@ Configuration options can be customized via environment variables:
 
 | Variable | Description | Default |
 |---|---|---|
-| `ARLETEX_DATA_DIR` | Directory for database and local storage | `~/.arletex` |
+| `ARLETEX_DATA_DIR` | Directory for database, media, and local storage | `~/.arletex` |
 | `LLAMA_SERVER_URL` | Local inference endpoint | `http://127.0.0.1:8080` |
-| `LLAMA_MODEL_ID` | Active model identifier | `Qwen3.5-9B-Heretic-Q4_K_M` |
+| `LLAMA_MODEL_ID` | Active central model identifier | `Qwen3.5-9B-Heretic-Q4_K_M` |
+| `SPECIALIST_SERVER_URL` | Microservices endpoint (Whisper, Kokoro, EmbeddingGemma) | `http://127.0.0.1:39282` |
 | `ARLETEX_LOG_LEVEL` | Console log verbosity (`debug`, `info`, `warn`, `error`) | `info` |
 | `ARLETEX_PORT` | Internal backend service port | `39281` |
 
@@ -217,8 +241,4 @@ Configuration options can be customized via environment variables:
 
 Arletex is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE).
 
-You are free to view, study, experiment with, and run Arletex for personal, hobby, and noncommercial research purposes. Any commercial use, redistribution for commercial gain, or integration into proprietary services is strictly prohibited without prior explicit permission from the creator.
-
----
-
-**Note: files in drafts folder are the core of building**
+You are free to view, study, experiment with, and run Arletex for personal, hobby, and noncommercial research purposes. Any commercial use, redistribution for commercial gain, or integration into proprietary services is strictly prohibited without prior explicit permission from the author (Proof).
