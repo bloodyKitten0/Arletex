@@ -17,6 +17,7 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     /home/linuxbrew/.linuxbrew/include
     /usr/include
+    /usr/include/X11
 )
 
 # Link directories
@@ -24,7 +25,14 @@ link_directories(
     /home/linuxbrew/.linuxbrew/lib
     /usr/lib64
     /usr/lib
+    /usr/lib/x86_64-linux-gnu
+    /usr/lib/aarch64-linux-gnu
 )
+
+# Locate X11 libraries dynamically across Linux distributions (Ubuntu/Debian, Fedora/RHEL/Bazzite, Arch, Linuxbrew)
+find_library(X11_LIB NAMES X11 libX11.so libX11.so.6 PATHS /home/linuxbrew/.linuxbrew/lib /usr/lib64 /usr/lib /usr/lib/x86_64-linux-gnu /usr/lib/aarch64-linux-gnu REQUIRED)
+find_library(XEXT_LIB NAMES Xext libXext.so libXext.so.6 PATHS /home/linuxbrew/.linuxbrew/lib /usr/lib64 /usr/lib /usr/lib/x86_64-linux-gnu /usr/lib/aarch64-linux-gnu REQUIRED)
+find_library(XTST_LIB NAMES Xtst libXtst.so.6 libXtst.so PATHS /home/linuxbrew/.linuxbrew/lib /usr/lib64 /usr/lib /usr/lib/x86_64-linux-gnu /usr/lib/aarch64-linux-gnu REQUIRED)
 
 # Library sources
 set(ARLETEX_NATIVE_SOURCES
@@ -40,9 +48,9 @@ add_library(arletex_native_static STATIC
 
 target_link_libraries(arletex_native_static
     PUBLIC
-    X11
-    Xext
-    /usr/lib64/libXtst.so.6
+    ${X11_LIB}
+    ${XEXT_LIB}
+    ${XTST_LIB}
 )
 
 # Standalone reflex_engine executable
@@ -53,15 +61,16 @@ add_executable(reflex_engine
 target_link_libraries(reflex_engine
     PRIVATE
     arletex_native_static
-    X11
-    Xext
-    /usr/lib64/libXtst.so.6
+    ${X11_LIB}
+    ${XEXT_LIB}
+    ${XTST_LIB}
 )
 
 # Set rpath so it runs without LD_LIBRARY_PATH issues
 set_target_properties(reflex_engine PROPERTIES
-    INSTALL_RPATH "/home/linuxbrew/.linuxbrew/lib:/usr/lib64"
+    INSTALL_RPATH "/home/linuxbrew/.linuxbrew/lib:/usr/lib64:/usr/lib:/usr/lib/x86_64-linux-gnu"
     BUILD_WITH_INSTALL_RPATH TRUE
+    INSTALL_RPATH_USE_LINK_PATH TRUE
 )
 
 # Output build binary to standard location
