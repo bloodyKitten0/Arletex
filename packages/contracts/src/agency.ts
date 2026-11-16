@@ -311,6 +311,7 @@ export const PermissionPolicySchema = z.object({
   allowedFilesystemPaths: z.array(z.string()).default([]),
   readOnlyFilesystemPaths: z.array(z.string()).default([]),
   forbiddenFilesystemPaths: z.array(z.string()).default([]),
+  allowedApplications: z.array(z.string()).default([]),
   allowedNetworkDomains: z.array(z.string()).default([]), // Empty = open web research
   forbiddenNetworkDomains: z.array(z.string()).default([]),
   requireApprovalForSensitiveFiles: z.boolean().default(true),
@@ -318,6 +319,47 @@ export const PermissionPolicySchema = z.object({
   requireApprovalForDesktopClicks: z.boolean().default(false),
 });
 export type PermissionPolicy = z.infer<typeof PermissionPolicySchema>;
+
+export const EmergencyShutdownReportSchema = z.object({
+  timestamp: z.string(),
+  reason: z.string(),
+  terminatedPids: z.array(z.number()),
+  unmanagedPids: z.array(z.number()).default([]),
+  cancelledTasksCount: z.number(),
+  autonomyDisabled: z.boolean(),
+  revokedCapabilities: z.array(z.string()).default([]),
+});
+export type EmergencyShutdownReport = z.infer<typeof EmergencyShutdownReportSchema>;
+
+export const PlatformAuditResultSchema = z.object({
+  sessionType: z.enum(['wayland', 'x11', 'headless']),
+  waylandDisplay: z.string().nullable(),
+  isKdeWayland: z.boolean(),
+  screenCapture: z.object({
+    tool: z.string().nullable(),
+    isWaylandNative: z.boolean(),
+    supported: z.boolean(),
+  }),
+  inputAutomation: z.object({
+    tool: z.string().nullable(),
+    isWaylandNative: z.boolean(),
+    supported: z.boolean(),
+    limitation: z.string().optional(),
+  }),
+  clipboard: z.object({
+    tool: z.string().nullable(),
+    isWaylandNative: z.boolean(),
+    supported: z.boolean(),
+  }),
+  dialogPrompt: z.object({
+    tool: z.string().nullable(),
+    isKdeNative: z.boolean(),
+    supported: z.boolean(),
+  }),
+  limitations: z.array(z.string()),
+  recommendedWorkarounds: z.array(z.string()),
+});
+export type PlatformAuditResult = z.infer<typeof PlatformAuditResultSchema>;
 
 export const AuthorizationCheckResultSchema = z.object({
   actionId: z.string().uuid(),

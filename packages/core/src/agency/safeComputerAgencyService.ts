@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process';
 import { ILogger, rootLogger } from '../logger.js';
 import { IComputerProvider } from './interfaces.js';
 import { ActionPermissionController } from './actionPermissionController.js';
+import { ProcessSupervisor } from './processSupervisor.js';
 
 export const SUPPORTED_APPLICATIONS = new Set([
   'google-chrome',
@@ -26,15 +27,22 @@ export class SafeComputerAgencyService implements IComputerProvider {
   private logger: ILogger;
   private permissionController: ActionPermissionController;
   private display: string;
+  private processSupervisor?: ProcessSupervisor;
 
   constructor(
     permissionController: ActionPermissionController,
     display = ':0',
     logger: ILogger = rootLogger,
+    processSupervisor?: ProcessSupervisor,
   ) {
     this.permissionController = permissionController;
     this.display = display;
     this.logger = logger.child('SafeComputerAgencyService');
+    this.processSupervisor = processSupervisor;
+  }
+
+  public setProcessSupervisor(supervisor: ProcessSupervisor): void {
+    this.processSupervisor = supervisor;
   }
 
   public getPermissionController(): ActionPermissionController {
@@ -90,6 +98,15 @@ export class SafeComputerAgencyService implements IComputerProvider {
         });
 
         const pid = child.pid || 0;
+        if (this.processSupervisor && pid > 0) {
+          this.processSupervisor.register({
+            pid,
+            appName,
+            args,
+            startedAt: new Date().toISOString(),
+            childProcess: child,
+          });
+        }
         child.unref();
 
         // Verification probe: detect premature startup failure within 400ms

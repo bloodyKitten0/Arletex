@@ -7,16 +7,18 @@ import {
   PermissionPolicy,
 } from '@arletex/contracts';
 import { ILogger, rootLogger } from '../logger.js';
+import { SUPPORTED_APPLICATIONS } from './safeComputerAgencyService.js';
 
 export class ActionPermissionController {
   private policy: PermissionPolicy;
   private logger: ILogger;
+  private auditRepo?: { log: (event: any) => any };
   private authorizationHistory: AuthorizationCheckResult[] = [];
   private isEmergencyShutdownActive = false;
   private emergencyShutdownReason?: string;
   private emergencyShutdownTimestamp?: string;
 
-  // Disallowed dangerous binaries and commands
+  // Disallowed dangerous binaries and commands (blacklist defense-in-depth)
   private static readonly DANGEROUS_COMMANDS = new Set([
     'rm',
     'sudo',
@@ -53,32 +55,135 @@ export class ActionPermissionController {
     'wallet.dat',
   ];
 
-  private static isPrivateOrLoopbackHost(hostname: string): boolean {
+  /**
+   * Helper that checks whether targetPath is strictly equal to rootPath or is a child of rootPath.
+   * Protects against path-prefix collisions (e.g. /tmp/safe-malicious matching /tmp/safe).
+   */
+  public static isPathContainedInRoot(targetPath: string, rootPath: string): boolean {
+    const resolvedTarget = path.resolve(targetPath);
+    const resolvedRoot = path.resolve(rootPath);
+    return resolvedTarget === resolvedRoot || resolvedTarget.startsWith(resolvedRoot + path.sep);
+  }
+
+  /**
+   * Comprehensive validation of network hosts against SSRF, private IPs, loopback, and metadata endpoints.
+   * Handles dotted decimal, octal, hex, and integer IP encodings.
+   */
+  public static isPrivateOrLoopbackHost(hostname: string): boolean {
     const host = hostname.toLowerCase().trim().replace(/^\[|\]$/g, '');
     if (host === 'localhost' || host === '0.0.0.0' || host === '127.0.0.1' || host === '::1') return true;
     if (host.endsWith('.local') || host.endsWith('.internal') || host.endsWith('.localhost')) return true;
+    if (host === 'metadata.google.internal' || host === 'instance-data') return true;
 
-    // IPv4 address check
-    const ipv4Match = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-    if (ipv4Match) {
-      const b0 = parseInt(ipv4Match[1]!, 10);
-      const b1 = parseInt(ipv4Match[2]!, 10);
-      if (b0 === 127) return true; // 127.0.0.0/8
-      if (b0 === 10) return true; // 10.0.0.0/8
-      if (b0 === 172 && b1 >= 16 && b1 <= 31) return true; // 172.16.0.0/12
-      if (b0 === 192 && b1 === 168) return true; // 192.168.0.0/16
-      if (b0 === 169 && b1 === 254) return true; // 169.254.0.0/16 link-local
-      if (b0 === 0) return true;
+    // Decimal integer IP encoding (e.g. 2130706433 = 127.0.0.1)
+    if (/^\d+$/.test(host)) {
+      const num = parseInt(host, 10);
+      if (num >= 0 && num <= 0xffffffff) {
+        const b0 = (num >>> 24) & 255;
+        const b1 = (num >>> 16) & 255;
+        const b2 = (num >>> 8) & 255;
+        const b3 = num & 255;
+        return ActionPermissionController.isPrivateIpv4(b0, b1, b2, b3);
+      }
+    }
+
+    // Hex integer IP encoding (e.g. 0x7f000001)
+    if (/^0x[0-9a-f]+$/i.test(host)) {
+      const num = parseInt(host, 16);
+      if (num >= 0 && num <= 0xffffffff) {
+        const b0 = (num >>> 24) & 255;
+        const b1 = (num >>> 16) & 255;
+        const b2 = (num >>> 8) & 255;
+        const b3 = num & 255;
+        return ActionPermissionController.isPrivateIpv4(b0, b1, b2, b3);
+      }
+    }
+
+    // Dotted IPv4 parts with possible decimal, octal, or hex representations
+    const parts = host.split('.');
+    if (parts.length === 4) {
+      const parsedBytes: number[] = [];
+      for (const p of parts) {
+        let val: number;
+        if (/^0x[0-9a-f]+$/i.test(p)) {
+          val = parseInt(p, 16);
+        } else if (/^0[0-7]+$/.test(p)) {
+          val = parseInt(p, 8);
+        } else if (/^\d+$/.test(p)) {
+          val = parseInt(p, 10);
+        } else {
+          val = -1;
+        }
+        if (val < 0 || val > 255 || isNaN(val)) return false;
+        parsedBytes.push(val);
+      }
+      return ActionPermissionController.isPrivateIpv4(
+        parsedBytes[0]!,
+        parsedBytes[1]!,
+        parsedBytes[2]!,
+        parsedBytes[3]!,
+      );
     }
 
     // IPv6 link-local or unique-local
-    if (host.startsWith('fe80:') || host.startsWith('fc00:') || host.startsWith('fd00:')) return true;
+    if (
+      host.startsWith('fe80:') ||
+      host.startsWith('fc00:') ||
+      host.startsWith('fd00:') ||
+      host.startsWith('::ffff:127.') ||
+      host.startsWith('::ffff:7f')
+    ) {
+      return true;
+    }
 
     return false;
   }
 
-  constructor(policy?: Partial<PermissionPolicy>, logger: ILogger = rootLogger) {
-    this.logger = logger.child('ActionPermissionController');
+  private static isPrivateIpv4(b0: number, b1: number, _b2: number, _b3: number): boolean {
+    if (b0 === 127) return true; // 127.0.0.0/8 Loopback
+    if (b0 === 10) return true; // 10.0.0.0/8 Private
+    if (b0 === 172 && b1 >= 16 && b1 <= 31) return true; // 172.16.0.0/12 Private
+    if (b0 === 192 && b1 === 168) return true; // 192.168.0.0/16 Private
+    if (b0 === 169 && b1 === 254) return true; // 169.254.0.0/16 Link-local & Cloud Metadata
+    if (b0 === 0) return true; // 0.0.0.0/8 Current network
+    if (b0 >= 224 && b0 <= 239) return true; // Multicast
+    return false;
+  }
+
+  /**
+   * Static network destination validator for URL queries and redirect verification.
+   */
+  public static validateNetworkUrl(urlStr: string): { valid: boolean; reason?: string } {
+    try {
+      const parsed = new URL(urlStr);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        return { valid: false, reason: `Unsupported protocol '${parsed.protocol}'. Only http/https permitted.` };
+      }
+      if (ActionPermissionController.isPrivateOrLoopbackHost(parsed.hostname)) {
+        return { valid: false, reason: `Target host '${parsed.hostname}' is prohibited (internal/private/loopback network boundary).` };
+      }
+      return { valid: true };
+    } catch {
+      return { valid: false, reason: 'Malformed URL provided.' };
+    }
+  }
+
+  constructor(
+    policy?: Partial<PermissionPolicy>,
+    auditRepoOrLogger?: any,
+    maybeLogger: ILogger = rootLogger,
+  ) {
+    if (auditRepoOrLogger && typeof auditRepoOrLogger.log === 'function') {
+      this.auditRepo = auditRepoOrLogger;
+      this.logger = maybeLogger.child('ActionPermissionController');
+    } else if (auditRepoOrLogger && typeof auditRepoOrLogger.child === 'function') {
+      this.auditRepo = undefined;
+      this.logger = auditRepoOrLogger.child('ActionPermissionController');
+    } else {
+      this.auditRepo = undefined;
+      this.logger = maybeLogger.child('ActionPermissionController');
+    }
+
     const homeDir = os.homedir();
 
     this.policy = {
@@ -98,7 +203,10 @@ export class ActionPermissionController {
         path.join(homeDir, '.gnupg'),
         '/etc',
         '/root',
+        '/sys',
+        '/proc',
       ],
+      allowedApplications: policy?.allowedApplications ?? [],
       allowedNetworkDomains: policy?.allowedNetworkDomains ?? [],
       forbiddenNetworkDomains: policy?.forbiddenNetworkDomains ?? [
         'localhost',
@@ -109,6 +217,10 @@ export class ActionPermissionController {
       requireApprovalForAppLaunch: policy?.requireApprovalForAppLaunch ?? false,
       requireApprovalForDesktopClicks: policy?.requireApprovalForDesktopClicks ?? false,
     };
+  }
+
+  public setAuditRepository(repo: { log: (event: any) => any }): void {
+    this.auditRepo = repo;
   }
 
   public getPolicy(): PermissionPolicy {
@@ -160,33 +272,32 @@ export class ActionPermissionController {
         riskLevel: 'critical',
         checkedAt: timestamp,
       };
-      this.recordAuthorization(res);
-      return res;
+      return this.recordAuthorization(res);
     }
 
     if (!this.policy.autonomousExecutionEnabled) {
-      return {
+      return this.recordAuthorization({
         actionId: action.id,
         decision: 'denied',
         reason: 'Autonomous computer execution is globally disabled in policy.',
         requiredPrivilege: 'system:autonomy',
         riskLevel: action.riskLevel || 'medium',
         checkedAt: timestamp,
-      };
+      });
     }
 
     if (action.requiresExplicitApproval) {
-      return {
+      return this.recordAuthorization({
         actionId: action.id,
         decision: 'prompt_user',
         reason: `Action '${action.type}' has explicit approval requirement.`,
         requiredPrivilege: `action:${action.type}`,
         riskLevel: action.riskLevel || 'medium',
         checkedAt: timestamp,
-      };
+      });
     }
 
-    // 1. Filesystem action validation
+    // 1. Filesystem action validation (canonical path, symlink containment, path-prefix collision protection)
     if (
       actionType === 'system_read_file' ||
       actionType === 'read_file' ||
@@ -197,144 +308,211 @@ export class ActionPermissionController {
     ) {
       const targetPath = String(payload.filePath || payload.dirPath || payload.path || '');
       if (!targetPath) {
-        return {
+        return this.recordAuthorization({
           actionId: action.id,
           decision: 'denied',
           reason: 'Missing target path for filesystem operation.',
           requiredPrivilege: 'filesystem',
           riskLevel: 'high',
           checkedAt: timestamp,
-        };
+        });
       }
 
-      // Check path traversal
+      // Check path traversal parent references
       if (targetPath.includes('..') || targetPath.startsWith('../') || targetPath.includes('/../')) {
         this.logger.warn(`Rejected path traversal attempt: ${targetPath}`);
-        return {
+        return this.recordAuthorization({
           actionId: action.id,
           decision: 'denied',
           reason: 'Path traversal using parent references (..) is disallowed across security boundary.',
           requiredPrivilege: 'filesystem',
           riskLevel: 'critical',
           checkedAt: timestamp,
-        };
+        });
       }
 
-      let resolved = path.resolve(targetPath);
-      try {
-        if (fs.existsSync(resolved)) {
-          resolved = fs.realpathSync(resolved);
-        }
-      } catch {}
+      const resolved = path.resolve(targetPath);
 
-      // Check forbidden path substrings (e.g. ssh keys, shadow, credentials)
+      // Check forbidden path substrings (.ssh, id_rsa, /etc/shadow, wallet.dat)
       for (const forbidden of ActionPermissionController.FORBIDDEN_PATH_SUBSTRINGS) {
         if (resolved.includes(forbidden) || targetPath.includes(forbidden)) {
           this.logger.warn(`Rejected forbidden path access: ${resolved}`);
-          const res: AuthorizationCheckResult = {
+          return this.recordAuthorization({
             actionId: action.id,
             decision: 'denied',
             reason: `Target path touches forbidden security boundary '${forbidden}'.`,
             requiredPrivilege: 'filesystem:root',
             riskLevel: 'critical',
             checkedAt: timestamp,
-          };
-          this.recordAuthorization(res);
-          return res;
+          });
         }
       }
 
-      // Check write operations against read-only or outside paths
+      // Check explicit forbidden roots
+      for (const forbiddenRoot of this.policy.forbiddenFilesystemPaths) {
+        if (ActionPermissionController.isPathContainedInRoot(resolved, forbiddenRoot)) {
+          this.logger.warn(`Rejected access to forbidden filesystem root: ${resolved}`);
+          return this.recordAuthorization({
+            actionId: action.id,
+            decision: 'denied',
+            reason: `Target path '${resolved}' is under forbidden filesystem root '${forbiddenRoot}'.`,
+            requiredPrivilege: 'filesystem:root',
+            riskLevel: 'critical',
+            checkedAt: timestamp,
+          });
+        }
+      }
+
+      // Symlink containment check
+      const containment = this.checkSymlinkContainment(
+        resolved,
+        actionType.includes('write')
+          ? this.policy.allowedFilesystemPaths
+          : [...this.policy.allowedFilesystemPaths, ...this.policy.readOnlyFilesystemPaths],
+      );
+      if (!containment.safe) {
+        this.logger.warn(`Rejected unsafe symlink or escape: ${resolved} - ${containment.reason}`);
+        return this.recordAuthorization({
+          actionId: action.id,
+          decision: 'denied',
+          reason: containment.reason || 'Symlink path escapes authorized directory roots.',
+          requiredPrivilege: 'filesystem:symlink',
+          riskLevel: 'critical',
+          checkedAt: timestamp,
+        });
+      }
+
+      // Check write operations against pre-approved write roots (with path-prefix collision protection)
       if (actionType === 'system_write_file' || actionType === 'write_file') {
         const isAllowedWrite = this.policy.allowedFilesystemPaths.some((p) =>
-          resolved.startsWith(path.resolve(p)),
+          ActionPermissionController.isPathContainedInRoot(resolved, p),
         );
         if (!isAllowedWrite) {
-          return {
+          return this.recordAuthorization({
             actionId: action.id,
             decision: 'denied',
             reason: `File write target '${resolved}' is outside pre-approved write directories and protected paths.`,
             requiredPrivilege: 'filesystem:write',
             riskLevel: 'medium',
             checkedAt: timestamp,
-          };
+          });
         }
       }
 
-      return {
+      // Check read operations against approved read roots
+      if (
+        actionType === 'system_read_file' ||
+        actionType === 'read_file' ||
+        actionType === 'system_list_directory' ||
+        actionType === 'list_directory'
+      ) {
+        const allowedReadRoots = [...this.policy.allowedFilesystemPaths, ...this.policy.readOnlyFilesystemPaths];
+        const isAllowedRead = allowedReadRoots.some((p) =>
+          ActionPermissionController.isPathContainedInRoot(resolved, p),
+        );
+        if (!isAllowedRead) {
+          return this.recordAuthorization({
+            actionId: action.id,
+            decision: 'denied',
+            reason: `File read target '${resolved}' is outside pre-approved read directories.`,
+            requiredPrivilege: 'filesystem:read',
+            riskLevel: 'medium',
+            checkedAt: timestamp,
+          });
+        }
+      }
+
+      return this.recordAuthorization({
         actionId: action.id,
         decision: 'granted',
         reason: 'Path within authorized boundaries.',
         requiredPrivilege: 'filesystem',
         riskLevel: action.riskLevel || 'low',
         checkedAt: timestamp,
-      };
+      });
     }
 
-    // 2. Application Launch validation
+    // 2. Application Launch & Command validation (Positive allowlist + shell injection prevention)
     if (actionType === 'app_launch' || actionType === 'execute_command') {
       const rawCommand = String(payload.appName || payload.command || payload.app || '').trim();
       const firstWord = rawCommand.split(/\s+/)[0]?.toLowerCase() || '';
 
       if (/[;&|><$`\\]/.test(rawCommand)) {
-        return {
+        return this.recordAuthorization({
           actionId: action.id,
           decision: 'denied',
           reason: 'Command string contains illegal shell metacharacters (disallowed shell injection).',
           requiredPrivilege: 'process:exec',
           riskLevel: 'critical',
           checkedAt: timestamp,
-        };
-      }
-
-      if (!rawCommand || ActionPermissionController.DANGEROUS_COMMANDS.has(firstWord)) {
-        return {
-          actionId: action.id,
-          decision: 'denied',
-          reason: `Attempted to launch prohibited executable '${rawCommand}' (not in the permitted allowlist).`,
-          requiredPrivilege: 'process:exec',
-          riskLevel: 'critical',
-          checkedAt: timestamp,
-        };
+        });
       }
 
       // Check if command injection is attempted via args
       const args = Array.isArray(payload.args) ? payload.args : [];
       for (const arg of args) {
         if (typeof arg !== 'string' || /[;&|><$`\\]/.test(arg)) {
-          return {
+          return this.recordAuthorization({
             actionId: action.id,
             decision: 'denied',
-            reason: 'Process argument contains illegal shell metacharacters.',
+            reason: 'Process argument contains illegal shell metacharacters (disallowed shell injection).',
             requiredPrivilege: 'process:exec',
-            riskLevel: 'high',
+            riskLevel: 'critical',
             checkedAt: timestamp,
-          };
+          });
         }
       }
 
+      // Blacklist defense-in-depth check
+      if (!rawCommand || ActionPermissionController.DANGEROUS_COMMANDS.has(firstWord)) {
+        return this.recordAuthorization({
+          actionId: action.id,
+          decision: 'denied',
+          reason: `Attempted to launch prohibited executable '${rawCommand}' (not in the permitted allowlist).`,
+          requiredPrivilege: 'process:exec',
+          riskLevel: 'critical',
+          checkedAt: timestamp,
+        });
+      }
+
+      // Positive allowlist check
+      const isAllowedApp =
+        SUPPORTED_APPLICATIONS.has(firstWord) ||
+        (this.policy.allowedApplications && this.policy.allowedApplications.includes(firstWord));
+
+      if (!isAllowedApp) {
+        return this.recordAuthorization({
+          actionId: action.id,
+          decision: 'denied',
+          reason: `Executable '${firstWord}' is not in the positive authorized application allowlist [${Array.from(SUPPORTED_APPLICATIONS).join(', ')}].`,
+          requiredPrivilege: 'process:exec',
+          riskLevel: 'critical',
+          checkedAt: timestamp,
+        });
+      }
+
       if (this.policy.requireApprovalForAppLaunch) {
-        return {
+        return this.recordAuthorization({
           actionId: action.id,
           decision: 'prompt_user',
           reason: `Policy requires user confirmation before launching '${rawCommand}'.`,
           requiredPrivilege: 'process:launch',
           riskLevel: 'medium',
           checkedAt: timestamp,
-        };
+        });
       }
 
-      return {
+      return this.recordAuthorization({
         actionId: action.id,
         decision: 'granted',
         reason: `Application '${rawCommand}' approved for argument-based execution.`,
         requiredPrivilege: 'process:launch',
         riskLevel: 'low',
         checkedAt: timestamp,
-      };
+      });
     }
 
-    // 3. Web Navigation & Scraping validation
+    // 3. Web Navigation & Scraping validation (SSRF and network destination protection)
     if (
       action.type === 'web_navigate' ||
       action.type === 'web_search' ||
@@ -343,24 +521,21 @@ export class ActionPermissionController {
     ) {
       const urlStr = String(payload.url || payload.targetUrl || action.payload?.url || action.payload?.targetUrl || '');
       if (urlStr) {
+        const val = ActionPermissionController.validateNetworkUrl(urlStr);
+        if (!val.valid) {
+          return this.recordAuthorization({
+            actionId: action.id,
+            decision: 'denied',
+            reason: val.reason || 'Network destination rejected by security boundary.',
+            requiredPrivilege: 'network:internal',
+            riskLevel: 'critical',
+            checkedAt: timestamp,
+          });
+        }
+
         try {
           const parsed = new URL(urlStr);
-          if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-            return {
-              actionId: action.id,
-              decision: 'denied',
-              reason: `Unsupported URL protocol '${parsed.protocol}'. Only http/https permitted.`,
-              requiredPrivilege: 'network:web',
-              riskLevel: 'high',
-              checkedAt: timestamp,
-            };
-          }
-
-          // Check against localhost, private, and internal network probing
-          if (
-            this.policy.forbiddenNetworkDomains.includes(parsed.hostname) ||
-            ActionPermissionController.isPrivateOrLoopbackHost(parsed.hostname)
-          ) {
+          if (this.policy.forbiddenNetworkDomains.includes(parsed.hostname)) {
             return this.recordAuthorization({
               actionId: action.id,
               decision: 'denied',
@@ -438,11 +613,81 @@ export class ActionPermissionController {
     });
   }
 
+  private checkSymlinkContainment(
+    resolvedPath: string,
+    allowedRoots: string[],
+  ): { safe: boolean; reason?: string } {
+    try {
+      if (fs.existsSync(resolvedPath)) {
+        const real = fs.realpathSync(resolvedPath);
+        for (const forbidden of ActionPermissionController.FORBIDDEN_PATH_SUBSTRINGS) {
+          if (real.includes(forbidden)) {
+            return { safe: false, reason: `Target symlink resolves to forbidden security boundary '${forbidden}'.` };
+          }
+        }
+        for (const forbiddenRoot of this.policy.forbiddenFilesystemPaths) {
+          if (ActionPermissionController.isPathContainedInRoot(real, forbiddenRoot)) {
+            return { safe: false, reason: `Target symlink resolves under forbidden root '${forbiddenRoot}'.` };
+          }
+        }
+        const inAllowed = allowedRoots.some((root) => ActionPermissionController.isPathContainedInRoot(real, root));
+        if (!inAllowed) {
+          return { safe: false, reason: `Symlink target '${real}' resolves outside authorized directory boundaries.` };
+        }
+      } else {
+        let ancestor = path.dirname(resolvedPath);
+        while (!fs.existsSync(ancestor) && ancestor !== path.dirname(ancestor)) {
+          ancestor = path.dirname(ancestor);
+        }
+        if (fs.existsSync(ancestor)) {
+          const realAncestor = fs.realpathSync(ancestor);
+          for (const forbidden of ActionPermissionController.FORBIDDEN_PATH_SUBSTRINGS) {
+            if (realAncestor.includes(forbidden)) {
+              return { safe: false, reason: `Parent directory resolves to forbidden security boundary '${forbidden}'.` };
+            }
+          }
+          for (const forbiddenRoot of this.policy.forbiddenFilesystemPaths) {
+            if (ActionPermissionController.isPathContainedInRoot(realAncestor, forbiddenRoot)) {
+              return { safe: false, reason: `Parent directory resolves under forbidden root '${forbiddenRoot}'.` };
+            }
+          }
+          const inAllowed = allowedRoots.some((root) => ActionPermissionController.isPathContainedInRoot(realAncestor, root));
+          if (!inAllowed) {
+            return { safe: false, reason: `Parent directory symlink '${realAncestor}' resolves outside authorized directory boundaries.` };
+          }
+        }
+      }
+    } catch (err: any) {
+      return { safe: false, reason: `Filesystem canonicalization error: ${err.message}` };
+    }
+    return { safe: true };
+  }
+
   private recordAuthorization(result: AuthorizationCheckResult): AuthorizationCheckResult {
     this.authorizationHistory.push(result);
     if (this.authorizationHistory.length > 100) {
       this.authorizationHistory.shift();
     }
+
+    if (this.auditRepo) {
+      try {
+        this.auditRepo.log({
+          actor: 'ActionPermissionController',
+          action: result.requiredPrivilege || 'agency_action',
+          details: JSON.stringify({
+            actionId: result.actionId,
+            decision: result.decision,
+            reason: result.reason,
+            riskLevel: result.riskLevel,
+          }),
+          status: result.decision === 'granted' ? 'success' : 'denied',
+          timestamp: result.checkedAt,
+        });
+      } catch (err: any) {
+        this.logger.error(`Failed to record audit event in database: ${err.message}`);
+      }
+    }
+
     return result;
   }
 
@@ -454,6 +699,20 @@ export class ActionPermissionController {
     this.logger.warn(
       `[SECURITY] Emergency autonomy shutdown triggered. All computer operations blocked. Reason: ${this.emergencyShutdownReason}`,
     );
+
+    if (this.auditRepo) {
+      try {
+        this.auditRepo.log({
+          actor: 'ActionPermissionController',
+          action: 'emergency_shutdown',
+          details: JSON.stringify({ reason: this.emergencyShutdownReason, timestamp: this.emergencyShutdownTimestamp }),
+          status: 'denied',
+          timestamp: this.emergencyShutdownTimestamp,
+        });
+      } catch (err: any) {
+        this.logger.error(`Failed to record emergency shutdown in database: ${err.message}`);
+      }
+    }
   }
 
   public reactivateAutonomy(token: string): { success: boolean; message: string } {
@@ -468,6 +727,21 @@ export class ActionPermissionController {
     this.emergencyShutdownReason = undefined;
     this.emergencyShutdownTimestamp = undefined;
     this.logger.warn('[SECURITY] Autonomy reactivated via explicit confirmation token.');
+
+    if (this.auditRepo) {
+      try {
+        this.auditRepo.log({
+          actor: 'ActionPermissionController',
+          action: 'reactivate_autonomy',
+          details: JSON.stringify({ status: 'reactivated', tokenProvided: token }),
+          status: 'success',
+          timestamp: new Date().toISOString(),
+        });
+      } catch (err: any) {
+        this.logger.error(`Failed to record reactivation in database: ${err.message}`);
+      }
+    }
+
     return {
       success: true,
       message: 'Autonomous agency safely reactivated.',
@@ -497,5 +771,4 @@ export class ActionPermissionController {
   public getAuthorizationHistory(): AuthorizationCheckResult[] {
     return [...this.authorizationHistory];
   }
-  }
-
+}

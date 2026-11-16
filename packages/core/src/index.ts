@@ -31,6 +31,9 @@ export * from './agency/webAgencyService.js';
 export * from './agency/safeComputerAgencyService.js';
 export * from './agency/memoryExperienceSync.js';
 export * from './agency/closedLoopAgencyService.js';
+export * from './agency/processSupervisor.js';
+export * from './agency/emergencyShutdownService.js';
+export * from './agency/waylandEnvironmentService.js';
 
 // Central Cognitive Control Subsystem
 export * from './cognitive/cognitiveControlBus.js';

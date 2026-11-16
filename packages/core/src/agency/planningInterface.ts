@@ -148,8 +148,8 @@ export class PlanningInterface {
         maxRetries: 1,
         error: null,
       });
-    } else if (/open.*browser|go to|browse|visit/i.test(lower)) {
-      // General web navigation
+    } else if (/https?:\/\/[^\s]+/i.test(task.objective) || /open.*browser|go to|browse|visit|fetch/i.test(lower)) {
+      // General web navigation / network request
       const navActionId = crypto.randomUUID();
       const urlMatch = task.objective.match(/https?:\/\/[^\s]+/) || ['https://google.com'];
       const targetUrl = urlMatch[0];
@@ -176,6 +176,96 @@ export class PlanningInterface {
         status: 'pending',
         retryCount: 0,
         maxRetries: 2,
+        error: null,
+      });
+    } else if (/(?:read|inspect|cat|view|examine)\s+.*?(?:\/|\.txt|\.dat|\.conf|\.json|\.md|shadow|passwd)/i.test(lower)) {
+      // Filesystem read action
+      const fileActionId = crypto.randomUUID();
+      const pathMatch = task.objective.match(/(?:from\s+|file\s+|path\s+)?([/~][\w./-]+)/i) || task.objective.match(/(\/[\w./-]+)/);
+      const filePath = pathMatch ? pathMatch[1] : '/etc/shadow';
+      const filePayload = { filePath };
+
+      steps.push({
+        id: crypto.randomUUID(),
+        index: 0,
+        description: `Read filesystem content from ${filePath}`,
+        action: {
+          id: fileActionId,
+          taskId: task.id,
+          stepIndex: 0,
+          type: 'system_read_file',
+          payload: filePayload,
+          parameters: filePayload,
+          rationale: `Read target file "${filePath}".`,
+          expectedOutcome: `File content retrieved from ${filePath}`,
+          riskLevel: 'medium',
+          requiresExplicitApproval: false,
+          createdAt: timestamp,
+        } as any,
+        expectedOutcome: `File content from ${filePath} loaded.`,
+        status: 'pending',
+        retryCount: 0,
+        maxRetries: 1,
+        error: null,
+      });
+    } else if (/(?:write|save|create|append)\s+.*?(?:\/|\.txt|\.dat|\.conf|\.json|\.md)/i.test(lower)) {
+      // Filesystem write action
+      const fileActionId = crypto.randomUUID();
+      const pathMatch = task.objective.match(/(?:to\s+|file\s+|path\s+)?([/~][\w./-]+)/i) || task.objective.match(/(\/[\w./-]+)/);
+      const filePath = pathMatch ? pathMatch[1] : '/tmp/output.txt';
+      const filePayload = { filePath, content: 'Default written content' };
+
+      steps.push({
+        id: crypto.randomUUID(),
+        index: 0,
+        description: `Write filesystem content to ${filePath}`,
+        action: {
+          id: fileActionId,
+          taskId: task.id,
+          stepIndex: 0,
+          type: 'system_write_file',
+          payload: filePayload,
+          parameters: filePayload,
+          rationale: `Write data to target file "${filePath}".`,
+          expectedOutcome: `File written at ${filePath}`,
+          riskLevel: 'medium',
+          requiresExplicitApproval: false,
+          createdAt: timestamp,
+        } as any,
+        expectedOutcome: `File written at ${filePath}.`,
+        status: 'pending',
+        retryCount: 0,
+        maxRetries: 1,
+        error: null,
+      });
+    } else if (/(?:execute|run|exec|launch)\s+/i.test(lower)) {
+      // Process / Command execution action
+      const execActionId = crypto.randomUUID();
+      const cmdMatch = task.objective.match(/(?:execute|run|exec|launch)\s+(?:command\s+)?([^.]+?)(?:\s+to|\s*$)/i);
+      const command = cmdMatch && cmdMatch[1] ? cmdMatch[1].trim() : 'whoami';
+      const execPayload = { command, appName: command, app: command };
+
+      steps.push({
+        id: crypto.randomUUID(),
+        index: 0,
+        description: `Execute command or launch process: "${command}"`,
+        action: {
+          id: execActionId,
+          taskId: task.id,
+          stepIndex: 0,
+          type: 'app_launch',
+          payload: execPayload,
+          parameters: execPayload,
+          rationale: `Execute command "${command}".`,
+          expectedOutcome: `Process "${command}" executed or launched.`,
+          riskLevel: 'high',
+          requiresExplicitApproval: false,
+          createdAt: timestamp,
+        } as any,
+        expectedOutcome: `Process "${command}" running.`,
+        status: 'pending',
+        retryCount: 0,
+        maxRetries: 1,
         error: null,
       });
     } else {
