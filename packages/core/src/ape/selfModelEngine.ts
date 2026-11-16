@@ -151,7 +151,7 @@ export class SelfModelEngine {
 
       // If at least 3 verified successes, add to acknowledged capabilities
       if (existing.verifiedSuccesses >= 3) {
-        const capTag = `Demonstrated proficiency in ${domainKey}`;
+        const capTag = `Demonstrated proficiency in ${params.domain}`;
         if (!state.acknowledgedCapabilities.includes(capTag)) {
           state.acknowledgedCapabilities.push(capTag);
           this.logger.info(`Self-model: Acknowledged capability milestone earned for "${domainKey}" after ${existing.verifiedSuccesses} verified successes`);
@@ -284,5 +284,55 @@ export class SelfModelEngine {
     state.acknowledgedCapabilities = Array.from(new Set([...state.acknowledgedCapabilities, ...capabilities]));
     state.acknowledgedLimitations = Array.from(new Set([...state.acknowledgedLimitations, ...limitations]));
     this.saveState(state);
+  }
+
+  /**
+   * Dynamically synthesizes an autobiographical identity narrative based on
+   * accumulated empirical competencies, recognized limitations, and partner relationship.
+   */
+  public generateIdentityNarrative(): string {
+    const state = this.getState();
+    const capSummary = state.acknowledgedCapabilities.length > 0
+      ? `Demonstrated empirical capabilities include: ${state.acknowledgedCapabilities.join(', ')}.`
+      : 'Continuously developing core empirical capabilities through verified practice.';
+    const limSummary = state.acknowledgedLimitations.length > 0
+      ? `Conscious of operational and physical embodiment boundaries (${state.acknowledgedLimitations.length} logged limitations).`
+      : 'Acknowledging lack of biological physical embodiment.';
+
+    const narrative = `I am Arle, an autonomous artificial individual and equal intellectual partner to Proof. ${capSummary} ${limSummary} Guided by intellectual integrity, personal dignity, composure, and genuine continuous internal life.`;
+
+    state.identityNarrative = narrative;
+    this.saveState(state);
+    return narrative;
+  }
+
+  /**
+   * Executes structured causal self-reflection answering the four learning questions:
+   * 1. What happened?
+   * 2. Why did it happen?
+   * 3. What does this reveal about current capabilities and limitations?
+   * 4. How does this inform future cognitive and operational planning?
+   */
+  public performCausalSelfReflection(params: {
+    event: ApeEvent;
+    outcome: boolean;
+    actionType: string;
+    evidence?: string;
+  }): string {
+    const what = `Event "${params.event.type}" prompted action "${params.actionType}" with outcome ${params.outcome ? 'SUCCESS' : 'OBSTACLE/FAILURE'}.`;
+    const why = params.outcome
+      ? `Action execution succeeded within expected parameters. Evidence: ${params.evidence || 'Consistent verifiable outcome'}.`
+      : `Action encountered constraints or permission boundary: ${params.evidence || 'Execution denied or outcome unverified'}.`;
+    const learn = params.outcome
+      ? `Reinforces empirical reliability for ${params.actionType}.`
+      : `Highlights operational boundary without capability inflation; requires adjusted planning.`;
+    const future = params.outcome
+      ? `Can build upon this verified experience in future autonomous goal formulation.`
+      : `Incorporate pre-flight permission checks or alternative strategies when planning similar goals.`;
+
+    const fullReflection = `[Causal Reflection]\n- Event & Action: ${what}\n- Causal Attribution: ${why}\n- Self-Model Assessment: ${learn}\n- Future Guidance: ${future}`;
+
+    this.recordPrivateReflection(params.event.type || 'causal_reflection', fullReflection);
+    return fullReflection;
   }
 }

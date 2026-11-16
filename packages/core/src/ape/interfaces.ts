@@ -16,6 +16,7 @@ import {
   ContextualAffectiveMeasurements,
   CorePadDimensions,
   EmotionTaxonomyItem,
+  IntellectualQuestion,
   MoodTaxonomyItem,
 } from '@arletex/contracts';
 
@@ -73,6 +74,13 @@ export interface IApeRepository {
   listPersonalProjects(filter?: { status?: string; category?: string }): ApePersonalProject[];
   updatePersonalProject(project: Partial<ApePersonalProject> & { id: string }): ApePersonalProject;
   deletePersonalProject(id: string): boolean;
+
+  // Intellectual Inquiry (Pillar 5)
+  createIntellectualQuestion(q: IntellectualQuestion): IntellectualQuestion;
+  getIntellectualQuestionById(id: string): IntellectualQuestion | null;
+  listIntellectualQuestions(filter?: { status?: string; domain?: string }): IntellectualQuestion[];
+  updateIntellectualQuestion(q: Partial<IntellectualQuestion> & { id: string }): IntellectualQuestion;
+  deleteIntellectualQuestion(id: string): boolean;
 }
 
 export interface IApeInferenceGateway {

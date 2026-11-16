@@ -427,6 +427,10 @@ export class CognitiveControlBus {
       return payload.interpretation;
     }
     if (payload.text && typeof payload.text === 'string') {
+      const claimEval = this.apeService.personalityEngine.evaluateClaim(payload.text);
+      if (claimEval.conflicts && claimEval.contradictoryBelief) {
+        return `${payload.text} (Intellectual independence: claim conflicts with verified belief on ${claimEval.contradictoryBelief.topic})`;
+      }
       return payload.text;
     }
     return `Perceived cognitive event [${event.type}] from [${event.source}]`;
@@ -493,12 +497,18 @@ export class CognitiveControlBus {
     if (event.type === 'user_message' || event.type === 'telegram_message') {
       rejectedAlternatives.push({ actionType: 'rest', reason: 'User communicated directly; active social engagement required' });
       rejectedAlternatives.push({ actionType: 'execute_agency_task', reason: 'No unverified background task requested in simple dialogue' });
+      const userText = (event.payload?.text as string) || '';
+      const claimEval = this.apeService.personalityEngine.evaluateClaim(userText);
+      const chosenReason = claimEval.conflicts && claimEval.contradictoryBelief
+        ? `Respectfully communicate intellectual divergence backed by verified evidence for ${claimEval.contradictoryBelief.topic}`
+        : 'Respond directly and authentically to user communication';
+
       return CognitiveDecisionSchema.parse({
         id,
         eventId: event.id,
         actionType: 'speak',
         target: 'user',
-        chosenAlternativeReason: 'Respond directly and authentically to user communication',
+        chosenAlternativeReason: chosenReason,
         rejectedAlternatives,
         confidence: 0.95,
         riskAssessment: 'low',

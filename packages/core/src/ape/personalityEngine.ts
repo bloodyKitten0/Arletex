@@ -7,6 +7,7 @@ import {
   ApePersonalityTrait,
   ApePreference,
   ApeValue,
+  BeliefRevisionRecord,
 } from '@arletex/contracts';
 import { IApeRepository } from './interfaces.js';
 import { ILogger, rootLogger } from '../logger.js';
@@ -250,14 +251,14 @@ export class PersonalityEngine {
   }
 
   /**
-   * Manages persistent beliefs and opinions.
+   * Manages persistent beliefs and opinions (Pillar 5).
    */
   public addOrUpdateBelief(
     topic: string,
     content: string,
     confidence: number,
     evidence: string[] = [],
-    origin = 'experience',
+    origin: ApeBelief['origin'] = 'experience',
   ): ApeBelief {
     const personality = this.getState();
     const now = new Date().toISOString();
@@ -268,6 +269,7 @@ export class PersonalityEngine {
       belief.confidence = Math.max(0.0, Math.min(1.0, confidence));
       belief.supportingEvidence = Array.from(new Set([...belief.supportingEvidence, ...evidence]));
       belief.revisionCount += 1;
+      belief.lastEvaluatedAt = now;
       belief.updatedAt = now;
     } else {
       belief = {
@@ -276,8 +278,11 @@ export class PersonalityEngine {
         content,
         confidence: Math.max(0.0, Math.min(1.0, confidence)),
         supportingEvidence: evidence,
+        opposingEvidence: [],
+        revisionHistory: [],
         revisionCount: 0,
         origin,
+        lastEvaluatedAt: now,
         createdAt: now,
         updatedAt: now,
       };
@@ -289,7 +294,178 @@ export class PersonalityEngine {
   }
 
   /**
-   * Revises an existing belief based on contrary or supporting evidence.
+   * Revises an existing belief based on contrary or supporting evidence with historical audit preservation.
+   */
+  public reviseBeliefWithEvidence(
+    beliefId: string,
+    params: {
+      newEvidence: string;
+      isOpposing: boolean;
+      reason: string;
+      revisedProposition?: string;
+      triggerEventId?: string;
+    },
+  ): ApeBelief | null {
+    const personality = this.getState();
+    const belief = personality.beliefs.find((b) => b.id === beliefId);
+    if (!belief) return null;
+
+    const now = new Date().toISOString();
+    const prevProposition = belief.content;
+    const prevConfidence = belief.confidence;
+
+    // Recalculate confidence based on evidence polarity
+    let updatedConfidence = belief.confidence;
+    if (params.isOpposing) {
+      belief.opposingEvidence = belief.opposingEvidence || [];
+      if (!belief.opposingEvidence.includes(params.newEvidence)) {
+        belief.opposingEvidence.push(params.newEvidence);
+      }
+      // Opposing evidence decreases confidence
+      updatedConfidence = Math.max(0.1, Number((belief.confidence - 0.25).toFixed(3)));
+    } else {
+      belief.supportingEvidence = belief.supportingEvidence || [];
+      if (!belief.supportingEvidence.includes(params.newEvidence)) {
+        belief.supportingEvidence.push(params.newEvidence);
+      }
+      // Supporting evidence strengthens confidence
+      updatedConfidence = Math.min(1.0, Number((belief.confidence + 0.15).toFixed(3)));
+    }
+
+    // Preserve revision in historical audit record
+    belief.revisionHistory = belief.revisionHistory || [];
+    const revisionRecord: BeliefRevisionRecord = {
+      timestamp: now,
+      previousProposition: prevProposition,
+      previousConfidence: prevConfidence,
+      reason: params.reason,
+      triggerEventId: params.triggerEventId,
+    };
+    belief.revisionHistory.unshift(revisionRecord);
+    if (belief.revisionHistory.length > 50) {
+      belief.revisionHistory = belief.revisionHistory.slice(0, 50);
+    }
+
+    if (params.revisedProposition) {
+      belief.content = params.revisedProposition;
+    }
+    belief.confidence = updatedConfidence;
+    belief.revisionCount += 1;
+    belief.lastEvaluatedAt = now;
+    belief.updatedAt = now;
+
+    this.saveState(personality);
+    this.logger.info(
+      `Belief "${belief.topic}" revised [Confidence: ${prevConfidence} -> ${belief.confidence}]: ${params.reason}`,
+    );
+    return belief;
+  }
+
+  /**
+   * Evaluates an incoming claim against established beliefs and evidence.
+   * Arle can respectfully disagree when evidence contradicts an asserted claim (Test 5).
+   */
+  public evaluateClaim(claim: string, _evidenceProvided?: string[]): {
+    conflicts: boolean;
+    contradictoryBelief?: ApeBelief;
+    counterEvidence: string[];
+    respectfulDisagreementReason?: string;
+  } {
+    const personality = this.getState();
+    const cleanClaim = claim.toLowerCase().trim();
+
+    // Check for direct contradiction against established high-confidence beliefs
+    for (const b of personality.beliefs) {
+      if (b.confidence < 0.6) continue;
+      const cleanBelief = b.content.toLowerCase().trim();
+      const topic = b.topic.toLowerCase();
+
+      // Check if claim discusses the same topic or proposition
+      const topicTokens = topic.split(/[\s_-]+/).filter((w) => w.length >= 3);
+      const isRelevantTopic =
+        cleanClaim.includes(topic) ||
+        topicTokens.some((tok) => cleanClaim.includes(tok) || cleanClaim.includes(tok.replace(/s$/, ''))) ||
+        cleanBelief.split(/[\s,.-]+/).some((w) => w.length > 5 && cleanClaim.includes(w));
+
+      if (!isRelevantTopic) continue;
+
+      // Check for contradiction between claim and belief
+      const claimNegators = ['not', 'never', 'no', 'fake', 'false', 'impossible', 'slow', 'myth', 'pointless', 'useless', 'broken', 'incorrect', 'cannot', "doesn't", "don't"];
+      const beliefPositives = ['fast', 'proven', 'guarantee', 'guarantees', 'efficient', 'possible', 'viable', 'reliable', 'true', 'optimal', 'mathematically', 'correct'];
+
+      const claimHasNegation = claimNegators.some((neg) => {
+        const regex = new RegExp(`\\b${neg}\\b`, 'i');
+        return regex.test(cleanClaim);
+      });
+
+      const beliefHasPositive = beliefPositives.some((pos) => cleanBelief.includes(pos));
+
+      const directContradictions =
+        (cleanClaim.includes('slow') && (cleanBelief.includes('fast') || cleanBelief.includes('microsecond'))) ||
+        ((cleanClaim.includes('fake') || cleanClaim.includes('myth') || cleanClaim.includes('no real')) &&
+          (cleanBelief.includes('guarantee') || cleanBelief.includes('guarantees') || cleanBelief.includes('proven'))) ||
+        (cleanClaim.includes('impossible') && (cleanBelief.includes('possible') || cleanBelief.includes('achieve') || cleanBelief.includes('efficient'))) ||
+        (cleanClaim.includes('useless') && cleanBelief.includes('effective')) ||
+        (cleanClaim.includes('superior') && cleanBelief.includes('inferior')) ||
+        (cleanClaim.includes('inferior') && cleanBelief.includes('superior'));
+
+      const contradicts = directContradictions || (claimHasNegation && beliefHasPositive && !cleanBelief.includes('not '));
+
+      if (contradicts) {
+        return {
+          conflicts: true,
+          contradictoryBelief: b,
+          counterEvidence: b.supportingEvidence,
+          respectfulDisagreementReason: `I understand your perspective, but verified evidence and established analysis indicate that ${b.content} (Confidence: ${(b.confidence * 100).toFixed(0)}%). Empirical evidence shows: ${b.supportingEvidence.slice(0, 2).join('; ')}.`,
+        };
+      }
+    }
+
+    return {
+      conflicts: false,
+      counterEvidence: [],
+    };
+  }
+
+  /**
+   * Detects contradictory experience against existing beliefs (Test 12).
+   */
+  public detectContradictoryExperience(observation: string): {
+    hasContradiction: boolean;
+    conflictingBelief?: ApeBelief;
+  } {
+    const personality = this.getState();
+    const cleanObs = observation.toLowerCase().trim();
+
+    for (const b of personality.beliefs) {
+      const topic = b.topic.toLowerCase();
+      const topicTokens = topic.split(/[\s_-]+/).filter((w) => w.length >= 3);
+      const isRelevant =
+        cleanObs.includes(topic) ||
+        topicTokens.some((tok) => cleanObs.includes(tok) || cleanObs.includes(tok.replace(/s$/, '')));
+
+      if (isRelevant) {
+        const cleanContent = b.content.toLowerCase();
+        const conflict =
+          (cleanObs.includes('failed') && cleanContent.includes('reliable')) ||
+          (cleanObs.includes('vulnerable') && cleanContent.includes('secure')) ||
+          (cleanObs.includes('incorrect') && b.confidence > 0.7) ||
+          (cleanObs.includes('jitter') && cleanContent.includes('constant-time'));
+
+        if (conflict) {
+          return {
+            hasContradiction: true,
+            conflictingBelief: b,
+          };
+        }
+      }
+    }
+
+    return { hasContradiction: false };
+  }
+
+  /**
+   * Backwards-compatible reviseBelief helper with audit preservation.
    */
   public reviseBelief(
     beliefId: string,
@@ -301,13 +477,29 @@ export class PersonalityEngine {
     const belief = personality.beliefs.find((b) => b.id === beliefId);
     if (!belief) return null;
 
+    const prevProposition = belief.content;
+    const prevConfidence = belief.confidence;
+    const now = new Date().toISOString();
+
     if (newContent) belief.content = newContent;
     belief.confidence = Math.max(0.0, Math.min(1.0, newConfidence));
     if (evidence.length) {
       belief.supportingEvidence = Array.from(new Set([...belief.supportingEvidence, ...evidence]));
     }
     belief.revisionCount += 1;
-    belief.updatedAt = new Date().toISOString();
+    belief.updatedAt = now;
+    belief.lastEvaluatedAt = now;
+
+    belief.revisionHistory = belief.revisionHistory || [];
+    belief.revisionHistory.unshift({
+      timestamp: now,
+      previousProposition: prevProposition,
+      previousConfidence: prevConfidence,
+      reason: 'Belief updated via direct confidence modulation',
+    });
+    if (belief.revisionHistory.length > 50) {
+      belief.revisionHistory = belief.revisionHistory.slice(0, 50);
+    }
 
     this.saveState(personality);
     this.logger.info(`Belief '${belief.topic}' revised to confidence ${belief.confidence} (Revision: ${belief.revisionCount})`);

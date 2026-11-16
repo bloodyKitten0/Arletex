@@ -406,19 +406,85 @@ export const ApeValueSchema = z.object({
 
 export type ApeValue = z.infer<typeof ApeValueSchema>;
 
+export const BeliefRevisionRecordSchema = z.object({
+  timestamp: z.string().datetime(),
+  previousProposition: z.string(),
+  previousConfidence: z.number(),
+  reason: z.string(),
+  triggerEventId: z.string().optional(),
+});
+
+export type BeliefRevisionRecord = z.infer<typeof BeliefRevisionRecordSchema>;
+
 export const ApeBeliefSchema = z.object({
   id: z.string().uuid(),
   topic: z.string(),
   content: z.string(),
   confidence: z.number().min(0.0).max(1.0),
   supportingEvidence: z.array(z.string()).default([]),
+  opposingEvidence: z.array(z.string()).default([]),
+  revisionHistory: z.array(BeliefRevisionRecordSchema).default([]),
   revisionCount: z.number().default(0),
-  origin: z.string().default('experience'),
+  origin: z.enum(['empirical_observation', 'research', 'reasoning', 'dialogue', 'reflection', 'experience']).default('experience'),
+  lastEvaluatedAt: z.string().datetime().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
 
 export type ApeBelief = z.infer<typeof ApeBeliefSchema>;
+
+// ------------------------------------------
+// Intellectual Inquiry & Research Schemas (Pillar 5)
+// ------------------------------------------
+export const IntellectualQuestionOriginSchema = z.enum([
+  'knowledge_gap',
+  'contradiction',
+  'uncertainty',
+  'failed_prediction',
+  'project',
+  'curiosity',
+]);
+
+export type IntellectualQuestionOrigin = z.infer<typeof IntellectualQuestionOriginSchema>;
+
+export const CompetingHypothesisSchema = z.object({
+  id: z.string().uuid(),
+  statement: z.string(),
+  supportingEvidence: z.array(z.string()).default([]),
+  opposingEvidence: z.array(z.string()).default([]),
+  plausibility: z.number().min(0.0).max(1.0).default(0.5),
+});
+
+export type CompetingHypothesis = z.infer<typeof CompetingHypothesisSchema>;
+
+export const IntellectualQuestionSchema = z.object({
+  id: z.string().uuid(),
+  question: z.string(),
+  domain: z.string(),
+  origin: IntellectualQuestionOriginSchema.default('curiosity'),
+  underlyingAssumptions: z.array(z.string()).default([]),
+  competingHypotheses: z.array(CompetingHypothesisSchema).default([]),
+  priority: z.number().min(0.0).max(1.0).default(0.5),
+  status: z.enum(['open', 'investigating', 'resolved', 'dismissed']).default('open'),
+  resolutionSummary: z.string().optional(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export type IntellectualQuestion = z.infer<typeof IntellectualQuestionSchema>;
+
+export const ResearchSourceSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  sourceUrl: z.string().optional(),
+  sourceType: z.enum(['primary', 'secondary', 'empirical', 'code', 'discussion', 'snippet']),
+  reliabilityScore: z.number().min(0.0).max(1.0).default(0.7),
+  extractedEvidence: z.array(z.string()).default([]),
+  methodologicalNotes: z.string().optional(),
+  retrievedAt: z.string().datetime(),
+});
+
+export type ResearchSource = z.infer<typeof ResearchSourceSchema>;
 
 export const ApePreferenceSchema = z.object({
   id: z.string(),

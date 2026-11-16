@@ -25,6 +25,7 @@ import { CrossEngineCognitiveCycle, CrossEngineCycleResult } from './crossEngine
 import { EmotionalLifecycleEngine } from './emotionalLifecycleEngine.js';
 import { PersonalProjectService } from './personalProjectService.js';
 import { ResourceGovernor } from './resourceGovernor.js';
+import { IntellectualEngine } from './intellectualEngine.js';
 
 export class ApeService {
   private readonly repo: IApeRepository;
@@ -40,6 +41,7 @@ export class ApeService {
   public readonly lifecycleEngine: EmotionalLifecycleEngine;
   public readonly personalProjectService: PersonalProjectService;
   public readonly resourceGovernor: ResourceGovernor;
+  public readonly intellectualEngine: IntellectualEngine;
 
   constructor(
     repo: IApeRepository,
@@ -62,6 +64,12 @@ export class ApeService {
     this.lifecycleEngine = new EmotionalLifecycleEngine(this.repo, emotions, logger);
     this.personalProjectService = new PersonalProjectService(this.repo, logger);
     this.resourceGovernor = new ResourceGovernor(undefined, logger);
+    this.intellectualEngine = new IntellectualEngine(
+      this.repo,
+      this.personalityEngine,
+      this.developmentEngine,
+      logger,
+    );
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);

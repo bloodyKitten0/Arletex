@@ -19,6 +19,7 @@ import {
   EmotionTaxonomyItem,
   INITIAL_EMOTIONS_TAXONOMY,
   INITIAL_MOODS_TAXONOMY,
+  IntellectualQuestion,
   MoodTaxonomyItem,
 } from '@arletex/contracts';
 import { DatabaseError, IApeRepository } from '@arletex/core';
@@ -1145,6 +1146,120 @@ export class ApeRepository implements IApeRepository {
       relatedGoalIds: JSON.parse(r.related_goal_ids || '[]'),
       resourceBudget: JSON.parse(r.resource_budget || '{"cpu":"medium","gpu":false,"maxDurationMs":300000}'),
       abandonmentReason: r.abandonment_reason ?? undefined,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    };
+  }
+
+  // ------------------------------------------
+  // Intellectual Inquiry (Pillar 5)
+  // ------------------------------------------
+  public createIntellectualQuestion(q: IntellectualQuestion): IntellectualQuestion {
+    const now = new Date().toISOString();
+    this.db
+      .prepare(`
+        INSERT INTO ape_intellectual_questions (
+          id, question, domain, origin, underlying_assumptions,
+          competing_hypotheses, priority, status, resolution_summary,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `)
+      .run(
+        q.id,
+        q.question,
+        q.domain,
+        q.origin,
+        JSON.stringify(q.underlyingAssumptions || []),
+        JSON.stringify(q.competingHypotheses || []),
+        q.priority,
+        q.status,
+        q.resolutionSummary ?? null,
+        q.createdAt || now,
+        q.updatedAt || now,
+      );
+    return q;
+  }
+
+  public getIntellectualQuestionById(id: string): IntellectualQuestion | null {
+    const r = this.db.prepare('SELECT * FROM ape_intellectual_questions WHERE id = ?').get(id) as any;
+    if (!r) return null;
+    return this.mapQuestionRow(r);
+  }
+
+  public listIntellectualQuestions(filter?: { status?: string; domain?: string }): IntellectualQuestion[] {
+    let query = 'SELECT * FROM ape_intellectual_questions WHERE 1=1';
+    const params: any[] = [];
+    if (filter?.status) {
+      query += ' AND status = ?';
+      params.push(filter.status);
+    }
+    if (filter?.domain) {
+      query += ' AND domain = ?';
+      params.push(filter.domain);
+    }
+    query += ' ORDER BY priority DESC, updated_at DESC';
+    const rows = this.db.prepare(query).all(...params) as any[];
+    return rows.map((r) => this.mapQuestionRow(r));
+  }
+
+  public updateIntellectualQuestion(q: Partial<IntellectualQuestion> & { id: string }): IntellectualQuestion {
+    const existing = this.getIntellectualQuestionById(q.id);
+    if (!existing) {
+      throw new DatabaseError(`Intellectual question with id ${q.id} not found`);
+    }
+
+    const updated: IntellectualQuestion = {
+      ...existing,
+      ...q,
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.db
+      .prepare(`
+        UPDATE ape_intellectual_questions SET
+          question = ?,
+          domain = ?,
+          origin = ?,
+          underlying_assumptions = ?,
+          competing_hypotheses = ?,
+          priority = ?,
+          status = ?,
+          resolution_summary = ?,
+          updated_at = ?
+        WHERE id = ?
+      `)
+      .run(
+        updated.question,
+        updated.domain,
+        updated.origin,
+        JSON.stringify(updated.underlyingAssumptions || []),
+        JSON.stringify(updated.competingHypotheses || []),
+        updated.priority,
+        updated.status,
+        updated.resolutionSummary ?? null,
+        updated.updatedAt,
+        updated.id,
+      );
+
+    return updated;
+  }
+
+  public deleteIntellectualQuestion(id: string): boolean {
+    const res = this.db.prepare('DELETE FROM ape_intellectual_questions WHERE id = ?').run(id);
+    return res.changes > 0;
+  }
+
+  private mapQuestionRow(r: any): IntellectualQuestion {
+    return {
+      id: r.id,
+      question: r.question,
+      domain: r.domain,
+      origin: r.origin,
+      underlyingAssumptions: JSON.parse(r.underlying_assumptions || '[]'),
+      competingHypotheses: JSON.parse(r.competing_hypotheses || '[]'),
+      priority: r.priority,
+      status: r.status,
+      resolutionSummary: r.resolution_summary ?? undefined,
       createdAt: r.created_at,
       updatedAt: r.updated_at,
     };

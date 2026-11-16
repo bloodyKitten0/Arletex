@@ -635,4 +635,26 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_ape_projects_interest ON ape_personal_projects(associated_interest_topic);
     `,
   },
+  {
+    id: 11,
+    name: '011_ape_milestone5_intellectual_inquiry_and_beliefs',
+    up: `
+      CREATE TABLE IF NOT EXISTS ape_intellectual_questions (
+        id TEXT PRIMARY KEY,
+        question TEXT NOT NULL,
+        domain TEXT NOT NULL,
+        origin TEXT NOT NULL,
+        underlying_assumptions TEXT NOT NULL DEFAULT '[]',
+        competing_hypotheses TEXT NOT NULL DEFAULT '[]',
+        priority REAL NOT NULL DEFAULT 0.5,
+        status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'investigating', 'resolved', 'dismissed')),
+        resolution_summary TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_intellectual_questions_status ON ape_intellectual_questions(status);
+      CREATE INDEX IF NOT EXISTS idx_intellectual_questions_domain ON ape_intellectual_questions(domain);
+    `,
+  },
 ];
