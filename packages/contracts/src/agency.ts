@@ -171,13 +171,19 @@ export type SystemFileWritePayload = z.infer<typeof SystemFileWritePayloadSchema
 // ==========================================
 
 export const ExecutionStatusSchema = z.enum([
+  'requested',
   'planned',
   'awaiting_authorization',
   'authorized',
+  'attempted',
   'executing',
+  'executed',
   'executed_unverified',
+  'verified_outcome',
   'verified_successful',
   'partially_successful',
+  'uncertain_outcome',
+  'failed_outcome',
   'failed',
   'cancelled',
   'timed_out',
@@ -342,3 +348,35 @@ export const DigitalExperienceSchema = z.object({
   timestamp: z.string(),
 });
 export type DigitalExperience = z.infer<typeof DigitalExperienceSchema>;
+
+// ==========================================
+// 8. Closed-Loop Agency Contracts (Observe-Interpret-Plan-Authorize-Execute-Verify-Learn)
+// ==========================================
+
+export const ActionLifecycleStageSchema = z.enum([
+  'requested',
+  'planned',
+  'authorized',
+  'attempted',
+  'executed',
+  'verified_outcome',
+  'failed_outcome',
+  'uncertain_outcome',
+]);
+export type ActionLifecycleStage = z.infer<typeof ActionLifecycleStageSchema>;
+
+export const ClosedLoopCycleResultSchema = z.object({
+  id: z.string().uuid(),
+  taskId: z.string().uuid(),
+  objective: z.string(),
+  stage: ActionLifecycleStageSchema,
+  success: z.boolean(),
+  plan: AgencyPlanSchema.optional(),
+  observations: z.array(AgencyObservationSchema).default([]),
+  verifications: z.array(VerificationResultSchema).default([]),
+  experience: DigitalExperienceSchema.optional(),
+  reflection: z.string().optional(),
+  switchedCandidates: z.boolean().default(false),
+  timestamp: z.string(),
+});
+export type ClosedLoopCycleResult = z.infer<typeof ClosedLoopCycleResultSchema>;

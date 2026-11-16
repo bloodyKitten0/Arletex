@@ -40,19 +40,22 @@ export class VerificationEngine {
     }
 
     if (!observation.success) {
-      return {
-        actionId: action.id,
-        expectedOutcome: action.expectedOutcome,
-        observedOutcome: `Observation reported failure: ${observation.error || 'Unknown error'}`,
-        verified: false,
-        confidence: 0.9,
-        status: 'failed',
-        failureReason: observation.error || 'Target environment reported execution error',
-        isRecoverable: true,
-        recommendedStrategy: 'replan_sub_steps',
-        evidence: observation.data || {},
-        timestamp,
-      };
+      // For web video selection, allow specialized verification to extract detailed playback diagnostics and candidate switching
+      if (action.type !== 'web_select_video') {
+        return {
+          actionId: action.id,
+          expectedOutcome: action.expectedOutcome,
+          observedOutcome: `Observation reported failure: ${observation.error || 'Unknown error'}`,
+          verified: false,
+          confidence: 0.9,
+          status: 'failed',
+          failureReason: observation.error || 'Target environment reported execution error',
+          isRecoverable: true,
+          recommendedStrategy: 'replan_sub_steps',
+          evidence: observation.data || {},
+          timestamp,
+        };
+      }
     }
 
     // 1. Web Video Selection Verification (Acceptance Scenario)

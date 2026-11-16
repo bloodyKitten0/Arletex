@@ -25,6 +25,7 @@ import { VerificationEngine } from '../agency/verificationEngine.js';
 import { IExperienceMemorySink } from '../agency/memoryExperienceSync.js';
 import { IntentTaskManager } from '../agency/intentTaskManager.js';
 import { AutobiographicalMemoryService } from '../memory/autobiographicalMemoryService.js';
+import { ClosedLoopAgencyService } from '../agency/closedLoopAgencyService.js';
 
 export interface CognitiveControlBusDependencies {
   apeService: ApeService;
@@ -33,6 +34,7 @@ export interface CognitiveControlBusDependencies {
   memorySink?: IExperienceMemorySink;
   autobiographicalMemoryService?: AutobiographicalMemoryService;
   intentTaskManager?: IntentTaskManager;
+  closedLoopAgency?: ClosedLoopAgencyService;
   logger?: ILogger;
   maxCausalDepth?: number;
 }
@@ -44,6 +46,7 @@ export class CognitiveControlBus {
   private readonly memorySink?: IExperienceMemorySink;
   private readonly autobiographicalMemoryService?: AutobiographicalMemoryService;
   private readonly intentTaskManager?: IntentTaskManager;
+  private readonly closedLoopAgency?: ClosedLoopAgencyService;
   private readonly logger: ILogger;
   private readonly maxCausalDepth: number;
 
@@ -61,6 +64,7 @@ export class CognitiveControlBus {
     this.memorySink = deps.memorySink;
     this.autobiographicalMemoryService = deps.autobiographicalMemoryService;
     this.intentTaskManager = deps.intentTaskManager;
+    this.closedLoopAgency = deps.closedLoopAgency;
     this.logger = (deps.logger || rootLogger).child('CognitiveControlBus');
     this.maxCausalDepth = deps.maxCausalDepth ?? 4;
   }
@@ -248,14 +252,28 @@ export class CognitiveControlBus {
       // Stage 11: Action Execution
       stagesCompleted.push('action_execution');
       let actionOutcomeSuccess = isAuthorized;
+      let verifiedFact: string | undefined;
+
       if (!isAuthorized) {
         actionOutcomeSuccess = false;
+      } else if (this.closedLoopAgency && (decision.actionType === 'execute_agency_task' || decision.actionType === 'research')) {
+        const agencyObjective = (event.payload?.objective as string) || (event.payload?.topic as string) || decision.chosenAlternativeReason;
+        const loopRes = await this.closedLoopAgency.executeClosedLoop(agencyObjective, 'arle', {
+          eventId: event.id,
+          decisionId: decision.id,
+        });
+        actionOutcomeSuccess = loopRes.success;
+        if (loopRes.verifications.length > 0) {
+          const lastVer = loopRes.verifications[loopRes.verifications.length - 1];
+          if (lastVer) {
+            verifiedFact = lastVer.observedOutcome;
+          }
+        }
       }
 
       // Stage 12: Outcome Verification
       stagesCompleted.push('outcome_verification');
-      let verifiedFact: string | undefined;
-      if (this.verificationEngine && proposal) {
+      if (this.verificationEngine && proposal && !verifiedFact) {
         const dummyObs: AgencyObservation = {
           id: crypto.randomUUID(),
           taskId: proposal.taskId,

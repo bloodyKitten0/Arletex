@@ -41,7 +41,7 @@ export class AutonomousAgencyService {
   private timer: NodeJS.Timeout | null = null;
   private currentActivity: string | null = null;
   private lastActionTimestamp: string | null = null;
-  private lastUserInteractionTime = Date.now();
+  private lastUserInteractionTime = 0;
   private recentLogs: AutonomousActionLog[] = [];
   private isCycleRunning = false;
   private proactiveSpeechListeners: Array<(event: ProactiveSpeechEvent) => void> = [];
@@ -181,6 +181,19 @@ export class AutonomousAgencyService {
       const recreation = mot.needs.recreation_rest ?? 0.4;
       const companionship = mot.needs.belonging_affiliation ?? 0.5;
 
+      // Respect resource governor policies on ASUS ROG Ally X
+      if (this._apeService.resourceGovernor) {
+        const feasibility = this._apeService.resourceGovernor.evaluateFeasibility({
+          cpu: 'medium',
+          gpu: false,
+          estimatedMemoryMb: 512,
+        });
+        if (!feasibility.feasible) {
+          this.logger.info(`Autonomous Agency cycle throttled: ${feasibility.reason}`);
+          return null;
+        }
+      }
+
       // 1. Proactive Multimodal Observation & Spontaneous Speech
       // When companionship is strong or idle time is significant, observe Proof's screen and speak to him
       const shouldSpeakProactively =
@@ -205,7 +218,28 @@ export class AutonomousAgencyService {
       }
 
       if (!logEntry) {
-        if (recreation > 0.7 && recreation >= curiosity) {
+        // Prioritize authorized active goals from MotivationalEngine (Test 7)
+        const activeGoals = this._apeService.motivationalEngine.getActiveGoals();
+        const nonRepetitiveGoal = activeGoals.find((g) => {
+          // Avoid meaningless repetitive loops: check recent logs within 120s
+          return !this.recentLogs.some(
+            (l) => l.details.includes(g.id) && (Date.now() - new Date(l.timestamp).getTime()) < 120000,
+          );
+        });
+
+        if (nonRepetitiveGoal) {
+          this.currentActivity = `Advancing active goal: "${nonRepetitiveGoal.title}"`;
+          const goalTopic = {
+            title: nonRepetitiveGoal.title,
+            url: `https://en.wikipedia.org/wiki/${encodeURIComponent(nonRepetitiveGoal.title.replace(/\s+/g, '_'))}`,
+          };
+          logEntry = await this.executeAutonomousResearch(goalTopic);
+          if (logEntry) {
+            logEntry.title = `Active Goal Progress: ${nonRepetitiveGoal.title}`;
+            logEntry.details = `Advanced active goal "${nonRepetitiveGoal.title}". ${logEntry.details} [GoalID: ${nonRepetitiveGoal.id}]`;
+            this._apeService.motivationalEngine.updateGoalProgress(nonRepetitiveGoal.id, 0.25);
+          }
+        } else if (recreation > 0.7 && recreation >= curiosity) {
           // Dominant recreation drive -> Quiet contemplative rest (never spawn desktop apps unprompted)
           this.currentActivity = 'Quiet contemplative rest and listening to ambient audio';
           this.activityRepo.create({

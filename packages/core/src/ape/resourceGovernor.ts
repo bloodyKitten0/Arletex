@@ -21,7 +21,7 @@ export interface ResourceFeasibilityResult {
 export class ResourceGovernor {
   private profile: ResourceExecutionProfile;
   private readonly logger: ILogger;
-  private lastUserInteractionTimestamp: number = Date.now();
+  private lastUserInteractionTimestamp: number = 0;
   private consecutiveIdleCycles: number = 0;
 
   constructor(

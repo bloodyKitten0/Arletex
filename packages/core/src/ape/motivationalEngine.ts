@@ -300,6 +300,13 @@ export class MotivationalEngine {
   }
 
   /**
+   * Retrieves all currently active goals.
+   */
+  public getActiveGoals(): ApeGoal[] {
+    return this.getState().goals.filter((g) => g.status === 'active');
+  }
+
+  /**
    * Creates an autonomous or shared goal, distinguishing desires from intentions.
    */
   public createGoal(params: {
