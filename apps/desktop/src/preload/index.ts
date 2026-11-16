@@ -73,6 +73,7 @@ export interface ArletexApi {
     voice?: string,
     tone?: string,
     leadPaddingMs?: number,
+    useRvc?: boolean,
   ) => Promise<IPCResponse<{ audioBase64: string | null }>>;
   inspectVision: (imageBase64: string, mimeType?: string, prompt?: string) => Promise<IPCResponse<VisionInspectResult>>;
   inspectVideo: (input: VideoInspectInput) => Promise<IPCResponse<VideoInspectResult>>;
@@ -161,8 +162,8 @@ const api: ArletexApi = {
 
   transcribeAudio: (audioBase64, format) =>
     ipcRenderer.invoke(IPC_CHANNELS.VOICE_TRANSCRIBE, { audioBase64, format }),
-  synthesizeSpeech: (text, voice, tone, leadPaddingMs) =>
-    ipcRenderer.invoke(IPC_CHANNELS.VOICE_SYNTHESIZE, { text, voice, tone, leadPaddingMs }),
+  synthesizeSpeech: (text, voice, tone, leadPaddingMs, useRvc) =>
+    ipcRenderer.invoke(IPC_CHANNELS.VOICE_SYNTHESIZE, { text, voice, tone, leadPaddingMs, useRvc }),
   inspectVision: (imageBase64, mimeType, prompt) =>
     ipcRenderer.invoke(IPC_CHANNELS.VISION_INSPECT, { imageBase64, mimeType, prompt }),
   inspectVideo: (input) =>

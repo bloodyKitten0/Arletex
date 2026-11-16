@@ -410,6 +410,14 @@ export const SynthesizeSpeechInputSchema = z.object({
   speed: z.number().min(0.5).max(2.0).optional().default(0.93),
   tone: z.string().optional(),
   leadPaddingMs: z.number().optional().default(0),
+  useRvc: z.boolean().optional(),
+  pad: z.object({
+    valence: z.number(),
+    arousal: z.number(),
+    dominance: z.number(),
+  }).optional(),
+  emotion: z.string().optional(),
+  vocalRegister: z.string().optional(),
 });
 
 export type SynthesizeSpeechInput = z.infer<typeof SynthesizeSpeechInputSchema>;

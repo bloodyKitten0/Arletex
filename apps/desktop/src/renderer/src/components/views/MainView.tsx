@@ -37,8 +37,8 @@ import {
 function parseToneAndText(raw: string) {
   if (!raw) return { tone: null, text: '' };
   const clean = raw
-    .replace(/\[(?:action|cmd|tone|thought|mood|emotion|state):[^\]]*\]/gi, '')
-    .replace(/^\s*\[(?:action|cmd|tone|thought|mood|emotion|state)?:?[^\]]*$/gi, '')
+    .replace(/\[(?:action|cmd|tone|thought|mood|emotion|state|register):[^\]]*\]/gi, '')
+    .replace(/^\s*\[(?:action|cmd|tone|thought|mood|emotion|state|register)?:?[^\]]*$/gi, '')
     .replace(/^\s*\[[^\]]+\]\s*/gm, '')
     .trim();
   return { tone: null, text: clean };

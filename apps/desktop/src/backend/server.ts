@@ -526,12 +526,19 @@ export class ArletexBackendServer {
             const isVoiceEnabled = this.preferenceRepo.get('voice_output_enabled') === 'true';
             if (isVoiceEnabled) {
               try {
+                const modulation = this.apeService.getLinguisticModulation();
+                const pad = this.apeService.getMasterState().affective.pad;
+                const dominantEmotions = this.apeService.lifecycleEngine.getDominantCoexistingEmotions(1);
+                const dominantEmotion = dominantEmotions[0]?.emotionId;
+
                 const synthRes = await fetch('http://127.0.0.1:39282/synthesize', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
                     text: cleanText,
-                    tone: event.tone || 'calm',
+                    tone: event.tone || modulation.vocalRegister,
+                    pad,
+                    emotion: dominantEmotion,
                     voice: 'arlecchino',
                   }),
                 });
@@ -2171,12 +2178,19 @@ Rules:
             ? cleanReply.slice(0, 250).replace(/\s+[^\s]*$/, '...')
             : cleanReply;
 
+          const modulation = this.apeService.getLinguisticModulation();
+          const pad = this.apeService.getMasterState().affective.pad;
+          const dominantEmotions = this.apeService.lifecycleEngine.getDominantCoexistingEmotions(1);
+          const dominantEmotion = dominantEmotions[0]?.emotionId;
+
           const synthRes = await fetch('http://127.0.0.1:39282/synthesize', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               text: speechText,
-              tone: 'warm, calm',
+              tone: modulation.vocalRegister,
+              pad,
+              emotion: dominantEmotion,
               voice: 'arlecchino',
             }),
           });
@@ -2606,11 +2620,29 @@ Rules:
         const input = SynthesizeSpeechInputSchema.parse(body);
         const ttsController = new AbortController();
         this.activeTtsAbortControllers.add(ttsController);
+
+        // Dynamic tone & PAD resolution from live APE state if not explicitly specified
+        const apeModulation = this.apeService.getLinguisticModulation();
+        const apeMaster = this.apeService.getMasterState();
+        const dominantEmotions = this.apeService.lifecycleEngine.getDominantCoexistingEmotions(1);
+        const dominantEmotion = dominantEmotions[0]?.emotionId;
+
+        const resolvedTone = input.tone && input.tone !== 'auto'
+          ? input.tone
+          : apeModulation.vocalRegister;
+
+        const synthPayload = {
+          ...input,
+          tone: resolvedTone,
+          pad: input.pad || apeMaster.affective.pad,
+          emotion: input.emotion || dominantEmotion,
+        };
+
         try {
           const resKokoro = await fetch('http://127.0.0.1:39282/synthesize', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(input),
+            body: JSON.stringify(synthPayload),
             signal: ttsController.signal,
           });
           if (resKokoro.ok) {

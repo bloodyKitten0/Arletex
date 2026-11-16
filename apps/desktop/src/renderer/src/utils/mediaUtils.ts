@@ -90,7 +90,7 @@ export interface SpeechChunk {
 
 export function cleanTextForSpeech(text: string): string {
   return text
-    .replace(/\[tone:\s*[a-zA-Z]+\]/gi, '')
+    .replace(/\[(?:action|cmd|tone|thought|mood|emotion|state|register):[^\]]*\]/gi, '')
     .replace(/```[\s\S]*?```/g, 'Code block omitted.')
     .replace(/`([^`]+)`/g, '$1')
     .replace(/!\[.*?\]\(.*?\)/g, '')
@@ -98,7 +98,11 @@ export function cleanTextForSpeech(text: string): string {
     .replace(/^#+\s+/gm, '')
     .replace(/[*_~]+/g, '')
     .replace(/^[•\-\*]\s+/gm, '')
-    .replace(/\n+/g, ' ')
+    .replace(/—/g, ' — ')
+    .replace(/–/g, ' - ')
+    .replace(/…/g, '... ')
+    .replace(/\.{3,}/g, '... ')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
@@ -117,15 +121,27 @@ export function splitIntoSpeechChunks(rawText: string): SpeechChunk[] {
     let segment = s.trim();
     if (!segment) continue;
 
-    // Detect and extract [tone: ...] tag if present
-    const toneMatch = segment.match(/\[tone:\s*([a-zA-Z]+)\]/i);
-    if (toneMatch) {
-      activeTone = toneMatch[1]?.toLowerCase();
-      segment = segment.replace(/\[tone:\s*[a-zA-Z]+\]/gi, '').trim();
+    // Detect and extract [tone: ...], [emotion: ...], or [register: ...] tag if present
+    const toneMatch = segment.match(/\[(?:tone|emotion|register):\s*([^\]]+)\]/i);
+    let segmentTone = activeTone;
+    if (toneMatch && toneMatch[1]) {
+      segmentTone = toneMatch[1].trim().toLowerCase();
+      segment = segment.replace(/\[(?:tone|emotion|register):\s*[^\]]+\]/gi, '').trim();
     }
 
     const clean = cleanTextForSpeech(segment);
     if (!clean) continue;
+
+    // If tone changed and we already have buffered speech, flush buffer immediately to reflect tone shift
+    if (buffer && segmentTone !== activeTone) {
+      chunks.push({
+        text: buffer,
+        tone: activeTone,
+        leadPaddingMs: chunks.length === 0 ? 280 : 0,
+      });
+      buffer = '';
+    }
+    activeTone = segmentTone;
 
     if (!buffer) {
       buffer = clean;
