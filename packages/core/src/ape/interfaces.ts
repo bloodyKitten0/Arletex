@@ -64,6 +64,9 @@ import {
   MultiSystemMemoryEntry,
   MemoryContradiction,
   MultiSystemQueryOptions,
+  LearningExperience,
+  BehavioralAdaptationRule,
+  LearningExperienceFilter,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -323,6 +326,18 @@ export interface IMultiSystemMemoryRepository {
   getContradictionById(id: string): MemoryContradiction | null;
   listContradictions(status?: MemoryContradiction['status']): MemoryContradiction[];
   updateContradiction(contradiction: MemoryContradiction): void;
+}
+
+export interface ILearningRepository {
+  recordExperience(experience: LearningExperience): void;
+  getExperienceById(id: string): LearningExperience | null;
+  listExperiences(filter?: LearningExperienceFilter): LearningExperience[];
+
+  saveRule(rule: BehavioralAdaptationRule): void;
+  getRuleById(id: string): BehavioralAdaptationRule | null;
+  listRules(filter?: { domain?: string; minConfidence?: number }): BehavioralAdaptationRule[];
+  updateRule(rule: BehavioralAdaptationRule): void;
+  deleteRule(id: string): void;
 }
 
 

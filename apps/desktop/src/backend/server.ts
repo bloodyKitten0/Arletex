@@ -83,6 +83,7 @@ import {
   AttentionRepository,
   WorkingMemoryRepository,
   MultiSystemMemoryRepository,
+  SqliteLearningRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -187,6 +188,9 @@ export class ArletexBackendServer {
   // Multi-System Memory Subsystem (Milestone 12)
   public readonly multiSystemMemoryRepo: MultiSystemMemoryRepository;
 
+  // Learning and Adaptation Subsystem (Milestone 13)
+  public readonly learningRepo: SqliteLearningRepository;
+
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
   private port = 0;
@@ -230,6 +234,7 @@ export class ArletexBackendServer {
     this.attentionRepo = new AttentionRepository(db);
     this.workingMemoryRepo = new WorkingMemoryRepository(db);
     this.multiSystemMemoryRepo = new MultiSystemMemoryRepository(db);
+    this.learningRepo = new SqliteLearningRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -244,6 +249,7 @@ export class ArletexBackendServer {
       this.attentionRepo,
       this.workingMemoryRepo,
       this.multiSystemMemoryRepo,
+      this.learningRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -4061,6 +4067,82 @@ Rules:
 
       if (url.pathname === '/api/ape/memory/multi/summary' && method === 'GET') {
         const summary = this.apeService.getMultiSystemMemorySummary();
+        this.sendJson(res, 200, summary);
+        return;
+      }
+
+      // ==========================================
+      // Learning and Adaptation Subsystem Routes (Milestone 13)
+      // ==========================================
+      if (url.pathname === '/api/ape/learning/experience' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const experience = this.apeService.recordLearningExperience(body);
+        this.sendJson(res, 201, { success: true, experience });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/learning/experiences' && method === 'GET') {
+        const channel = url.searchParams.get('channel') as any;
+        const domain = url.searchParams.get('domain') || undefined;
+        const outcome = url.searchParams.get('outcome') as any;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
+        const experiences = this.apeService.learningEngine['repo'].listExperiences({
+          channel: channel || undefined,
+          domain,
+          outcome: outcome || undefined,
+          limit,
+        });
+        this.sendJson(res, 200, experiences);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/learning/rule' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const rule = this.apeService.createAdaptationRule(body);
+        this.sendJson(res, 201, { success: true, rule });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/learning/rules' && method === 'GET') {
+        const domain = url.searchParams.get('domain') || undefined;
+        const minConfidence = url.searchParams.get('minConfidence')
+          ? parseFloat(url.searchParams.get('minConfidence')!)
+          : undefined;
+        const rules = this.apeService.learningEngine['repo'].listRules({ domain, minConfidence });
+        this.sendJson(res, 200, rules);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/learning/recommend' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const recommendation = this.apeService.getStrategyRecommendations(body.context, body.domain);
+        this.sendJson(res, 200, recommendation);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/learning/feedback' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const updatedRule = this.apeService.applyAdaptationFeedback(body.ruleId, body.outcome);
+        this.sendJson(res, 200, { success: true, rule: updatedRule });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/learning/generalize' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const generalizedRule = this.apeService.generalizeAdaptationRule(body.ruleId, body.targetDomains);
+        this.sendJson(res, 200, { success: true, rule: generalizedRule });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/learning/patterns' && method === 'GET') {
+        const domain = url.searchParams.get('domain') || undefined;
+        const patterns = this.apeService.recognizeLearningPatterns(domain);
+        this.sendJson(res, 200, patterns);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/learning/summary' && method === 'GET') {
+        const summary = this.apeService.getLearningSummary();
         this.sendJson(res, 200, summary);
         return;
       }

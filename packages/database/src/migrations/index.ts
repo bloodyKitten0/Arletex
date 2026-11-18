@@ -1303,4 +1303,48 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('multi_system_memory_milestone12', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 24,
+    name: '024_learning_and_adaptation_milestone13',
+    up: `
+      -- Learning Experiences (empirical experiences across channels: direct, observation, instruction, mistake, success)
+      CREATE TABLE IF NOT EXISTS learning_experiences (
+        id TEXT PRIMARY KEY,
+        channel TEXT NOT NULL,
+        domain TEXT NOT NULL,
+        context TEXT NOT NULL,
+        action_taken TEXT NOT NULL,
+        outcome TEXT NOT NULL,
+        outcome_details TEXT NOT NULL,
+        reward_score REAL NOT NULL,
+        lessons_learned TEXT NOT NULL DEFAULT '[]',
+        metadata TEXT,
+        timestamp TEXT NOT NULL
+      );
+
+      -- Behavioral Adaptation Rules (empirically derived rules for continuous behavior modification)
+      CREATE TABLE IF NOT EXISTS behavioral_adaptation_rules (
+        id TEXT PRIMARY KEY,
+        source_experience_ids TEXT NOT NULL DEFAULT '[]',
+        domain TEXT NOT NULL,
+        condition TEXT NOT NULL,
+        recommended_strategy TEXT NOT NULL,
+        avoid_strategy TEXT,
+        confidence REAL NOT NULL DEFAULT 0.5,
+        success_rate REAL NOT NULL DEFAULT 0.5,
+        sample_count INTEGER NOT NULL DEFAULT 1,
+        is_generalization INTEGER NOT NULL DEFAULT 0,
+        transfer_domains TEXT NOT NULL DEFAULT '[]',
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_learning_experiences_domain ON learning_experiences (domain, channel);
+      CREATE INDEX IF NOT EXISTS idx_learning_experiences_timestamp ON learning_experiences (timestamp);
+      CREATE INDEX IF NOT EXISTS idx_behavioral_rules_domain ON behavioral_adaptation_rules (domain);
+      CREATE INDEX IF NOT EXISTS idx_behavioral_rules_confidence ON behavioral_adaptation_rules (confidence);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('learning_adaptation_milestone13', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

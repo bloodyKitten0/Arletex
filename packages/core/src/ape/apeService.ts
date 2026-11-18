@@ -88,6 +88,7 @@ import {
   IAttentionRepository,
   IWorkingMemoryRepository,
   IMultiSystemMemoryRepository,
+  ILearningRepository,
 } from './interfaces.js';
 import { ILogger, rootLogger } from '../logger.js';
 import { AppraisalEngine } from './appraisalEngine.js';
@@ -113,6 +114,7 @@ import { InMemorySituationalRepository, SituationalAwarenessEngine } from './sit
 import { InMemoryAttentionRepository, AttentionSalienceEngine } from './attentionSalienceEngine.js';
 import { InMemoryWorkingMemoryRepository, WorkingMemoryEngine } from './workingMemoryEngine.js';
 import { InMemoryMultiSystemMemoryRepository, MultiSystemMemoryEngine } from './multiSystemMemoryEngine.js';
+import { InMemoryLearningRepository, LearningAdaptationEngine } from './learningAdaptationEngine.js';
 
 export class ApeService {
   private readonly repo: IApeRepository;
@@ -140,6 +142,7 @@ export class ApeService {
   public readonly attentionEngine: AttentionSalienceEngine;
   public readonly workingMemoryEngine: WorkingMemoryEngine;
   public readonly multiSystemMemoryEngine: MultiSystemMemoryEngine;
+  public readonly learningEngine: LearningAdaptationEngine;
 
   constructor(
     repo: IApeRepository,
@@ -155,6 +158,7 @@ export class ApeService {
     attentionRepo?: IAttentionRepository,
     workingMemoryRepo?: IWorkingMemoryRepository,
     multiSystemMemoryRepo?: IMultiSystemMemoryRepository,
+    learningRepo?: ILearningRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -191,6 +195,9 @@ export class ApeService {
 
     const msRepo = multiSystemMemoryRepo || new InMemoryMultiSystemMemoryRepository();
     this.multiSystemMemoryEngine = new MultiSystemMemoryEngine({ repository: msRepo, logger });
+
+    const lRepo = learningRepo || new InMemoryLearningRepository();
+    this.learningEngine = new LearningAdaptationEngine({ repository: lRepo, logger });
 
     this.appraisalEngine = new AppraisalEngine(emotions, inferenceGateway);
     this.transitionEngine = new AffectiveTransitionEngine(this.repo, emotions, moods);
@@ -767,6 +774,9 @@ export class ApeService {
     const msSummary = this.multiSystemMemoryEngine.getMultiSystemSummary();
     const multiSystemMemoryLine = `\n- Multi-System Memory: Differentiated systems active (${msSummary.totalMemories} entries, ${msSummary.protectedCount} protected). Origin & epistemic reliability strictly verified.`;
 
+    const learnSummary = this.learningEngine.getLearningSummary();
+    const learningLine = `\n- Learning & Continuous Adaptation: ${learnSummary.totalExperiences} empirical experiences, ${learnSummary.totalRules} active rules (${learnSummary.generalizationCount} generalized). Invariant: Continuous behavioral adaptation grounded in direct experience and feedback.`;
+
     const complexity = aff.contextual.affectiveComplexity;
     let complexityLine = '';
     if (
@@ -787,7 +797,7 @@ export class ApeService {
 [Active Psychology Engine (APE Phase 1 Live State)]
 - Current Persistent Mood: ${aff.currentMood.toUpperCase()}
 - Affective Dimensions: Valence ${aff.pad.valence >= 0 ? '+' : ''}${aff.pad.valence.toFixed(2)}, Arousal ${aff.pad.arousal.toFixed(2)}, Dominance ${aff.pad.dominance.toFixed(2)}
-- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}${capsLine}${limsLine}${narrativeLine}${temporalLine}${worldLine}${perceptionLine}${embodimentLine}${sensorimotorLine}${situationalLine}${attentionLine}${workingMemoryLine}${multiSystemMemoryLine}${complexityLine}
+- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}${capsLine}${limsLine}${narrativeLine}${temporalLine}${worldLine}${perceptionLine}${embodimentLine}${sensorimotorLine}${situationalLine}${attentionLine}${workingMemoryLine}${multiSystemMemoryLine}${learningLine}${complexityLine}
 - Demeanor & Cadence: ${modulation.toneDirective}
 - Vocal Register: ${modulation.vocalRegister}${intimacyDirectives}
 - Grounding: Speak naturally and authentically from this internal state. Keep dialogue focused, grounded, and concise without reciting internal parameters or rambling.
@@ -1285,6 +1295,59 @@ export class ApeService {
 
   public getMultiSystemMemorySummary() {
     return this.multiSystemMemoryEngine.getMultiSystemSummary();
+  }
+
+  // ==========================================
+  // Learning and Adaptation (Milestone 13)
+  // ==========================================
+
+  public recordLearningExperience(input: {
+    channel: any;
+    domain: string;
+    context: string;
+    actionTaken: string;
+    outcome: any;
+    outcomeDetails: string;
+    rewardScore: number;
+    lessonsLearned?: string[];
+    metadata?: Record<string, unknown>;
+  }) {
+    return this.learningEngine.recordExperience(input);
+  }
+
+  public createAdaptationRule(input: {
+    sourceExperienceIds: string[];
+    domain: string;
+    condition: string;
+    recommendedStrategy: string;
+    avoidStrategy?: string;
+    confidence?: number;
+    successRate?: number;
+    sampleCount?: number;
+    isGeneralization?: boolean;
+    transferDomains?: string[];
+  }) {
+    return this.learningEngine.createAdaptationRule(input);
+  }
+
+  public getStrategyRecommendations(context: string, domain: string) {
+    return this.learningEngine.getRecommendations(context, domain);
+  }
+
+  public applyAdaptationFeedback(ruleId: string, outcome: 'success' | 'failure') {
+    return this.learningEngine.applyFeedback(ruleId, outcome);
+  }
+
+  public recognizeLearningPatterns(domain?: string) {
+    return this.learningEngine.recognizePatterns(domain);
+  }
+
+  public generalizeAdaptationRule(ruleId: string, targetDomains: string[]) {
+    return this.learningEngine.generalizeRule(ruleId, targetDomains);
+  }
+
+  public getLearningSummary() {
+    return this.learningEngine.getLearningSummary();
   }
 }
 

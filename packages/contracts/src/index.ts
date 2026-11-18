@@ -687,5 +687,10 @@ export * from './workingMemory.js';
 // ==========================================
 export * from './multiSystemMemory.js';
 
+// ==========================================
+// Learning and Adaptation Contracts (Milestone 13)
+// ==========================================
+export * from './learning.js';
+
 
 
