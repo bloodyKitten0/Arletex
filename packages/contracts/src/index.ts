@@ -672,5 +672,10 @@ export * from './sensorimotor.js';
 // ==========================================
 export * from './situational.js';
 
+// ==========================================
+// Attention and Salience Contracts (Milestone 10)
+// ==========================================
+export * from './attention.js';
+
 
 

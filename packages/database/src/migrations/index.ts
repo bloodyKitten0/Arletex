@@ -1170,4 +1170,57 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('situational_awareness_milestone9', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 21,
+    name: '021_attention_and_salience_milestone10',
+    up: `
+      -- Attentional Focus Snapshots (tracking focal target, peripheral targets, capacity, and overload)
+      CREATE TABLE IF NOT EXISTS attentional_focus_snapshots (
+        id TEXT PRIMARY KEY,
+        timestamp TEXT NOT NULL,
+        focal_target TEXT,
+        peripheral_targets TEXT NOT NULL DEFAULT '[]',
+        total_stimuli_evaluated INTEGER NOT NULL DEFAULT 0,
+        filtered_stimuli_count INTEGER NOT NULL DEFAULT 0,
+        is_overloaded INTEGER NOT NULL DEFAULT 0,
+        attention_capacity REAL NOT NULL DEFAULT 100.0,
+        available_capacity REAL NOT NULL DEFAULT 100.0,
+        active_goals TEXT NOT NULL DEFAULT '[]',
+        active_interests TEXT NOT NULL DEFAULT '[]',
+        created_at TEXT NOT NULL
+      );
+
+      -- Attention Switch Events (auditing intentional and urgency-driven attention shifts)
+      CREATE TABLE IF NOT EXISTS attention_switch_events (
+        id TEXT PRIMARY KEY,
+        timestamp TEXT NOT NULL,
+        previous_target_id TEXT,
+        new_target_id TEXT NOT NULL,
+        switch_reason TEXT NOT NULL,
+        switching_cost_ms REAL NOT NULL DEFAULT 50,
+        forced_by_urgency INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
+      );
+
+      -- Attentional Stimuli Records (evaluations, salience breakdowns, attended vs discarded)
+      CREATE TABLE IF NOT EXISTS attentional_stimuli_records (
+        id TEXT PRIMARY KEY,
+        timestamp TEXT NOT NULL,
+        stimulus_type TEXT NOT NULL,
+        source TEXT NOT NULL,
+        summary TEXT NOT NULL,
+        content TEXT,
+        salience_breakdown TEXT NOT NULL,
+        was_attended INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_focus_snapshots_time ON attentional_focus_snapshots (timestamp);
+      CREATE INDEX IF NOT EXISTS idx_switch_events_time ON attention_switch_events (timestamp);
+      CREATE INDEX IF NOT EXISTS idx_stimuli_records_time ON attentional_stimuli_records (timestamp, was_attended);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('attention_salience_milestone10', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

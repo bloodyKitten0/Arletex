@@ -80,6 +80,7 @@ import {
   EmbodimentRepository,
   SensorimotorRepository,
   SituationalRepository,
+  AttentionRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -175,6 +176,9 @@ export class ArletexBackendServer {
   // Situational Awareness Subsystem (Milestone 09)
   public readonly situationalRepo: SituationalRepository;
 
+  // Attention and Salience Subsystem (Milestone 10)
+  public readonly attentionRepo: AttentionRepository;
+
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
   private port = 0;
@@ -215,6 +219,7 @@ export class ArletexBackendServer {
     this.embodimentRepo = new EmbodimentRepository(db);
     this.sensorimotorRepo = new SensorimotorRepository(db);
     this.situationalRepo = new SituationalRepository(db);
+    this.attentionRepo = new AttentionRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -226,6 +231,7 @@ export class ArletexBackendServer {
       this.embodimentRepo,
       this.sensorimotorRepo,
       this.situationalRepo,
+      this.attentionRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -3835,6 +3841,60 @@ Rules:
       if (url.pathname === '/api/ape/situational/snapshot' && (method === 'GET' || method === 'POST')) {
         const snapshot = this.apeService.createSituationalSnapshot();
         this.sendJson(res, 200, snapshot);
+        return;
+      }
+
+      // ==========================================
+      // Attention and Salience Subsystem Routes (Milestone 10)
+      // ==========================================
+      if (url.pathname === '/api/ape/attention/evaluate' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const result = this.apeService.evaluateAttentionStimuli(body.stimuli || []);
+        this.sendJson(res, 200, { success: true, result });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/attention/switch' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const switchEvent = this.apeService.switchAttentionFocus(body.newTarget, body.reason, body.forcedByUrgency);
+        this.sendJson(res, 200, { success: true, switchEvent });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/attention/dwell' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const updated = this.apeService.updateSustainedAttention(body.elapsedMs || 0);
+        this.sendJson(res, 200, { success: true, target: updated });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/attention/focus' && (method === 'GET' || method === 'POST')) {
+        const focusState = this.apeService.captureAttentionalFocusState();
+        this.sendJson(res, 200, focusState);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/attention/summary' && method === 'GET') {
+        const summary = this.apeService.getAttentionSummary();
+        this.sendJson(res, 200, summary);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/attention/switches' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const switches = this.attentionRepo.listSwitchEvents(limit);
+        this.sendJson(res, 200, switches);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/attention/evaluations' && method === 'GET') {
+        const wasAttended = url.searchParams.has('wasAttended')
+          ? url.searchParams.get('wasAttended') === 'true'
+          : undefined;
+        const stimulusType = url.searchParams.get('type') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const evaluations = this.attentionRepo.listStimulusEvaluations({ wasAttended, stimulusType, limit });
+        this.sendJson(res, 200, evaluations);
         return;
       }
 

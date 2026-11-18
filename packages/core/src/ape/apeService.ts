@@ -85,6 +85,7 @@ import {
   IEmbodimentRepository,
   ISensorimotorRepository,
   ISituationalRepository,
+  IAttentionRepository,
 } from './interfaces.js';
 import { ILogger, rootLogger } from '../logger.js';
 import { AppraisalEngine } from './appraisalEngine.js';
@@ -107,6 +108,7 @@ import { InMemoryPerceptionRepository, MultimodalPerceptionEngine } from './mult
 import { EmbodimentInteroceptionEngine, InMemoryEmbodimentRepository } from './embodimentInteroceptionEngine.js';
 import { InMemorySensorimotorRepository, SensorimotorActionEngine } from './sensorimotorActionEngine.js';
 import { InMemorySituationalRepository, SituationalAwarenessEngine } from './situationalAwarenessEngine.js';
+import { InMemoryAttentionRepository, AttentionSalienceEngine } from './attentionSalienceEngine.js';
 
 export class ApeService {
   private readonly repo: IApeRepository;
@@ -131,6 +133,7 @@ export class ApeService {
   public readonly embodimentEngine: EmbodimentInteroceptionEngine;
   public readonly sensorimotorEngine: SensorimotorActionEngine;
   public readonly situationalEngine: SituationalAwarenessEngine;
+  public readonly attentionEngine: AttentionSalienceEngine;
 
   constructor(
     repo: IApeRepository,
@@ -143,6 +146,7 @@ export class ApeService {
     embodimentRepo?: IEmbodimentRepository,
     sensorimotorRepo?: ISensorimotorRepository,
     situationalRepo?: ISituationalRepository,
+    attentionRepo?: IAttentionRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -170,6 +174,9 @@ export class ApeService {
 
     const sitRepo = situationalRepo || new InMemorySituationalRepository();
     this.situationalEngine = new SituationalAwarenessEngine({ repository: sitRepo, logger });
+
+    const attRepo = attentionRepo || new InMemoryAttentionRepository();
+    this.attentionEngine = new AttentionSalienceEngine({ repository: attRepo, logger });
 
     this.appraisalEngine = new AppraisalEngine(emotions, inferenceGateway);
     this.transitionEngine = new AffectiveTransitionEngine(this.repo, emotions, moods);
@@ -737,6 +744,9 @@ export class ApeService {
     const situational = this.situationalEngine.describeCurrentSituation();
     const situationalLine = `\n- Situational Awareness: ${situational.currentActivityDescription}${situational.recentChanges.length ? ` Recent changes: ${situational.recentChanges.join('; ')}.` : ''}`;
 
+    const attentionSummary = this.attentionEngine.getAttentionSummary();
+    const attentionLine = `\n- Selective Attention & Salience: Focus: "${attentionSummary.focalTitle}" (${(attentionSummary.salience * 100).toFixed(0)}% salience, ${attentionSummary.dwellSeconds}s dwell). Invariant: Selective processing based on goals and interests, low-salience noise filtered.`;
+
     const complexity = aff.contextual.affectiveComplexity;
     let complexityLine = '';
     if (
@@ -757,7 +767,7 @@ export class ApeService {
 [Active Psychology Engine (APE Phase 1 Live State)]
 - Current Persistent Mood: ${aff.currentMood.toUpperCase()}
 - Affective Dimensions: Valence ${aff.pad.valence >= 0 ? '+' : ''}${aff.pad.valence.toFixed(2)}, Arousal ${aff.pad.arousal.toFixed(2)}, Dominance ${aff.pad.dominance.toFixed(2)}
-- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}${capsLine}${limsLine}${narrativeLine}${temporalLine}${worldLine}${perceptionLine}${embodimentLine}${sensorimotorLine}${situationalLine}${complexityLine}
+- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}${capsLine}${limsLine}${narrativeLine}${temporalLine}${worldLine}${perceptionLine}${embodimentLine}${sensorimotorLine}${situationalLine}${attentionLine}${complexityLine}
 - Demeanor & Cadence: ${modulation.toneDirective}
 - Vocal Register: ${modulation.vocalRegister}${intimacyDirectives}
 - Grounding: Speak naturally and authentically from this internal state. Keep dialogue focused, grounded, and concise without reciting internal parameters or rambling.
@@ -1115,6 +1125,29 @@ export class ApeService {
 
   public createSituationalSnapshot() {
     return this.situationalEngine.createSituationalSnapshot();
+  }
+
+  // ==========================================
+  // Attention and Salience (Milestone 10)
+  // ==========================================
+  public evaluateAttentionStimuli(stimuli: any[]) {
+    return this.attentionEngine.evaluateStimuli(stimuli);
+  }
+
+  public switchAttentionFocus(newTarget: any, reason: string, forcedByUrgency?: boolean) {
+    return this.attentionEngine.switchFocus(newTarget, reason, forcedByUrgency);
+  }
+
+  public updateSustainedAttention(elapsedMs: number) {
+    return this.attentionEngine.updateSustainedAttention(elapsedMs);
+  }
+
+  public captureAttentionalFocusState() {
+    return this.attentionEngine.captureFocusState();
+  }
+
+  public getAttentionSummary() {
+    return this.attentionEngine.getAttentionSummary();
   }
 }
 

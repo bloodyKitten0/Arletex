@@ -55,6 +55,10 @@ import {
   EnvironmentalEvent,
   EventLayer,
   SituationalContextSnapshot,
+  AttentionalFocusState,
+  AttentionSwitchEvent,
+  AttentionalStimulus,
+  SalienceBreakdown,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -269,6 +273,27 @@ export interface ISituationalRepository {
   getSnapshotById(id: string): SituationalContextSnapshot | null;
   getLatestSnapshot(): SituationalContextSnapshot | null;
   listSnapshots(limit?: number): SituationalContextSnapshot[];
+}
+
+export interface IAttentionRepository {
+  saveFocusState(state: AttentionalFocusState): void;
+  getLatestFocusState(): AttentionalFocusState | null;
+  listFocusStates(limit?: number): AttentionalFocusState[];
+
+  recordSwitchEvent(event: AttentionSwitchEvent): void;
+  listSwitchEvents(limit?: number): AttentionSwitchEvent[];
+
+  recordStimulusEvaluation(stimulus: AttentionalStimulus, salience: SalienceBreakdown, wasAttended: boolean): void;
+  listStimulusEvaluations(filter?: { wasAttended?: boolean; stimulusType?: string; limit?: number }): Array<{
+    id: string;
+    timestamp: string;
+    stimulusType: string;
+    source: string;
+    summary: string;
+    content?: any;
+    salience: SalienceBreakdown;
+    wasAttended: boolean;
+  }>;
 }
 
 
