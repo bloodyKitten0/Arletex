@@ -677,5 +677,10 @@ export * from './situational.js';
 // ==========================================
 export * from './attention.js';
 
+// ==========================================
+// Working Memory Contracts (Milestone 11)
+// ==========================================
+export * from './workingMemory.js';
+
 
 

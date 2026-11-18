@@ -59,6 +59,8 @@ import {
   AttentionSwitchEvent,
   AttentionalStimulus,
   SalienceBreakdown,
+  WorkingMemoryBuffer,
+  WorkingMemorySnapshot,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -294,6 +296,17 @@ export interface IAttentionRepository {
     salience: SalienceBreakdown;
     wasAttended: boolean;
   }>;
+}
+
+export interface IWorkingMemoryRepository {
+  saveBuffer(buffer: WorkingMemoryBuffer): void;
+  getBufferByTaskId(taskId: string): WorkingMemoryBuffer | null;
+  getLatestBuffer(): WorkingMemoryBuffer | null;
+  deleteBuffer(taskId: string): void;
+
+  saveSnapshot(snapshot: WorkingMemorySnapshot): void;
+  getLatestSnapshot(taskId?: string): WorkingMemorySnapshot | null;
+  listSnapshots(taskId?: string, limit?: number): WorkingMemorySnapshot[];
 }
 
 

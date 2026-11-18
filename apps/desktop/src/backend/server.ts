@@ -81,6 +81,7 @@ import {
   SensorimotorRepository,
   SituationalRepository,
   AttentionRepository,
+  WorkingMemoryRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -179,6 +180,9 @@ export class ArletexBackendServer {
   // Attention and Salience Subsystem (Milestone 10)
   public readonly attentionRepo: AttentionRepository;
 
+  // Working Memory Subsystem (Milestone 11)
+  public readonly workingMemoryRepo: WorkingMemoryRepository;
+
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
   private port = 0;
@@ -220,6 +224,7 @@ export class ArletexBackendServer {
     this.sensorimotorRepo = new SensorimotorRepository(db);
     this.situationalRepo = new SituationalRepository(db);
     this.attentionRepo = new AttentionRepository(db);
+    this.workingMemoryRepo = new WorkingMemoryRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -232,6 +237,7 @@ export class ArletexBackendServer {
       this.sensorimotorRepo,
       this.situationalRepo,
       this.attentionRepo,
+      this.workingMemoryRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -3895,6 +3901,103 @@ Rules:
         const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
         const evaluations = this.attentionRepo.listStimulusEvaluations({ wasAttended, stimulusType, limit });
         this.sendJson(res, 200, evaluations);
+        return;
+      }
+
+      // ==========================================
+      // Working Memory Subsystem Routes (Milestone 11)
+      // ==========================================
+      if (url.pathname === '/api/ape/working-memory/context' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const buffer = this.apeService.initializeWorkingMemoryContext(body.taskId, body.goalTitle, body.maxCapacity);
+        this.sendJson(res, 201, { success: true, buffer });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/working-memory/buffer' && method === 'GET') {
+        const buffer = this.apeService.workingMemoryEngine.getActiveBuffer();
+        this.sendJson(res, 200, buffer);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/working-memory/item' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const item = this.apeService.retainWorkingMemoryItem(body);
+        this.sendJson(res, 201, { success: true, item });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/working-memory/item' && method === 'GET') {
+        const key = url.searchParams.get('key');
+        if (!key) {
+          this.sendJson(res, 400, { error: 'Missing key parameter' });
+          return;
+        }
+        const item = this.apeService.getWorkingMemoryItem(key);
+        if (!item) {
+          this.sendJson(res, 404, { error: 'Item not found' });
+          return;
+        }
+        this.sendJson(res, 200, item);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/working-memory/item' && method === 'DELETE') {
+        const key = url.searchParams.get('key');
+        if (!key) {
+          this.sendJson(res, 400, { error: 'Missing key parameter' });
+          return;
+        }
+        const removed = this.apeService.removeWorkingMemoryItem(key);
+        this.sendJson(res, 200, { success: removed });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/working-memory/manipulate' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const updated = this.apeService.manipulateWorkingMemoryItem(body.slotKey, () => body.mutation);
+        this.sendJson(res, 200, { success: true, item: updated });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/working-memory/step' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const step = this.apeService.recordWorkingMemoryStep(body);
+        this.sendJson(res, 201, { success: true, step });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/working-memory/consideration' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const considerations = this.apeService.addWorkingMemoryConsideration(body.consideration);
+        this.sendJson(res, 200, { success: true, considerations });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/working-memory/consideration' && method === 'DELETE') {
+        const body = (await this.readJsonBody(req)) as any;
+        const considerations = this.apeService.removeWorkingMemoryConsideration(body.consideration);
+        this.sendJson(res, 200, { success: true, considerations });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/working-memory/snapshot' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const snapshot = this.apeService.createWorkingMemorySnapshot(body.reason || 'Manual snapshot');
+        this.sendJson(res, 201, { success: true, snapshot });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/working-memory/recover' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const buffer = this.apeService.recoverWorkingMemoryContext(body.taskId);
+        this.sendJson(res, 200, { success: true, buffer });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/working-memory/summary' && method === 'GET') {
+        const summary = this.apeService.getWorkingMemorySummary();
+        this.sendJson(res, 200, { summary });
         return;
       }
 

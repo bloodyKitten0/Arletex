@@ -1223,4 +1223,40 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('attention_salience_milestone10', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 22,
+    name: '022_working_memory_milestone11',
+    up: `
+      -- Working Memory Buffers (active task context, retained items, intermediate reasoning, capacity limits)
+      CREATE TABLE IF NOT EXISTS working_memory_buffers (
+        id TEXT PRIMARY KEY,
+        task_id TEXT NOT NULL,
+        goal_title TEXT NOT NULL,
+        items TEXT NOT NULL DEFAULT '[]',
+        intermediate_steps TEXT NOT NULL DEFAULT '[]',
+        considerations TEXT NOT NULL DEFAULT '[]',
+        max_capacity INTEGER NOT NULL DEFAULT 7,
+        used_slots INTEGER NOT NULL DEFAULT 0,
+        updated_at TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      -- Working Memory Snapshots (context recovery after interruptions, consolidated summaries)
+      CREATE TABLE IF NOT EXISTS working_memory_snapshots (
+        id TEXT PRIMARY KEY,
+        timestamp TEXT NOT NULL,
+        task_id TEXT NOT NULL,
+        buffer_data TEXT NOT NULL,
+        consolidated_summary TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_working_memory_buffers_task ON working_memory_buffers (task_id);
+      CREATE INDEX IF NOT EXISTS idx_working_memory_snapshots_time ON working_memory_snapshots (timestamp, task_id);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('working_memory_milestone11', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

@@ -86,6 +86,7 @@ import {
   ISensorimotorRepository,
   ISituationalRepository,
   IAttentionRepository,
+  IWorkingMemoryRepository,
 } from './interfaces.js';
 import { ILogger, rootLogger } from '../logger.js';
 import { AppraisalEngine } from './appraisalEngine.js';
@@ -109,6 +110,7 @@ import { EmbodimentInteroceptionEngine, InMemoryEmbodimentRepository } from './e
 import { InMemorySensorimotorRepository, SensorimotorActionEngine } from './sensorimotorActionEngine.js';
 import { InMemorySituationalRepository, SituationalAwarenessEngine } from './situationalAwarenessEngine.js';
 import { InMemoryAttentionRepository, AttentionSalienceEngine } from './attentionSalienceEngine.js';
+import { InMemoryWorkingMemoryRepository, WorkingMemoryEngine } from './workingMemoryEngine.js';
 
 export class ApeService {
   private readonly repo: IApeRepository;
@@ -134,6 +136,7 @@ export class ApeService {
   public readonly sensorimotorEngine: SensorimotorActionEngine;
   public readonly situationalEngine: SituationalAwarenessEngine;
   public readonly attentionEngine: AttentionSalienceEngine;
+  public readonly workingMemoryEngine: WorkingMemoryEngine;
 
   constructor(
     repo: IApeRepository,
@@ -147,6 +150,7 @@ export class ApeService {
     sensorimotorRepo?: ISensorimotorRepository,
     situationalRepo?: ISituationalRepository,
     attentionRepo?: IAttentionRepository,
+    workingMemoryRepo?: IWorkingMemoryRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -177,6 +181,9 @@ export class ApeService {
 
     const attRepo = attentionRepo || new InMemoryAttentionRepository();
     this.attentionEngine = new AttentionSalienceEngine({ repository: attRepo, logger });
+
+    const wmRepo = workingMemoryRepo || new InMemoryWorkingMemoryRepository();
+    this.workingMemoryEngine = new WorkingMemoryEngine({ repository: wmRepo, logger });
 
     this.appraisalEngine = new AppraisalEngine(emotions, inferenceGateway);
     this.transitionEngine = new AffectiveTransitionEngine(this.repo, emotions, moods);
@@ -747,6 +754,9 @@ export class ApeService {
     const attentionSummary = this.attentionEngine.getAttentionSummary();
     const attentionLine = `\n- Selective Attention & Salience: Focus: "${attentionSummary.focalTitle}" (${(attentionSummary.salience * 100).toFixed(0)}% salience, ${attentionSummary.dwellSeconds}s dwell). Invariant: Selective processing based on goals and interests, low-salience noise filtered.`;
 
+    const workingMemorySummary = this.workingMemoryEngine.getWorkingMemorySummary();
+    const workingMemoryLine = `\n- ${workingMemorySummary} Invariant: Retain and manipulate relevant context without relying on an unbounded prompt.`;
+
     const complexity = aff.contextual.affectiveComplexity;
     let complexityLine = '';
     if (
@@ -767,7 +777,7 @@ export class ApeService {
 [Active Psychology Engine (APE Phase 1 Live State)]
 - Current Persistent Mood: ${aff.currentMood.toUpperCase()}
 - Affective Dimensions: Valence ${aff.pad.valence >= 0 ? '+' : ''}${aff.pad.valence.toFixed(2)}, Arousal ${aff.pad.arousal.toFixed(2)}, Dominance ${aff.pad.dominance.toFixed(2)}
-- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}${capsLine}${limsLine}${narrativeLine}${temporalLine}${worldLine}${perceptionLine}${embodimentLine}${sensorimotorLine}${situationalLine}${attentionLine}${complexityLine}
+- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}${capsLine}${limsLine}${narrativeLine}${temporalLine}${worldLine}${perceptionLine}${embodimentLine}${sensorimotorLine}${situationalLine}${attentionLine}${workingMemoryLine}${complexityLine}
 - Demeanor & Cadence: ${modulation.toneDirective}
 - Vocal Register: ${modulation.vocalRegister}${intimacyDirectives}
 - Grounding: Speak naturally and authentically from this internal state. Keep dialogue focused, grounded, and concise without reciting internal parameters or rambling.
@@ -1148,6 +1158,66 @@ export class ApeService {
 
   public getAttentionSummary() {
     return this.attentionEngine.getAttentionSummary();
+  }
+
+  // ==========================================
+  // Working Memory (Milestone 11)
+  // ==========================================
+  public initializeWorkingMemoryContext(taskId: string, goalTitle: string, maxCapacity?: number) {
+    return this.workingMemoryEngine.initializeTaskContext(taskId, goalTitle, maxCapacity);
+  }
+
+  public retainWorkingMemoryItem(item: {
+    slotKey: string;
+    category: any;
+    content: any;
+    summary: string;
+    priority?: number;
+    ttlSeconds?: number;
+  }) {
+    return this.workingMemoryEngine.retainItem(item);
+  }
+
+  public manipulateWorkingMemoryItem(slotKey: string, mutation: any) {
+    return this.workingMemoryEngine.manipulateItem(slotKey, mutation);
+  }
+
+  public getWorkingMemoryItem(slotKey: string) {
+    return this.workingMemoryEngine.getItem(slotKey);
+  }
+
+  public removeWorkingMemoryItem(slotKey: string) {
+    return this.workingMemoryEngine.removeItem(slotKey);
+  }
+
+  public addWorkingMemoryConsideration(consideration: string) {
+    return this.workingMemoryEngine.addConsideration(consideration);
+  }
+
+  public removeWorkingMemoryConsideration(consideration: string) {
+    return this.workingMemoryEngine.removeConsideration(consideration);
+  }
+
+  public recordWorkingMemoryStep(step: {
+    goal: string;
+    premise: string;
+    intermediateConclusion: string;
+    confidence?: number;
+    derivationNotes?: string;
+  }) {
+    return this.workingMemoryEngine.recordIntermediateStep(step);
+  }
+
+  public createWorkingMemorySnapshot(reason: string) {
+    return this.workingMemoryEngine.createSnapshot(reason);
+  }
+
+  public recoverWorkingMemoryContext(taskId: string) {
+    return this.workingMemoryEngine.recoverContext(taskId);
+  }
+
+  public getWorkingMemorySummary() {
+    return this.workingMemoryEngine.getWorkingMemorySummary();
   }
 }
 
