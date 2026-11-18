@@ -84,6 +84,7 @@ import {
   WorkingMemoryRepository,
   MultiSystemMemoryRepository,
   SqliteLearningRepository,
+  SqliteReasoningRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -191,6 +192,9 @@ export class ArletexBackendServer {
   // Learning and Adaptation Subsystem (Milestone 13)
   public readonly learningRepo: SqliteLearningRepository;
 
+  // General Reasoning Subsystem (Milestone 14)
+  public readonly reasoningRepo: SqliteReasoningRepository;
+
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
   private port = 0;
@@ -235,6 +239,7 @@ export class ArletexBackendServer {
     this.workingMemoryRepo = new WorkingMemoryRepository(db);
     this.multiSystemMemoryRepo = new MultiSystemMemoryRepository(db);
     this.learningRepo = new SqliteLearningRepository(db);
+    this.reasoningRepo = new SqliteReasoningRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -250,6 +255,7 @@ export class ArletexBackendServer {
       this.workingMemoryRepo,
       this.multiSystemMemoryRepo,
       this.learningRepo,
+      this.reasoningRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -4143,6 +4149,101 @@ Rules:
 
       if (url.pathname === '/api/ape/learning/summary' && method === 'GET') {
         const summary = this.apeService.getLearningSummary();
+        this.sendJson(res, 200, summary);
+        return;
+      }
+
+      // ==========================================
+      // General Diverse Reasoning Routes (Milestone 14)
+      // ==========================================
+      if (url.pathname === '/api/ape/reasoning/deduce' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const task = this.apeService.executeDeduction(body.premises, body.query, body.domain);
+        this.sendJson(res, 201, { success: true, task });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/reasoning/induce' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const task = this.apeService.executeInduction(body.observations, body.query, body.domain);
+        this.sendJson(res, 201, { success: true, task });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/reasoning/abduce' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const task = this.apeService.executeAbduction(
+          body.surprisingObservation,
+          body.candidateExplanations,
+          body.query,
+          body.domain,
+        );
+        this.sendJson(res, 201, { success: true, task });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/reasoning/analogize' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const task = this.apeService.executeAnalogicalReasoning(
+          body.sourceDomain,
+          body.targetDomain,
+          body.mappedRelations,
+          body.query,
+        );
+        this.sendJson(res, 201, { success: true, task });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/reasoning/probabilistic' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const task = this.apeService.executeProbabilisticReasoning(
+          body.prior,
+          body.evidenceLikelihoodGivenHypothesis,
+          body.evidenceLikelihoodGivenNotHypothesis,
+          body.query,
+          body.domain,
+        );
+        this.sendJson(res, 201, { success: true, task });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/reasoning/math' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const task = this.apeService.executeMathematicalReasoning(
+          body.problem,
+          body.steps,
+          body.finalResult,
+          body.domain,
+        );
+        this.sendJson(res, 201, { success: true, task });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/reasoning/multistep' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const task = this.apeService.executeMultiStepReasoning(body);
+        this.sendJson(res, 201, { success: true, task });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/reasoning/evaluate-argument' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const evaluation = this.apeService.evaluateArgument(body.premises, body.conclusion);
+        this.sendJson(res, 200, { success: true, evaluation });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/reasoning/tasks' && method === 'GET') {
+        const domain = url.searchParams.get('domain') || undefined;
+        const paradigm = url.searchParams.get('paradigm') as any;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
+        const tasks = this.apeService.reasoningEngine['repo'].listTasks({ domain, paradigm, limit });
+        this.sendJson(res, 200, tasks);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/reasoning/summary' && method === 'GET') {
+        const summary = this.apeService.getReasoningSummary();
         this.sendJson(res, 200, summary);
         return;
       }

@@ -89,6 +89,7 @@ import {
   IWorkingMemoryRepository,
   IMultiSystemMemoryRepository,
   ILearningRepository,
+  IReasoningRepository,
 } from './interfaces.js';
 import { ILogger, rootLogger } from '../logger.js';
 import { AppraisalEngine } from './appraisalEngine.js';
@@ -115,6 +116,7 @@ import { InMemoryAttentionRepository, AttentionSalienceEngine } from './attentio
 import { InMemoryWorkingMemoryRepository, WorkingMemoryEngine } from './workingMemoryEngine.js';
 import { InMemoryMultiSystemMemoryRepository, MultiSystemMemoryEngine } from './multiSystemMemoryEngine.js';
 import { InMemoryLearningRepository, LearningAdaptationEngine } from './learningAdaptationEngine.js';
+import { InMemoryReasoningRepository, GeneralReasoningEngine } from './generalReasoningEngine.js';
 
 export class ApeService {
   private readonly repo: IApeRepository;
@@ -143,6 +145,7 @@ export class ApeService {
   public readonly workingMemoryEngine: WorkingMemoryEngine;
   public readonly multiSystemMemoryEngine: MultiSystemMemoryEngine;
   public readonly learningEngine: LearningAdaptationEngine;
+  public readonly reasoningEngine: GeneralReasoningEngine;
 
   constructor(
     repo: IApeRepository,
@@ -159,6 +162,7 @@ export class ApeService {
     workingMemoryRepo?: IWorkingMemoryRepository,
     multiSystemMemoryRepo?: IMultiSystemMemoryRepository,
     learningRepo?: ILearningRepository,
+    reasoningRepo?: IReasoningRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -198,6 +202,9 @@ export class ApeService {
 
     const lRepo = learningRepo || new InMemoryLearningRepository();
     this.learningEngine = new LearningAdaptationEngine({ repository: lRepo, logger });
+
+    const rRepo = reasoningRepo || new InMemoryReasoningRepository();
+    this.reasoningEngine = new GeneralReasoningEngine({ repository: rRepo, logger });
 
     this.appraisalEngine = new AppraisalEngine(emotions, inferenceGateway);
     this.transitionEngine = new AffectiveTransitionEngine(this.repo, emotions, moods);
@@ -777,6 +784,9 @@ export class ApeService {
     const learnSummary = this.learningEngine.getLearningSummary();
     const learningLine = `\n- Learning & Continuous Adaptation: ${learnSummary.totalExperiences} empirical experiences, ${learnSummary.totalRules} active rules (${learnSummary.generalizationCount} generalized). Invariant: Continuous behavioral adaptation grounded in direct experience and feedback.`;
 
+    const reasoningSummary = this.reasoningEngine.getReasoningSummary();
+    const reasoningLine = `\n- General Diverse Reasoning: Multi-paradigm cognitive synthesis (${reasoningSummary.totalReasoningTasks} tasks completed across deduction, induction, abduction, analogy, probability, math). Invariant: Epistemic humility, uncertainty rigorously calibrated.`;
+
     const complexity = aff.contextual.affectiveComplexity;
     let complexityLine = '';
     if (
@@ -797,7 +807,7 @@ export class ApeService {
 [Active Psychology Engine (APE Phase 1 Live State)]
 - Current Persistent Mood: ${aff.currentMood.toUpperCase()}
 - Affective Dimensions: Valence ${aff.pad.valence >= 0 ? '+' : ''}${aff.pad.valence.toFixed(2)}, Arousal ${aff.pad.arousal.toFixed(2)}, Dominance ${aff.pad.dominance.toFixed(2)}
-- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}${capsLine}${limsLine}${narrativeLine}${temporalLine}${worldLine}${perceptionLine}${embodimentLine}${sensorimotorLine}${situationalLine}${attentionLine}${workingMemoryLine}${multiSystemMemoryLine}${learningLine}${complexityLine}
+- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}${capsLine}${limsLine}${narrativeLine}${temporalLine}${worldLine}${perceptionLine}${embodimentLine}${sensorimotorLine}${situationalLine}${attentionLine}${workingMemoryLine}${multiSystemMemoryLine}${learningLine}${reasoningLine}${complexityLine}
 - Demeanor & Cadence: ${modulation.toneDirective}
 - Vocal Register: ${modulation.vocalRegister}${intimacyDirectives}
 - Grounding: Speak naturally and authentically from this internal state. Keep dialogue focused, grounded, and concise without reciting internal parameters or rambling.
@@ -1348,6 +1358,46 @@ export class ApeService {
 
   public getLearningSummary() {
     return this.learningEngine.getLearningSummary();
+  }
+
+  // ==========================================
+  // General Diverse Reasoning (Milestone 14)
+  // ==========================================
+
+  public executeDeduction(premises: any, query: string, domain?: string) {
+    return this.reasoningEngine.executeDeduction(premises, query, domain);
+  }
+
+  public executeInduction(observations: string[], query: string, domain?: string) {
+    return this.reasoningEngine.executeInduction(observations, query, domain);
+  }
+
+  public executeAbduction(surprisingObservation: string, candidateExplanations: any, query: string, domain?: string) {
+    return this.reasoningEngine.executeAbduction(surprisingObservation, candidateExplanations, query, domain);
+  }
+
+  public executeAnalogicalReasoning(sourceDomain: string, targetDomain: string, mappedRelations: any, query: string) {
+    return this.reasoningEngine.executeAnalogicalReasoning(sourceDomain, targetDomain, mappedRelations, query);
+  }
+
+  public executeProbabilisticReasoning(prior: number, pEgivenH: number, pEgivenNotH: number, query: string, domain?: string) {
+    return this.reasoningEngine.executeProbabilisticReasoning(prior, pEgivenH, pEgivenNotH, query, domain);
+  }
+
+  public executeMathematicalReasoning(problem: string, steps: any, finalResult: string, domain?: string) {
+    return this.reasoningEngine.executeMathematicalReasoning(problem, steps, finalResult, domain);
+  }
+
+  public executeMultiStepReasoning(input: any) {
+    return this.reasoningEngine.executeMultiStepReasoning(input);
+  }
+
+  public evaluateArgument(premises: any, conclusion: string) {
+    return this.reasoningEngine.evaluateArgument(premises, conclusion);
+  }
+
+  public getReasoningSummary() {
+    return this.reasoningEngine.getReasoningSummary();
   }
 }
 

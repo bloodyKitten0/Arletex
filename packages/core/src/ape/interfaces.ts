@@ -67,6 +67,8 @@ import {
   LearningExperience,
   BehavioralAdaptationRule,
   LearningExperienceFilter,
+  ReasoningTask,
+  ReasoningParadigm,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -338,6 +340,13 @@ export interface ILearningRepository {
   listRules(filter?: { domain?: string; minConfidence?: number }): BehavioralAdaptationRule[];
   updateRule(rule: BehavioralAdaptationRule): void;
   deleteRule(id: string): void;
+}
+
+export interface IReasoningRepository {
+  saveTask(task: ReasoningTask): void;
+  getTaskById(id: string): ReasoningTask | null;
+  listTasks(filter?: { domain?: string; paradigm?: ReasoningParadigm; limit?: number }): ReasoningTask[];
+  deleteTask(id: string): void;
 }
 
 

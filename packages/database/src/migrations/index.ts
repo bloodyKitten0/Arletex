@@ -1347,4 +1347,31 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('learning_adaptation_milestone13', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 25,
+    name: '025_general_reasoning_milestone14',
+    up: `
+      -- Reasoning Tasks (comprehensive tasks across deductive, inductive, abductive, analogical, probabilistic, abstract, mathematical, multi-step)
+      CREATE TABLE IF NOT EXISTS reasoning_tasks (
+        id TEXT PRIMARY KEY,
+        query TEXT NOT NULL,
+        domain TEXT NOT NULL,
+        primary_paradigm TEXT NOT NULL,
+        premises TEXT NOT NULL DEFAULT '[]',
+        steps TEXT NOT NULL DEFAULT '[]',
+        final_conclusion TEXT NOT NULL,
+        composite_confidence REAL NOT NULL,
+        uncertainty_level REAL NOT NULL,
+        argument_evaluation TEXT,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_reasoning_tasks_domain ON reasoning_tasks (domain);
+      CREATE INDEX IF NOT EXISTS idx_reasoning_tasks_paradigm ON reasoning_tasks (primary_paradigm);
+      CREATE INDEX IF NOT EXISTS idx_reasoning_tasks_timestamp ON reasoning_tasks (timestamp);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('general_reasoning_milestone14', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

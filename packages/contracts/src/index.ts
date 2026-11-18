@@ -692,5 +692,10 @@ export * from './multiSystemMemory.js';
 // ==========================================
 export * from './learning.js';
 
+// ==========================================
+// General Reasoning Contracts (Milestone 14)
+// ==========================================
+export * from './reasoning.js';
+
 
 
