@@ -682,5 +682,10 @@ export * from './attention.js';
 // ==========================================
 export * from './workingMemory.js';
 
+// ==========================================
+// Multi-System Memory Contracts (Milestone 12)
+// ==========================================
+export * from './multiSystemMemory.js';
+
 
 

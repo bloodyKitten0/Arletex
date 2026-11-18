@@ -87,6 +87,7 @@ import {
   ISituationalRepository,
   IAttentionRepository,
   IWorkingMemoryRepository,
+  IMultiSystemMemoryRepository,
 } from './interfaces.js';
 import { ILogger, rootLogger } from '../logger.js';
 import { AppraisalEngine } from './appraisalEngine.js';
@@ -111,6 +112,7 @@ import { InMemorySensorimotorRepository, SensorimotorActionEngine } from './sens
 import { InMemorySituationalRepository, SituationalAwarenessEngine } from './situationalAwarenessEngine.js';
 import { InMemoryAttentionRepository, AttentionSalienceEngine } from './attentionSalienceEngine.js';
 import { InMemoryWorkingMemoryRepository, WorkingMemoryEngine } from './workingMemoryEngine.js';
+import { InMemoryMultiSystemMemoryRepository, MultiSystemMemoryEngine } from './multiSystemMemoryEngine.js';
 
 export class ApeService {
   private readonly repo: IApeRepository;
@@ -137,6 +139,7 @@ export class ApeService {
   public readonly situationalEngine: SituationalAwarenessEngine;
   public readonly attentionEngine: AttentionSalienceEngine;
   public readonly workingMemoryEngine: WorkingMemoryEngine;
+  public readonly multiSystemMemoryEngine: MultiSystemMemoryEngine;
 
   constructor(
     repo: IApeRepository,
@@ -151,6 +154,7 @@ export class ApeService {
     situationalRepo?: ISituationalRepository,
     attentionRepo?: IAttentionRepository,
     workingMemoryRepo?: IWorkingMemoryRepository,
+    multiSystemMemoryRepo?: IMultiSystemMemoryRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -184,6 +188,9 @@ export class ApeService {
 
     const wmRepo = workingMemoryRepo || new InMemoryWorkingMemoryRepository();
     this.workingMemoryEngine = new WorkingMemoryEngine({ repository: wmRepo, logger });
+
+    const msRepo = multiSystemMemoryRepo || new InMemoryMultiSystemMemoryRepository();
+    this.multiSystemMemoryEngine = new MultiSystemMemoryEngine({ repository: msRepo, logger });
 
     this.appraisalEngine = new AppraisalEngine(emotions, inferenceGateway);
     this.transitionEngine = new AffectiveTransitionEngine(this.repo, emotions, moods);
@@ -757,6 +764,9 @@ export class ApeService {
     const workingMemorySummary = this.workingMemoryEngine.getWorkingMemorySummary();
     const workingMemoryLine = `\n- ${workingMemorySummary} Invariant: Retain and manipulate relevant context without relying on an unbounded prompt.`;
 
+    const msSummary = this.multiSystemMemoryEngine.getMultiSystemSummary();
+    const multiSystemMemoryLine = `\n- Multi-System Memory: Differentiated systems active (${msSummary.totalMemories} entries, ${msSummary.protectedCount} protected). Origin & epistemic reliability strictly verified.`;
+
     const complexity = aff.contextual.affectiveComplexity;
     let complexityLine = '';
     if (
@@ -777,7 +787,7 @@ export class ApeService {
 [Active Psychology Engine (APE Phase 1 Live State)]
 - Current Persistent Mood: ${aff.currentMood.toUpperCase()}
 - Affective Dimensions: Valence ${aff.pad.valence >= 0 ? '+' : ''}${aff.pad.valence.toFixed(2)}, Arousal ${aff.pad.arousal.toFixed(2)}, Dominance ${aff.pad.dominance.toFixed(2)}
-- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}${capsLine}${limsLine}${narrativeLine}${temporalLine}${worldLine}${perceptionLine}${embodimentLine}${sensorimotorLine}${situationalLine}${attentionLine}${workingMemoryLine}${complexityLine}
+- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}${capsLine}${limsLine}${narrativeLine}${temporalLine}${worldLine}${perceptionLine}${embodimentLine}${sensorimotorLine}${situationalLine}${attentionLine}${workingMemoryLine}${multiSystemMemoryLine}${complexityLine}
 - Demeanor & Cadence: ${modulation.toneDirective}
 - Vocal Register: ${modulation.vocalRegister}${intimacyDirectives}
 - Grounding: Speak naturally and authentically from this internal state. Keep dialogue focused, grounded, and concise without reciting internal parameters or rambling.
@@ -1218,6 +1228,63 @@ export class ApeService {
 
   public getWorkingMemorySummary() {
     return this.workingMemoryEngine.getWorkingMemorySummary();
+  }
+
+  // ==========================================
+  // Multi-System Memory (Milestone 12)
+  // ==========================================
+  public encodeMultiSystemMemory(input: {
+    systemType: any;
+    content: string;
+    summary?: string;
+    source: any;
+    confidence?: number;
+    importance?: number;
+    tags?: string[];
+    associations?: string[];
+    isProtected?: boolean;
+  }) {
+    return this.multiSystemMemoryEngine.encode(input);
+  }
+
+  public retrieveMultiSystemMemory(options: any) {
+    return this.multiSystemMemoryEngine.retrieve(options);
+  }
+
+  public consolidateWorkingMemoryToLongTerm(params: {
+    slotKey: string;
+    content: string;
+    summary?: string;
+    targetSystem: 'semantic' | 'autobiographical' | 'procedural' | 'episodic';
+    author?: string;
+    importance?: number;
+    tags?: string[];
+  }) {
+    return this.multiSystemMemoryEngine.consolidateWorkingMemory(params);
+  }
+
+  public applyMemoryDecay(elapsedHours: number) {
+    return this.multiSystemMemoryEngine.applyMemoryDecay(elapsedHours);
+  }
+
+  public correctMultiSystemMemory(memoryId: string, newContent: string, reason: string) {
+    return this.multiSystemMemoryEngine.correctMemory(memoryId, newContent, reason);
+  }
+
+  public detectMemoryContradiction(memoryIdA: string, memoryIdB: string, conflictDescription: string) {
+    return this.multiSystemMemoryEngine.detectContradiction(memoryIdA, memoryIdB, conflictDescription);
+  }
+
+  public resolveMemoryContradiction(
+    contradictionId: string,
+    strategy: 'override_with_verified' | 'epistemic_uncertainty',
+    winningMemoryId?: string,
+  ) {
+    return this.multiSystemMemoryEngine.resolveContradiction(contradictionId, strategy, winningMemoryId);
+  }
+
+  public getMultiSystemMemorySummary() {
+    return this.multiSystemMemoryEngine.getMultiSystemSummary();
   }
 }
 

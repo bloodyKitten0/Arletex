@@ -61,6 +61,9 @@ import {
   SalienceBreakdown,
   WorkingMemoryBuffer,
   WorkingMemorySnapshot,
+  MultiSystemMemoryEntry,
+  MemoryContradiction,
+  MultiSystemQueryOptions,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -307,6 +310,19 @@ export interface IWorkingMemoryRepository {
   saveSnapshot(snapshot: WorkingMemorySnapshot): void;
   getLatestSnapshot(taskId?: string): WorkingMemorySnapshot | null;
   listSnapshots(taskId?: string, limit?: number): WorkingMemorySnapshot[];
+}
+
+export interface IMultiSystemMemoryRepository {
+  createEntry(entry: MultiSystemMemoryEntry): void;
+  getEntryById(id: string): MultiSystemMemoryEntry | null;
+  updateEntry(entry: MultiSystemMemoryEntry): void;
+  listEntries(options?: MultiSystemQueryOptions): MultiSystemMemoryEntry[];
+  deleteEntry(id: string): void;
+
+  recordContradiction(contradiction: MemoryContradiction): void;
+  getContradictionById(id: string): MemoryContradiction | null;
+  listContradictions(status?: MemoryContradiction['status']): MemoryContradiction[];
+  updateContradiction(contradiction: MemoryContradiction): void;
 }
 
 

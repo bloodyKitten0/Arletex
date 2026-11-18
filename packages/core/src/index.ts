@@ -29,6 +29,7 @@ export * from './ape/sensorimotorActionEngine.js';
 export * from './ape/situationalAwarenessEngine.js';
 export * from './ape/attentionSalienceEngine.js';
 export * from './ape/workingMemoryEngine.js';
+export * from './ape/multiSystemMemoryEngine.js';
 export * from './ape/apeService.js';
 
 // Digital Agency Subsystem

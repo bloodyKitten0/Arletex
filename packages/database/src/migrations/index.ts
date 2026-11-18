@@ -1259,4 +1259,48 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('working_memory_milestone11', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 23,
+    name: '023_multi_system_memory_milestone12',
+    up: `
+      -- Multi-System Memory Entries (differentiated memory architecture across 9 systems)
+      CREATE TABLE IF NOT EXISTS multi_system_memory_entries (
+        id TEXT PRIMARY KEY,
+        system_type TEXT NOT NULL,
+        content TEXT NOT NULL,
+        summary TEXT,
+        source_data TEXT NOT NULL,
+        confidence REAL NOT NULL DEFAULT 0.8,
+        importance REAL NOT NULL DEFAULT 0.5,
+        decay_factor REAL NOT NULL DEFAULT 0.05,
+        tags TEXT NOT NULL DEFAULT '[]',
+        associations TEXT NOT NULL DEFAULT '[]',
+        contradiction_with_id TEXT,
+        correction_trail TEXT NOT NULL DEFAULT '[]',
+        is_protected INTEGER NOT NULL DEFAULT 0,
+        is_archived INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        last_retrieved_at TEXT NOT NULL
+      );
+
+      -- Memory Contradictions (tracking epistemic disputes and resolution strategies)
+      CREATE TABLE IF NOT EXISTS memory_contradictions (
+        id TEXT PRIMARY KEY,
+        memory_id_a TEXT NOT NULL,
+        memory_id_b TEXT NOT NULL,
+        conflict_description TEXT NOT NULL,
+        detected_at TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'open',
+        resolution_strategy TEXT,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_multi_system_memory_type ON multi_system_memory_entries (system_type, is_archived);
+      CREATE INDEX IF NOT EXISTS idx_multi_system_memory_created ON multi_system_memory_entries (created_at);
+      CREATE INDEX IF NOT EXISTS idx_memory_contradictions_status ON memory_contradictions (status);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('multi_system_memory_milestone12', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

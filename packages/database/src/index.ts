@@ -19,5 +19,6 @@ export * from './repositories/sensorimotorRepository.js';
 export * from './repositories/situationalRepository.js';
 export * from './repositories/attentionRepository.js';
 export * from './repositories/workingMemoryRepository.js';
+export * from './repositories/multiSystemMemoryRepository.js';
 
 

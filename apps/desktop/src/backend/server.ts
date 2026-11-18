@@ -82,6 +82,7 @@ import {
   SituationalRepository,
   AttentionRepository,
   WorkingMemoryRepository,
+  MultiSystemMemoryRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -183,6 +184,9 @@ export class ArletexBackendServer {
   // Working Memory Subsystem (Milestone 11)
   public readonly workingMemoryRepo: WorkingMemoryRepository;
 
+  // Multi-System Memory Subsystem (Milestone 12)
+  public readonly multiSystemMemoryRepo: MultiSystemMemoryRepository;
+
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
   private port = 0;
@@ -225,6 +229,7 @@ export class ArletexBackendServer {
     this.situationalRepo = new SituationalRepository(db);
     this.attentionRepo = new AttentionRepository(db);
     this.workingMemoryRepo = new WorkingMemoryRepository(db);
+    this.multiSystemMemoryRepo = new MultiSystemMemoryRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -238,6 +243,7 @@ export class ArletexBackendServer {
       this.situationalRepo,
       this.attentionRepo,
       this.workingMemoryRepo,
+      this.multiSystemMemoryRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -3998,6 +4004,64 @@ Rules:
       if (url.pathname === '/api/ape/working-memory/summary' && method === 'GET') {
         const summary = this.apeService.getWorkingMemorySummary();
         this.sendJson(res, 200, { summary });
+        return;
+      }
+
+      // ==========================================
+      // Multi-System Memory Subsystem Routes (Milestone 12)
+      // ==========================================
+      if (url.pathname === '/api/ape/memory/multi/encode' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const entry = this.apeService.encodeMultiSystemMemory(body);
+        this.sendJson(res, 201, { success: true, entry });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/memory/multi/query' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const result = this.apeService.retrieveMultiSystemMemory(body);
+        this.sendJson(res, 200, result);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/memory/multi/consolidate' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const entry = this.apeService.consolidateWorkingMemoryToLongTerm(body);
+        this.sendJson(res, 201, { success: true, entry });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/memory/multi/decay' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const result = this.apeService.applyMemoryDecay(body.elapsedHours || 24);
+        this.sendJson(res, 200, { success: true, ...result });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/memory/multi/correct' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const entry = this.apeService.correctMultiSystemMemory(body.id, body.newContent, body.reason);
+        this.sendJson(res, 200, { success: true, entry });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/memory/multi/contradiction' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const contradiction = this.apeService.detectMemoryContradiction(body.memoryIdA, body.memoryIdB, body.conflictDescription);
+        this.sendJson(res, 201, { success: true, contradiction });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/memory/multi/contradiction/resolve' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const resolved = this.apeService.resolveMemoryContradiction(body.id, body.strategy, body.winningMemoryId);
+        this.sendJson(res, 200, { success: true, contradiction: resolved });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/memory/multi/summary' && method === 'GET') {
+        const summary = this.apeService.getMultiSystemMemorySummary();
+        this.sendJson(res, 200, summary);
         return;
       }
 
