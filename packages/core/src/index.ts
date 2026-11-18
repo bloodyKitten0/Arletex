@@ -26,6 +26,7 @@ export * from './ape/worldModelEngine.js';
 export * from './ape/multimodalPerceptionEngine.js';
 export * from './ape/embodimentInteroceptionEngine.js';
 export * from './ape/sensorimotorActionEngine.js';
+export * from './ape/situationalAwarenessEngine.js';
 export * from './ape/apeService.js';
 
 // Digital Agency Subsystem

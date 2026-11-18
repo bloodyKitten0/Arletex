@@ -667,4 +667,10 @@ export * from './embodiment.js';
 // ==========================================
 export * from './sensorimotor.js';
 
+// ==========================================
+// Situational Awareness Contracts (Milestone 09)
+// ==========================================
+export * from './situational.js';
+
+
 

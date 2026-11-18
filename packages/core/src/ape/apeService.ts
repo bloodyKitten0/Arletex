@@ -84,6 +84,7 @@ import {
   IWorldRepository,
   IEmbodimentRepository,
   ISensorimotorRepository,
+  ISituationalRepository,
 } from './interfaces.js';
 import { ILogger, rootLogger } from '../logger.js';
 import { AppraisalEngine } from './appraisalEngine.js';
@@ -105,6 +106,7 @@ import { InMemoryWorldRepository, WorldModelEngine } from './worldModelEngine.js
 import { InMemoryPerceptionRepository, MultimodalPerceptionEngine } from './multimodalPerceptionEngine.js';
 import { EmbodimentInteroceptionEngine, InMemoryEmbodimentRepository } from './embodimentInteroceptionEngine.js';
 import { InMemorySensorimotorRepository, SensorimotorActionEngine } from './sensorimotorActionEngine.js';
+import { InMemorySituationalRepository, SituationalAwarenessEngine } from './situationalAwarenessEngine.js';
 
 export class ApeService {
   private readonly repo: IApeRepository;
@@ -128,6 +130,7 @@ export class ApeService {
   public readonly perceptionEngine: MultimodalPerceptionEngine;
   public readonly embodimentEngine: EmbodimentInteroceptionEngine;
   public readonly sensorimotorEngine: SensorimotorActionEngine;
+  public readonly situationalEngine: SituationalAwarenessEngine;
 
   constructor(
     repo: IApeRepository,
@@ -139,6 +142,7 @@ export class ApeService {
     perceptionRepo?: IPerceptionRepository,
     embodimentRepo?: IEmbodimentRepository,
     sensorimotorRepo?: ISensorimotorRepository,
+    situationalRepo?: ISituationalRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -163,6 +167,9 @@ export class ApeService {
 
     const sRepo = sensorimotorRepo || new InMemorySensorimotorRepository();
     this.sensorimotorEngine = new SensorimotorActionEngine({ repository: sRepo, logger });
+
+    const sitRepo = situationalRepo || new InMemorySituationalRepository();
+    this.situationalEngine = new SituationalAwarenessEngine({ repository: sitRepo, logger });
 
     this.appraisalEngine = new AppraisalEngine(emotions, inferenceGateway);
     this.transitionEngine = new AffectiveTransitionEngine(this.repo, emotions, moods);
@@ -727,6 +734,9 @@ export class ApeService {
     const sensorimotorSummary = this.sensorimotorEngine.getActionSummary();
     const sensorimotorLine = `\n- Sensorimotor & Action Grounding: Executed actions: ${sensorimotorSummary.totalActions} (${sensorimotorSummary.successRate}% verified success). Invariant: Attempted actions strictly distinguished from verified outcomes.`;
 
+    const situational = this.situationalEngine.describeCurrentSituation();
+    const situationalLine = `\n- Situational Awareness: ${situational.currentActivityDescription}${situational.recentChanges.length ? ` Recent changes: ${situational.recentChanges.join('; ')}.` : ''}`;
+
     const complexity = aff.contextual.affectiveComplexity;
     let complexityLine = '';
     if (
@@ -747,7 +757,7 @@ export class ApeService {
 [Active Psychology Engine (APE Phase 1 Live State)]
 - Current Persistent Mood: ${aff.currentMood.toUpperCase()}
 - Affective Dimensions: Valence ${aff.pad.valence >= 0 ? '+' : ''}${aff.pad.valence.toFixed(2)}, Arousal ${aff.pad.arousal.toFixed(2)}, Dominance ${aff.pad.dominance.toFixed(2)}
-- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}${capsLine}${limsLine}${narrativeLine}${temporalLine}${worldLine}${perceptionLine}${embodimentLine}${sensorimotorLine}${complexityLine}
+- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}${capsLine}${limsLine}${narrativeLine}${temporalLine}${worldLine}${perceptionLine}${embodimentLine}${sensorimotorLine}${situationalLine}${complexityLine}
 - Demeanor & Cadence: ${modulation.toneDirective}
 - Vocal Register: ${modulation.vocalRegister}${intimacyDirectives}
 - Grounding: Speak naturally and authentically from this internal state. Keep dialogue focused, grounded, and concise without reciting internal parameters or rambling.
@@ -1050,6 +1060,61 @@ export class ApeService {
 
   public getRecentSensorimotorActions(limit?: number): SensorimotorActionRecord[] {
     return this.sensorimotorEngine.getRecentActions(limit);
+  }
+
+  // ==========================================
+  // Situational Awareness (Milestone 09)
+  // ==========================================
+  public startOperationalActivity(options: {
+    id?: string;
+    title: string;
+    description: string;
+    category: any;
+    activeApplication?: any;
+    associatedGoalId?: string | null;
+  }) {
+    return this.situationalEngine.startActivity(options);
+  }
+
+  public updateActiveApplication(app: { name: string; windowTitle?: string; pid?: number; isForeground?: boolean }) {
+    return this.situationalEngine.updateActiveApplication(app);
+  }
+
+  public getActiveOperationalActivity() {
+    return this.situationalEngine.getActiveActivity();
+  }
+
+  public completeOperationalActivity(activityId?: string) {
+    return this.situationalEngine.completeActivity(activityId);
+  }
+
+  public pauseOperationalActivity(activityId?: string) {
+    return this.situationalEngine.pauseActivity(activityId);
+  }
+
+  public resumeOperationalActivity(activityId: string) {
+    return this.situationalEngine.resumeActivity(activityId);
+  }
+
+  public recordEnvironmentalEvent(event: any) {
+    return this.situationalEngine.recordEnvironmentalEvent(event);
+  }
+
+  public handleSituationalInterruption(interruption: {
+    description: string;
+    source: string;
+    eventType?: any;
+    relevanceScore?: number;
+  }) {
+    return this.situationalEngine.handleInterruption(interruption);
+  }
+
+  public describeCurrentSituation() {
+    return this.situationalEngine.describeCurrentSituation();
+  }
+
+  public createSituationalSnapshot() {
+    return this.situationalEngine.createSituationalSnapshot();
   }
 }
 

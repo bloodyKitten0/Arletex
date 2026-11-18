@@ -50,6 +50,11 @@ import {
   SensorimotorActionRecord,
   InteractionStrategy,
   SpatialCalibration,
+  OperationalActivity,
+  ActivityStatus,
+  EnvironmentalEvent,
+  EventLayer,
+  SituationalContextSnapshot,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -248,6 +253,22 @@ export interface ISensorimotorRepository {
 
   saveSpatialCalibration(calibration: SpatialCalibration): void;
   getLatestSpatialCalibration(displayId?: string): SpatialCalibration | null;
+}
+
+export interface ISituationalRepository {
+  saveActivity(activity: OperationalActivity): void;
+  getActivityById(id: string): OperationalActivity | null;
+  getActiveActivity(): OperationalActivity | null;
+  listActivities(status?: ActivityStatus, limit?: number): OperationalActivity[];
+
+  recordEnvironmentalEvent(event: EnvironmentalEvent): void;
+  getEnvironmentalEventById(id: string): EnvironmentalEvent | null;
+  listEnvironmentalEvents(filter?: { layer?: EventLayer; isInterruption?: boolean; minRelevance?: number; limit?: number }): EnvironmentalEvent[];
+
+  saveSnapshot(snapshot: SituationalContextSnapshot): void;
+  getSnapshotById(id: string): SituationalContextSnapshot | null;
+  getLatestSnapshot(): SituationalContextSnapshot | null;
+  listSnapshots(limit?: number): SituationalContextSnapshot[];
 }
 
 

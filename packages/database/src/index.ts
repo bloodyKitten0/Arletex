@@ -16,5 +16,6 @@ export * from './repositories/worldRepository.js';
 export * from './repositories/perceptionRepository.js';
 export * from './repositories/embodimentRepository.js';
 export * from './repositories/sensorimotorRepository.js';
+export * from './repositories/situationalRepository.js';
 
 

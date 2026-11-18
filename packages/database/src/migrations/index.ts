@@ -1120,4 +1120,54 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('sensorimotor_action_grounding_milestone8', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 20,
+    name: '020_situational_awareness_milestone9',
+    up: `
+      -- Operational Activities (tracking Arle's current activity, status, active app, and associated goal)
+      CREATE TABLE IF NOT EXISTS operational_activities (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        category TEXT NOT NULL,
+        status TEXT NOT NULL,
+        started_at TEXT NOT NULL,
+        last_active_at TEXT NOT NULL,
+        active_application TEXT NOT NULL,
+        associated_goal_id TEXT,
+        created_at TEXT NOT NULL
+      );
+
+      -- Environmental Events (foreground/background events, relevance scores, interruptions)
+      CREATE TABLE IF NOT EXISTS environmental_events (
+        id TEXT PRIMARY KEY,
+        timestamp TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        layer TEXT NOT NULL,
+        description TEXT NOT NULL,
+        source TEXT NOT NULL,
+        relevance_score REAL NOT NULL DEFAULT 0.5,
+        is_interruption INTEGER NOT NULL DEFAULT 0,
+        interrupted_activity_id TEXT,
+        created_at TEXT NOT NULL
+      );
+
+      -- Situational Context Snapshots
+      CREATE TABLE IF NOT EXISTS situational_snapshots (
+        id TEXT PRIMARY KEY,
+        timestamp TEXT NOT NULL,
+        current_activity_id TEXT,
+        snapshot_data TEXT NOT NULL,
+        situational_narrative TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_operational_activities_status ON operational_activities (status, last_active_at);
+      CREATE INDEX IF NOT EXISTS idx_environmental_events_layer ON environmental_events (layer, relevance_score, timestamp);
+      CREATE INDEX IF NOT EXISTS idx_situational_snapshots_time ON situational_snapshots (timestamp);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('situational_awareness_milestone9', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

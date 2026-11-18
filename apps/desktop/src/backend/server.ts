@@ -79,6 +79,7 @@ import {
   PerceptionRepository,
   EmbodimentRepository,
   SensorimotorRepository,
+  SituationalRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -171,6 +172,9 @@ export class ArletexBackendServer {
   // Sensorimotor and Action Grounding Subsystem (Milestone 08)
   public readonly sensorimotorRepo: SensorimotorRepository;
 
+  // Situational Awareness Subsystem (Milestone 09)
+  public readonly situationalRepo: SituationalRepository;
+
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
   private port = 0;
@@ -210,6 +214,7 @@ export class ArletexBackendServer {
     this.perceptionRepo = new PerceptionRepository(db);
     this.embodimentRepo = new EmbodimentRepository(db);
     this.sensorimotorRepo = new SensorimotorRepository(db);
+    this.situationalRepo = new SituationalRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -220,6 +225,7 @@ export class ArletexBackendServer {
       this.perceptionRepo,
       this.embodimentRepo,
       this.sensorimotorRepo,
+      this.situationalRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -3740,6 +3746,95 @@ Rules:
       if (url.pathname === '/api/ape/sensorimotor/summary' && method === 'GET') {
         const summary = this.apeService.sensorimotorEngine.getActionSummary();
         this.sendJson(res, 200, summary);
+        return;
+      }
+
+      // ==========================================
+      // Situational Awareness Subsystem Routes (Milestone 09)
+      // ==========================================
+      if (url.pathname === '/api/ape/situational/activity' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const activity = this.apeService.startOperationalActivity(body);
+        this.sendJson(res, 201, { success: true, activity });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/situational/activity' && method === 'GET') {
+        const activity = this.apeService.getActiveOperationalActivity();
+        this.sendJson(res, 200, activity);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/situational/activity/pause' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const paused = this.apeService.pauseOperationalActivity(body?.id);
+        this.sendJson(res, 200, { success: Boolean(paused), activity: paused });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/situational/activity/resume' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const resumed = this.apeService.resumeOperationalActivity(body.id);
+        this.sendJson(res, 200, { success: true, activity: resumed });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/situational/activity/complete' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const completed = this.apeService.completeOperationalActivity(body?.id);
+        this.sendJson(res, 200, { success: Boolean(completed), activity: completed });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/situational/app' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const updated = this.apeService.updateActiveApplication(body);
+        this.sendJson(res, 200, { success: true, activeApplication: updated });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/situational/event' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const event = this.apeService.recordEnvironmentalEvent(body);
+        this.sendJson(res, 201, { success: true, event });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/situational/events' && method === 'GET') {
+        const layer = (url.searchParams.get('layer') as any) || undefined;
+        const isInterruption = url.searchParams.has('isInterruption')
+          ? url.searchParams.get('isInterruption') === 'true'
+          : undefined;
+        const minRelevance = url.searchParams.get('minRelevance')
+          ? parseFloat(url.searchParams.get('minRelevance')!)
+          : undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const events = this.situationalRepo.listEnvironmentalEvents({
+          layer,
+          isInterruption,
+          minRelevance,
+          limit,
+        });
+        this.sendJson(res, 200, events);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/situational/interruption' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const event = this.apeService.handleSituationalInterruption(body);
+        this.sendJson(res, 201, { success: true, event });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/situational/describe' && method === 'GET') {
+        const description = this.apeService.describeCurrentSituation();
+        this.sendJson(res, 200, description);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/situational/snapshot' && (method === 'GET' || method === 'POST')) {
+        const snapshot = this.apeService.createSituationalSnapshot();
+        this.sendJson(res, 200, snapshot);
         return;
       }
 
