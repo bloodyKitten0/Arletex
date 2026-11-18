@@ -28,10 +28,15 @@ import {
   UpdateMemoryInputSchema,
   VisionInspectInputSchema,
   VideoInspectInputSchema,
+  CreateCheckpointInputSchema,
+  RestoreCheckpointInputSchema,
+  VisualPerceptionInputSchema,
+  AuditoryPerceptionInputSchema,
 } from '@arletex/contracts';
 import {
   ActionPermissionController,
   ApeService,
+  ContinuityManager,
   DEFAULT_ARLE_SYSTEM_PROMPT,
   ILogger,
   IntentTaskManager,
@@ -67,6 +72,13 @@ import {
   MessageRepository,
   MigrationRunner,
   PreferenceRepository,
+  ContinuityRepository,
+  NarrativeRepository,
+  TemporalRepository,
+  WorldRepository,
+  PerceptionRepository,
+  EmbodimentRepository,
+  SensorimotorRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -137,6 +149,28 @@ export class ArletexBackendServer {
   public readonly memorySync: MemoryExperienceSync;
   public readonly intentTaskManager: IntentTaskManager;
 
+  // Persistent Individual Continuity Subsystem
+  public readonly continuityRepo: ContinuityRepository;
+  public readonly continuityManager: ContinuityManager;
+
+  // Narrative Identity Subsystem (Milestone 03)
+  public readonly narrativeRepo: NarrativeRepository;
+
+  // Temporal Cognition Subsystem (Milestone 04)
+  public readonly temporalRepo: TemporalRepository;
+
+  // World Model Subsystem (Milestone 05)
+  public readonly worldRepo: WorldRepository;
+
+  // Multimodal Perception Subsystem (Milestone 06)
+  public readonly perceptionRepo: PerceptionRepository;
+
+  // Embodiment and Interoception Subsystem (Milestone 07)
+  public readonly embodimentRepo: EmbodimentRepository;
+
+  // Sensorimotor and Action Grounding Subsystem (Milestone 08)
+  public readonly sensorimotorRepo: SensorimotorRepository;
+
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
   private port = 0;
@@ -156,7 +190,7 @@ export class ArletexBackendServer {
     this.authToken = process.env['ARLETEX_AUTH_TOKEN'] || '';
 
     this.dbService = new DatabaseService(config.databasePath, logger);
-    const db = this.dbService.connect();
+    const db = this.dbService.connect({ recoverCorruptFile: true });
 
     // Run migrations
     const migrator = new MigrationRunner(db, logger);
@@ -170,7 +204,23 @@ export class ArletexBackendServer {
     this.preferenceRepo = new PreferenceRepository(db);
     this.inferenceGateway = new InferenceGateway(config.inference, logger);
     this.apeRepo = new ApeRepository(db);
-    this.apeService = new ApeService(this.apeRepo, this.inferenceGateway, logger);
+    this.narrativeRepo = new NarrativeRepository(db);
+    this.temporalRepo = new TemporalRepository(db);
+    this.worldRepo = new WorldRepository(db);
+    this.perceptionRepo = new PerceptionRepository(db);
+    this.embodimentRepo = new EmbodimentRepository(db);
+    this.sensorimotorRepo = new SensorimotorRepository(db);
+    this.apeService = new ApeService(
+      this.apeRepo,
+      this.inferenceGateway,
+      logger,
+      this.narrativeRepo,
+      this.temporalRepo,
+      this.worldRepo,
+      this.perceptionRepo,
+      this.embodimentRepo,
+      this.sensorimotorRepo,
+    );
     this.telemetryService = new TelemetryService(logger);
 
     // Instantiate Digital Agency Subsystem
@@ -183,6 +233,21 @@ export class ArletexBackendServer {
     this.memorySync = new MemoryExperienceSync(this.memoryRepo as any, logger);
     this.intentTaskManager = new IntentTaskManager(this.agencyRepo, logger);
     defaultDeviceAgency.setPermissionController(this.permissionController);
+
+    // Instantiate Persistent Individual Continuity Subsystem
+    const continuityBackupDir =
+      config.databasePath !== ':memory:'
+        ? path.join(config.dataDirectory, 'continuity_backups')
+        : undefined;
+    this.continuityRepo = new ContinuityRepository(db);
+    this.continuityManager = new ContinuityManager(
+      this.continuityRepo,
+      this.apeRepo,
+      this.apeService,
+      this.memoryRepo,
+      logger,
+      continuityBackupDir,
+    );
   }
 
   public getIntentTaskManager(): IntentTaskManager {
@@ -450,6 +515,21 @@ export class ArletexBackendServer {
   }
 
   public async start(desiredPort = 0): Promise<number> {
+    // Initialize persistent individual continuity lifecycle BEFORE accepting requests,
+    // ensuring integrity verification and crash recovery complete prior to traffic.
+    try {
+      const initialModel =
+        this.inferenceGateway.getConfig().defaultModelId ||
+        this.preferenceRepo.get('active_model_name', 'Qwen2.5-14B-Uncensored-Q4_K_M');
+      await this.continuityManager.initialize({
+        activeModel: initialModel,
+        channel: 'desktop',
+        dbRecoveredFromFileCorruption: this.dbService.wasQuarantinedOnConnect,
+      });
+    } catch (cErr: any) {
+      this.logger.error(`Continuity initialization error: ${cErr.message}`);
+    }
+
     return new Promise((resolve, reject) => {
       this.server = http.createServer((req, res) => {
         void this.handleRequest(req, res);
@@ -593,6 +673,13 @@ export class ArletexBackendServer {
       this.autonomousAgency = null;
     }
 
+    // Close continuity session with clean shutdown
+    try {
+      await this.continuityManager.shutdown('clean');
+    } catch (cErr: any) {
+      this.logger.debug(`Continuity shutdown note: ${cErr.message}`);
+    }
+
     if (this.server) {
       await new Promise<void>((resolve) => {
         this.server?.close(() => resolve());
@@ -664,6 +751,10 @@ export class ArletexBackendServer {
 
       if (this.autonomousAgency) {
         this.autonomousAgency.notifyUserActivity();
+      }
+
+      if (this.continuityManager) {
+        this.continuityManager.registerChannelActivity('desktop', `Inbound notification: ${notif.summary}`);
       }
 
       let conv = this.conversationRepo.list().find((c) =>
@@ -744,6 +835,10 @@ export class ArletexBackendServer {
 
       if (this.autonomousAgency) {
         this.autonomousAgency.notifyUserActivity();
+      }
+
+      if (this.continuityManager) {
+        this.continuityManager.registerChannelActivity('telegram', `Inbound Telegram message from ${msg.fromName}`);
       }
 
       let conv = this.conversationRepo.list().find((c) =>
@@ -1179,7 +1274,12 @@ export class ArletexBackendServer {
 
   public updateInferenceConfig(newConfig: Partial<AppConfig['inference']>) {
     this.inferenceGateway.updateConfig(newConfig);
-    return this.inferenceGateway.getConfig();
+    const updated = this.inferenceGateway.getConfig();
+    if (newConfig.defaultModelId && this.continuityManager) {
+      this.continuityManager.setActiveInferenceModel(updated.defaultModelId);
+      this.preferenceRepo.set('active_model_name', updated.defaultModelId);
+    }
+    return updated;
   }
 
   public cancelAllActiveTts(): void {
@@ -1332,6 +1432,9 @@ export class ArletexBackendServer {
 
   public setPreference(key: string, value: string): void {
     this.preferenceRepo.set(key, value);
+    if (key === 'active_model_name' && this.continuityManager) {
+      this.continuityManager.setActiveInferenceModel(value);
+    }
   }
 
   // ==========================================
@@ -1362,6 +1465,10 @@ export class ArletexBackendServer {
       this.autonomousAgency.notifyUserActivity();
     }
 
+    if (this.continuityManager) {
+      this.continuityManager.registerChannelActivity('desktop', 'User chat interaction');
+    }
+
     try {
       const modelSupportsVision = await this.checkVisionSupport();
 
@@ -1388,9 +1495,43 @@ export class ArletexBackendServer {
       let ambientPerceptionNote = '';
       if (liveAudioHearing) {
         ambientPerceptionNote += `\n[Live Aural Perception (Listening to System Audio)]:\n${liveAudioHearing.summary}\n`;
+        try {
+          await this.apeService.processAuditoryPerception({
+            trackTitle: liveAudioHearing.trackTitle || liveHostMedia?.title,
+            artist: liveAudioHearing.artist || liveHostMedia?.artist,
+            album: liveAudioHearing.album,
+            transcript: liveAudioHearing.transcript,
+            acoustics: liveAudioHearing.acoustics,
+            source: 'system_audio',
+          });
+        } catch {}
       } else if (liveHostMedia && liveHostMedia.title) {
         ambientPerceptionNote += `\n[Live Host Perception - Active Media]: Currently playing on your system: "${liveHostMedia.title}" by ${liveHostMedia.artist || 'Unknown'}.\n`;
+        try {
+          await this.apeService.processAuditoryPerception({
+            trackTitle: liveHostMedia.title,
+            artist: liveHostMedia.artist,
+            source: 'mpris_media',
+          });
+        } catch {}
       }
+
+      // Feed live screen window context proportionally into APE visual affect
+      try {
+        const visibleWindows = await this.screenReading.getVisibleWindows();
+        if (Array.isArray(visibleWindows) && visibleWindows.length > 0) {
+          const titles = visibleWindows
+            .map((w: any) => (typeof w === 'string' ? w : w?.title || w?.name || ''))
+            .filter((t: string) => t.trim().length > 0);
+          if (titles.length > 0) {
+            await this.apeService.processVisualPerception({
+              activeWindowTitle: titles[0],
+              visibleWindows: titles.slice(0, 6),
+              source: 'screen_observation',
+            });
+          }
+        }
+      } catch {}
 
       // User-uploaded images vs system screen capture:
       // NEVER attach unrequested desktop screenshots to user's message bubble
@@ -2064,11 +2205,44 @@ export class ArletexBackendServer {
         this.logger.debug(`Proactive screen capture note: ${err.message}`);
       }
 
-      // 2. Query active system audio/media
+      // 2. Query active system audio/media + acoustic energy & feed sensory affect into APE
       let liveHostMedia: { title?: string; artist?: string } | null = null;
+      let liveAudioHearing: AudioListeningResult | null = null;
       try {
         liveHostMedia = await defaultAudioPerception.getMprisMediaMetadata();
       } catch {}
+      try {
+        liveAudioHearing = await defaultAudioPerception.listenToDesktopAudio(2);
+      } catch {}
+
+      try {
+        const visibleWindows = await this.screenReading.getVisibleWindows();
+        if (Array.isArray(visibleWindows) && visibleWindows.length > 0) {
+          const titles = visibleWindows
+            .map((w: any) => (typeof w === 'string' ? w : w?.title || w?.name || ''))
+            .filter((t: string) => t.trim().length > 0);
+          if (titles.length > 0) {
+            await this.apeService.processVisualPerception({
+              activeWindowTitle: titles[0],
+              visibleWindows: titles.slice(0, 6),
+              source: 'proactive_screen_observation',
+            });
+          }
+        }
+      } catch {}
+
+      if (liveAudioHearing || liveHostMedia?.title) {
+        try {
+          await this.apeService.processAuditoryPerception({
+            trackTitle: liveAudioHearing?.trackTitle || liveHostMedia?.title,
+            artist: liveAudioHearing?.artist || liveHostMedia?.artist,
+            album: liveAudioHearing?.album,
+            transcript: liveAudioHearing?.transcript,
+            acoustics: liveAudioHearing?.acoustics,
+            source: 'proactive_system_audio',
+          });
+        } catch {}
+      }
 
       // 3. Dominant drive and emotional state from APE
       const mot = this.apeRepo.getMotivationalState();
@@ -2588,6 +2762,31 @@ Rules:
       }
 
       // ==========================================
+      // Persistent Individual Continuity Endpoints
+      // ==========================================
+      if (url.pathname === '/api/continuity/status' && method === 'GET') {
+        const status = this.continuityManager.getStatus();
+        this.sendJson(res, 200, status);
+        return;
+      }
+
+      if (url.pathname === '/api/continuity/checkpoint' && method === 'POST') {
+        const body = await this.readJsonBody(req);
+        const input = CreateCheckpointInputSchema.parse(body || {});
+        const checkpoint = await this.continuityManager.createCheckpoint(input.type);
+        this.sendJson(res, 200, { success: true, checkpoint });
+        return;
+      }
+
+      if (url.pathname === '/api/continuity/restore' && method === 'POST') {
+        const body = await this.readJsonBody(req);
+        const input = RestoreCheckpointInputSchema.parse(body || {});
+        const success = await this.continuityManager.restoreFromLatestCheckpoint(input.checkpointId);
+        this.sendJson(res, 200, { success });
+        return;
+      }
+
+      // ==========================================
       // Voice & Vision Specialist Endpoints
       // ==========================================
       if (url.pathname === '/api/voice/transcribe' && method === 'POST') {
@@ -2945,6 +3144,25 @@ Rules:
         return;
       }
 
+      if (url.pathname === '/api/ape/perceive' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const modality = body?.modality;
+        if (modality === 'visual') {
+          const input = VisualPerceptionInputSchema.parse(body);
+          const result = await this.apeService.processVisualPerception(input);
+          this.sendJson(res, 200, result);
+          return;
+        }
+        if (modality === 'auditory') {
+          const input = AuditoryPerceptionInputSchema.parse(body);
+          const result = await this.apeService.processAuditoryPerception(input);
+          this.sendJson(res, 200, result);
+          return;
+        }
+        this.sendJson(res, 400, { error: "modality must be 'visual' or 'auditory'" });
+        return;
+      }
+
       if (url.pathname === '/api/ape/relationship' && method === 'GET') {
         this.sendJson(res, 200, this.apeService.getRelationshipConfig());
         return;
@@ -3007,6 +3225,26 @@ Rules:
         return;
       }
 
+      if (url.pathname === '/api/ape/self-model/describe' && method === 'GET') {
+        const desc = this.apeService.getComprehensiveSelfDescription();
+        this.sendJson(res, 200, desc);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/self-model/experience' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const result = this.apeService.recordVerifiedExperience(body);
+        this.sendJson(res, 200, { success: true, result, selfModel: this.apeService.getSelfModel() });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/self-model/perceived-capability' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const item = this.apeService.registerPerceivedCapability(body);
+        this.sendJson(res, 200, { success: true, item, selfModel: this.apeService.getSelfModel() });
+        return;
+      }
+
       if (url.pathname === '/api/ape/self-model' && method === 'GET') {
         this.sendJson(res, 200, this.apeService.getSelfModel());
         return;
@@ -3028,6 +3266,480 @@ Rules:
         const body = (await this.readJsonBody(req)) as any;
         this.apeService.saveDevelopmentState(body);
         this.sendJson(res, 200, this.apeService.getDevelopmentState());
+        return;
+      }
+
+      // ==========================================
+      // Narrative Identity Routes (Milestone 03)
+      // ==========================================
+      if (url.pathname === '/api/ape/narrative/state' && method === 'GET') {
+        this.sendJson(res, 200, this.apeService.getNarrativeState());
+        return;
+      }
+
+      if (url.pathname === '/api/ape/narrative/history' && method === 'GET') {
+        const epochId = url.searchParams.get('epochId') || undefined;
+        const category = (url.searchParams.get('category') as any) || undefined;
+        const includeReappraisals = url.searchParams.get('includeReappraisals') !== 'false';
+        const reconstruction = this.apeService.reconstructNarrativeHistory({
+          epochId,
+          category,
+          includeReappraisals,
+        });
+        this.sendJson(res, 200, reconstruction);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/narrative/milestones' && method === 'GET') {
+        const epochId = url.searchParams.get('epochId') || undefined;
+        const category = (url.searchParams.get('category') as any) || undefined;
+        const status = (url.searchParams.get('status') as any) || undefined;
+        this.sendJson(res, 200, this.apeService.getNarrativeMilestones({ epochId, category, status }));
+        return;
+      }
+
+      if (url.pathname === '/api/ape/narrative/milestone' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const milestone = this.apeService.recordPersonalMilestone(body);
+        this.sendJson(res, 201, { success: true, milestone });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/narrative/reappraise' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const interpretation = this.apeService.reappraiseExperience(body);
+        this.sendJson(res, 200, { success: true, interpretation });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/narrative/epoch/advance' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const epoch = this.apeService.advanceNarrativeEpoch(body);
+        this.sendJson(res, 201, { success: true, epoch });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/narrative/epochs' && method === 'GET') {
+        this.sendJson(res, 200, this.apeService.getNarrativeEpochs());
+        return;
+      }
+
+      // ==========================================
+      // Temporal Cognition Subsystem Routes (Milestone 04)
+      // ==========================================
+      if (url.pathname === '/api/ape/temporal/overview' && method === 'GET') {
+        const nowIso = url.searchParams.get('now') || undefined;
+        this.sendJson(res, 200, this.apeService.getTemporalOverview(nowIso));
+        return;
+      }
+
+      if (url.pathname === '/api/ape/temporal/classify' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const result = this.apeService.classifyTemporalHorizon(body.entity, body.nowIso);
+        this.sendJson(res, 200, result);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/temporal/distinguish' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const result = this.apeService.distinguishTemporalEntities(body.entities || [], body.nowIso);
+        this.sendJson(res, 200, result);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/temporal/order' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const result = this.apeService.orderChronologically(body.events || []);
+        this.sendJson(res, 200, result);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/temporal/intentions' && method === 'GET') {
+        const status = (url.searchParams.get('status') as any) || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
+        this.sendJson(res, 200, this.apeService.listFutureIntentions({ status, limit }));
+        return;
+      }
+
+      if (url.pathname === '/api/ape/temporal/intention' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const intention = this.apeService.createFutureIntention(body);
+        this.sendJson(res, 201, { success: true, intention });
+        return;
+      }
+
+      if (url.pathname.startsWith('/api/ape/temporal/intention/') && url.pathname.endsWith('/fulfill') && method === 'POST') {
+        const parts = url.pathname.split('/');
+        const id = parts[5];
+        if (!id) {
+          this.sendJson(res, 400, { error: 'Missing intention ID' });
+          return;
+        }
+        const intention = this.apeService.fulfillFutureIntention(id);
+        this.sendJson(res, 200, { success: Boolean(intention), intention });
+        return;
+      }
+
+      if (url.pathname.startsWith('/api/ape/temporal/intention/') && url.pathname.endsWith('/cancel') && method === 'POST') {
+        const parts = url.pathname.split('/');
+        const id = parts[5];
+        if (!id) {
+          this.sendJson(res, 400, { error: 'Missing intention ID' });
+          return;
+        }
+        const intention = this.apeService.cancelFutureIntention(id);
+        this.sendJson(res, 200, { success: Boolean(intention), intention });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/temporal/commitments' && method === 'GET') {
+        const status = (url.searchParams.get('status') as any) || undefined;
+        const partnerName = url.searchParams.get('partnerName') || undefined;
+        this.sendJson(res, 200, this.apeService.listCommitments({ status, partnerName }));
+        return;
+      }
+
+      if (url.pathname === '/api/ape/temporal/commitment' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const commitment = this.apeService.recordCommitment(body);
+        this.sendJson(res, 201, { success: true, commitment });
+        return;
+      }
+
+      if (url.pathname.startsWith('/api/ape/temporal/commitment/') && url.pathname.endsWith('/fulfill') && method === 'POST') {
+        const parts = url.pathname.split('/');
+        const id = parts[5];
+        if (!id) {
+          this.sendJson(res, 400, { error: 'Missing commitment ID' });
+          return;
+        }
+        const body = (await this.readJsonBody(req)) as any;
+        const commitment = this.apeService.fulfillCommitment(id, body.evidence || 'Verified fulfilled');
+        this.sendJson(res, 200, { success: Boolean(commitment), commitment });
+        return;
+      }
+
+      if (url.pathname.startsWith('/api/ape/temporal/commitment/') && url.pathname.endsWith('/renegotiate') && method === 'POST') {
+        const parts = url.pathname.split('/');
+        const id = parts[5];
+        if (!id) {
+          this.sendJson(res, 400, { error: 'Missing commitment ID' });
+          return;
+        }
+        const body = (await this.readJsonBody(req)) as any;
+        const commitment = this.apeService.renegotiateCommitment(id, body.newTargetTime, body.reason || '');
+        this.sendJson(res, 200, { success: Boolean(commitment), commitment });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/temporal/plans' && method === 'GET') {
+        const status = (url.searchParams.get('status') as any) || undefined;
+        this.sendJson(res, 200, this.apeService.listLongTermPlans(status));
+        return;
+      }
+
+      if (url.pathname === '/api/ape/temporal/plan' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const plan = this.apeService.createLongTermPlan(body);
+        this.sendJson(res, 201, { success: true, plan });
+        return;
+      }
+
+      if (url.pathname.startsWith('/api/ape/temporal/plan/') && url.pathname.includes('/milestone/') && url.pathname.endsWith('/complete') && method === 'POST') {
+        const parts = url.pathname.split('/');
+        const planId = parts[5];
+        const milestoneId = parts[7];
+        if (!planId || !milestoneId) {
+          this.sendJson(res, 400, { error: 'Missing planId or milestoneId' });
+          return;
+        }
+        const plan = this.apeService.completePlanMilestone(planId, milestoneId);
+        this.sendJson(res, 200, { success: Boolean(plan), plan });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/temporal/duration/estimate' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const result = this.apeService.estimateDuration(body.operationKey, body.fallbackMs);
+        this.sendJson(res, 200, result);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/temporal/duration/record' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const profile = this.apeService.recordActualDuration(body.operationKey, body.actualDurationMs, body.context);
+        this.sendJson(res, 200, { success: true, profile });
+        return;
+      }
+
+      // ==========================================
+      // World Model Subsystem Routes (Milestone 05)
+      // ==========================================
+      if (url.pathname === '/api/ape/world/overview' && method === 'GET') {
+        this.sendJson(res, 200, this.apeService.getWorldOverview());
+        return;
+      }
+
+      if (url.pathname === '/api/ape/world/entities' && method === 'GET') {
+        const entityType = (url.searchParams.get('type') as any) || undefined;
+        const category = url.searchParams.get('category') || undefined;
+        const locationId = url.searchParams.get('locationId') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
+        this.sendJson(res, 200, this.apeService.listWorldEntities({ entityType, category, locationId, limit }));
+        return;
+      }
+
+      if (url.pathname.startsWith('/api/ape/world/entity/') && method === 'GET') {
+        const parts = url.pathname.split('/');
+        const idOrName = parts[5];
+        if (!idOrName) {
+          this.sendJson(res, 400, { error: 'Missing entity identifier' });
+          return;
+        }
+        const data = this.apeService.getWorldEntity(decodeURIComponent(idOrName));
+        if (!data) {
+          this.sendJson(res, 404, { error: 'Entity not found' });
+          return;
+        }
+        this.sendJson(res, 200, data);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/world/entity' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const entity = this.apeService.addWorldEntity(body);
+        this.sendJson(res, 201, { success: true, entity });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/world/observe' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const result = this.apeService.observeWorld(body);
+        this.sendJson(res, 200, { success: true, ...result });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/world/relations' && method === 'GET') {
+        const sourceEntityId = url.searchParams.get('sourceId') || undefined;
+        const targetEntityId = url.searchParams.get('targetId') || undefined;
+        const relationType = (url.searchParams.get('type') as any) || undefined;
+        this.sendJson(res, 200, this.apeService.listWorldRelations({ sourceEntityId, targetEntityId, relationType }));
+        return;
+      }
+
+      if (url.pathname === '/api/ape/world/relation' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const relation = this.apeService.addWorldRelation(body);
+        this.sendJson(res, 201, { success: true, relation });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/world/changes' && method === 'GET') {
+        const entityId = url.searchParams.get('entityId') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
+        this.sendJson(res, 200, this.apeService.listWorldEnvironmentalChanges({ entityId, limit }));
+        return;
+      }
+
+      if (url.pathname === '/api/ape/world/change' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const change = this.apeService.recordWorldEnvironmentalChange(body);
+        this.sendJson(res, 201, { success: true, change });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/world/causal' && method === 'GET') {
+        const causeEntityId = url.searchParams.get('causeId') || undefined;
+        const effectEntityId = url.searchParams.get('effectId') || undefined;
+        this.sendJson(res, 200, this.apeService.listWorldCausalRelationships({ causeEntityId, effectEntityId }));
+        return;
+      }
+
+      if (url.pathname === '/api/ape/world/causal' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const causal = this.apeService.registerWorldCausalRelationship(body);
+        this.sendJson(res, 201, { success: true, causal });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/world/unknowns' && method === 'GET') {
+        const status = (url.searchParams.get('status') as any) || undefined;
+        const domain = url.searchParams.get('domain') || undefined;
+        this.sendJson(res, 200, this.apeService.listWorldUnknowns({ status, domain }));
+        return;
+      }
+
+      if (url.pathname === '/api/ape/world/unknown' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const unknown = this.apeService.recordWorldUnknown(body);
+        this.sendJson(res, 201, { success: true, unknown });
+        return;
+      }
+
+      if (url.pathname.startsWith('/api/ape/world/unknown/') && url.pathname.endsWith('/resolve') && method === 'POST') {
+        const parts = url.pathname.split('/');
+        const id = parts[5];
+        if (!id) {
+          this.sendJson(res, 400, { error: 'Missing unknown ID' });
+          return;
+        }
+        const body = (await this.readJsonBody(req)) as any;
+        const unknown = this.apeService.resolveWorldUnknown(id, body.resolutionEvidence || 'Empirically verified');
+        this.sendJson(res, 200, { success: Boolean(unknown), unknown });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/world/epistemic-analysis' && method === 'GET') {
+        this.sendJson(res, 200, this.apeService.getWorldEpistemicAnalysis());
+        return;
+      }
+
+      // ==========================================
+      // Multimodal Perception Subsystem Routes (Milestone 06)
+      // ==========================================
+      if (url.pathname === '/api/ape/perception/image' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const result = this.apeService.interpretImage(body);
+        this.sendJson(res, 200, result);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/perception/audio' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const result = this.apeService.interpretAudio(body);
+        this.sendJson(res, 200, result);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/perception/video' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const result = this.apeService.interpretVideo(body);
+        this.sendJson(res, 200, result);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/perception/screen' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const result = this.apeService.interpretScreen(body);
+        this.sendJson(res, 200, result);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/perception/fuse' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const frame = this.apeService.fuseMultimodalPerception(body);
+        this.sendJson(res, 201, { success: true, frame });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/perception/latest' && method === 'GET') {
+        this.sendJson(res, 200, this.apeService.getLatestPerceptualFrame());
+        return;
+      }
+
+      if (url.pathname === '/api/ape/perception/events' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
+        this.sendJson(res, 200, this.apeService.listPerceptualEvents(limit));
+        return;
+      }
+
+      if (url.pathname === '/api/ape/perception/objects' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
+        this.sendJson(res, 200, this.apeService.listDetectedObjects(limit));
+        return;
+      }
+
+      // ==========================================
+      // Embodiment & Interoception Subsystem Routes (Milestone 07)
+      // ==========================================
+      if (url.pathname === '/api/ape/embodiment/cycle' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const snapshot = await this.apeService.conductInteroceptiveCycle(body);
+        this.sendJson(res, 201, { success: true, snapshot });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/embodiment/latest' && method === 'GET') {
+        const snapshot = this.apeService.getLatestInteroceptiveSnapshot();
+        this.sendJson(res, 200, snapshot);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/embodiment/snapshots' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const snapshots = this.embodimentRepo.listSnapshots(limit);
+        this.sendJson(res, 200, snapshots);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/embodiment/constraints' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const events = this.embodimentRepo.listConstraintEvents(limit);
+        this.sendJson(res, 200, events);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/embodiment/directive' && method === 'GET') {
+        const directive = this.embodimentRepo.getLatestRegulationDirective();
+        this.sendJson(res, 200, directive);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/embodiment/plan-adjustment' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const adjustment = this.apeService.incorporateIntoPlanning(body);
+        this.sendJson(res, 200, { success: true, adjustment });
+        return;
+      }
+
+      // ==========================================
+      // Sensorimotor and Action Grounding Routes (Milestone 08)
+      // ==========================================
+      if (url.pathname === '/api/ape/sensorimotor/action' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const record = await this.apeService.executeSensorimotorAction(body);
+        this.sendJson(res, 201, { success: true, record });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/sensorimotor/actions' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const actions = this.apeService.getRecentSensorimotorActions(limit);
+        this.sendJson(res, 200, actions);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/sensorimotor/calibrate' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const calibration = this.apeService.calibrateSpatialEnvironment(body);
+        this.sendJson(res, 200, { success: true, calibration });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/sensorimotor/calibration' && method === 'GET') {
+        const calibration = this.apeService.getSpatialCalibration();
+        this.sendJson(res, 200, calibration);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/sensorimotor/strategy' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const strategy = this.apeService.recordInteractionStrategy(body);
+        this.sendJson(res, 201, { success: true, strategy });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/sensorimotor/strategy' && method === 'GET') {
+        const app = url.searchParams.get('app') || 'general';
+        const goal = url.searchParams.get('goal') || 'interact';
+        const plan = this.apeService.getAdaptiveActionPlan(app, goal);
+        this.sendJson(res, 200, plan);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/sensorimotor/summary' && method === 'GET') {
+        const summary = this.apeService.sensorimotorEngine.getActionSummary();
+        this.sendJson(res, 200, summary);
         return;
       }
 

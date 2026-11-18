@@ -111,8 +111,31 @@ export class CrossEngineCognitiveCycle {
       // Step C: Relationship Engine processes interpersonal impact
       const relationship = this.relationshipEngine.processInteraction(event, appraisal);
 
-      // Step D: Self Model records reflection if event is personally/existentially significant
+      // Step D: Self Model records reflection, verified experiences, and behavioral shifts
+      if (
+        event.eventKind === 'action_outcome' ||
+        event.category === 'success' ||
+        event.category === 'failure' ||
+        event.payload?.verifiedOutcome !== undefined
+      ) {
+        const domain = (event.payload?.domain as string) || event.type || 'operational_task';
+        const operation = (event.payload?.operation as string) || (event.payload?.taskTitle as string) || event.type;
+        const success = event.category === 'failure' ? false : Boolean(event.payload?.success ?? (event.category === 'success'));
+        const evidence = (event.payload?.evidence as string) || appraisal.supportingEvidence?.[0] || 'Execution recorded';
+        const provenance = (event.payload?.provenance as string) || 'cycle_event';
+        this.selfModelEngine.applyVerifiedExperience({
+          domain,
+          operation,
+          success,
+          evidence,
+          provenance,
+          eventId: event.id,
+          error: event.payload?.error as string | undefined,
+        });
+      }
+
       this.selfModelEngine.reflectOnEvent(event, appraisal);
+      this.selfModelEngine.detectBehavioralChanges();
       const selfModel = this.selfModelEngine.getState();
 
       // Step E: Development Engine checks for interest evolution and developmental milestones

@@ -14,6 +14,7 @@ import {
   MoodTaxonomyItem,
 } from '@arletex/contracts';
 import { IApeRepository } from './interfaces.js';
+import { computeAffectiveComplexity, detectHumanAffectiveSurge } from './humanAffectDynamics.js';
 
 export class AffectiveTransitionEngine {
   private readonly repo: IApeRepository;
@@ -217,6 +218,7 @@ export class AffectiveTransitionEngine {
       event,
       currentState.contextual,
       relationship,
+      newPad,
     );
 
     // 4. Determine Macro Mood Shift
@@ -321,6 +323,7 @@ export class AffectiveTransitionEngine {
     event: ApeEvent,
     current: ContextualAffectiveMeasurements,
     _relationship: ApeRelationshipConfig,
+    pad: CorePadDimensions,
   ): ContextualAffectiveMeasurements {
     const now = new Date().toISOString();
 
@@ -422,18 +425,41 @@ export class AffectiveTransitionEngine {
       },
     };
 
-    return {
+    // 3. Human Affective Complexity (mixed-valence conflict, flooding, ambiguity, paradoxical expression, wave phase)
+    const surgeHint = detectHumanAffectiveSurge(event, new Set(this.emotionsMap.keys()));
+    const affectiveComplexity = computeAffectiveComplexity({
+      activeEmotions,
+      emotionsMap: this.emotionsMap,
+      previous: current.affectiveComplexity,
+      pad,
       tension: derivedTension,
+      surgeHint,
+      nowIso: now,
+    });
+
+    const finalTension = Math.max(
+      derivedTension,
+      Number((affectiveComplexity.floodingIntensity * 0.75 + affectiveComplexity.mixedValenceConflict * 0.2).toFixed(2)),
+    );
+    const baseCertainty = current.certainty ?? 0.75;
+    const derivedCertainty =
+      affectiveComplexity.ambiguity >= 0.40
+        ? Number(Math.max(0.10, baseCertainty * (1 - affectiveComplexity.ambiguity * 0.7)).toFixed(2))
+        : baseCertainty;
+
+    return {
+      tension: Math.min(1.0, finalTension),
       cognitiveLoad: derivedCognitiveLoad,
       emotionalStability: current.emotionalStability ?? 0.85,
       perceivedControl: current.perceivedControl ?? 0.8,
-      certainty: current.certainty ?? 0.75,
+      certainty: derivedCertainty,
       socialCloseness: current.socialCloseness ?? { creator: 0.9 },
       socialSafety: 0.0, // Unavailable in Phase 1, truth over fake numbers
       goalAlignment: current.goalAlignment ?? 0.9,
       emotionalOpenness: current.emotionalOpenness ?? 0.7,
       psychologicalEnergy: current.psychologicalEnergy ?? 0.8,
       details,
+      affectiveComplexity,
     };
   }
 }

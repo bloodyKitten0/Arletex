@@ -7,7 +7,7 @@ import {
   QueryMemoriesInput,
   UpdateMemoryInput,
 } from '@arletex/contracts';
-import { DatabaseError } from '@arletex/core';
+import { BackupMemoryRecord, DatabaseError } from '@arletex/core';
 
 export class MemoryRepository {
   private readonly db: Database.Database;
@@ -129,6 +129,87 @@ export class MemoryRepository {
       return this.mapRow(row);
     } catch (err) {
       throw new DatabaseError(`Failed to get memory ${id}`, err);
+    }
+  }
+
+  public count(includeArchived = true): number {
+    try {
+      let sql = 'SELECT COUNT(*) as count FROM memories WHERE is_deleted = 0';
+      if (!includeArchived) {
+        sql += ' AND is_archived = 0';
+      }
+      const stmt = this.db.prepare(sql);
+      const row = stmt.get() as { count: number };
+      return row ? Number(row.count) : 0;
+    } catch (err) {
+      throw new DatabaseError('Failed to count memories', err);
+    }
+  }
+
+  public listForBackup(): BackupMemoryRecord[] {
+    try {
+      const rows = this.db
+        .prepare('SELECT * FROM memories WHERE is_deleted = 0 ORDER BY timestamp ASC')
+        .all() as any[];
+
+      return rows.map((r) => ({
+        id: r.id,
+        type: r.type,
+        content: r.content,
+        rawObservation: r.raw_observation ?? null,
+        interpretation: r.interpretation ?? null,
+        confidence: Number(r.confidence),
+        importance: Number(r.importance),
+        timestamp: r.timestamp,
+        provenance: r.provenance,
+        sourceConversationId: r.source_conversation_id ?? null,
+        sourceMessageId: r.source_message_id ?? null,
+        tags: JSON.parse(r.tags || '[]'),
+        metadata: JSON.parse(r.metadata || '{}'),
+        correctionHistory: JSON.parse(r.correction_history || '[]'),
+        isArchived: Number(r.is_archived) === 1,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      }));
+    } catch (err) {
+      throw new DatabaseError('Failed to export memories for continuity backup', err);
+    }
+  }
+
+  public upsertRestoredMemory(memory: BackupMemoryRecord): void {
+    try {
+      const now = new Date().toISOString();
+      const stmt = this.db.prepare(`
+        INSERT OR REPLACE INTO memories (
+          id, type, content, raw_observation, interpretation,
+          confidence, importance, timestamp, provenance,
+          source_conversation_id, source_message_id,
+          tags, metadata, correction_history,
+          is_archived, is_deleted, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+      `);
+
+      stmt.run(
+        memory.id,
+        memory.type || 'episodic',
+        memory.content,
+        memory.rawObservation ?? null,
+        memory.interpretation ?? null,
+        typeof memory.confidence === 'number' ? memory.confidence : 1.0,
+        typeof memory.importance === 'number' ? memory.importance : 0.5,
+        memory.timestamp || now,
+        memory.provenance || 'interaction',
+        memory.sourceConversationId ?? null,
+        memory.sourceMessageId ?? null,
+        JSON.stringify(memory.tags || []),
+        JSON.stringify(memory.metadata || {}),
+        JSON.stringify(memory.correctionHistory || []),
+        memory.isArchived ? 1 : 0,
+        memory.createdAt || memory.timestamp || now,
+        memory.updatedAt || now,
+      );
+    } catch (err) {
+      throw new DatabaseError(`Failed to restore backed up memory ${memory.id}`, err);
     }
   }
 

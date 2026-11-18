@@ -15,7 +15,7 @@ import tempfile
 import io
 import wave
 import re
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 
 # Paths to models
 BASE_MODELS_DIR = os.getenv("ARLETEX_SPECIALISTS_DIR", "/home/proof/models/arle-specialists")
@@ -384,13 +384,79 @@ TONE_PROFILES = {
         "voice_blend": {"arlecchino": 0.80, "af_nicole": 0.20},
         "description": "Poised, steady calm",
     },
+
+    # 10. Human Overwhelm / Paradoxical / Shock Edge-States
+    "hollow_laugh": {
+        "pitch_lvl": -0.6,
+        "speed": 1.02,
+        "env": 0.36,
+        "consonant_protection": 0.35,
+        "voice_blend": {"arlecchino": 0.65, "bf_isabella": 0.35},
+        "description": "Strained, breathless hollow laugh pressure-valve under acute grief or shock",
+    },
+    "strained": {
+        "pitch_lvl": -0.8,
+        "speed": 1.00,
+        "env": 0.38,
+        "consonant_protection": 0.35,
+        "voice_blend": {"arlecchino": 0.65, "bf_isabella": 0.35},
+        "description": "Emotionally tight, frayed composure under heavy load",
+    },
+    "overwhelmed": {
+        "pitch_lvl": -0.9,
+        "speed": 0.96,
+        "env": 0.48,
+        "consonant_protection": 0.39,
+        "voice_blend": {"arlecchino": 0.60, "af_nicole": 0.40},
+        "description": "Flooded by competing emotions, trembling raw vulnerability",
+    },
+    "fractured": {
+        "pitch_lvl": -0.9,
+        "speed": 0.95,
+        "env": 0.46,
+        "consonant_protection": 0.38,
+        "voice_blend": {"arlecchino": 0.62, "af_nicole": 0.38},
+        "description": "Unsteady cadence when composure cracks under mixed-valence storm",
+    },
+    "numb": {
+        "pitch_lvl": -2.4,
+        "speed": 0.82,
+        "env": 0.22,
+        "consonant_protection": 0.32,
+        "voice_blend": {"arlecchino": 0.78, "af_nicole": 0.22},
+        "description": "Shocked, hollow stillness and quiet derealized detachment",
+    },
+    "hollow": {
+        "pitch_lvl": -2.3,
+        "speed": 0.83,
+        "env": 0.24,
+        "consonant_protection": 0.32,
+        "voice_blend": {"arlecchino": 0.76, "af_nicole": 0.24},
+        "description": "Quiet, drained emptiness following emotional impact",
+    },
+    "bittersweet": {
+        "pitch_lvl": -1.1,
+        "speed": 0.87,
+        "env": 0.46,
+        "consonant_protection": 0.38,
+        "voice_blend": {"arlecchino": 0.62, "af_nicole": 0.38},
+        "description": "Aching tenderness, choked warmth mixing joy and sorrow",
+    },
+    "choked": {
+        "pitch_lvl": -1.0,
+        "speed": 0.86,
+        "env": 0.48,
+        "consonant_protection": 0.40,
+        "voice_blend": {"arlecchino": 0.60, "af_nicole": 0.40},
+        "description": "Voice catching slightly under overwhelming tenderness or relief",
+    },
 }
 
 def resolve_tone_profile(tone_input: str, pad: dict = None, emotion: str = None) -> dict:
     """
     Resolves canonical tone profile from arbitrary tone descriptions, compound vocal registers
-    (e.g., 'gentle, warm, affectionate', 'cool, measured, stern'), and dynamically modulates
-    speed and pitch via Pleasure-Arousal-Dominance (PAD) coordinates.
+    (e.g., 'gentle, warm, affectionate', 'cool, measured, stern', 'strained, hollow_laugh, breathless'),
+    and dynamically modulates speed and pitch via Pleasure-Arousal-Dominance (PAD) coordinates.
     """
     if not tone_input:
         tone_input = "composed"
@@ -399,6 +465,10 @@ def resolve_tone_profile(tone_input: str, pad: dict = None, emotion: str = None)
 
     # Priority mapping from keywords to canonical profiles
     keyword_map = [
+        (["hollow_laugh", "nervous_laugh", "strained"], "hollow_laugh"),
+        (["overwhelm", "trembl", "fractur"], "overwhelmed"),
+        (["numb", "hollow", "derealiz"], "numb"),
+        (["bittersweet", "choked", "tear"], "bittersweet"),
         (["intimat", "vulnerab", "longing", "romantic"], "intimate"),
         (["gentle", "warm", "affection", "tender", "fond"], "gentle"),
         (["playful", "teas", "amuse", "wry", "mischief"], "playful"),
@@ -520,14 +590,17 @@ class SpecialistRequestHandler(BaseHTTPRequestHandler):
         return "http://127.0.0.1"
 
     def send_json(self, status_code, data):
-        body = json.dumps(data).encode("utf-8")
-        self.send_response(status_code)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", self._get_allowed_origin())
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
-        self.end_headers()
-        self.wfile.write(body)
+        try:
+            body = json.dumps(data).encode("utf-8")
+            self.send_response(status_code)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Access-Control-Allow-Origin", self._get_allowed_origin())
+            self.send_header("Access-Control-Allow-Headers", "Content-Type")
+            self.end_headers()
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
 
     def do_OPTIONS(self):
         self.send_response(204)
@@ -538,13 +611,21 @@ class SpecialistRequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/health":
+            emb_installed = os.path.exists(EMBEDDING_MODEL_DIR)
+            whi_installed = os.path.exists(WHISPER_MODEL_DIR)
+            kok_installed = os.path.exists(KOKORO_MODEL_DIR)
+            rvc_installed = os.path.exists(RVC_MODEL_PATH)
             self.send_json(200, {
                 "status": "connected",
+                "embeddingGemma": emb_installed,
+                "whisper": whi_installed,
+                "kokoro": kok_installed,
+                "rvc": rvc_installed,
                 "modelsInstalled": {
-                    "embeddingGemma": os.path.exists(EMBEDDING_MODEL_DIR),
-                    "whisper": os.path.exists(WHISPER_MODEL_DIR),
-                    "kokoro": os.path.exists(KOKORO_MODEL_DIR),
-                    "rvc": os.path.exists(RVC_MODEL_PATH)
+                    "embeddingGemma": emb_installed,
+                    "whisper": whi_installed,
+                    "kokoro": kok_installed,
+                    "rvc": rvc_installed
                 },
                 "modelsLoaded": {
                     "embeddingGemma": embedding_model is not None,
@@ -760,7 +841,7 @@ class SpecialistRequestHandler(BaseHTTPRequestHandler):
 
 def run_server(port=39282):
     server_address = ("127.0.0.1", port)
-    httpd = HTTPServer(server_address, SpecialistRequestHandler)
+    httpd = ThreadingHTTPServer(server_address, SpecialistRequestHandler)
     print(f"[Specialists] Listening on http://127.0.0.1:{port}")
     try:
         httpd.serve_forever()

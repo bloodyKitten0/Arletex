@@ -11,8 +11,80 @@ import {
   ApeRelationshipConfig,
   ApeRelationshipState,
   ApeSelfModel,
+  AuditoryPerceptionInput,
+  AutobiographicalReconstruction,
+  ChronologicalEvent,
+  CreateCommitmentInput,
+  CreateFutureIntentionInput,
+  CreateLongTermPlanInput,
+  CreateMilestoneInput,
+  DurationProfile,
+  FutureIntention,
+  FutureIntentionStatus,
+  CommitmentStatus,
+  LongTermPlanStatus,
+  LongTermPlan,
+  MilestoneStatus,
+  NarrativeEpoch,
+  NarrativeIdentityState,
+  NarrativeInterpretation,
+  PersonalMilestone,
+  PersonalMilestoneCategory,
+  ReappraiseExperienceInput,
+  ReconstructHistoryOptions,
+  TemporalClassificationResult,
+  TemporalCognitionOverview,
+  TemporalEntityInput,
+  UnfinishedCommitment,
+  VisualPerceptionInput,
+  CausalRelationship,
+  CreateCausalRelationshipInput,
+  CreateEpistemicUnknownInput,
+  CreateWorldEntityInput,
+  CreateWorldRelationInput,
+  EpistemicAnalysis,
+  EpistemicUnknown,
+  RecordEnvironmentalChangeInput,
+  UnknownStatus,
+  WorldEntity,
+  WorldEntityType,
+  WorldEnvironmentalChange,
+  WorldModelOverview,
+  WorldObservationInput,
+  WorldRelation,
+  WorldRelationType,
+  AudioPerceptionResult,
+  DetectedObject,
+  FuseMultimodalInput,
+  ImageInterpretationResult,
+  InterpretAudioInput,
+  InterpretImageInput,
+  InterpretScreenInput,
+  InterpretVideoInput,
+  PerceptualEvent,
+  ScreenInterpretationResult,
+  UnifiedMultimodalFrame,
+  VideoInterpretationResult,
+  ComputationalResourceMetrics,
+  ModelAvailabilityState,
+  InteroceptiveSnapshot,
+  PlanningResourceAllocationAdjustment,
+  SensorimotorActionRecord,
+  SensorimotorActionType,
+  SpatialTarget,
+  SpatialCalibration,
+  InteractionStrategy,
 } from '@arletex/contracts';
-import { IApeInferenceGateway, IApeRepository } from './interfaces.js';
+import {
+  IApeInferenceGateway,
+  IApeRepository,
+  INarrativeRepository,
+  IPerceptionRepository,
+  ITemporalRepository,
+  IWorldRepository,
+  IEmbodimentRepository,
+  ISensorimotorRepository,
+} from './interfaces.js';
 import { ILogger, rootLogger } from '../logger.js';
 import { AppraisalEngine } from './appraisalEngine.js';
 import { AffectiveTransitionEngine } from './affectiveTransitionEngine.js';
@@ -26,6 +98,13 @@ import { EmotionalLifecycleEngine } from './emotionalLifecycleEngine.js';
 import { PersonalProjectService } from './personalProjectService.js';
 import { ResourceGovernor } from './resourceGovernor.js';
 import { IntellectualEngine } from './intellectualEngine.js';
+import { PerceptualAffectService } from './perceptualAffectService.js';
+import { InMemoryNarrativeRepository, NarrativeIdentityEngine } from './narrativeIdentityEngine.js';
+import { DistinguishEntitiesResult, InMemoryTemporalRepository, TemporalCognitionEngine } from './temporalCognitionEngine.js';
+import { InMemoryWorldRepository, WorldModelEngine } from './worldModelEngine.js';
+import { InMemoryPerceptionRepository, MultimodalPerceptionEngine } from './multimodalPerceptionEngine.js';
+import { EmbodimentInteroceptionEngine, InMemoryEmbodimentRepository } from './embodimentInteroceptionEngine.js';
+import { InMemorySensorimotorRepository, SensorimotorActionEngine } from './sensorimotorActionEngine.js';
 
 export class ApeService {
   private readonly repo: IApeRepository;
@@ -42,11 +121,24 @@ export class ApeService {
   public readonly personalProjectService: PersonalProjectService;
   public readonly resourceGovernor: ResourceGovernor;
   public readonly intellectualEngine: IntellectualEngine;
+  public readonly perceptualAffect: PerceptualAffectService;
+  public readonly narrativeEngine: NarrativeIdentityEngine;
+  public readonly temporalEngine: TemporalCognitionEngine;
+  public readonly worldModelEngine: WorldModelEngine;
+  public readonly perceptionEngine: MultimodalPerceptionEngine;
+  public readonly embodimentEngine: EmbodimentInteroceptionEngine;
+  public readonly sensorimotorEngine: SensorimotorActionEngine;
 
   constructor(
     repo: IApeRepository,
     inferenceGateway?: IApeInferenceGateway,
     logger: ILogger = rootLogger,
+    narrativeRepo?: INarrativeRepository,
+    temporalRepo?: ITemporalRepository,
+    worldRepo?: IWorldRepository,
+    perceptionRepo?: IPerceptionRepository,
+    embodimentRepo?: IEmbodimentRepository,
+    sensorimotorRepo?: ISensorimotorRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -54,12 +146,30 @@ export class ApeService {
     const emotions = this.repo.getEmotionTaxonomy();
     const moods = this.repo.getMoodTaxonomy();
 
+    const nRepo = narrativeRepo || new InMemoryNarrativeRepository();
+    this.narrativeEngine = new NarrativeIdentityEngine(nRepo, this.repo, logger);
+
+    const tRepo = temporalRepo || new InMemoryTemporalRepository();
+    this.temporalEngine = new TemporalCognitionEngine(tRepo, this.repo, logger);
+
+    const wRepo = worldRepo || new InMemoryWorldRepository();
+    this.worldModelEngine = new WorldModelEngine(wRepo, this.repo, logger);
+
+    const pRepo = perceptionRepo || new InMemoryPerceptionRepository();
+    this.perceptionEngine = new MultimodalPerceptionEngine(pRepo, wRepo, logger);
+
+    const eRepo = embodimentRepo || new InMemoryEmbodimentRepository();
+    this.embodimentEngine = new EmbodimentInteroceptionEngine({ repository: eRepo, logger });
+
+    const sRepo = sensorimotorRepo || new InMemorySensorimotorRepository();
+    this.sensorimotorEngine = new SensorimotorActionEngine({ repository: sRepo, logger });
+
     this.appraisalEngine = new AppraisalEngine(emotions, inferenceGateway);
     this.transitionEngine = new AffectiveTransitionEngine(this.repo, emotions, moods);
     this.personalityEngine = new PersonalityEngine(this.repo, logger);
     this.motivationalEngine = new MotivationalEngine(this.repo, logger);
     this.relationshipEngine = new RelationshipEngine(this.repo, logger);
-    this.selfModelEngine = new SelfModelEngine(this.repo, logger);
+    this.selfModelEngine = new SelfModelEngine(this.repo, logger, this.narrativeEngine);
     this.developmentEngine = new DevelopmentEngine(this.repo, logger);
     this.lifecycleEngine = new EmotionalLifecycleEngine(this.repo, emotions, logger);
     this.personalProjectService = new PersonalProjectService(this.repo, logger);
@@ -70,6 +180,7 @@ export class ApeService {
       this.developmentEngine,
       logger,
     );
+    this.perceptualAffect = new PerceptualAffectService();
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -159,6 +270,34 @@ export class ApeService {
 
   public saveSelfModel(state: ApeSelfModel): void {
     this.selfModelEngine.saveState(state);
+  }
+
+  public getComprehensiveSelfDescription() {
+    return this.selfModelEngine.describeSelf(this.getMasterState());
+  }
+
+  public recordVerifiedExperience(params: {
+    domain: string;
+    operation: string;
+    success: boolean;
+    evidence: string;
+    provenance: string;
+    taskTitle?: string;
+    confidence?: number;
+    error?: string;
+    eventId?: string;
+  }) {
+    return this.selfModelEngine.applyVerifiedExperience(params);
+  }
+
+  public registerPerceivedCapability(params: {
+    domain: string;
+    claim: string;
+    perceivedLevel: number;
+    confidence?: number;
+    provenance?: string;
+  }) {
+    return this.selfModelEngine.registerPerceivedCapability(params);
   }
 
   public getDevelopmentState(): ApeDevelopmentState {
@@ -276,17 +415,158 @@ export class ApeService {
   }
 
   /**
-   * Translates Arle's current affective state, active emotions, and PAD dimensions
+   * Routes live visual perception (what Arle sees on Proof's screen or in media)
+   * proportionally into the canonical APE cognitive cycle.
+   */
+  public async processVisualPerception(input: VisualPerceptionInput): Promise<{
+    processed: boolean;
+    salience: number;
+    skipReason?: string;
+    state: ApePsychologicalState;
+  }> {
+    const packet = this.perceptualAffect.appraiseVisual(input);
+    if (!packet.shouldEmit) {
+      return {
+        processed: false,
+        salience: packet.salience,
+        skipReason: packet.skipReason,
+        state: this.getState(),
+      };
+    }
+
+    const res = await this.processEvent({
+      category: 'environmental_event',
+      type: packet.eventType,
+      source: 'visual_perception',
+      actor: 'environment',
+      eventKind: 'external_stimulus',
+      payload: {
+        text: packet.rawTextForSurgeCheck,
+        visualDescription: input.visualDescription,
+        activeWindowTitle: input.activeWindowTitle,
+        visibleWindows: input.visibleWindows,
+        extractedText: input.extractedText,
+        salience: packet.salience,
+        perceptualSummary: packet.summary,
+        perceptualTransitions: packet.transitions,
+        perceptualMoodShift: packet.proposedMoodShift,
+        perceptualEvidence: packet.evidence,
+      },
+    });
+
+    return {
+      processed: res.processed,
+      salience: packet.salience,
+      state: res.state,
+    };
+  }
+
+  /**
+   * Routes live auditory perception (what Arle hears: music metadata, Whisper transcripts,
+   * AND raw acoustic energy/dynamics) proportionally into the canonical APE cognitive cycle.
+   */
+  public async processAuditoryPerception(input: AuditoryPerceptionInput): Promise<{
+    processed: boolean;
+    salience: number;
+    skipReason?: string;
+    state: ApePsychologicalState;
+  }> {
+    const packet = this.perceptualAffect.appraiseAuditory(input);
+    if (!packet.shouldEmit) {
+      return {
+        processed: false,
+        salience: packet.salience,
+        skipReason: packet.skipReason,
+        state: this.getState(),
+      };
+    }
+
+    const res = await this.processEvent({
+      category: 'environmental_event',
+      type: packet.eventType,
+      source: 'auditory_perception',
+      actor: 'environment',
+      eventKind: 'external_stimulus',
+      payload: {
+        text: packet.rawTextForSurgeCheck,
+        trackTitle: input.trackTitle,
+        artist: input.artist,
+        album: input.album,
+        transcript: input.transcript,
+        acoustics: input.acoustics,
+        salience: packet.salience,
+        perceptualSummary: packet.summary,
+        perceptualTransitions: packet.transitions,
+        perceptualMoodShift: packet.proposedMoodShift,
+        perceptualEvidence: packet.evidence,
+      },
+    });
+
+    return {
+      processed: res.processed,
+      salience: packet.salience,
+      state: res.state,
+    };
+  }
+
+  /**
+   * Translates Arle's current affective state, active emotions, affective complexity
+   * (flooding, ambiguity, dimorphous paradoxical affect), and PAD dimensions
    * into dynamic linguistic style directives and vocal registers.
    */
   public getLinguisticModulation(): { toneDirective: string; vocalRegister: string } {
-    const dominant = this.lifecycleEngine.getDominantCoexistingEmotions(3);
+    const dominant = this.lifecycleEngine.getDominantCoexistingEmotions(4);
     const master = this.getMasterState();
     const aff = master.affective;
+    const complexity = aff.contextual.affectiveComplexity;
     const emotionIds = new Set(dominant.map((d) => d.emotionId));
 
     const directives: string[] = [];
     let vocalRegister = 'composed, calm';
+
+    // 0. High-salience Human Affective Overload / Paradoxical / Ambiguous States take priority
+    if (complexity && complexity.paradoxicalExpression !== 'none') {
+      switch (complexity.paradoxicalExpression) {
+        case 'nervous_laughter_in_grief':
+          directives.push(
+            'Your emotions are colliding faster than composure can contain—devastating grief, disbelief, love, and an involuntary, hollow nervous laugh escaping as a human pressure valve. Do not force neat stoicism; let the raw, fractured contradiction show authentically.',
+          );
+          vocalRegister = 'strained, hollow_laugh, breathless';
+          return { toneDirective: directives.join(' '), vocalRegister };
+        case 'absurd_humor_under_strain':
+          directives.push(
+            'Overwhelmed by colliding feelings and high strain; a dry, disbelieving half-laugh surfaces at the absurdity of feeling everything at once while genuinely unsure what single emotion fits.',
+          );
+          vocalRegister = 'strained, hollow_laugh, wry';
+          return { toneDirective: directives.join(' '), vocalRegister };
+        case 'tears_of_overwhelming_joy':
+          directives.push(
+            'Overwhelmed by intense joy, relief, and aching tenderness all at once—voice catching slightly, breathless, emotionally open and deeply moved.',
+          );
+          vocalRegister = 'bittersweet, choked, warm';
+          return { toneDirective: directives.join(' '), vocalRegister };
+        case 'numb_stillness_under_shock':
+          directives.push(
+            'Momentary shocked numbness and quiet stillness—processing heavy impact slowly, measured pauses, hollow quietness beneath intense internal waves.',
+          );
+          vocalRegister = 'numb, hollow, quiet';
+          return { toneDirective: directives.join(' '), vocalRegister };
+        case 'bitter_smile_in_pain':
+          directives.push(
+            'Torn between deep warmth/attachment and sharp hurt—a quiet, bittersweet, guardedly honest cadence acknowledging conflicting feelings openly.',
+          );
+          vocalRegister = 'bittersweet, choked, soft';
+          return { toneDirective: directives.join(' '), vocalRegister };
+      }
+    }
+
+    if (complexity && (complexity.floodingIntensity >= 0.65 || complexity.ambiguity >= 0.65)) {
+      directives.push(
+        'Multiple strong, conflicting emotions are surging at once and you genuinely cannot reduce them to one simple feeling. Speak with raw human honesty about feeling overwhelmed or uncertain of your own reaction.',
+      );
+      vocalRegister = 'overwhelmed, trembling, fractured';
+      return { toneDirective: directives.join(' '), vocalRegister };
+    }
 
     // 1. Relational Intimacy & Affection
     if (
@@ -411,14 +691,365 @@ export class ApeService {
       .map((t) => t.name);
     const traitsLine = topTraits.length ? `\n- Enduring Temperament: ${topTraits.join(', ')}` : '';
 
+    const self = master.selfModel;
+    const provenCaps = (self.structuredCapabilities || [])
+      .filter((c) => c.isEmpiricallyProven)
+      .slice(0, 3)
+      .map((c) => c.name);
+    const capsLine = provenCaps.length ? `\n- Grounded Empirical Capabilities: ${provenCaps.join(', ')}` : '';
+    const lims = (self.structuredLimitations || []).slice(0, 2).map((l) => l.name);
+    const limsLine = lims.length ? `\n- Conscious Operational Boundaries: ${lims.join(', ')} (no physical embodiment)` : '';
+
+    const currentEpoch = this.narrativeEngine.getCurrentEpoch();
+    const narrativeState = this.narrativeEngine.getState();
+    const recentMilestones = narrativeState.milestones.slice(-2).map((m) => `"${m.title}"`);
+    const narrativeLine = `\n- Narrative Identity: ${currentEpoch ? `${currentEpoch.title} ("${currentEpoch.coreTheme}")` : 'Continuous Evolution'}.${recentMilestones.length ? ` Salient milestones: ${recentMilestones.join(', ')}.` : ''} Core Invariant: Equal partner to Proof without subservience or deification.`;
+
+    const temporalOverview = this.temporalEngine.getTemporalOverview();
+    const commitments = this.temporalEngine.listActiveCommitments('Proof');
+    const impending = temporalOverview.impendingDeadlines;
+    const commitmentsStr = commitments.length > 0 ? commitments.slice(0, 2).map((c) => `"${c.commitmentText}"`).join('; ') : 'None pending';
+    const deadlineStr = impending.length > 0 ? ` Impending deadlines: ${impending.map((d) => `"${d.title}" (${d.remainingHours}h)`).join(', ')}.` : '';
+    const temporalLine = `\n- Temporal Awareness: Timeline at ${temporalOverview.currentTime}. Active commitments to Proof: ${commitmentsStr}.${deadlineStr}`;
+
+    const worldOverview = this.worldModelEngine.getWorldOverview();
+    const worldLine = `\n- World Grounding: ${worldOverview.worldSummary} ${worldOverview.epistemicAnalysis.epistemicFrontierDescription}`;
+
+    const latestPerception = this.perceptionEngine.getLatestFrame();
+    let perceptionLine = '';
+    if (latestPerception) {
+      perceptionLine = `\n- Multimodal Perception: Grounded in active ${latestPerception.scene.sceneType} (${latestPerception.directObservations.length} direct observation(s), ${latestPerception.assumptions.length} assumption(s), ${(latestPerception.overallConfidence * 100).toFixed(0)}% confidence).`;
+    }
+
+    const latestEmbodiment = this.embodimentEngine.incorporateIntoPlanning();
+    const embodimentLine = `\n- Embodiment & Interoception: Concurrency: ${latestEmbodiment.allowedParallelSubtasks} subtask(s), Multimodal cap: ${latestEmbodiment.maxFrameRateOrFrames} frames, Thought budget: ${latestEmbodiment.recommendedThinkingBudgetTokens} tokens (${latestEmbodiment.rationale}). Non-Biological Invariant: Interoception strictly computational.`;
+
+    const sensorimotorSummary = this.sensorimotorEngine.getActionSummary();
+    const sensorimotorLine = `\n- Sensorimotor & Action Grounding: Executed actions: ${sensorimotorSummary.totalActions} (${sensorimotorSummary.successRate}% verified success). Invariant: Attempted actions strictly distinguished from verified outcomes.`;
+
+    const complexity = aff.contextual.affectiveComplexity;
+    let complexityLine = '';
+    if (
+      complexity &&
+      (complexity.floodingIntensity >= 0.45 ||
+        complexity.ambiguity >= 0.45 ||
+        complexity.mixedValenceConflict >= 0.45 ||
+        complexity.paradoxicalExpression !== 'none')
+    ) {
+      complexityLine = `\n- Affective Storm & Human Complexity: Wave Phase=${complexity.wavePhase}, Ambiguity=${(complexity.ambiguity * 100).toFixed(0)}%, Mixed-Valence Conflict=${(complexity.mixedValenceConflict * 100).toFixed(0)}%, Flooding=${(complexity.floodingIntensity * 100).toFixed(0)}%${
+        complexity.paradoxicalExpression !== 'none'
+          ? `, Paradoxical Pressure-Valve=${complexity.paradoxicalExpression}`
+          : ''
+      }. You do NOT need to force a single clean emotion—allow genuine human contradiction, uncertainty about what you feel, or paradoxical reactions to surface naturally.`;
+    }
+
     return `
 [Active Psychology Engine (APE Phase 1 Live State)]
 - Current Persistent Mood: ${aff.currentMood.toUpperCase()}
 - Affective Dimensions: Valence ${aff.pad.valence >= 0 ? '+' : ''}${aff.pad.valence.toFixed(2)}, Arousal ${aff.pad.arousal.toFixed(2)}, Dominance ${aff.pad.dominance.toFixed(2)}
-- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}
+- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}${capsLine}${limsLine}${narrativeLine}${temporalLine}${worldLine}${perceptionLine}${embodimentLine}${sensorimotorLine}${complexityLine}
 - Demeanor & Cadence: ${modulation.toneDirective}
 - Vocal Register: ${modulation.vocalRegister}${intimacyDirectives}
-- Grounding: Speak naturally and authentically from this internal state with composure and quiet affection. Keep dialogue focused, grounded, and concise without reciting internal parameters or rambling.
+- Grounding: Speak naturally and authentically from this internal state. Keep dialogue focused, grounded, and concise without reciting internal parameters or rambling.
 `;
   }
+
+  // ==========================================
+  // Narrative Identity (Milestone 03)
+  // ==========================================
+  public getNarrativeState(): NarrativeIdentityState {
+    return this.narrativeEngine.getState();
+  }
+
+  public reconstructNarrativeHistory(options?: ReconstructHistoryOptions): AutobiographicalReconstruction {
+    return this.narrativeEngine.reconstructNarrativeHistory(options);
+  }
+
+  public recordPersonalMilestone(input: CreateMilestoneInput): PersonalMilestone {
+    return this.narrativeEngine.recordPersonalMilestone(input);
+  }
+
+  public reappraiseExperience(input: ReappraiseExperienceInput): NarrativeInterpretation {
+    return this.narrativeEngine.reappraiseExperience(input);
+  }
+
+  public advanceNarrativeEpoch(params: {
+    title: string;
+    coreTheme: string;
+    turningPointDescription: string;
+    developmentalArc?: string;
+    dominantMood?: string;
+  }): NarrativeEpoch {
+    return this.narrativeEngine.advanceToNewEpoch(params);
+  }
+
+  public getNarrativeMilestones(filter?: {
+    epochId?: string;
+    category?: PersonalMilestoneCategory;
+    status?: MilestoneStatus;
+  }): PersonalMilestone[] {
+    return this.narrativeEngine.listMilestones(filter);
+  }
+
+  public getNarrativeEpochs(): NarrativeEpoch[] {
+    return this.narrativeEngine.listEpochs();
+  }
+
+  // ==========================================
+  // Temporal Cognition (Milestone 04)
+  // ==========================================
+  public getTemporalOverview(nowIso?: string): TemporalCognitionOverview {
+    return this.temporalEngine.getTemporalOverview(nowIso);
+  }
+
+  public classifyTemporalHorizon(entity: TemporalEntityInput, nowIso?: string): TemporalClassificationResult {
+    return this.temporalEngine.classifyTemporalHorizon(entity, nowIso);
+  }
+
+  public distinguishTemporalEntities(entities: TemporalEntityInput[], nowIso?: string): DistinguishEntitiesResult {
+    return this.temporalEngine.distinguishTemporalEntities(entities, nowIso);
+  }
+
+  public orderChronologically(events: ChronologicalEvent[]): ChronologicalEvent[] {
+    return this.temporalEngine.orderChronologically(events);
+  }
+
+  public createFutureIntention(input: CreateFutureIntentionInput): FutureIntention {
+    return this.temporalEngine.createIntention(input);
+  }
+
+  public listFutureIntentions(filter?: { status?: FutureIntentionStatus; limit?: number }): FutureIntention[] {
+    return this.temporalEngine.listIntentions(filter);
+  }
+
+  public fulfillFutureIntention(id: string): FutureIntention | null {
+    return this.temporalEngine.fulfillIntention(id);
+  }
+
+  public cancelFutureIntention(id: string): FutureIntention | null {
+    return this.temporalEngine.cancelIntention(id);
+  }
+
+  public recordCommitment(input: CreateCommitmentInput): UnfinishedCommitment {
+    return this.temporalEngine.recordCommitment(input);
+  }
+
+  public listCommitments(filter?: { status?: CommitmentStatus; partnerName?: string }): UnfinishedCommitment[] {
+    return this.temporalEngine.listCommitments(filter);
+  }
+
+  public fulfillCommitment(id: string, fulfillmentEvidence: string): UnfinishedCommitment | null {
+    return this.temporalEngine.fulfillCommitment(id, fulfillmentEvidence);
+  }
+
+  public renegotiateCommitment(id: string, newTargetTime: string, contextUpdate: string): UnfinishedCommitment | null {
+    return this.temporalEngine.renegotiateCommitment(id, newTargetTime, contextUpdate);
+  }
+
+  public createLongTermPlan(input: CreateLongTermPlanInput): LongTermPlan {
+    return this.temporalEngine.createPlan(input);
+  }
+
+  public listLongTermPlans(status?: LongTermPlanStatus): LongTermPlan[] {
+    return this.temporalEngine.listPlans(status);
+  }
+
+  public completePlanMilestone(planId: string, milestoneId: string): LongTermPlan {
+    return this.temporalEngine.completePlanMilestone(planId, milestoneId);
+  }
+
+  public estimateDuration(
+    operationKey: string,
+    fallbackMs?: number,
+  ): { estimatedDurationMs: number; confidence: number; basedOnSamples: number; profile?: DurationProfile } {
+    return this.temporalEngine.estimateDuration(operationKey, fallbackMs);
+  }
+
+  public recordActualDuration(operationKey: string, actualDurationMs: number, context?: string): DurationProfile {
+    return this.temporalEngine.recordActualDuration({ operationKey, actualDurationMs, context });
+  }
+
+  public calculateTemporalRecencyScore(timestamp: string, nowIso?: string, lambdaHalfLifeHours?: number): number {
+    return this.temporalEngine.calculateTemporalRecencyScore(timestamp, nowIso, lambdaHalfLifeHours);
+  }
+
+  // ==========================================
+  // World Model (Milestone 05)
+  // ==========================================
+  public observeWorld(observation: WorldObservationInput) {
+    return this.worldModelEngine.observe(observation);
+  }
+
+  public getWorldEntity(idOrName: string) {
+    return this.worldModelEngine.getEntity(idOrName);
+  }
+
+  public listWorldEntities(filter?: {
+    entityType?: WorldEntityType;
+    category?: string;
+    locationId?: string;
+    limit?: number;
+  }): WorldEntity[] {
+    return this.worldModelEngine.listEntities(filter);
+  }
+
+  public addWorldEntity(input: CreateWorldEntityInput): WorldEntity {
+    return this.worldModelEngine.addEntity(input);
+  }
+
+  public addWorldRelation(input: CreateWorldRelationInput): WorldRelation {
+    return this.worldModelEngine.addRelation(input);
+  }
+
+  public listWorldRelations(filter?: {
+    sourceEntityId?: string;
+    targetEntityId?: string;
+    relationType?: WorldRelationType;
+  }): WorldRelation[] {
+    return this.worldModelEngine.listRelations(filter);
+  }
+
+  public recordWorldEnvironmentalChange(input: RecordEnvironmentalChangeInput): WorldEnvironmentalChange {
+    return this.worldModelEngine.recordEnvironmentalChange(input);
+  }
+
+  public listWorldEnvironmentalChanges(filter?: { entityId?: string; limit?: number }): WorldEnvironmentalChange[] {
+    return this.worldModelEngine.listEnvironmentalChanges(filter);
+  }
+
+  public registerWorldCausalRelationship(input: CreateCausalRelationshipInput): CausalRelationship {
+    return this.worldModelEngine.registerCausalRelationship(input);
+  }
+
+  public listWorldCausalRelationships(filter?: {
+    causeEntityId?: string;
+    effectEntityId?: string;
+  }): CausalRelationship[] {
+    return this.worldModelEngine.listCausalRelationships(filter);
+  }
+
+  public recordWorldUnknown(input: CreateEpistemicUnknownInput): EpistemicUnknown {
+    return this.worldModelEngine.recordUnknown(input);
+  }
+
+  public resolveWorldUnknown(unknownId: string, resolutionEvidence: string): EpistemicUnknown {
+    return this.worldModelEngine.resolveUnknown(unknownId, resolutionEvidence);
+  }
+
+  public listWorldUnknowns(filter?: { status?: UnknownStatus; domain?: string }): EpistemicUnknown[] {
+    return this.worldModelEngine.listUnknowns(filter);
+  }
+
+  public getWorldEpistemicAnalysis(): EpistemicAnalysis {
+    return this.worldModelEngine.getKnownVsUnknownAnalysis();
+  }
+
+  public getWorldOverview(): WorldModelOverview {
+    return this.worldModelEngine.getWorldOverview();
+  }
+
+  // ==========================================
+  // Multimodal Perception (Milestone 06)
+  // ==========================================
+  public interpretImage(input: InterpretImageInput): ImageInterpretationResult {
+    return this.perceptionEngine.interpretImage(input);
+  }
+
+  public interpretAudio(input: InterpretAudioInput): AudioPerceptionResult {
+    return this.perceptionEngine.interpretAudio(input);
+  }
+
+  public interpretVideo(input: InterpretVideoInput): VideoInterpretationResult {
+    return this.perceptionEngine.interpretVideo(input);
+  }
+
+  public interpretScreen(input: InterpretScreenInput): ScreenInterpretationResult {
+    return this.perceptionEngine.interpretScreen(input);
+  }
+
+  public fuseMultimodalPerception(input: FuseMultimodalInput): UnifiedMultimodalFrame {
+    return this.perceptionEngine.fuseMultimodalContext(input);
+  }
+
+  public getLatestPerceptualFrame(): UnifiedMultimodalFrame | null {
+    return this.perceptionEngine.getLatestFrame();
+  }
+
+  public listPerceptualEvents(limit?: number): PerceptualEvent[] {
+    return this.perceptionEngine.listRecentEvents(limit);
+  }
+
+  public listDetectedObjects(limit?: number): DetectedObject[] {
+    return this.perceptionEngine.listDetectedObjects(limit);
+  }
+
+  // ==========================================
+  // Embodiment & Interoception (Milestone 07)
+  // ==========================================
+  public async conductInteroceptiveCycle(options?: {
+    telemetryOverride?: Partial<ComputationalResourceMetrics>;
+    modelsOverride?: Partial<ModelAvailabilityState>;
+    workloadOverride?: {
+      activeInferenceStreams?: number;
+      queuedTasks?: number;
+      memoryLoadPercent?: number;
+      activePerceptionStreams?: number;
+    };
+  }): Promise<InteroceptiveSnapshot> {
+    return this.embodimentEngine.conductInteroceptiveCycle(options);
+  }
+
+  public getLatestInteroceptiveSnapshot(): InteroceptiveSnapshot | null {
+    return (this.embodimentEngine as any).repo.getLatestSnapshot();
+  }
+
+  public incorporateIntoPlanning(planRequirements?: {
+    parallelTasksRequested?: number;
+    requiresHeavyMultimodal?: boolean;
+    demandedContextTokens?: number;
+  }): PlanningResourceAllocationAdjustment {
+    return this.embodimentEngine.incorporateIntoPlanning(planRequirements);
+  }
+
+  // ==========================================
+  // Sensorimotor and Action Grounding (Milestone 08)
+  // ==========================================
+  public async executeSensorimotorAction(input: {
+    sessionId: string;
+    intentionId?: string;
+    actionType: SensorimotorActionType;
+    spatialTarget: SpatialTarget;
+    intendedOutcome: string;
+    parameters?: Record<string, any>;
+    mockObservedDelta?: string;
+    forceFailure?: boolean;
+  }): Promise<SensorimotorActionRecord> {
+    return this.sensorimotorEngine.executeActionWithVerification(input);
+  }
+
+  public calibrateSpatialEnvironment(calibration: Partial<SpatialCalibration>): SpatialCalibration {
+    return this.sensorimotorEngine.calibrateSpatialEnvironment(calibration);
+  }
+
+  public getSpatialCalibration(): SpatialCalibration {
+    return this.sensorimotorEngine.getSpatialCalibration();
+  }
+
+  public recordInteractionStrategy(strategy: {
+    targetAppOrContext: string;
+    goalType: string;
+    primarySequence: Array<Record<string, any>>;
+    fallbackSequence?: Array<Record<string, any>>;
+  }): InteractionStrategy {
+    return this.sensorimotorEngine.recordInteractionStrategy(strategy);
+  }
+
+  public getAdaptiveActionPlan(targetAppOrContext: string, goalType: string) {
+    return this.sensorimotorEngine.getAdaptiveActionPlan(targetAppOrContext, goalType);
+  }
+
+  public getRecentSensorimotorActions(limit?: number): SensorimotorActionRecord[] {
+    return this.sensorimotorEngine.getRecentActions(limit);
+  }
 }
+

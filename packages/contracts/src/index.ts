@@ -63,6 +63,19 @@ export const IPC_CHANNELS = {
   APE_DEVELOPMENT_GET: 'arletex:ape:development:get',
   APE_DEVELOPMENT_UPDATE: 'arletex:ape:development:update',
   APE_MASTER_STATE_GET: 'arletex:ape:master_state:get',
+  APE_NARRATIVE_STATE_GET: 'arletex:ape:narrative:state:get',
+  APE_NARRATIVE_HISTORY_RECONSTRUCT: 'arletex:ape:narrative:history:reconstruct',
+  APE_NARRATIVE_MILESTONES_GET: 'arletex:ape:narrative:milestones:get',
+  APE_NARRATIVE_MILESTONE_CREATE: 'arletex:ape:narrative:milestone:create',
+  APE_NARRATIVE_REAPPRAISE: 'arletex:ape:narrative:reappraise',
+
+  // Temporal Cognition Channels (Milestone 04)
+  APE_TEMPORAL_OVERVIEW_GET: 'arletex:ape:temporal:overview:get',
+  APE_TEMPORAL_CLASSIFY: 'arletex:ape:temporal:classify',
+  APE_TEMPORAL_TIMELINE_GET: 'arletex:ape:temporal:timeline:get',
+  APE_TEMPORAL_INTENTION_CREATE: 'arletex:ape:temporal:intention:create',
+  APE_TEMPORAL_COMMITMENT_CREATE: 'arletex:ape:temporal:commitment:create',
+  APE_TEMPORAL_PLAN_CREATE: 'arletex:ape:temporal:plan:create',
 
   // Autonomous Agency & Device Control Channels
   AUTONOMY_STATUS_GET: 'arletex:autonomy:status:get',
@@ -615,6 +628,43 @@ export * from './apeTaxonomyData.js';
 export * from './agency.js';
 
 // ==========================================
+// Persistent Individual Continuity Contracts
+// ==========================================
+export * from './continuity.js';
+
+// ==========================================
 // Central Cognitive Control Contracts
 // ==========================================
 export * from './cognitive.js';
+
+// ==========================================
+// Narrative Identity Contracts (Milestone 03)
+// ==========================================
+export * from './narrative.js';
+
+// ==========================================
+// Temporal Cognition Contracts (Milestone 04)
+// ==========================================
+export * from './temporal.js';
+
+// ==========================================
+// World Model Contracts (Milestone 05)
+// ==========================================
+export * from './world.js';
+
+// ==========================================
+// Multimodal Perception Contracts (Milestone 06)
+// ==========================================
+export * from './perception.js';
+
+// ==========================================
+// Embodiment & Interoception Contracts (Milestone 07)
+// ==========================================
+export * from './embodiment.js';
+
+// ==========================================
+// Sensorimotor and Action Grounding (Milestone 08)
+// ==========================================
+export * from './sensorimotor.js';
+
+

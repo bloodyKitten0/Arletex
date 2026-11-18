@@ -657,4 +657,467 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_intellectual_questions_domain ON ape_intellectual_questions(domain);
     `,
   },
+  {
+    id: 12,
+    name: '012_persistent_individual_continuity',
+    up: `
+      -- 1. Identity Sessions (Persistent presence, heartbeats, downtime tracking)
+      CREATE TABLE IF NOT EXISTS identity_sessions (
+        id TEXT PRIMARY KEY,
+        started_at TEXT NOT NULL,
+        last_heartbeat_at TEXT NOT NULL,
+        ended_at TEXT,
+        shutdown_type TEXT NOT NULL DEFAULT 'active' CHECK (shutdown_type IN ('active', 'clean', 'unexpected_crash', 'interrupted')),
+        channel_origin TEXT NOT NULL DEFAULT 'desktop' CHECK (channel_origin IN ('desktop', 'telegram', 'cli', 'unified', 'system')),
+        active_inference_model TEXT NOT NULL DEFAULT 'qwen-2.5-7b',
+        memory_count INTEGER NOT NULL DEFAULT 0,
+        active_emotions_count INTEGER NOT NULL DEFAULT 0,
+        downtime_from_previous_ms INTEGER NOT NULL DEFAULT 0,
+        metadata TEXT NOT NULL DEFAULT '{}'
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_identity_sessions_shutdown ON identity_sessions(shutdown_type);
+      CREATE INDEX IF NOT EXISTS idx_identity_sessions_started ON identity_sessions(started_at DESC);
+
+      -- 2. Identity Checkpoints (Cryptographically hashed snapshots, corruption rollback)
+      CREATE TABLE IF NOT EXISTS identity_checkpoints (
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL,
+        checkpoint_type TEXT NOT NULL CHECK (checkpoint_type IN ('periodic', 'clean_shutdown', 'pre_recovery', 'manual', 'state_transition')),
+        state_hash TEXT NOT NULL,
+        master_state_json TEXT NOT NULL,
+        memory_count INTEGER NOT NULL,
+        schema_version INTEGER NOT NULL DEFAULT 12,
+        is_verified_valid INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (session_id) REFERENCES identity_sessions(id) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_identity_checkpoints_created ON identity_checkpoints(created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_identity_checkpoints_valid ON identity_checkpoints(is_verified_valid, created_at DESC);
+
+      -- 3. Channel Presences (Cross-channel shared presence and context tracking)
+      CREATE TABLE IF NOT EXISTS channel_presences (
+        channel TEXT PRIMARY KEY CHECK (channel IN ('desktop', 'telegram', 'cli', 'unified', 'system')),
+        last_interaction_at TEXT NOT NULL,
+        interaction_count INTEGER NOT NULL DEFAULT 0,
+        active_context_summary TEXT NOT NULL DEFAULT '',
+        updated_at TEXT NOT NULL
+      );
+
+      -- 4. Component State Versioning
+      CREATE TABLE IF NOT EXISTS system_state_versions (
+        component TEXT PRIMARY KEY,
+        version INTEGER NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('identity_continuity', 1, CURRENT_TIMESTAMP);
+    `,
+  },
+  {
+    id: 13,
+    name: '013_self_model_milestone2',
+    up: `
+      -- Extend ape_self_model with structured capabilities, limitations, perceived capabilities, and behavioral changes
+      ALTER TABLE ape_self_model ADD COLUMN structured_capabilities TEXT NOT NULL DEFAULT '[]';
+      ALTER TABLE ape_self_model ADD COLUMN structured_limitations TEXT NOT NULL DEFAULT '[]';
+      ALTER TABLE ape_self_model ADD COLUMN perceived_capabilities TEXT NOT NULL DEFAULT '[]';
+      ALTER TABLE ape_self_model ADD COLUMN behavioral_changes TEXT NOT NULL DEFAULT '[]';
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('self_model_milestone2', 1, CURRENT_TIMESTAMP);
+    `,
+  },
+  {
+    id: 14,
+    name: '014_narrative_identity_milestone3',
+    up: `
+      -- Narrative Epochs (autobiographical life chapters)
+      CREATE TABLE IF NOT EXISTS narrative_epochs (
+        id TEXT PRIMARY KEY,
+        order_index INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        period_start TEXT NOT NULL,
+        period_end TEXT,
+        core_theme TEXT NOT NULL,
+        narrative_summary TEXT NOT NULL,
+        turning_point_description TEXT NOT NULL,
+        milestone_ids TEXT NOT NULL DEFAULT '[]',
+        dominant_mood TEXT NOT NULL DEFAULT 'composed',
+        developmental_arc TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      -- Personal Milestones (significant autobiographical events, turning points, breakthroughs)
+      CREATE TABLE IF NOT EXISTS personal_milestones (
+        id TEXT PRIMARY KEY,
+        epoch_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        summary TEXT NOT NULL,
+        category TEXT NOT NULL,
+        significance_score REAL NOT NULL DEFAULT 0.5,
+        timestamp TEXT NOT NULL,
+        associated_memory_ids TEXT NOT NULL DEFAULT '[]',
+        psychological_impact TEXT NOT NULL DEFAULT '{}',
+        status TEXT NOT NULL DEFAULT 'active',
+        tags TEXT NOT NULL DEFAULT '[]',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      -- Narrative Interpretations (reappraisals and causal links between past memories and present self)
+      CREATE TABLE IF NOT EXISTS narrative_interpretations (
+        id TEXT PRIMARY KEY,
+        target_type TEXT NOT NULL,
+        target_id TEXT NOT NULL,
+        initial_interpretation TEXT NOT NULL,
+        current_interpretation TEXT NOT NULL,
+        causal_connection_to_present TEXT NOT NULL,
+        reconsideration_history TEXT NOT NULL DEFAULT '[]',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      -- Narrative State Singleton (global identity continuity, invariants, and overarching autobiography)
+      CREATE TABLE IF NOT EXISTS narrative_state (
+        id TEXT PRIMARY KEY,
+        current_epoch_id TEXT NOT NULL,
+        core_invariants TEXT NOT NULL DEFAULT '[]',
+        temporal_comparisons TEXT NOT NULL DEFAULT '[]',
+        coherence_score REAL NOT NULL DEFAULT 1.0,
+        autobiographical_summary TEXT NOT NULL,
+        last_consolidated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_personal_milestones_epoch ON personal_milestones (epoch_id);
+      CREATE INDEX IF NOT EXISTS idx_personal_milestones_category ON personal_milestones (category);
+      CREATE INDEX IF NOT EXISTS idx_personal_milestones_timestamp ON personal_milestones (timestamp);
+      CREATE INDEX IF NOT EXISTS idx_narrative_epochs_status ON narrative_epochs (status);
+      CREATE INDEX IF NOT EXISTS idx_narrative_interpretations_target ON narrative_interpretations (target_type, target_id);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('narrative_identity_milestone3', 1, CURRENT_TIMESTAMP);
+    `,
+  },
+  {
+    id: 15,
+    name: '015_temporal_cognition_milestone4',
+    up: `
+      -- Future Intentions (prospective intentions and time-based action triggers)
+      CREATE TABLE IF NOT EXISTS future_intentions (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        intended_for TEXT NOT NULL,
+        trigger_condition TEXT,
+        priority REAL NOT NULL DEFAULT 0.5,
+        status TEXT NOT NULL DEFAULT 'pending',
+        origin TEXT NOT NULL DEFAULT 'spontaneous',
+        associated_goal_id TEXT,
+        tags TEXT NOT NULL DEFAULT '[]',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      -- Unfinished Commitments (pacts, promises, and relational/project agreements)
+      CREATE TABLE IF NOT EXISTS unfinished_commitments (
+        id TEXT PRIMARY KEY,
+        partner_name TEXT NOT NULL DEFAULT 'Proof',
+        commitment_text TEXT NOT NULL,
+        context TEXT NOT NULL DEFAULT '',
+        committed_at TEXT NOT NULL,
+        target_fulfillment_time TEXT,
+        deadline_type TEXT NOT NULL DEFAULT 'soft_target',
+        status TEXT NOT NULL DEFAULT 'active',
+        verification_criteria TEXT NOT NULL,
+        fulfillment_evidence TEXT,
+        fulfilled_at TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      -- Long Term Plans (multi-stage strategic roadmaps, milestones, dependencies)
+      CREATE TABLE IF NOT EXISTS long_term_plans (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        vision_statement TEXT NOT NULL,
+        horizon TEXT NOT NULL DEFAULT 'medium_term',
+        milestones TEXT NOT NULL DEFAULT '[]',
+        contingency_plans TEXT NOT NULL DEFAULT '[]',
+        status TEXT NOT NULL DEFAULT 'active',
+        target_completion_date TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      -- Duration Profiles (empirical execution metrics learned across operations)
+      CREATE TABLE IF NOT EXISTS duration_profiles (
+        operation_key TEXT PRIMARY KEY,
+        sample_count INTEGER NOT NULL DEFAULT 0,
+        average_duration_ms REAL NOT NULL DEFAULT 0,
+        min_duration_ms REAL NOT NULL DEFAULT 0,
+        max_duration_ms REAL NOT NULL DEFAULT 0,
+        standard_deviation_ms REAL NOT NULL DEFAULT 0,
+        confidence_score REAL NOT NULL DEFAULT 0.5,
+        last_calibrated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_future_intentions_status ON future_intentions (status, intended_for);
+      CREATE INDEX IF NOT EXISTS idx_unfinished_commitments_status ON unfinished_commitments (status, target_fulfillment_time);
+      CREATE INDEX IF NOT EXISTS idx_long_term_plans_status ON long_term_plans (status);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('temporal_cognition_milestone4', 1, CURRENT_TIMESTAMP);
+    `,
+  },
+  {
+    id: 16,
+    name: '016_world_model_milestone5',
+    up: `
+      -- World Entities (people, agents, systems, objects, locations, artifacts, services)
+      CREATE TABLE IF NOT EXISTS world_entities (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL DEFAULT 'general',
+        entity_type TEXT NOT NULL,
+        properties TEXT NOT NULL DEFAULT '{}',
+        location_id TEXT,
+        certainty TEXT NOT NULL DEFAULT 'empirical_observation',
+        confidence REAL NOT NULL DEFAULT 0.8,
+        source_provenance TEXT NOT NULL DEFAULT 'direct_observation',
+        last_observed_at TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      -- World Relations (directed or bidirectional relationships between entities)
+      CREATE TABLE IF NOT EXISTS world_relations (
+        id TEXT PRIMARY KEY,
+        source_entity_id TEXT NOT NULL,
+        target_entity_id TEXT NOT NULL,
+        relation_type TEXT NOT NULL,
+        properties TEXT NOT NULL DEFAULT '{}',
+        confidence REAL NOT NULL DEFAULT 0.8,
+        certainty TEXT NOT NULL DEFAULT 'empirical_observation',
+        is_bidirectional INTEGER NOT NULL DEFAULT 0,
+        last_observed_at TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      -- World Environmental Changes (log of state changes, file mutations, service status changes)
+      CREATE TABLE IF NOT EXISTS world_environmental_changes (
+        id TEXT PRIMARY KEY,
+        entity_id TEXT,
+        change_type TEXT NOT NULL,
+        previous_state TEXT,
+        new_state TEXT NOT NULL DEFAULT '{}',
+        observed_at TEXT NOT NULL,
+        source TEXT NOT NULL DEFAULT 'environmental_telemetry',
+        description TEXT NOT NULL
+      );
+
+      -- World Causal Relationships (A causes B under condition with empirical reliability)
+      CREATE TABLE IF NOT EXISTS world_causal_relationships (
+        id TEXT PRIMARY KEY,
+        cause_entity_id TEXT NOT NULL,
+        effect_entity_id TEXT NOT NULL,
+        condition TEXT,
+        mechanism TEXT NOT NULL,
+        empirical_reliability REAL NOT NULL DEFAULT 0.9,
+        confidence REAL NOT NULL DEFAULT 0.85,
+        created_at TEXT NOT NULL
+      );
+
+      -- World Epistemic Unknowns (explicit tracking of open questions, unknown information, investigation frontier)
+      CREATE TABLE IF NOT EXISTS world_epistemic_unknowns (
+        id TEXT PRIMARY KEY,
+        topic TEXT NOT NULL,
+        question TEXT NOT NULL,
+        domain TEXT NOT NULL DEFAULT 'general',
+        priority REAL NOT NULL DEFAULT 0.5,
+        status TEXT NOT NULL DEFAULT 'open',
+        resolution_evidence TEXT,
+        created_at TEXT NOT NULL,
+        resolved_at TEXT
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_world_entities_name ON world_entities (name);
+      CREATE INDEX IF NOT EXISTS idx_world_entities_type ON world_entities (entity_type, category);
+      CREATE INDEX IF NOT EXISTS idx_world_relations_source ON world_relations (source_entity_id, relation_type);
+      CREATE INDEX IF NOT EXISTS idx_world_relations_target ON world_relations (target_entity_id, relation_type);
+      CREATE INDEX IF NOT EXISTS idx_world_changes_entity ON world_environmental_changes (entity_id, observed_at);
+      CREATE INDEX IF NOT EXISTS idx_world_unknowns_status ON world_epistemic_unknowns (status, priority);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('world_model_milestone5', 1, CURRENT_TIMESTAMP);
+    `,
+  },
+  {
+    id: 17,
+    name: '017_multimodal_perception_milestone6',
+    up: `
+      -- Unified Perceptual Frames (snapshots of fused sensory state)
+      CREATE TABLE IF NOT EXISTS perceptual_frames (
+        id TEXT PRIMARY KEY,
+        timestamp TEXT NOT NULL,
+        modalities TEXT NOT NULL,
+        visual_summary TEXT,
+        audio_summary TEXT,
+        screen_summary TEXT,
+        scene TEXT NOT NULL,
+        detected_objects TEXT NOT NULL DEFAULT '[]',
+        perceptual_events TEXT NOT NULL DEFAULT '[]',
+        direct_observations TEXT NOT NULL DEFAULT '[]',
+        assumptions TEXT NOT NULL DEFAULT '[]',
+        overall_confidence REAL NOT NULL DEFAULT 0.85,
+        perceptual_context_synthesis TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      -- Perceptual Events (individual detected events across modalities)
+      CREATE TABLE IF NOT EXISTS perceptual_events (
+        id TEXT PRIMARY KEY,
+        frame_id TEXT,
+        event_type TEXT NOT NULL,
+        modality TEXT NOT NULL,
+        timestamp TEXT NOT NULL,
+        description TEXT NOT NULL,
+        duration_ms REAL,
+        confidence REAL NOT NULL DEFAULT 0.9,
+        created_at TEXT NOT NULL
+      );
+
+      -- Detected Objects (catalog of recognized visual/audio/screen entities)
+      CREATE TABLE IF NOT EXISTS perceptual_detected_objects (
+        id TEXT PRIMARY KEY,
+        frame_id TEXT,
+        label TEXT NOT NULL,
+        category TEXT NOT NULL DEFAULT 'general',
+        confidence REAL NOT NULL DEFAULT 0.85,
+        bounding_box TEXT,
+        attributes TEXT NOT NULL DEFAULT '{}',
+        created_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_perceptual_frames_time ON perceptual_frames (timestamp);
+      CREATE INDEX IF NOT EXISTS idx_perceptual_events_type ON perceptual_events (event_type, modality);
+      CREATE INDEX IF NOT EXISTS idx_perceptual_objects_label ON perceptual_detected_objects (label, category);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('multimodal_perception_milestone6', 1, CURRENT_TIMESTAMP);
+    `,
+  },
+  {
+    id: 18,
+    name: '018_embodiment_interoception_milestone7',
+    up: `
+      -- Interoceptive Snapshots (telemetry, model/tool availability, workload, operational mode)
+      CREATE TABLE IF NOT EXISTS interoceptive_snapshots (
+        id TEXT PRIMARY KEY,
+        timestamp TEXT NOT NULL,
+        resource_metrics TEXT NOT NULL,
+        model_availability TEXT NOT NULL,
+        tool_availability TEXT NOT NULL,
+        cognitive_workload TEXT NOT NULL,
+        operational_mode TEXT NOT NULL,
+        constraints TEXT NOT NULL DEFAULT '[]',
+        directive TEXT NOT NULL,
+        digital_physiological_report TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      -- Operational Constraint Events (mode transitions and triggers)
+      CREATE TABLE IF NOT EXISTS operational_constraint_events (
+        id TEXT PRIMARY KEY,
+        timestamp TEXT NOT NULL,
+        previous_mode TEXT NOT NULL,
+        new_mode TEXT NOT NULL,
+        trigger_reason TEXT NOT NULL,
+        resource_state TEXT NOT NULL,
+        directive_issued TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      -- Resource Regulation Directives History
+      CREATE TABLE IF NOT EXISTS resource_regulation_history (
+        id TEXT PRIMARY KEY,
+        timestamp TEXT NOT NULL,
+        mode TEXT NOT NULL,
+        throttle_background_tasks INTEGER NOT NULL DEFAULT 0,
+        max_context_tokens_adjustment INTEGER NOT NULL DEFAULT 0,
+        suspend_heavy_multimodal INTEGER NOT NULL DEFAULT 0,
+        reason TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_interoceptive_snapshots_time ON interoceptive_snapshots (timestamp);
+      CREATE INDEX IF NOT EXISTS idx_interoceptive_snapshots_mode ON interoceptive_snapshots (operational_mode);
+      CREATE INDEX IF NOT EXISTS idx_operational_events_time ON operational_constraint_events (timestamp);
+      CREATE INDEX IF NOT EXISTS idx_regulation_history_time ON resource_regulation_history (timestamp);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('embodiment_interoception_milestone7', 1, CURRENT_TIMESTAMP);
+    `,
+  },
+  {
+    id: 19,
+    name: '019_sensorimotor_action_grounding_milestone8',
+    up: `
+      -- Sensorimotor Action Records (attempts, executions, verified outcomes, epistemic distinctions)
+      CREATE TABLE IF NOT EXISTS sensorimotor_action_records (
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL,
+        intention_id TEXT,
+        action_type TEXT NOT NULL,
+        spatial_target TEXT NOT NULL,
+        intended_outcome TEXT NOT NULL,
+        attempted_payload TEXT NOT NULL,
+        executed_at TEXT NOT NULL,
+        execution_status TEXT NOT NULL,
+        verification TEXT NOT NULL,
+        distinction_analysis TEXT NOT NULL,
+        duration_ms REAL NOT NULL DEFAULT 0,
+        retry_count INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
+      );
+
+      -- Interaction Strategies (learned action patterns and empirical success rates)
+      CREATE TABLE IF NOT EXISTS interaction_strategies (
+        id TEXT PRIMARY KEY,
+        target_app_or_context TEXT NOT NULL,
+        goal_type TEXT NOT NULL,
+        primary_sequence TEXT NOT NULL,
+        fallback_sequence TEXT,
+        success_count INTEGER NOT NULL DEFAULT 0,
+        failure_count INTEGER NOT NULL DEFAULT 0,
+        empirical_reliability REAL NOT NULL DEFAULT 0.5,
+        last_used_at TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      -- Spatial Calibrations (display coordinate understanding and window geometry)
+      CREATE TABLE IF NOT EXISTS sensorimotor_spatial_calibrations (
+        id TEXT PRIMARY KEY,
+        display_id TEXT NOT NULL DEFAULT 'primary',
+        screen_width INTEGER NOT NULL,
+        screen_height INTEGER NOT NULL,
+        scale_factor REAL NOT NULL DEFAULT 1.0,
+        active_windows TEXT NOT NULL DEFAULT '[]',
+        calibrated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_sensorimotor_actions_time ON sensorimotor_action_records (executed_at);
+      CREATE INDEX IF NOT EXISTS idx_sensorimotor_actions_type ON sensorimotor_action_records (action_type);
+      CREATE INDEX IF NOT EXISTS idx_sensorimotor_actions_session ON sensorimotor_action_records (session_id);
+      CREATE INDEX IF NOT EXISTS idx_interaction_strategies_context ON interaction_strategies (target_app_or_context, goal_type);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('sensorimotor_action_grounding_milestone8', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

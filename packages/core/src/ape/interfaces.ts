@@ -18,6 +18,38 @@ import {
   EmotionTaxonomyItem,
   IntellectualQuestion,
   MoodTaxonomyItem,
+  NarrativeEpoch,
+  PersonalMilestone,
+  PersonalMilestoneCategory,
+  MilestoneStatus,
+  NarrativeInterpretation,
+  NarrativeIdentityState,
+  FutureIntention,
+  FutureIntentionStatus,
+  UnfinishedCommitment,
+  CommitmentStatus,
+  LongTermPlan,
+  LongTermPlanStatus,
+  DurationProfile,
+  WorldEntity,
+  WorldEntityType,
+  WorldRelation,
+  WorldRelationType,
+  WorldEnvironmentalChange,
+  CausalRelationship,
+  EpistemicUnknown,
+  UnknownStatus,
+  DetectedObject,
+  PerceptualEvent,
+  PerceptionModality,
+  UnifiedMultimodalFrame,
+  InteroceptiveSnapshot,
+  OperationalMode,
+  ComputationalResourceMetrics,
+  ResourceRegulationDirective,
+  SensorimotorActionRecord,
+  InteractionStrategy,
+  SpatialCalibration,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -92,3 +124,130 @@ export interface IApeInferenceGateway {
     onChunk?: (chunk: any) => void;
   }): Promise<string>;
 }
+
+export interface INarrativeRepository {
+  getEpochById(id: string): NarrativeEpoch | null;
+  getCurrentEpoch(): NarrativeEpoch | null;
+  listEpochs(): NarrativeEpoch[];
+  saveEpoch(epoch: NarrativeEpoch): void;
+
+  getMilestoneById(id: string): PersonalMilestone | null;
+  listMilestones(filter?: {
+    epochId?: string;
+    category?: PersonalMilestoneCategory;
+    status?: MilestoneStatus;
+  }): PersonalMilestone[];
+  saveMilestone(milestone: PersonalMilestone): void;
+  deleteMilestone(id: string): boolean;
+
+  getInterpretationById(id: string): NarrativeInterpretation | null;
+  getInterpretationForTarget(targetType: string, targetId: string): NarrativeInterpretation | null;
+  listInterpretations(): NarrativeInterpretation[];
+  saveInterpretation(interpretation: NarrativeInterpretation): void;
+
+  getNarrativeState(): NarrativeIdentityState | null;
+  saveNarrativeState(state: NarrativeIdentityState): void;
+}
+
+export interface ITemporalRepository {
+  getIntentionById(id: string): FutureIntention | null;
+  listIntentions(filter?: { status?: FutureIntentionStatus; limit?: number }): FutureIntention[];
+  saveIntention(intention: FutureIntention): void;
+  deleteIntention(id: string): boolean;
+
+  getCommitmentById(id: string): UnfinishedCommitment | null;
+  listCommitments(filter?: { status?: CommitmentStatus; partnerName?: string }): UnfinishedCommitment[];
+  saveCommitment(commitment: UnfinishedCommitment): void;
+  deleteCommitment(id: string): boolean;
+
+  getPlanById(id: string): LongTermPlan | null;
+  listPlans(filter?: { status?: LongTermPlanStatus }): LongTermPlan[];
+  savePlan(plan: LongTermPlan): void;
+  deletePlan(id: string): boolean;
+
+  getDurationProfile(operationKey: string): DurationProfile | null;
+  listDurationProfiles(): DurationProfile[];
+  saveDurationProfile(profile: DurationProfile): void;
+}
+
+export interface IWorldRepository {
+  getEntityById(id: string): WorldEntity | null;
+  getEntityByName(name: string): WorldEntity | null;
+  listEntities(filter?: { entityType?: WorldEntityType; category?: string; locationId?: string; limit?: number }): WorldEntity[];
+  saveEntity(entity: WorldEntity): void;
+  deleteEntity(id: string): boolean;
+
+  getRelationById(id: string): WorldRelation | null;
+  listRelations(filter?: { sourceEntityId?: string; targetEntityId?: string; relationType?: WorldRelationType }): WorldRelation[];
+  saveRelation(relation: WorldRelation): void;
+  deleteRelation(id: string): boolean;
+
+  recordEnvironmentalChange(change: WorldEnvironmentalChange): void;
+  listEnvironmentalChanges(filter?: { entityId?: string; limit?: number }): WorldEnvironmentalChange[];
+
+  saveCausalRelationship(relationship: CausalRelationship): void;
+  listCausalRelationships(filter?: { causeEntityId?: string; effectEntityId?: string }): CausalRelationship[];
+
+  getUnknownById(id: string): EpistemicUnknown | null;
+  listUnknowns(filter?: { status?: UnknownStatus; domain?: string }): EpistemicUnknown[];
+  saveUnknown(unknown: EpistemicUnknown): void;
+  deleteUnknown(id: string): boolean;
+}
+
+export interface IPerceptionRepository {
+  saveFrame(frame: UnifiedMultimodalFrame): void;
+  getFrameById(id: string): UnifiedMultimodalFrame | null;
+  getLatestFrame(): UnifiedMultimodalFrame | null;
+  listFrames(limit?: number): UnifiedMultimodalFrame[];
+
+  recordPerceptualEvent(event: PerceptualEvent, frameId?: string): void;
+  listPerceptualEvents(filter?: { eventType?: string; modality?: PerceptionModality; limit?: number }): PerceptualEvent[];
+
+  recordDetectedObjects(objects: DetectedObject[], frameId?: string): void;
+  listDetectedObjects(filter?: { label?: string; category?: string; limit?: number }): DetectedObject[];
+}
+
+export interface IEmbodimentRepository {
+  saveSnapshot(snapshot: InteroceptiveSnapshot): void;
+  getSnapshotById(id: string): InteroceptiveSnapshot | null;
+  getLatestSnapshot(): InteroceptiveSnapshot | null;
+  listSnapshots(limit?: number): InteroceptiveSnapshot[];
+
+  recordConstraintEvent(event: {
+    id: string;
+    timestamp: string;
+    previousMode: OperationalMode;
+    newMode: OperationalMode;
+    triggerReason: string;
+    resourceState: ComputationalResourceMetrics;
+    directiveIssued: ResourceRegulationDirective;
+  }): void;
+  listConstraintEvents(limit?: number): Array<{
+    id: string;
+    timestamp: string;
+    previousMode: OperationalMode;
+    newMode: OperationalMode;
+    triggerReason: string;
+    resourceState: ComputationalResourceMetrics;
+    directiveIssued: ResourceRegulationDirective;
+    createdAt: string;
+  }>;
+
+  recordRegulationDirective(directive: ResourceRegulationDirective & { id?: string }): void;
+  getLatestRegulationDirective(): ResourceRegulationDirective | null;
+}
+
+export interface ISensorimotorRepository {
+  recordAction(record: SensorimotorActionRecord): void;
+  getActionRecordById(id: string): SensorimotorActionRecord | null;
+  listActionRecords(filter?: { sessionId?: string; actionType?: string; status?: string; limit?: number }): SensorimotorActionRecord[];
+
+  saveStrategy(strategy: InteractionStrategy): void;
+  getStrategy(targetAppOrContext: string, goalType: string): InteractionStrategy | null;
+  listStrategies(targetAppOrContext?: string): InteractionStrategy[];
+
+  saveSpatialCalibration(calibration: SpatialCalibration): void;
+  getLatestSpatialCalibration(displayId?: string): SpatialCalibration | null;
+}
+
+

@@ -28,13 +28,16 @@ export class TelemetryService {
     if (now - this.lastSpecialistProbe < 5000) return;
     this.lastSpecialistProbe = now;
     try {
-      const res = await fetch('http://127.0.0.1:39282/health');
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 1500);
+      const res = await fetch('http://127.0.0.1:39282/health', { signal: controller.signal });
+      clearTimeout(timeout);
       if (res.ok) {
         const data = (await res.json()) as any;
         this.specialistStatus = {
-          embeddingGemma: Boolean(data.embeddingGemma),
-          whisper: Boolean(data.whisper),
-          kokoro: Boolean(data.kokoro),
+          embeddingGemma: Boolean(data.embeddingGemma ?? data.modelsInstalled?.embeddingGemma ?? data.modelsLoaded?.embeddingGemma),
+          whisper: Boolean(data.whisper ?? data.modelsInstalled?.whisper ?? data.modelsLoaded?.whisper),
+          kokoro: Boolean(data.kokoro ?? data.modelsInstalled?.kokoro ?? data.modelsLoaded?.kokoro),
         };
       }
     } catch (err: any) {

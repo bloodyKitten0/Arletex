@@ -8,6 +8,7 @@ import {
 } from '@arletex/contracts';
 import { IApeRepository } from './interfaces.js';
 import { ILogger, rootLogger } from '../logger.js';
+import { computeAftershockWaveIntensity } from './humanAffectDynamics.js';
 
 export interface EmotionDecayProfile {
   halfLifeMs: number;
@@ -94,6 +95,8 @@ export class EmotionalLifecycleEngine {
     resolved: ActiveEmotionState[];
   } {
     const nowTime = new Date(nowIso).getTime();
+    const affectiveState = this.repo.getAffectiveState();
+    const wavePhase = affectiveState?.contextual?.affectiveComplexity?.wavePhase || 'steady';
     const activeEmotions = this.repo.getActiveEmotions();
     const resolvedEmotions = this.repo.getActiveEmotions('resolved');
     const emotionsToProcess = [...activeEmotions, ...resolvedEmotions];
@@ -148,10 +151,15 @@ export class EmotionalLifecycleEngine {
       }
 
       const prevIntensity = em.intensity;
-      const decayFactor = Math.pow(0.5, elapsedMs / decayProfile.halfLifeMs);
-      let newIntensity = Number(
-        Math.max(decayProfile.minBaselineIntensity, prevIntensity * decayFactor).toFixed(3),
-      );
+      let newIntensity = computeAftershockWaveIntensity({
+        prevIntensity,
+        elapsedMs,
+        halfLifeMs: decayProfile.halfLifeMs,
+        minBaselineIntensity: decayProfile.minBaselineIntensity,
+        emotionId: em.emotionId,
+        wavePhase,
+        totalDurationMs: em.durationMs || 0,
+      });
 
       const prevStatus = em.status;
       let nextStatus: ActiveEmotionStatus = em.status;
@@ -306,31 +314,50 @@ export class EmotionalLifecycleEngine {
   }
 
   /**
-   * Selects the dominant coexisting emotions to guide cognitive focus,
-   * preventing contradictory dumps of 20+ emotions into prompt context.
+   * Selects the dominant coexisting emotions to guide cognitive focus.
+   * Under steady baseline states, keeps immediate focus concise; under high-salience
+   * emotional flooding, mixed-valence conflict, or paradoxical shock states, allows
+   * contradictory emotions to coexist authentically instead of artificially suppressing them.
    */
-  public getDominantCoexistingEmotions(limit = 4): ActiveEmotionState[] {
+  public getDominantCoexistingEmotions(
+    limit = 4,
+    options: { allowContradictions?: boolean } = {},
+  ): ActiveEmotionState[] {
     const active = this.repo
       .getActiveEmotions()
       .filter((e) => e.status === 'active' || e.status === 'emerging' || e.status === 'resolving');
 
+    const complexity = this.repo.getAffectiveState()?.contextual?.affectiveComplexity;
+    const isComplexStorm =
+      Boolean(options.allowContradictions) ||
+      Boolean(
+        complexity &&
+          (complexity.floodingIntensity >= 0.55 ||
+            complexity.mixedValenceConflict >= 0.45 ||
+            complexity.ambiguity >= 0.60 ||
+            complexity.paradoxicalExpression !== 'none' ||
+            (complexity.wavePhase !== 'steady' && complexity.wavePhase !== 'exhausted_ebb')),
+      );
+
     // Sort by intensity descending
     active.sort((a, b) => b.intensity - a.intensity);
 
+    const effectiveLimit = isComplexStorm ? Math.max(limit, 8) : limit;
     const selected: ActiveEmotionState[] = [];
     for (const em of active) {
-      if (selected.length >= limit) break;
+      if (selected.length >= effectiveLimit) break;
 
-      // Invariant: avoid contradictory pairs in immediate focus (e.g. panic + deep tranquility)
-      const hasContradiction = selected.some((s) => {
-        if ((s.emotionId === 'fear' || s.emotionId === 'terror') && em.emotionId === 'relief') return true;
-        if (s.emotionId === 'grief' && (em.emotionId === 'euphoria' || em.emotionId === 'ecstasy')) return true;
-        return false;
-      });
-
-      if (!hasContradiction) {
-        selected.push(em);
+      if (!isComplexStorm) {
+        // Under calm steady states, avoid contradictory pairs in narrow focus
+        const hasContradiction = selected.some((s) => {
+          if ((s.emotionId === 'fear' || s.emotionId === 'terror') && em.emotionId === 'relief') return true;
+          if (s.emotionId === 'grief' && (em.emotionId === 'euphoria' || em.emotionId === 'ecstasy')) return true;
+          return false;
+        });
+        if (hasContradiction) continue;
       }
+
+      selected.push(em);
     }
 
     return selected;

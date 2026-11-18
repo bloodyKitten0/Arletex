@@ -123,7 +123,7 @@ export function splitIntoSpeechChunks(rawText: string): SpeechChunk[] {
 
     // Detect and extract [tone: ...], [emotion: ...], or [register: ...] tag if present
     const toneMatch = segment.match(/\[(?:tone|emotion|register):\s*([^\]]+)\]/i);
-    let segmentTone = activeTone;
+    let segmentTone: string | undefined = activeTone;
     if (toneMatch && toneMatch[1]) {
       segmentTone = toneMatch[1].trim().toLowerCase();
       segment = segment.replace(/\[(?:tone|emotion|register):\s*[^\]]+\]/gi, '').trim();

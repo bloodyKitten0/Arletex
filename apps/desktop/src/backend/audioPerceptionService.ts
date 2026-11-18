@@ -1,7 +1,8 @@
 import { execFile } from 'node:child_process';
 import util from 'node:util';
 import fs from 'node:fs';
-import { rootLogger, ILogger } from '@arletex/core';
+import { AcousticMetrics } from '@arletex/contracts';
+import { analyzeWavAcoustics, rootLogger, ILogger } from '@arletex/core';
 
 const execFilePromise = util.promisify(execFile);
 
@@ -21,6 +22,7 @@ export interface AudioListeningResult {
   durationSeconds: number;
   hasSpeech: boolean;
   rawBase64?: string;
+  acoustics?: AcousticMetrics;
   summary: string;
 }
 
@@ -152,12 +154,16 @@ export class AudioPerceptionService {
     let transcript = '';
     let language = 'en';
     let rawBase64 = '';
+    let acoustics: AcousticMetrics | undefined;
     let tempPath: string | null = null;
 
     try {
       const capture = await this.captureSystemAudio(durationSeconds);
       tempPath = capture.audioPath;
       rawBase64 = capture.audioBase64;
+      try {
+        acoustics = analyzeWavAcoustics(Buffer.from(capture.audioBase64, 'base64'));
+      } catch {}
 
       // Query Whisper on specialists server
       const res = await fetch(`${this.specialistUrl}/transcribe`, {
@@ -207,6 +213,7 @@ export class AudioPerceptionService {
       durationSeconds,
       hasSpeech,
       rawBase64,
+      acoustics,
       summary,
     };
   }

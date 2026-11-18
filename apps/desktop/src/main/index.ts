@@ -36,10 +36,79 @@ protocol.registerSchemesAsPrivileged([
 
 let mainWindow: BrowserWindow | null = null;
 let backendProcess: ChildProcess | null = null;
+let specialistsProcess: ChildProcess | null = null;
 let backendPort = 39281;
+const specialistsPort = 39282;
 let backendAuthToken = '';
 let isAppQuitting = false;
 const activeStreamRequests = new Map<string, http.ClientRequest>();
+
+function findPythonVenv(): string {
+  const venvPython = path.resolve(__dirname, '../../../../.venv/bin/python');
+  if (fs.existsSync(venvPython)) return venvPython;
+  const projectRootPython = '/home/proof/Documents/A man\'s dream will never die/projects/Arletex/.venv/bin/python';
+  if (fs.existsSync(projectRootPython)) return projectRootPython;
+  return 'python3';
+}
+
+function getSpecialistsScriptPath(): string {
+  const directPath = path.resolve(__dirname, '../py-services/specialists_server.py');
+  if (fs.existsSync(directPath)) return directPath;
+  const projectPath = '/home/proof/Documents/A man\'s dream will never die/projects/Arletex/apps/desktop/py-services/specialists_server.py';
+  if (fs.existsSync(projectPath)) return projectPath;
+  return directPath;
+}
+
+async function ensureSpecialistsService(): Promise<void> {
+  try {
+    const res = await fetch(`http://127.0.0.1:${specialistsPort}/health`);
+    if (res.ok) {
+      logger.info(`Specialists microservice already running on port ${specialistsPort}`);
+      return;
+    }
+  } catch {}
+
+  const pythonBin = findPythonVenv();
+  const scriptPath = getSpecialistsScriptPath();
+  logger.info(`Launching specialists microservice: ${pythonBin} ${scriptPath} ${specialistsPort}`);
+
+  try {
+    const { spawn } = await import('node:child_process');
+    specialistsProcess = spawn(pythonBin, [scriptPath, String(specialistsPort)], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: {
+        ...process.env,
+        ARLETEX_SPECIALISTS_DIR: process.env['ARLETEX_SPECIALISTS_DIR'] || '/home/proof/models/arle-specialists',
+      },
+    });
+
+    specialistsProcess.stdout?.on('data', (d) => {
+      logger.info(`[Specialists stdout] ${d.toString().trim()}`);
+    });
+    specialistsProcess.stderr?.on('data', (d) => {
+      logger.warn(`[Specialists stderr] ${d.toString().trim()}`);
+    });
+
+    specialistsProcess.on('exit', (code, sig) => {
+      logger.warn(`Specialists process exited with code ${code}, signal ${sig}`);
+      specialistsProcess = null;
+    });
+
+    // Wait up to 15s for the specialists service to report healthy
+    for (let i = 0; i < 30; i++) {
+      await new Promise((r) => setTimeout(r, 500));
+      try {
+        const check = await fetch(`http://127.0.0.1:${specialistsPort}/health`);
+        if (check.ok) {
+          logger.info(`Specialists service verified ready on 127.0.0.1:${specialistsPort}`);
+          break;
+        }
+      } catch {}
+    }
+  } catch (err: any) {
+    logger.error('Failed to spawn specialists service', err);
+  }
+}
 
 function findSystemNode(): string {
   if (process.env['NODE_BINARY'] && fs.existsSync(process.env['NODE_BINARY'])) {
@@ -688,6 +757,7 @@ app.whenReady().then(async () => {
     }
   });
 
+  await ensureSpecialistsService();
   await startBackendService();
   registerIpcHandlers();
   await createWindow();
@@ -707,9 +777,13 @@ app.on('window-all-closed', () => {
 
 app.on('will-quit', () => {
   isAppQuitting = true;
-  logger.info('Application quitting. Terminating backend service...');
+  logger.info('Application quitting. Terminating backend and specialist services...');
   if (backendProcess) {
     backendProcess.kill('SIGTERM');
     backendProcess = null;
+  }
+  if (specialistsProcess) {
+    specialistsProcess.kill('SIGTERM');
+    specialistsProcess = null;
   }
 });

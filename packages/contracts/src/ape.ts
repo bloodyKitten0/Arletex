@@ -88,6 +88,38 @@ export const ContextualMeasurementItemSchema = z.object({
 
 export type ContextualMeasurementItem = z.infer<typeof ContextualMeasurementItemSchema>;
 
+export const ParadoxicalExpressionSchema = z.enum([
+  'none',
+  'nervous_laughter_in_grief',
+  'absurd_humor_under_strain',
+  'tears_of_overwhelming_joy',
+  'numb_stillness_under_shock',
+  'bitter_smile_in_pain',
+]);
+export type ParadoxicalExpression = z.infer<typeof ParadoxicalExpressionSchema>;
+
+export const AffectiveWavePhaseSchema = z.enum([
+  'steady',
+  'impact_shock',
+  'flooding',
+  'paradoxical_valve',
+  'aftershock_wave',
+  'exhausted_ebb',
+]);
+export type AffectiveWavePhase = z.infer<typeof AffectiveWavePhaseSchema>;
+
+export const AffectiveComplexityStateSchema = z.object({
+  ambiguity: z.number().min(0.0).max(1.0).default(0.0),
+  mixedValenceConflict: z.number().min(0.0).max(1.0).default(0.0),
+  floodingIntensity: z.number().min(0.0).max(1.0).default(0.0),
+  paradoxicalExpression: ParadoxicalExpressionSchema.default('none'),
+  wavePhase: AffectiveWavePhaseSchema.default('steady'),
+  waveCycleCount: z.number().int().min(0).default(0),
+  lastSurgeAt: z.string().optional(),
+  triggerSummary: z.string().optional(),
+});
+export type AffectiveComplexityState = z.infer<typeof AffectiveComplexityStateSchema>;
+
 export const ContextualAffectiveMeasurementsSchema = z.object({
   tension: z.number().min(0.0).max(1.0).default(0.10),
   emotionalStability: z.number().min(0.0).max(1.0).default(0.85),
@@ -100,6 +132,7 @@ export const ContextualAffectiveMeasurementsSchema = z.object({
   psychologicalEnergy: z.number().min(0.0).max(1.0).default(0.80),
   cognitiveLoad: z.number().min(0.0).max(1.0).default(0.20),
   details: z.record(z.string(), ContextualMeasurementItemSchema).optional(),
+  affectiveComplexity: AffectiveComplexityStateSchema.optional(),
 });
 
 export type ContextualAffectiveMeasurements = z.infer<typeof ContextualAffectiveMeasurementsSchema>;
@@ -705,8 +738,152 @@ export const ApeRelationshipStateSchema = z.object({
 export type ApeRelationshipState = z.infer<typeof ApeRelationshipStateSchema>;
 
 // ------------------------------------------
-// Engine 5: Self Model Schemas
+// Engine 5: Self Model Schemas (Milestone 02 Foundation)
 // ------------------------------------------
+export const CapabilityCalibrationStatusSchema = z.enum([
+  'calibrated',
+  'untested_assumption',
+  'overestimated',
+  'underestimated',
+]);
+export type CapabilityCalibrationStatus = z.infer<typeof CapabilityCalibrationStatusSchema>;
+
+export const StructuredCapabilitySchema = z.object({
+  id: z.string(),
+  domain: z.string(),
+  name: z.string(),
+  description: z.string(),
+  demonstratedCompetence: z.number().min(0.0).max(1.0).default(0.1),
+  perceivedCompetence: z.number().min(0.0).max(1.0).default(0.5),
+  confidence: z.number().min(0.0).max(1.0).default(0.5),
+  calibrationStatus: CapabilityCalibrationStatusSchema.default('untested_assumption'),
+  verifiedSuccessCount: z.number().int().default(0),
+  failureCount: z.number().int().default(0),
+  lastVerifiedAt: z.string().datetime().optional(),
+  evidenceChain: z.array(z.string()).default([]),
+  isEmpiricallyProven: z.boolean().default(false), // requires >= 3 verified successes across distinct cycles
+});
+export type StructuredCapability = z.infer<typeof StructuredCapabilitySchema>;
+
+export const LimitationCategorySchema = z.enum([
+  'embodiment_physical',
+  'computational_resource',
+  'security_boundary',
+  'cognitive_context',
+  'untested_domain',
+]);
+export type LimitationCategory = z.infer<typeof LimitationCategorySchema>;
+
+export const StructuredLimitationSchema = z.object({
+  id: z.string(),
+  domain: z.string(),
+  name: z.string(),
+  description: z.string(),
+  category: LimitationCategorySchema,
+  severity: z.enum(['hard_invariant', 'operational_ceiling', 'developable_deficit']).default('operational_ceiling'),
+  acknowledgedAt: z.string().datetime(),
+  mitigationStrategy: z.string().optional(),
+  failureHistory: z.array(z.string()).default([]),
+});
+export type StructuredLimitation = z.infer<typeof StructuredLimitationSchema>;
+
+export const PerceivedCapabilitySchema = z.object({
+  domain: z.string(),
+  claim: z.string(),
+  perceivedLevel: z.number().min(0.0).max(1.0),
+  actualDemonstratedLevel: z.number().min(0.0).max(1.0).default(0.0),
+  calibration: CapabilityCalibrationStatusSchema.default('untested_assumption'),
+  confidence: z.number().min(0.0).max(1.0).default(0.5),
+  provenance: z.string().default('self_perception'),
+  lastAssessedAt: z.string().datetime(),
+});
+export type PerceivedCapability = z.infer<typeof PerceivedCapabilitySchema>;
+
+export const BehavioralChangeCategorySchema = z.enum([
+  'assertiveness_and_initiative',
+  'emotional_vulnerability_and_openness',
+  'intellectual_inquiry_style',
+  'conversational_cadence_and_tone',
+  'stress_and_resilience_response',
+  'relational_intimacy_depth',
+  'autonomy_and_boundary_defense',
+]);
+export type BehavioralChangeCategory = z.infer<typeof BehavioralChangeCategorySchema>;
+
+export const BehavioralChangeRecordSchema = z.object({
+  id: z.string().uuid(),
+  category: BehavioralChangeCategorySchema,
+  description: z.string(),
+  previousPattern: z.string(),
+  observedPattern: z.string(),
+  confidence: z.number().min(0.0).max(1.0).default(0.85),
+  catalystEventId: z.string().optional(),
+  supportingEvidence: z.array(z.string()).default([]),
+  detectedAt: z.string().datetime(),
+});
+export type BehavioralChangeRecord = z.infer<typeof BehavioralChangeRecordSchema>;
+
+export const SelfDescriptionComprehensiveSchema = z.object({
+  identityNarrative: z.string(),
+  coreValues: z.array(
+    z.object({
+      name: z.string(),
+      importance: z.number(),
+      description: z.string(),
+    }),
+  ),
+  keyPreferences: z.array(
+    z.object({
+      item: z.string(),
+      category: z.string(),
+      affinity: z.number(),
+    }),
+  ),
+  actualCapabilities: z.array(z.string()),
+  structuredCapabilities: z.array(StructuredCapabilitySchema),
+  perceivedCapabilities: z.array(PerceivedCapabilitySchema),
+  acknowledgedLimitations: z.array(z.string()),
+  structuredLimitations: z.array(StructuredLimitationSchema),
+  activeGoals: z.array(
+    z.object({
+      title: z.string(),
+      category: z.string(),
+      progress: z.number(),
+      status: z.string(),
+    }),
+  ),
+  activeInterests: z.array(
+    z.object({
+      topic: z.string(),
+      level: z.string(),
+      curiosity: z.number(),
+    }),
+  ),
+  psychologicalSelfState: z.object({
+    currentMood: z.string(),
+    pad: z.object({
+      valence: z.number(),
+      arousal: z.number(),
+      dominance: z.number(),
+    }),
+    activeEmotions: z.array(z.string()),
+    emotionalStability: z.number(),
+    psychologicalEnergy: z.number(),
+    tension: z.number(),
+  }),
+  relationshipWithProof: z.object({
+    partnerName: z.string(),
+    role: z.string(),
+    trustLevel: z.number(),
+    intimacyDepth: z.number(),
+    exclusiveCommitment: z.boolean(),
+    mutualEquality: z.string(),
+  }),
+  recentBehavioralChanges: z.array(z.string()),
+  generatedAt: z.string().datetime(),
+});
+export type SelfDescriptionComprehensive = z.infer<typeof SelfDescriptionComprehensiveSchema>;
+
 export const ApeCompetencyRecordSchema = z.object({
   domain: z.string(),
   level: z.number().min(0.0).max(1.0),
@@ -730,6 +907,9 @@ export const ApeSelfModelSchema = z.object({
   identityNarrative: z.string(),
   acknowledgedCapabilities: z.array(z.string()).default([]),
   acknowledgedLimitations: z.array(z.string()).default([]),
+  structuredCapabilities: z.array(StructuredCapabilitySchema).default([]),
+  structuredLimitations: z.array(StructuredLimitationSchema).default([]),
+  perceivedCapabilities: z.array(PerceivedCapabilitySchema).default([]),
   creatorPerception: z.string(),
   existentialReflections: z.array(z.object({
     id: z.string().uuid(),
@@ -745,6 +925,9 @@ export const ApeSelfModelSchema = z.object({
   })).default([]),
   competencies: z.record(ApeCompetencyRecordSchema).default({}),
   selfDiscrepancies: z.array(ApeSelfDiscrepancySchema).default([]),
+  behavioralChanges: z.array(BehavioralChangeRecordSchema).default([]),
+  narrativeEpochId: z.string().optional(),
+  personalMilestoneIds: z.array(z.string()).default([]),
   isInitialized: z.boolean().default(true),
   lastUpdatedAt: z.string().datetime(),
 });
@@ -841,4 +1024,48 @@ export const ApeMasterStateSchema = z.object({
 });
 
 export type ApeMasterState = z.infer<typeof ApeMasterStateSchema>;
+
+// ------------------------------------------
+// Sensory Perceptual Affect Input Schemas
+// ------------------------------------------
+export const AcousticProfileSchema = z.enum([
+  'silent',
+  'calm_ambient',
+  'gentle_melodic',
+  'steady_speech',
+  'energetic_upbeat',
+  'tense_chaotic',
+  'sudden_loud_spike',
+]);
+export type AcousticProfile = z.infer<typeof AcousticProfileSchema>;
+
+export const AcousticMetricsSchema = z.object({
+  rmsEnergy: z.number().min(0.0).max(1.0),
+  peakAmplitude: z.number().min(0.0).max(1.0),
+  energyVariance: z.number().min(0.0).max(1.0),
+  zeroCrossingRate: z.number().min(0.0).max(1.0),
+  acousticProfile: AcousticProfileSchema,
+});
+export type AcousticMetrics = z.infer<typeof AcousticMetricsSchema>;
+
+export const VisualPerceptionInputSchema = z.object({
+  activeWindowTitle: z.string().optional(),
+  visibleWindows: z.array(z.string()).optional(),
+  visualDescription: z.string().optional(),
+  extractedText: z.string().optional(),
+  source: z.string().optional().default('screen_observation'),
+  salienceOverride: z.number().min(0.0).max(1.0).optional(),
+});
+export type VisualPerceptionInput = z.infer<typeof VisualPerceptionInputSchema>;
+
+export const AuditoryPerceptionInputSchema = z.object({
+  trackTitle: z.string().optional(),
+  artist: z.string().optional(),
+  album: z.string().optional(),
+  transcript: z.string().optional(),
+  acoustics: AcousticMetricsSchema.optional(),
+  source: z.string().optional().default('system_audio'),
+  salienceOverride: z.number().min(0.0).max(1.0).optional(),
+});
+export type AuditoryPerceptionInput = z.infer<typeof AuditoryPerceptionInputSchema>;
 

@@ -18,6 +18,14 @@ export * from './ape/comprehensiveAppraisalMatcher.js';
 export * from './ape/personalProjectService.js';
 export * from './ape/resourceGovernor.js';
 export * from './ape/intellectualEngine.js';
+export * from './ape/humanAffectDynamics.js';
+export * from './ape/perceptualAffectService.js';
+export * from './ape/narrativeIdentityEngine.js';
+export * from './ape/temporalCognitionEngine.js';
+export * from './ape/worldModelEngine.js';
+export * from './ape/multimodalPerceptionEngine.js';
+export * from './ape/embodimentInteroceptionEngine.js';
+export * from './ape/sensorimotorActionEngine.js';
 export * from './ape/apeService.js';
 
 // Digital Agency Subsystem
@@ -40,3 +48,7 @@ export * from './cognitive/cognitiveControlBus.js';
 
 // Autobiographical Memory Subsystem
 export * from './memory/autobiographicalMemoryService.js';
+
+// Persistent Individual Continuity Subsystem
+export * from './continuity/interfaces.js';
+export * from './continuity/continuityManager.js';

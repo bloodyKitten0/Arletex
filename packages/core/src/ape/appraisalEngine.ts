@@ -9,6 +9,7 @@ import {
   ProposedEmotionTransition,
 } from '@arletex/contracts';
 import { ComprehensiveAppraisalMatcher } from './comprehensiveAppraisalMatcher.js';
+import { detectHumanAffectiveSurge } from './humanAffectDynamics.js';
 import { IApeInferenceGateway } from './interfaces.js';
 
 export class AppraisalEngine {
@@ -46,30 +47,111 @@ export class AppraisalEngine {
       return this.appraiseAssistantExpression(appraisalId, event, currentState, relationship, timestamp);
     }
 
+    let baseAppraisal: ApeAppraisal;
     switch (event.category) {
       case 'user_interaction':
-        return this.appraiseInteractionEvent(appraisalId, event, currentState, relationship, timestamp);
+        baseAppraisal = this.appraiseInteractionEvent(appraisalId, event, currentState, relationship, timestamp);
+        break;
 
       case 'relationship_event':
-        return this.appraiseRelationshipEvent(appraisalId, event, currentState, relationship, timestamp);
+        baseAppraisal = this.appraiseRelationshipEvent(appraisalId, event, currentState, relationship, timestamp);
+        break;
 
       case 'user_departure_under_arousal':
-        return this.appraiseDepartureUnderArousal(appraisalId, event, currentState, relationship, timestamp);
+        baseAppraisal = this.appraiseDepartureUnderArousal(appraisalId, event, currentState, relationship, timestamp);
+        break;
 
       case 'success':
       case 'goal_achievement':
-        return this.appraiseSuccessEvent(appraisalId, event, currentState, relationship, timestamp);
+        baseAppraisal = this.appraiseSuccessEvent(appraisalId, event, currentState, relationship, timestamp);
+        break;
 
       case 'failure':
       case 'goal_obstruction':
-        return this.appraiseFailureEvent(appraisalId, event, currentState, relationship, timestamp);
+        baseAppraisal = this.appraiseFailureEvent(appraisalId, event, currentState, relationship, timestamp);
+        break;
 
       case 'unexpected_discovery':
-        return this.appraiseDiscoveryEvent(appraisalId, event, currentState, relationship, timestamp);
+        baseAppraisal = this.appraiseDiscoveryEvent(appraisalId, event, currentState, relationship, timestamp);
+        break;
 
       default:
-        return this.appraiseGenericEvent(appraisalId, event, currentState, relationship, timestamp);
+        baseAppraisal = this.appraiseGenericEvent(appraisalId, event, currentState, relationship, timestamp);
+        break;
     }
+
+    return this.enrichWithPerceptualAndHumanSurge(baseAppraisal, event);
+  }
+
+  private enrichWithPerceptualAndHumanSurge(
+    appraisal: ApeAppraisal,
+    event: ApeEvent,
+  ): ApeAppraisal {
+    const mergedTransitions = [...appraisal.proposedTransitions];
+    const existingIds = new Set(mergedTransitions.map((t) => t.emotionId));
+    const evidence = [...(appraisal.supportingEvidence || [])];
+    let primaryInterpretation = appraisal.primaryInterpretation;
+    let proposedMoodShift = appraisal.proposedMoodShift;
+    const dimensions = { ...appraisal.dimensions };
+
+    // 1. Merge causally grounded sensory perception transitions (screen vision + audio/acoustics)
+    const perceptualTransitions = event.payload?.perceptualTransitions as ProposedEmotionTransition[] | undefined;
+    if (Array.isArray(perceptualTransitions) && perceptualTransitions.length > 0) {
+      for (const pt of perceptualTransitions) {
+        if (!existingIds.has(pt.emotionId) && this.emotionsMap.has(pt.emotionId)) {
+          mergedTransitions.push(pt);
+          existingIds.add(pt.emotionId);
+        }
+      }
+      if (Array.isArray(event.payload?.perceptualEvidence)) {
+        evidence.push(...event.payload.perceptualEvidence);
+      }
+      if (typeof event.payload?.perceptualSummary === 'string' && event.payload.perceptualSummary.trim()) {
+        primaryInterpretation = `Sensory appraisal (${event.source}): ${event.payload.perceptualSummary}`;
+      }
+      if (typeof event.payload?.perceptualMoodShift === 'string') {
+        proposedMoodShift = event.payload.perceptualMoodShift;
+      }
+      if (typeof event.payload?.salience === 'number') {
+        dimensions.personalSignificance = Math.max(dimensions.personalSignificance, event.payload.salience);
+      }
+    }
+
+    // 2. Detect high-magnitude human emotional surges (bereavement, overwhelming joy, profound ambiguity, acute shock)
+    const validTaxonomyIds = new Set(this.emotionsMap.keys());
+    const surge = detectHumanAffectiveSurge(event, validTaxonomyIds);
+    if (surge.triggered) {
+      for (const st of surge.transitions) {
+        const idx = mergedTransitions.findIndex((t) => t.emotionId === st.emotionId);
+        if (idx >= 0) {
+          mergedTransitions[idx] = {
+            ...mergedTransitions[idx]!,
+            intensityDelta: Math.max(mergedTransitions[idx]!.intensityDelta, st.intensityDelta),
+            targetIntensity: Math.max(mergedTransitions[idx]!.targetIntensity, st.targetIntensity),
+            reason: st.reason,
+          };
+        } else {
+          mergedTransitions.push(st);
+          existingIds.add(st.emotionId);
+        }
+      }
+      evidence.push(...surge.evidence);
+      primaryInterpretation = surge.interpretation;
+      dimensions.uncertainty = Math.max(dimensions.uncertainty, surge.ambiguityBoost);
+      dimensions.personalSignificance = Math.max(dimensions.personalSignificance, 0.92);
+      if (surge.proposedMoodShift) {
+        proposedMoodShift = surge.proposedMoodShift;
+      }
+    }
+
+    return {
+      ...appraisal,
+      dimensions,
+      primaryInterpretation,
+      supportingEvidence: Array.from(new Set(evidence)),
+      proposedTransitions: mergedTransitions,
+      proposedMoodShift,
+    };
   }
 
   /**
@@ -93,7 +175,7 @@ export class AppraisalEngine {
       try {
         const llmAppraisal = await this.queryLlmAppraisal(event, currentState, relationship);
         if (llmAppraisal) {
-          return llmAppraisal;
+          return this.enrichWithPerceptualAndHumanSurge(llmAppraisal, event);
         }
       } catch {
         // Fall back gracefully to deterministic appraisal

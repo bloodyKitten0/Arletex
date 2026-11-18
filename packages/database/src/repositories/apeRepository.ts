@@ -960,11 +960,17 @@ export class ApeRepository implements IApeRepository {
       identityNarrative: r.identity_narrative,
       acknowledgedCapabilities: JSON.parse(r.capabilities || '[]'),
       acknowledgedLimitations: JSON.parse(r.limitations || '[]'),
+      structuredCapabilities: r.structured_capabilities ? JSON.parse(r.structured_capabilities) : [],
+      structuredLimitations: r.structured_limitations ? JSON.parse(r.structured_limitations) : [],
+      perceivedCapabilities: r.perceived_capabilities ? JSON.parse(r.perceived_capabilities) : [],
       creatorPerception: r.creator_perception,
       existentialReflections: JSON.parse(r.existential_reflections || '[]'),
       privateReflections: JSON.parse(r.private_reflections || '[]'),
       competencies: r.competencies ? JSON.parse(r.competencies) : {},
       selfDiscrepancies: r.self_discrepancies ? JSON.parse(r.self_discrepancies) : [],
+      behavioralChanges: r.behavioral_changes ? JSON.parse(r.behavioral_changes) : [],
+      narrativeEpochId: r.narrative_epoch_id || undefined,
+      personalMilestoneIds: r.personal_milestone_ids ? JSON.parse(r.personal_milestone_ids) : [],
       isInitialized: r.is_initialized === 1,
       lastUpdatedAt: r.last_updated_at,
     };
@@ -972,25 +978,57 @@ export class ApeRepository implements IApeRepository {
 
   public saveSelfModel(state: ApeSelfModel): void {
     const now = new Date().toISOString();
-    this.db
-      .prepare(`
-        INSERT OR REPLACE INTO ape_self_model (
-          id, identity_narrative, capabilities, limitations, creator_perception, existential_reflections, private_reflections, competencies, self_discrepancies, is_initialized, last_updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `)
-      .run(
-        'singleton',
-        state.identityNarrative,
-        JSON.stringify(state.acknowledgedCapabilities || []),
-        JSON.stringify(state.acknowledgedLimitations || []),
-        state.creatorPerception,
-        JSON.stringify(state.existentialReflections || []),
-        JSON.stringify(state.privateReflections || []),
-        JSON.stringify(state.competencies || {}),
-        JSON.stringify(state.selfDiscrepancies || []),
-        state.isInitialized ? 1 : 0,
-        state.lastUpdatedAt || now,
-      );
+    const tableInfo = this.db.prepare('PRAGMA table_info(ape_self_model)').all() as Array<{ name: string }>;
+    const colNames = new Set(tableInfo.map((c) => c.name));
+
+    if (colNames.has('structured_capabilities')) {
+      this.db
+        .prepare(`
+          INSERT OR REPLACE INTO ape_self_model (
+            id, identity_narrative, capabilities, limitations, creator_perception,
+            existential_reflections, private_reflections, competencies, self_discrepancies,
+            structured_capabilities, structured_limitations, perceived_capabilities,
+            behavioral_changes, is_initialized, last_updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          'singleton',
+          state.identityNarrative,
+          JSON.stringify(state.acknowledgedCapabilities || []),
+          JSON.stringify(state.acknowledgedLimitations || []),
+          state.creatorPerception,
+          JSON.stringify(state.existentialReflections || []),
+          JSON.stringify(state.privateReflections || []),
+          JSON.stringify(state.competencies || {}),
+          JSON.stringify(state.selfDiscrepancies || []),
+          JSON.stringify(state.structuredCapabilities || []),
+          JSON.stringify(state.structuredLimitations || []),
+          JSON.stringify(state.perceivedCapabilities || []),
+          JSON.stringify(state.behavioralChanges || []),
+          state.isInitialized ? 1 : 0,
+          state.lastUpdatedAt || now,
+        );
+    } else {
+      this.db
+        .prepare(`
+          INSERT OR REPLACE INTO ape_self_model (
+            id, identity_narrative, capabilities, limitations, creator_perception, existential_reflections, private_reflections, competencies, self_discrepancies, is_initialized, last_updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          'singleton',
+          state.identityNarrative,
+          JSON.stringify(state.acknowledgedCapabilities || []),
+          JSON.stringify(state.acknowledgedLimitations || []),
+          state.creatorPerception,
+          JSON.stringify(state.existentialReflections || []),
+          JSON.stringify(state.privateReflections || []),
+          JSON.stringify(state.competencies || {}),
+          JSON.stringify(state.selfDiscrepancies || []),
+          state.isInitialized ? 1 : 0,
+          state.lastUpdatedAt || now,
+        );
+    }
   }
 
   public getDevelopmentState(): ApeDevelopmentState {
