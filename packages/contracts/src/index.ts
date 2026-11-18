@@ -697,5 +697,10 @@ export * from './learning.js';
 // ==========================================
 export * from './reasoning.js';
 
+// ==========================================
+// Causal Reasoning Contracts (Milestone 15)
+// ==========================================
+export * from './causal.js';
+
 
 

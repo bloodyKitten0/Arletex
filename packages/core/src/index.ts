@@ -32,6 +32,7 @@ export * from './ape/workingMemoryEngine.js';
 export * from './ape/multiSystemMemoryEngine.js';
 export * from './ape/learningAdaptationEngine.js';
 export * from './ape/generalReasoningEngine.js';
+export * from './ape/causalReasoningEngine.js';
 export * from './ape/apeService.js';
 
 // Digital Agency Subsystem

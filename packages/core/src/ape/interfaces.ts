@@ -69,6 +69,8 @@ import {
   LearningExperienceFilter,
   ReasoningTask,
   ReasoningParadigm,
+  CausalGraphModel,
+  CausalIntervention,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -347,6 +349,17 @@ export interface IReasoningRepository {
   getTaskById(id: string): ReasoningTask | null;
   listTasks(filter?: { domain?: string; paradigm?: ReasoningParadigm; limit?: number }): ReasoningTask[];
   deleteTask(id: string): void;
+}
+
+export interface ICausalRepository {
+  saveGraph(graph: CausalGraphModel): void;
+  getGraphById(id: string): CausalGraphModel | null;
+  getGraphByDomain(domain: string): CausalGraphModel | null;
+  listGraphs(): CausalGraphModel[];
+  deleteGraph(id: string): void;
+
+  recordIntervention(intervention: CausalIntervention): void;
+  listInterventions(graphId?: string): CausalIntervention[];
 }
 
 

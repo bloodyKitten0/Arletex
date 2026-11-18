@@ -1374,4 +1374,38 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('general_reasoning_milestone14', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 26,
+    name: '026_causal_reasoning_milestone15',
+    up: `
+      -- Causal Graph Models (directed causal models across domains, representing nodes and causal links)
+      CREATE TABLE IF NOT EXISTS causal_graph_models (
+        id TEXT PRIMARY KEY,
+        domain TEXT NOT NULL,
+        nodes TEXT NOT NULL DEFAULT '[]',
+        links TEXT NOT NULL DEFAULT '[]',
+        updated_at TEXT NOT NULL
+      );
+
+      -- Causal Interventions (empirical do-calculus interventions recording controlled perturbations and effects)
+      CREATE TABLE IF NOT EXISTS causal_interventions (
+        id TEXT PRIMARY KEY,
+        graph_id TEXT NOT NULL,
+        target_node_id TEXT NOT NULL,
+        intervention_value TEXT NOT NULL,
+        observed_effect_node_id TEXT NOT NULL,
+        observed_effect_value TEXT NOT NULL,
+        did_effect_change INTEGER NOT NULL DEFAULT 0,
+        inferred_causal_link INTEGER NOT NULL DEFAULT 0,
+        notes TEXT NOT NULL DEFAULT '',
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_causal_graph_domain ON causal_graph_models (domain);
+      CREATE INDEX IF NOT EXISTS idx_causal_interventions_graph ON causal_interventions (graph_id);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('causal_reasoning_milestone15', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

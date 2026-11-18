@@ -22,5 +22,6 @@ export * from './repositories/workingMemoryRepository.js';
 export * from './repositories/multiSystemMemoryRepository.js';
 export * from './repositories/learningRepository.js';
 export * from './repositories/reasoningRepository.js';
+export * from './repositories/causalRepository.js';
 
 

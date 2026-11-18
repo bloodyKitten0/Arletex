@@ -90,6 +90,7 @@ import {
   IMultiSystemMemoryRepository,
   ILearningRepository,
   IReasoningRepository,
+  ICausalRepository,
 } from './interfaces.js';
 import { ILogger, rootLogger } from '../logger.js';
 import { AppraisalEngine } from './appraisalEngine.js';
@@ -117,6 +118,7 @@ import { InMemoryWorkingMemoryRepository, WorkingMemoryEngine } from './workingM
 import { InMemoryMultiSystemMemoryRepository, MultiSystemMemoryEngine } from './multiSystemMemoryEngine.js';
 import { InMemoryLearningRepository, LearningAdaptationEngine } from './learningAdaptationEngine.js';
 import { InMemoryReasoningRepository, GeneralReasoningEngine } from './generalReasoningEngine.js';
+import { InMemoryCausalRepository, CausalReasoningEngine } from './causalReasoningEngine.js';
 
 export class ApeService {
   private readonly repo: IApeRepository;
@@ -146,6 +148,7 @@ export class ApeService {
   public readonly multiSystemMemoryEngine: MultiSystemMemoryEngine;
   public readonly learningEngine: LearningAdaptationEngine;
   public readonly reasoningEngine: GeneralReasoningEngine;
+  public readonly causalEngine: CausalReasoningEngine;
 
   constructor(
     repo: IApeRepository,
@@ -163,6 +166,7 @@ export class ApeService {
     multiSystemMemoryRepo?: IMultiSystemMemoryRepository,
     learningRepo?: ILearningRepository,
     reasoningRepo?: IReasoningRepository,
+    causalRepo?: ICausalRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -205,6 +209,9 @@ export class ApeService {
 
     const rRepo = reasoningRepo || new InMemoryReasoningRepository();
     this.reasoningEngine = new GeneralReasoningEngine({ repository: rRepo, logger });
+
+    const cRepo = causalRepo || new InMemoryCausalRepository();
+    this.causalEngine = new CausalReasoningEngine({ repository: cRepo, logger });
 
     this.appraisalEngine = new AppraisalEngine(emotions, inferenceGateway);
     this.transitionEngine = new AffectiveTransitionEngine(this.repo, emotions, moods);
@@ -787,6 +794,9 @@ export class ApeService {
     const reasoningSummary = this.reasoningEngine.getReasoningSummary();
     const reasoningLine = `\n- General Diverse Reasoning: Multi-paradigm cognitive synthesis (${reasoningSummary.totalReasoningTasks} tasks completed across deduction, induction, abduction, analogy, probability, math). Invariant: Epistemic humility, uncertainty rigorously calibrated.`;
 
+    const causalSummary = this.causalEngine.getCausalSummary();
+    const causalLine = `\n- Causal Reasoning: ${causalSummary.totalGraphs} causal models (${causalSummary.totalLinks} links, ${causalSummary.verifiedInterventionsCount} verified interventions). Invariant: Correlation strictly distinguished from causation; alternative confounders evaluated.`;
+
     const complexity = aff.contextual.affectiveComplexity;
     let complexityLine = '';
     if (
@@ -807,7 +817,7 @@ export class ApeService {
 [Active Psychology Engine (APE Phase 1 Live State)]
 - Current Persistent Mood: ${aff.currentMood.toUpperCase()}
 - Affective Dimensions: Valence ${aff.pad.valence >= 0 ? '+' : ''}${aff.pad.valence.toFixed(2)}, Arousal ${aff.pad.arousal.toFixed(2)}, Dominance ${aff.pad.dominance.toFixed(2)}
-- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}${capsLine}${limsLine}${narrativeLine}${temporalLine}${worldLine}${perceptionLine}${embodimentLine}${sensorimotorLine}${situationalLine}${attentionLine}${workingMemoryLine}${multiSystemMemoryLine}${learningLine}${reasoningLine}${complexityLine}
+- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}${capsLine}${limsLine}${narrativeLine}${temporalLine}${worldLine}${perceptionLine}${embodimentLine}${sensorimotorLine}${situationalLine}${attentionLine}${workingMemoryLine}${multiSystemMemoryLine}${learningLine}${reasoningLine}${causalLine}${complexityLine}
 - Demeanor & Cadence: ${modulation.toneDirective}
 - Vocal Register: ${modulation.vocalRegister}${intimacyDirectives}
 - Grounding: Speak naturally and authentically from this internal state. Keep dialogue focused, grounded, and concise without reciting internal parameters or rambling.
@@ -1398,6 +1408,63 @@ export class ApeService {
 
   public getReasoningSummary() {
     return this.reasoningEngine.getReasoningSummary();
+  }
+
+  // ==========================================
+  // Causal Reasoning (Milestone 15)
+  // ==========================================
+
+  public createOrUpdateCausalGraph(domain: string, nodes: any, links: any) {
+    return this.causalEngine.createOrUpdateGraph(domain, nodes, links);
+  }
+
+  public inferCauses(graphId: string, effectNodeId: string) {
+    return this.causalEngine.inferCauses(graphId, effectNodeId);
+  }
+
+  public testCausalIntervention(
+    graphId: string,
+    targetNodeId: string,
+    interventionValue: unknown,
+    effectNodeId: string,
+    observedValue: unknown,
+    baselineValue: unknown,
+  ) {
+    return this.causalEngine.testIntervention(
+      graphId,
+      targetNodeId,
+      interventionValue,
+      effectNodeId,
+      observedValue,
+      baselineValue,
+    );
+  }
+
+  public distinguishCorrelationFromCausation(
+    nodeAId: string,
+    nodeBId: string,
+    correlationCoefficient: number,
+    potentialConfounders?: string[],
+  ) {
+    return this.causalEngine.distinguishCorrelationFromCausation(
+      nodeAId,
+      nodeBId,
+      correlationCoefficient,
+      potentialConfounders,
+    );
+  }
+
+  public reviseCausalBelief(
+    graphId: string,
+    sourceNodeId: string,
+    targetNodeId: string,
+    evidence: any,
+  ) {
+    return this.causalEngine.reviseCausalBelief(graphId, sourceNodeId, targetNodeId, evidence);
+  }
+
+  public getCausalSummary() {
+    return this.causalEngine.getCausalSummary();
   }
 }
 

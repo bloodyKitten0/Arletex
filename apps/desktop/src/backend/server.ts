@@ -85,6 +85,7 @@ import {
   MultiSystemMemoryRepository,
   SqliteLearningRepository,
   SqliteReasoningRepository,
+  SqliteCausalRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -195,6 +196,9 @@ export class ArletexBackendServer {
   // General Reasoning Subsystem (Milestone 14)
   public readonly reasoningRepo: SqliteReasoningRepository;
 
+  // Causal Reasoning Subsystem (Milestone 15)
+  public readonly causalRepo: SqliteCausalRepository;
+
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
   private port = 0;
@@ -240,6 +244,7 @@ export class ArletexBackendServer {
     this.multiSystemMemoryRepo = new MultiSystemMemoryRepository(db);
     this.learningRepo = new SqliteLearningRepository(db);
     this.reasoningRepo = new SqliteReasoningRepository(db);
+    this.causalRepo = new SqliteCausalRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -256,6 +261,7 @@ export class ArletexBackendServer {
       this.multiSystemMemoryRepo,
       this.learningRepo,
       this.reasoningRepo,
+      this.causalRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -4244,6 +4250,85 @@ Rules:
 
       if (url.pathname === '/api/ape/reasoning/summary' && method === 'GET') {
         const summary = this.apeService.getReasoningSummary();
+        this.sendJson(res, 200, summary);
+        return;
+      }
+
+      // ==========================================
+      // Causal Reasoning Subsystem Routes (Milestone 15)
+      // ==========================================
+      if (url.pathname === '/api/ape/causal/graph' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const graph = this.apeService.createOrUpdateCausalGraph(body.domain, body.nodes, body.links);
+        this.sendJson(res, 201, { success: true, graph });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/causal/graph' && method === 'GET') {
+        const domain = url.searchParams.get('domain');
+        const id = url.searchParams.get('id');
+        if (id) {
+          const graph = this.apeService.causalEngine['repo'].getGraphById(id);
+          this.sendJson(res, graph ? 200 : 404, graph || { error: 'Graph not found' });
+          return;
+        }
+        if (domain) {
+          const graph = this.apeService.causalEngine['repo'].getGraphByDomain(domain);
+          this.sendJson(res, graph ? 200 : 404, graph || { error: 'Graph not found for domain' });
+          return;
+        }
+        const graphs = this.apeService.causalEngine['repo'].listGraphs();
+        this.sendJson(res, 200, graphs);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/causal/infer' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const result = this.apeService.inferCauses(body.graphId, body.effectNodeId);
+        this.sendJson(res, 200, result);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/causal/intervene' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const intervention = this.apeService.testCausalIntervention(
+          body.graphId,
+          body.targetNodeId,
+          body.interventionValue,
+          body.effectNodeId,
+          body.observedValue,
+          body.baselineValue,
+        );
+        this.sendJson(res, 201, { success: true, intervention });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/causal/distinguish-correlation' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const result = this.apeService.distinguishCorrelationFromCausation(
+          body.nodeAId,
+          body.nodeBId,
+          body.correlationCoefficient,
+          body.potentialConfounders,
+        );
+        this.sendJson(res, 200, result);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/causal/revise' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const updatedGraph = this.apeService.reviseCausalBelief(
+          body.graphId,
+          body.sourceNodeId,
+          body.targetNodeId,
+          body.evidence,
+        );
+        this.sendJson(res, 200, { success: true, graph: updatedGraph });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/causal/summary' && method === 'GET') {
+        const summary = this.apeService.getCausalSummary();
         this.sendJson(res, 200, summary);
         return;
       }
