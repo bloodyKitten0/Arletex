@@ -106,13 +106,14 @@ export class OpenWorldBrowserAgency {
     let category: OpenWorldBrowserIntent['category'] = 'information_research';
     let expectedMediaState: OpenWorldBrowserIntent['expectedMediaState'] = 'not_required';
 
-    if (
-      lower.includes('play ') ||
+    const isMediaIntent =
+      targetPlatform === 'spotify' ||
+      targetPlatform === 'youtube' ||
       lower.includes('listen to ') ||
       lower.includes('watch ') ||
-      targetPlatform === 'spotify' ||
-      targetPlatform === 'youtube'
-    ) {
+      (lower.includes('play ') && !lower.includes('chess') && !lower.includes('game'));
+
+    if (isMediaIntent) {
       category = 'media_playback';
       expectedMediaState = 'playing';
     } else if (

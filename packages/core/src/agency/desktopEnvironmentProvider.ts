@@ -173,6 +173,17 @@ export class DesktopEnvironmentProvider {
   }
 
   /**
+   * Parses and cleans an Exec command line by stripping FreeDesktop field codes.
+   */
+  public parseExecLine(execLine: string, extraArgs: string[] = []): { command: string; args: string[] } {
+    const cleanExec = execLine.replace(/%[a-zA-Z]/g, '').trim();
+    const parts = cleanExec.split(/\s+/).filter(Boolean);
+    const command = parts[0] || '';
+    const args = [...parts.slice(1), ...extraArgs];
+    return { command, args };
+  }
+
+  /**
    * Finds an installed application by exact or fuzzy name match.
    */
   public async findApplication(query: string): Promise<DesktopApplicationEntry | null> {

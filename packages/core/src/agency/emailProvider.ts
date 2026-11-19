@@ -479,7 +479,7 @@ export class EmailProvider {
       id: crypto.randomUUID(),
       type: 'incoming_email',
       source: 'external_communication',
-      actor: email.from,
+      actor: 'environment',
       payload: {
         from: email.from,
         to: email.to,
