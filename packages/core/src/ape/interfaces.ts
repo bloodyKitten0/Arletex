@@ -175,6 +175,11 @@ import {
   IndependentCreativeProject,
   CreativeInterest,
   CreativeDomain,
+  AestheticPreference,
+  RecreationalActivity,
+  IntellectualPlaySession,
+  HumorDevelopmentRecord,
+  AestheticCategory,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -810,6 +815,19 @@ export interface ICreativityRepository {
   getInterest(id: string): CreativeInterest | null;
   listInterests(domain?: CreativeDomain): CreativeInterest[];
 }
+
+export interface IPlayHumourAestheticsRepository {
+  savePreference(preference: AestheticPreference): void;
+  getPreference(id: string): AestheticPreference | null;
+  listPreferences(category?: AestheticCategory): AestheticPreference[];
+  saveActivity(activity: RecreationalActivity): void;
+  listActivities(category?: AestheticCategory, limit?: number): RecreationalActivity[];
+  savePlaySession(session: IntellectualPlaySession): void;
+  listPlaySessions(limit?: number): IntellectualPlaySession[];
+  saveHumorRecord(record: HumorDevelopmentRecord): void;
+  listHumorRecords(limit?: number): HumorDevelopmentRecord[];
+}
+
 
 
 

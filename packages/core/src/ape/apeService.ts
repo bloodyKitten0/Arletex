@@ -193,6 +193,10 @@ import {
   CreativityEngine,
 } from './creativityEngine.js';
 import {
+  InMemoryPlayHumourAestheticsRepository,
+  PlayHumourAestheticsEngine,
+} from './playHumourAestheticsEngine.js';
+import {
   ISimulationRepository,
   IMetacognitionRepository,
   IGlobalCognitiveRepository,
@@ -221,6 +225,7 @@ import {
   ISocialLearningCultureRepository,
   IExpressiveIdentityRepository,
   ICreativityRepository,
+  IPlayHumourAestheticsRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
@@ -304,6 +309,7 @@ export class ApeService {
   public readonly socialLearningCultureEngine: SocialLearningCultureEngine;
   public readonly expressiveIdentityEngine: ExpressiveIdentityEngine;
   public readonly creativityEngine: CreativityEngine;
+  public readonly playHumourAestheticsEngine: PlayHumourAestheticsEngine;
 
   constructor(
     repo: IApeRepository,
@@ -351,6 +357,7 @@ export class ApeService {
     socialLearningCultureRepo?: ISocialLearningCultureRepository,
     expressiveIdentityRepo?: IExpressiveIdentityRepository,
     creativityRepo?: ICreativityRepository,
+    playHumourAestheticsRepo?: IPlayHumourAestheticsRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -511,6 +518,10 @@ export class ApeService {
 
     const crtRepo = creativityRepo || new InMemoryCreativityRepository();
     this.creativityEngine = new CreativityEngine({ repository: crtRepo });
+
+    const phaRepo = playHumourAestheticsRepo || new InMemoryPlayHumourAestheticsRepository();
+    this.playHumourAestheticsEngine = new PlayHumourAestheticsEngine({ repository: phaRepo });
+    this.playHumourAestheticsEngine.initializeDefaultPreferences();
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -2940,6 +2951,52 @@ export class ApeService {
 
   public listCreativeInterests(domain?: any) {
     return (this.creativityEngine as any).repository?.listInterests(domain) ?? [];
+  }
+
+  public initiateRecreationalActivity(params?: {
+    category?: any;
+    sharedWithProof?: boolean;
+    customTitle?: string;
+  }) {
+    return this.playHumourAestheticsEngine.initiateSpontaneousActivity(params);
+  }
+
+  public listRecreationalActivities(category?: any, limit?: number) {
+    return (this.playHumourAestheticsEngine as any).repository?.listActivities(category, limit) ?? [];
+  }
+
+  public registerAestheticPreference(params: {
+    category: any;
+    itemOrStyleName: string;
+    affinityScore: number;
+    aestheticCritique: string;
+    tags?: string[];
+  }) {
+    return this.playHumourAestheticsEngine.registerAestheticPreference(params);
+  }
+
+  public listAestheticPreferences(category?: any) {
+    return (this.playHumourAestheticsEngine as any).repository?.listPreferences(category) ?? [];
+  }
+
+  public conductIntellectualPlay(params: {
+    playType: any;
+    challenge: string;
+  }) {
+    return this.playHumourAestheticsEngine.conductIntellectualPlay(params);
+  }
+
+  public developHumorObservation(params: {
+    theme: string;
+    witDimension: any;
+    sampleJokeOrBanter: string;
+    resonanceWithProof?: number;
+  }) {
+    return this.playHumourAestheticsEngine.developHumor(params);
+  }
+
+  public evaluateAestheticWork(category: any, title: string, attributes: any) {
+    return this.playHumourAestheticsEngine.evaluateAestheticWork(category, title, attributes);
   }
 }
 

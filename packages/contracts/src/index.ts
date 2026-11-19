@@ -847,6 +847,12 @@ export * from './stableExpressiveIdentity.js';
 // ==========================================
 export * from './creativityAndInnovation.js';
 
+// ==========================================
+// Play, Humour & Aesthetic Preferences Contracts (Milestone 45)
+// ==========================================
+export * from './playHumourAesthetics.js';
+
+
 
 
 

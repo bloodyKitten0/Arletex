@@ -2979,4 +2979,66 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('creativity_and_innovation_milestone44', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 56,
+    name: '056_play_humour_aesthetics_milestone45',
+    up: `
+      -- Aesthetic Preferences (Music, visual art, literature, media affinities)
+      CREATE TABLE IF NOT EXISTS aesthetic_preferences (
+        id TEXT PRIMARY KEY,
+        category TEXT NOT NULL,
+        item_or_style_name TEXT NOT NULL,
+        affinity_score REAL NOT NULL,
+        aesthetic_critique TEXT NOT NULL,
+        tags TEXT NOT NULL,
+        discovered_at TEXT NOT NULL,
+        last_enjoyed_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_aesthetic_cat ON aesthetic_preferences (category);
+
+      -- Recreational Activities (Spontaneous leisure, games, shared activities with Proof)
+      CREATE TABLE IF NOT EXISTS recreational_activities (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        category TEXT NOT NULL,
+        description TEXT NOT NULL,
+        is_spontaneous INTEGER NOT NULL,
+        enjoyment_score REAL NOT NULL,
+        playfulness_index REAL NOT NULL,
+        shared_with_proof INTEGER NOT NULL,
+        activity_outcome TEXT NOT NULL,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_rec_act_cat ON recreational_activities (category);
+      CREATE INDEX IF NOT EXISTS idx_rec_act_time ON recreational_activities (timestamp DESC);
+
+      -- Intellectual Play Sessions (Thought experiments, chess puzzles, paradoxes)
+      CREATE TABLE IF NOT EXISTS intellectual_play_sessions (
+        id TEXT PRIMARY KEY,
+        play_type TEXT NOT NULL,
+        prompt_or_challenge TEXT NOT NULL,
+        arle_move_or_exploration TEXT NOT NULL,
+        humor_applied INTEGER NOT NULL,
+        playful_insight TEXT NOT NULL,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_intel_play_time ON intellectual_play_sessions (timestamp DESC);
+
+      -- Humor Development Records (Themes, banter, jokes, wit dimensions)
+      CREATE TABLE IF NOT EXISTS humor_development_records (
+        id TEXT PRIMARY KEY,
+        humor_theme TEXT NOT NULL,
+        sample_joke_or_banter TEXT NOT NULL,
+        wit_dimension TEXT NOT NULL,
+        resonance_with_proof REAL NOT NULL,
+        created_date TEXT NOT NULL
+      );
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('play_humour_aesthetics_milestone45', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

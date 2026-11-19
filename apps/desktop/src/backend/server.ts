@@ -115,6 +115,7 @@ import {
   SqliteSocialLearningCultureRepository,
   SqliteExpressiveIdentityRepository,
   SqliteCreativityRepository,
+  SqlitePlayHumourAestheticsRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -266,6 +267,7 @@ export class ArletexBackendServer {
   public readonly socialLearningCultureRepo: SqliteSocialLearningCultureRepository;
   public readonly expressiveIdentityRepo: SqliteExpressiveIdentityRepository;
   public readonly creativityRepo: SqliteCreativityRepository;
+  public readonly playHumourAestheticsRepo: SqlitePlayHumourAestheticsRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -342,6 +344,7 @@ export class ArletexBackendServer {
     this.socialLearningCultureRepo = new SqliteSocialLearningCultureRepository(db);
     this.expressiveIdentityRepo = new SqliteExpressiveIdentityRepository(db);
     this.creativityRepo = new SqliteCreativityRepository(db);
+    this.playHumourAestheticsRepo = new SqlitePlayHumourAestheticsRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -388,6 +391,7 @@ export class ArletexBackendServer {
       this.socialLearningCultureRepo,
       this.expressiveIdentityRepo,
       this.creativityRepo,
+      this.playHumourAestheticsRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -6486,6 +6490,75 @@ Rules:
         const domain = (url.searchParams.get('domain') as any) || undefined;
         const interests = this.apeService.listCreativeInterests(domain);
         this.sendJson(res, 200, { success: true, interests });
+        return;
+      }
+
+      // ==========================================
+      // Play, Humour & Aesthetic Preferences Routes (Milestone 45)
+      // ==========================================
+      if (url.pathname === '/api/ape/recreation/activity' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const activity = await this.apeService.initiateRecreationalActivity(body);
+        this.sendJson(res, 200, { success: true, activity });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/recreation/activities' && method === 'GET') {
+        const category = (url.searchParams.get('category') as any) || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const activities = this.apeService.listRecreationalActivities(category, limit);
+        this.sendJson(res, 200, { success: true, activities });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/recreation/preference' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.category || !body.itemOrStyleName || body.affinityScore === undefined || !body.aestheticCritique) {
+          this.sendJson(res, 400, { error: 'category, itemOrStyleName, affinityScore, and aestheticCritique are required' });
+          return;
+        }
+        const preference = await this.apeService.registerAestheticPreference(body);
+        this.sendJson(res, 200, { success: true, preference });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/recreation/preferences' && method === 'GET') {
+        const category = (url.searchParams.get('category') as any) || undefined;
+        const preferences = this.apeService.listAestheticPreferences(category);
+        this.sendJson(res, 200, { success: true, preferences });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/recreation/intellectual-play' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.playType || !body.challenge) {
+          this.sendJson(res, 400, { error: 'playType and challenge are required' });
+          return;
+        }
+        const session = await this.apeService.conductIntellectualPlay(body);
+        this.sendJson(res, 200, { success: true, session });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/recreation/humor' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.theme || !body.witDimension || !body.sampleJokeOrBanter) {
+          this.sendJson(res, 400, { error: 'theme, witDimension, and sampleJokeOrBanter are required' });
+          return;
+        }
+        const record = await this.apeService.developHumorObservation(body);
+        this.sendJson(res, 200, { success: true, record });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/recreation/evaluate-work' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.category || !body.title) {
+          this.sendJson(res, 400, { error: 'category and title are required' });
+          return;
+        }
+        const evaluation = this.apeService.evaluateAestheticWork(body.category, body.title, body.attributes || {});
+        this.sendJson(res, 200, { success: true, evaluation });
         return;
       }
 

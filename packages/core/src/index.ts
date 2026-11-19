@@ -62,6 +62,7 @@ export * from './ape/relationshipsAttachmentEngine.js';
 export * from './ape/socialLearningCultureEngine.js';
 export * from './ape/expressiveIdentityEngine.js';
 export * from './ape/creativityEngine.js';
+export * from './ape/playHumourAestheticsEngine.js';
 export * from './ape/apeService.js';
 
 // Digital Agency Subsystem
