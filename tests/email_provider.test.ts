@@ -169,7 +169,8 @@ describe('Phase 4: Digital Identity & External Communication (arletex.email@gmai
     expect(dispatchedEvents).toHaveLength(1);
     expect(dispatchedEvents[0].type).toBe('incoming_email');
     expect(dispatchedEvents[0].source).toBe('external_communication');
-    expect(dispatchedEvents[0].actor).toBe('collaborator@lab.org');
+    expect(dispatchedEvents[0].actor).toBe('environment');
+    expect(dispatchedEvents[0].payload.from).toBe('collaborator@lab.org');
     expect(dispatchedEvents[0].payload.subject).toBe('Collaborative experiment update');
     expect(dispatchedEvents[0].payload.bodySnippet).toContain('sequencing results');
   });
