@@ -201,6 +201,10 @@ import {
   OfflineCognitiveActivityEngine,
 } from './offlineCognitiveActivityEngine.js';
 import {
+  InMemoryEthicalBoundariesSecurityRepository,
+  EthicalBoundariesSecurityEngine,
+} from './ethicalBoundariesSecurityEngine.js';
+import {
   ISimulationRepository,
   IMetacognitionRepository,
   IGlobalCognitiveRepository,
@@ -231,6 +235,7 @@ import {
   ICreativityRepository,
   IPlayHumourAestheticsRepository,
   IOfflineCognitiveActivityRepository,
+  IEthicalBoundariesSecurityRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
@@ -316,6 +321,7 @@ export class ApeService {
   public readonly creativityEngine: CreativityEngine;
   public readonly playHumourAestheticsEngine: PlayHumourAestheticsEngine;
   public readonly offlineCognitiveEngine: OfflineCognitiveActivityEngine;
+  public readonly securityEngine: EthicalBoundariesSecurityEngine;
 
   constructor(
     repo: IApeRepository,
@@ -365,6 +371,7 @@ export class ApeService {
     creativityRepo?: ICreativityRepository,
     playHumourAestheticsRepo?: IPlayHumourAestheticsRepository,
     offlineCognitiveRepo?: IOfflineCognitiveActivityRepository,
+    securityRepo?: IEthicalBoundariesSecurityRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -532,6 +539,9 @@ export class ApeService {
 
     const offRepo = offlineCognitiveRepo || new InMemoryOfflineCognitiveActivityRepository();
     this.offlineCognitiveEngine = new OfflineCognitiveActivityEngine({ repository: offRepo });
+
+    const secRepo = securityRepo || new InMemoryEthicalBoundariesSecurityRepository();
+    this.securityEngine = new EthicalBoundariesSecurityEngine({ repository: secRepo });
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -3068,6 +3078,41 @@ export class ApeService {
 
   public updateOfflineSchedulerPolicy(patch: any) {
     return this.offlineCognitiveEngine.updatePolicy(patch);
+  }
+
+  // ==========================================
+  // Milestone 47: Ethical Boundaries & Security
+  // ==========================================
+  public authorizeSecurityAction(input: any) {
+    return this.securityEngine.authorizeAction(input);
+  }
+
+  public detectSecurityPromptInjection(text: string) {
+    return this.securityEngine.detectPromptInjection(text);
+  }
+
+  public triggerSecurityEmergencyShutdown(reason: string) {
+    return this.securityEngine.triggerEmergencyShutdown(reason);
+  }
+
+  public resetSecurityEmergencyShutdown(confirmationPhrase: string) {
+    return this.securityEngine.resetEmergencyShutdown(confirmationPhrase);
+  }
+
+  public getSecurityPolicy() {
+    return this.securityEngine.getPolicy();
+  }
+
+  public updateSecurityPolicy(patch: any) {
+    return this.securityEngine.updatePolicy(patch);
+  }
+
+  public listSecurityDecisions(filter?: any) {
+    return this.securityEngine.listDecisions(filter);
+  }
+
+  public listSecurityAuditLogs(filter?: any) {
+    return this.securityEngine.listAuditLogs(filter);
   }
 }
 

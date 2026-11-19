@@ -185,6 +185,11 @@ import {
   ConsolidationRun,
   UnfinishedWorkItem,
   ProactiveNotificationProposal,
+  SecurityAuthorizationDecision,
+  SecurityAuditLog,
+  SecurityBoundaryPolicy,
+  SecurityActionCategory,
+  SecurityAuditEventType,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -848,6 +853,24 @@ export interface IOfflineCognitiveActivityRepository {
   saveProactiveProposal(proposal: ProactiveNotificationProposal): void;
   listProactiveProposals(delivered?: boolean): ProactiveNotificationProposal[];
 }
+
+export interface IEthicalBoundariesSecurityRepository {
+  saveDecision(decision: SecurityAuthorizationDecision): void;
+  getDecision(id: string): SecurityAuthorizationDecision | null;
+  listDecisions(filter?: {
+    actionCategory?: SecurityActionCategory;
+    allowed?: boolean;
+    limit?: number;
+  }): SecurityAuthorizationDecision[];
+  saveAuditLog(log: SecurityAuditLog): void;
+  listAuditLogs(filter?: {
+    eventType?: SecurityAuditEventType;
+    limit?: number;
+  }): SecurityAuditLog[];
+  getPolicyState(): SecurityBoundaryPolicy | null;
+  savePolicyState(policy: SecurityBoundaryPolicy): void;
+}
+
 
 
 

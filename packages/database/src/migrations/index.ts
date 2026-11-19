@@ -3117,4 +3117,55 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('offline_cognitive_activity_milestone46', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 58,
+    name: '058_ethical_boundaries_and_security_milestone47',
+    up: `
+      -- Security Authorization Decisions (Fail-closed evaluation, injection checks, confinement audits)
+      CREATE TABLE IF NOT EXISTS security_authorization_decisions (
+        decision_id TEXT PRIMARY KEY,
+        action_category TEXT NOT NULL,
+        target_resource TEXT NOT NULL,
+        requested_permission TEXT NOT NULL,
+        allowed INTEGER NOT NULL,
+        fail_closed_reason TEXT,
+        approval_required INTEGER NOT NULL DEFAULT 0,
+        is_approved INTEGER NOT NULL DEFAULT 0,
+        prompt_injection_detected INTEGER NOT NULL DEFAULT 0,
+        injection_markers TEXT NOT NULL DEFAULT '[]',
+        audit_notes TEXT NOT NULL,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_sec_auth_cat ON security_authorization_decisions (action_category);
+      CREATE INDEX IF NOT EXISTS idx_sec_auth_allowed ON security_authorization_decisions (allowed);
+      CREATE INDEX IF NOT EXISTS idx_sec_auth_time ON security_authorization_decisions (timestamp DESC);
+
+      -- Security Audit Logs (Tamper-evident system audit trail)
+      CREATE TABLE IF NOT EXISTS security_audit_logs (
+        id TEXT PRIMARY KEY,
+        event_type TEXT NOT NULL,
+        action_category TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        details TEXT NOT NULL DEFAULT '{}',
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_sec_audit_event ON security_audit_logs (event_type);
+      CREATE INDEX IF NOT EXISTS idx_sec_audit_sev ON security_audit_logs (severity);
+      CREATE INDEX IF NOT EXISTS idx_sec_audit_time ON security_audit_logs (timestamp DESC);
+
+      -- Security Policy State
+      CREATE TABLE IF NOT EXISTS security_policy_state (
+        id TEXT PRIMARY KEY,
+        policy_json TEXT NOT NULL,
+        emergency_shutdown INTEGER NOT NULL DEFAULT 0,
+        shutdown_reason TEXT,
+        updated_at TEXT NOT NULL
+      );
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('ethical_boundaries_security_milestone47', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

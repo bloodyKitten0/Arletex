@@ -857,6 +857,12 @@ export * from './playHumourAesthetics.js';
 // ==========================================
 export * from './offlineCognitiveActivity.js';
 
+// ==========================================
+// Ethical Boundaries & Security Contracts (Milestone 47)
+// ==========================================
+export * from './ethicalBoundariesSecurity.js';
+
+
 
 
 

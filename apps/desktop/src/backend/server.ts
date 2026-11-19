@@ -117,6 +117,7 @@ import {
   SqliteCreativityRepository,
   SqlitePlayHumourAestheticsRepository,
   SqliteOfflineCognitiveActivityRepository,
+  SqliteEthicalBoundariesSecurityRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -270,6 +271,7 @@ export class ArletexBackendServer {
   public readonly creativityRepo: SqliteCreativityRepository;
   public readonly playHumourAestheticsRepo: SqlitePlayHumourAestheticsRepository;
   public readonly offlineCognitiveRepo: SqliteOfflineCognitiveActivityRepository;
+  public readonly securityRepo: SqliteEthicalBoundariesSecurityRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -348,6 +350,7 @@ export class ArletexBackendServer {
     this.creativityRepo = new SqliteCreativityRepository(db);
     this.playHumourAestheticsRepo = new SqlitePlayHumourAestheticsRepository(db);
     this.offlineCognitiveRepo = new SqliteOfflineCognitiveActivityRepository(db);
+    this.securityRepo = new SqliteEthicalBoundariesSecurityRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -396,6 +399,7 @@ export class ArletexBackendServer {
       this.creativityRepo,
       this.playHumourAestheticsRepo,
       this.offlineCognitiveRepo,
+      this.securityRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -6670,6 +6674,80 @@ Rules:
         const body = (await this.readJsonBody(req)) as any;
         const policy = this.apeService.updateOfflineSchedulerPolicy(body);
         this.sendJson(res, 200, { success: true, policy });
+        return;
+      }
+
+      // ==========================================
+      // Ethical Boundaries & Security Routes (Milestone 47)
+      // ==========================================
+      if (url.pathname === '/api/ape/security/authorize' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.actionCategory || !body.targetResource) {
+          this.sendJson(res, 400, { error: 'actionCategory and targetResource are required' });
+          return;
+        }
+        const decision = this.apeService.authorizeSecurityAction(body);
+        this.sendJson(res, 200, { success: true, decision });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/security/prompt-injection/check' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const text = body?.text || '';
+        const check = this.apeService.detectSecurityPromptInjection(text);
+        this.sendJson(res, 200, { success: true, check });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/security/emergency-shutdown' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const reason = body?.reason || 'User or system invoked emergency shutdown';
+        this.apeService.triggerSecurityEmergencyShutdown(reason);
+        this.sendJson(res, 200, { success: true, message: 'Emergency shutdown engaged.', reason });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/security/emergency-shutdown/reset' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const confirmation = body?.confirmation || '';
+        const resetRes = this.apeService.resetSecurityEmergencyShutdown(confirmation);
+        if (!resetRes.success) {
+          this.sendJson(res, 403, resetRes);
+          return;
+        }
+        this.sendJson(res, 200, resetRes);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/security/policy' && method === 'GET') {
+        const policy = this.apeService.getSecurityPolicy();
+        this.sendJson(res, 200, { success: true, policy });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/security/policy' && (method === 'POST' || method === 'PATCH')) {
+        const body = (await this.readJsonBody(req)) as any;
+        const policy = this.apeService.updateSecurityPolicy(body);
+        this.sendJson(res, 200, { success: true, policy });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/security/decisions' && method === 'GET') {
+        const actionCategory = (url.searchParams.get('actionCategory') as any) || undefined;
+        const allowed = url.searchParams.has('allowed')
+          ? url.searchParams.get('allowed') === 'true'
+          : undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const decisions = this.apeService.listSecurityDecisions({ actionCategory, allowed, limit });
+        this.sendJson(res, 200, { success: true, decisions });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/security/audit-logs' && method === 'GET') {
+        const eventType = (url.searchParams.get('eventType') as any) || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const logs = this.apeService.listSecurityAuditLogs({ eventType, limit });
+        this.sendJson(res, 200, { success: true, logs });
         return;
       }
 
