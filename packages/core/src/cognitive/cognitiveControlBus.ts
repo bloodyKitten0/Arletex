@@ -605,7 +605,7 @@ export class CognitiveControlBus {
 
   private validateProvenance(event: CognitiveEvent): boolean {
     if (!event.source) return false;
-    const allowedSources = ['user', 'telegram', 'agency', 'timer', 'internal', 'environment'];
+    const allowedSources = ['user', 'telegram', 'agency', 'timer', 'internal', 'environment', 'external_communication'];
     return allowedSources.includes(event.source);
   }
 
@@ -628,6 +628,7 @@ export class CognitiveControlBus {
       case 'user_message':
       case 'telegram_message':
       case 'telegram_media':
+      case 'incoming_email':
         return 'user_interaction';
       case 'agency_observation':
       case 'environmental_change':
@@ -669,6 +670,7 @@ export class CognitiveControlBus {
     switch (source) {
       case 'user':
       case 'telegram':
+      case 'external_communication':
         return 'external_stimulus';
       case 'agency':
         return 'action_outcome';
@@ -913,14 +915,23 @@ export class CognitiveControlBus {
   }
 
   private formatMemoryContent(
-    _event: CognitiveEvent,
+    event: CognitiveEvent,
     decision: CognitiveDecision,
     success: boolean,
     verifiedFact?: string,
   ): string {
     const outcomeStr = success ? 'succeeded' : 'failed';
     const detail = verifiedFact ? ` Verified fact: "${verifiedFact}".` : '';
-    return `[Cognitive Cycle] ${decision.chosenAlternativeReason}. Decision: ${decision.actionType} (${outcomeStr}).${detail}`;
+    let stimulusContext = '';
+    if (typeof event.payload?.text === 'string') {
+      stimulusContext = ` Text: "${event.payload.text}".`;
+    } else if (typeof event.payload?.subject === 'string') {
+      stimulusContext = ` Subject: "${event.payload.subject}".`;
+      if (typeof event.payload?.bodySnippet === 'string') {
+        stimulusContext += ` Snippet: "${event.payload.bodySnippet}".`;
+      }
+    }
+    return `[Cognitive Cycle] ${decision.chosenAlternativeReason}.${stimulusContext} Decision: ${decision.actionType} (${outcomeStr}).${detail}`;
   }
 
   public getEventHistory(limit = 20): CognitiveEvent[] {
