@@ -134,6 +134,7 @@ const MAX_BODY_SIZE = 250 * 1024 * 1024; // 250MB limit to reliably support vide
 export function sanitizeAssistantDialogue(text: string): string {
   if (!text) return '';
   let cleaned = text
+    .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
     .replace(/\[(?:action|cmd|tone|thought|mood|emotion|state):[^\]]*\]/gi, '')
     .replace(/^\s*\[[^\]]+\]\s*/gm, '')
     .trim();
@@ -1746,6 +1747,37 @@ export class ArletexBackendServer {
         };
       });
 
+      // Calculate elapsed time since Proof's previous message or session restart
+      const lastMsg = filteredHistory.length > 0 ? filteredHistory[filteredHistory.length - 1] : null;
+      let elapsedSinceLastContactMs = 0;
+      if (lastMsg && lastMsg.createdAt) {
+        elapsedSinceLastContactMs = Math.max(0, Date.now() - new Date(lastMsg.createdAt).getTime());
+      }
+      const downtimeMs = this.continuityManager ? this.continuityManager.getDowntimeMs() : 0;
+
+      // If more than 15 minutes have passed since last message, trigger partner return appraisal
+      if (elapsedSinceLastContactMs > 15 * 60 * 1000) {
+        try {
+          const elapsedMinutes = elapsedSinceLastContactMs / 60000;
+          const elapsedHours = elapsedMinutes / 60;
+          await this.apeService.processEvent({
+            category: 'relationship_event',
+            type: 'partner_return_after_absence',
+            source: 'system',
+            actor: 'user',
+            eventKind: 'external_stimulus',
+            payload: {
+              elapsedMinutes,
+              elapsedHours,
+              lastContactAt: lastMsg?.createdAt,
+              currentTurnAt: new Date().toISOString(),
+            },
+          });
+        } catch (absenceErr: any) {
+          this.logger.warn(`Absence return appraisal note: ${absenceErr.message}`);
+        }
+      }
+
       // Ingest user message into APE cognitive appraisal pipeline
       try {
         if (videoInfo) {
@@ -1859,7 +1891,11 @@ export class ArletexBackendServer {
       // Asynchronously consolidate notable user statements into permanent memories
       void this.autoConsolidateUserStatement(userMessageContent, conversationId, userMsg.id);
 
-      const apeStateBlock = this.apeService.formatApePromptContext();
+      const apeStateBlock = this.apeService.formatApePromptContext({
+        elapsedSinceLastContactMs,
+        downtimeMs,
+        wasClosedSession: downtimeMs > 60000,
+      });
       const systemPrompt = (systemPromptOverride || DEFAULT_ARLE_SYSTEM_PROMPT) + '\n\n' + apeStateBlock + memoryContext;
 
       let userContent: any = userMessageContent;
@@ -1956,6 +1992,7 @@ export class ArletexBackendServer {
           // Strip any internal command or tone brackets during live streaming
           const cleanFull = sanitizeAssistantDialogue(chunk.fullContent || '');
           const cleanDelta = (chunk.delta || '')
+            .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
             .replace(/\[(?:action|cmd|tone|thought|mood|emotion|state):[^\]]*\]/gi, '')
             .replace(/^\s*\[[^\]]+\]\s*/g, '');
 
@@ -2308,7 +2345,11 @@ export class ArletexBackendServer {
       }
 
       // 4. Construct prompt grounded in true physical reality
-      const apeStateBlock = this.apeService.formatApePromptContext();
+      const downtimeMs = this.continuityManager ? this.continuityManager.getDowntimeMs() : 0;
+      const apeStateBlock = this.apeService.formatApePromptContext({
+        downtimeMs,
+        wasClosedSession: downtimeMs > 60000,
+      });
       const systemPrompt = DEFAULT_ARLE_SYSTEM_PROMPT + '\n\n' + apeStateBlock;
 
       const audioInfo = liveHostMedia?.title
@@ -2323,6 +2364,8 @@ Perception status:
 
 Spontaneously speak to Proof with a genuine 1-2 sentence observation about what you see on his screen, what he might be feeling, or check in on him warmly. Speak as an equal companion.
 Rules:
+- NEVER use emojis, emoticons, or pictograms under any circumstance.
+- NEVER repeat, echo, or summarize what Proof said back to him.
 - NEVER use tone tags like [tone: ...] or command tags.
 - NEVER claim something is open or playing unless you see it in the image or audio.
 - Speak directly, warmly, and concisely.`;

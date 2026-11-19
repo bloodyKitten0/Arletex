@@ -580,6 +580,9 @@ def prepare_text_for_kokoro(raw_text: str) -> str:
     # Normalize ellipsis to natural prosodic pause
     text = re.sub(r'\.{3,}', '... ', text)
     text = text.replace('…', '... ')
+    # Strip emojis, emoticons, and pictographs
+    text = re.sub(r'[\U00010000-\U0010ffff]', '', text)
+    text = re.sub(r'[\u2600-\u27BF\uE000-\uF8FF]', '', text)
     # Clean whitespace
     text = re.sub(r'\s+', ' ', text).strip()
     return text

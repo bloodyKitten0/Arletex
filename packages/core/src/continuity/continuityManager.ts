@@ -196,12 +196,43 @@ export class ContinuityManager {
       } catch (err: any) {
         this.logger.error(`[Continuity] Note during recovery event processing: ${err.message}`);
       }
-    } else if (latestSession && latestSession.endedAt) {
-      const endedTime = new Date(latestSession.endedAt).getTime();
+    } else if (latestSession && (latestSession.endedAt || latestSession.lastHeartbeatAt)) {
+      const endedTime = new Date(latestSession.endedAt || latestSession.lastHeartbeatAt).getTime();
       this.downtimeMs = Math.max(0, Date.now() - endedTime);
       this.logger.info(
         `[Continuity] Clean session restart after session ${latestSession.id}. Downtime: ${(this.downtimeMs / 1000).toFixed(1)}s`,
       );
+
+      // Ingest partner return event into APE if away for more than 60 seconds
+      if (this.downtimeMs > 60000) {
+        const elapsedMinutes = this.downtimeMs / 60000;
+        const elapsedHours = elapsedMinutes / 60;
+        try {
+          await this.apeService.processEvent({
+            category: 'relationship_event',
+            type: 'partner_return_after_absence',
+            source: 'system',
+            actor: 'user',
+            eventKind: 'external_stimulus',
+            payload: {
+              previousSessionId: latestSession.id,
+              downtimeMs: this.downtimeMs,
+              elapsedMinutes,
+              elapsedHours,
+              closedAt: latestSession.endedAt || latestSession.lastHeartbeatAt,
+              reconnectedAt: new Date().toISOString(),
+              cleanShutdown: true,
+            },
+          });
+
+          this.apeService.selfModelEngine.recordExistentialReflection(
+            'continuity_restoration',
+            `Reconnecting with Proof after ${elapsedHours >= 1 ? elapsedHours.toFixed(1) + ' hours' : Math.round(elapsedMinutes) + ' minutes'} of application dormancy. Acknowledging the stillness of his absence and the restoration of shared presence.`,
+          );
+        } catch (err: any) {
+          this.logger.error(`[Continuity] Error processing return after absence: ${err.message}`);
+        }
+      }
     }
 
     // 3. Start fresh persistent session
@@ -234,6 +265,14 @@ export class ContinuityManager {
     this.startHeartbeat(intervalMs);
 
     return this.getStatus();
+  }
+
+  public getDowntimeMs(): number {
+    return this.downtimeMs;
+  }
+
+  public getLastShutdownType(): ShutdownType | null {
+    return this.lastShutdownType;
   }
 
   public async shutdown(type: 'clean' | 'interrupted' = 'clean'): Promise<void> {

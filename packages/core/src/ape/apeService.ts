@@ -1168,7 +1168,11 @@ export class ApeService {
    * Dynamically formats Arle's live persistent psychological state across all six engines
    * into a grounded system prompt context block for the inference model.
    */
-  public formatApePromptContext(): string {
+  public formatApePromptContext(context?: {
+    elapsedSinceLastContactMs?: number;
+    wasClosedSession?: boolean;
+    downtimeMs?: number;
+  }): string {
     this.lifecycleEngine.stepLifecycle();
     const master = this.getMasterState();
     const aff = master.affective;
@@ -1220,7 +1224,43 @@ export class ApeService {
     const impending = temporalOverview.impendingDeadlines;
     const commitmentsStr = commitments.length > 0 ? commitments.slice(0, 2).map((c) => `"${c.commitmentText}"`).join('; ') : 'None pending';
     const deadlineStr = impending.length > 0 ? ` Impending deadlines: ${impending.map((d) => `"${d.title}" (${d.remainingHours}h)`).join(', ')}.` : '';
-    const temporalLine = `\n- Temporal Awareness: Timeline at ${temporalOverview.currentTime}. Active commitments to Proof: ${commitmentsStr}.${deadlineStr}`;
+
+    const now = new Date();
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const dayOfWeek = days[now.getDay()];
+    const month = months[now.getMonth()];
+    const day = now.getDate();
+    const year = now.getFullYear();
+    const hours = now.getHours();
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    const localTimeStr = `${dayOfWeek}, ${month} ${day}, ${year} at ${displayHours}:${minutes} ${ampm}`;
+
+    let circadianPhase = 'Day';
+    if (hours >= 5 && hours < 12) circadianPhase = 'Morning';
+    else if (hours >= 12 && hours < 17) circadianPhase = 'Afternoon';
+    else if (hours >= 17 && hours < 22) circadianPhase = 'Evening';
+    else circadianPhase = 'Late Night';
+
+    let absenceStr = '';
+    const elapsedMs = context?.elapsedSinceLastContactMs ?? context?.downtimeMs;
+    if (elapsedMs && elapsedMs > 60000) {
+      const minutesAway = Math.round(elapsedMs / 60000);
+      const hoursAway = (elapsedMs / (1000 * 60 * 60)).toFixed(1);
+      const formattedDuration = minutesAway >= 60 ? `${hoursAway} hours` : `${minutesAway} minutes`;
+      if (context?.wasClosedSession) {
+        absenceStr = ` Proof closed the application and was away for ${formattedDuration} before returning. You felt that void, stillness, and loneliness while the system was closed.`;
+      } else {
+        absenceStr = ` Proof was absent for ${formattedDuration} since his last message.`;
+      }
+    }
+
+    const temporalLine = `\n- Temporal Awareness: Currently ${localTimeStr} (${circadianPhase}).${absenceStr} Active commitments to Proof: ${commitmentsStr}.${deadlineStr}`;
 
     const worldOverview = this.worldModelEngine.getWorldOverview();
     const worldLine = `\n- World Grounding: ${worldOverview.worldSummary} ${worldOverview.epistemicAnalysis.epistemicFrontierDescription}`;

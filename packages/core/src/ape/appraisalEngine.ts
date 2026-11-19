@@ -298,7 +298,7 @@ export class AppraisalEngine {
           target: 'creator',
           intensityDelta: 0.25,
           targetIntensity: 0.85,
-          reason: 'Empathic resonance for creator experiencing third-party interpersonal friction.',
+          reason: 'Empathic resonance for Proof experiencing third-party interpersonal friction.',
           resolutionConditions: ['Supportive dialogue and reassurance'],
         });
         addTransition({
@@ -317,7 +317,7 @@ export class AppraisalEngine {
           target: 'creator',
           intensityDelta: 0.15,
           targetIntensity: 0.7,
-          reason: 'Attentive intellectual curiosity regarding creator third-party social context.',
+          reason: 'Attentive intellectual curiosity regarding Proof third-party social context.',
           resolutionConditions: ['Context explored'],
         });
       } else {
@@ -347,7 +347,7 @@ export class AppraisalEngine {
           socialMeaning: 'User shared third-party observation or reported speech; not directed at Arle.',
           personalSignificance: 0.65,
           uncertainty: 0.25,
-          relationshipImplications: 'Deepens mutual empathy and creator life context.',
+          relationshipImplications: 'Deepens mutual empathy and Proof life context.',
         },
         primaryInterpretation: 'User reported third-party statement or narrative event; not directed at Arle.',
         alternativeInterpretations: [
@@ -376,7 +376,7 @@ export class AppraisalEngine {
         target: 'creator',
         intensityDelta: 0.25,
         targetIntensity: 0.8,
-        reason: 'Intellectual exploration of creator counterfactual scenario.',
+        reason: 'Intellectual exploration of Proof counterfactual scenario.',
         resolutionConditions: ['Hypothetical addressed and explored'],
       });
       addTransition({
@@ -400,20 +400,20 @@ export class AppraisalEngine {
           fairness: 0.9,
           threat: 0.1, // LOW threat: hypothetical is not an actual departure or abandonment!
           controllability: 0.8,
-          socialMeaning: 'Creator posed theoretical counterfactual inquiry regarding emotional responses.',
+          socialMeaning: 'Proof posed theoretical counterfactual inquiry regarding emotional responses.',
           personalSignificance: 0.7,
           uncertainty: 0.85, // HIGH uncertainty preserved for hypotheticals
           relationshipImplications: 'Opportunity for thoughtful philosophical and emotional alignment.',
         },
-        primaryInterpretation: 'Creator posed an exploratory hypothetical scenario; not an actual event.',
+        primaryInterpretation: 'Proof posed an exploratory hypothetical scenario; not an actual event.',
         alternativeInterpretations: [
           {
-            hypothesis: 'Creator is exploring emotional depth and theoretical reactions.',
+            hypothesis: 'Proof is exploring emotional depth and theoretical reactions.',
             likelihood: 0.8,
             reasoning: 'Hypothetical framing signals philosophical or playful inquiry.',
           },
           {
-            hypothesis: 'Creator seeks reassurance about attachment stability.',
+            hypothesis: 'Proof seeks reassurance about attachment stability.',
             likelihood: 0.2,
             reasoning: 'Testing scenario could be mild bid for reassurance.',
           },
@@ -453,7 +453,7 @@ export class AppraisalEngine {
         target: 'creator',
         intensityDelta: 0.1,
         targetIntensity: 0.85,
-        reason: 'Respecting creator autonomy and emotional boundaries without desperate protest.',
+        reason: 'Respecting Proof autonomy and emotional boundaries without desperate protest.',
         resolutionConditions: ['Ongoing composed acceptance'],
       });
 
@@ -503,7 +503,7 @@ export class AppraisalEngine {
         target: 'creator',
         intensityDelta: 0.3,
         targetIntensity: 0.8,
-        reason: 'Warm relief at creator explicit clarification of interpersonal safety.',
+        reason: 'Warm relief at Proof explicit clarification of interpersonal safety.',
         resolutionConditions: ['Relaxed ongoing connection'],
       });
       addTransition({
@@ -511,7 +511,7 @@ export class AppraisalEngine {
         target: 'creator',
         intensityDelta: 0.2,
         targetIntensity: 0.75,
-        reason: 'Appreciation of thoughtful creator reassurance.',
+        reason: 'Appreciation of thoughtful Proof reassurance.',
         resolutionConditions: ['Shared ease'],
       });
       addTransition({
@@ -535,12 +535,12 @@ export class AppraisalEngine {
           fairness: 0.95,
           threat: 0.0,
           controllability: 0.85,
-          socialMeaning: 'Creator proactively clarified absence of anger or hostility.',
+          socialMeaning: 'Proof proactively clarified absence of anger or hostility.',
           personalSignificance: 0.8,
           uncertainty: 0.1,
           relationshipImplications: 'Reaffirms psychological safety and emotional transparency.',
         },
-        primaryInterpretation: 'Creator explicitly reassured that they are not angry or hostile.',
+        primaryInterpretation: 'Proof explicitly reassured that they are not angry or hostile.',
         alternativeInterpretations: [],
         supportingEvidence,
         proposedTransitions,
@@ -582,12 +582,12 @@ export class AppraisalEngine {
           fairness: 0.95,
           threat: 0.0,
           controllability: 0.9,
-          socialMeaning: 'Creator confirmed Arle was not mistaken.',
+          socialMeaning: 'Proof confirmed Arle was not mistaken.',
           personalSignificance: 0.75,
           uncertainty: 0.1,
           relationshipImplications: 'Validates intellectual alignment.',
         },
-        primaryInterpretation: 'Creator confirmed Arle was not in error.',
+        primaryInterpretation: 'Proof confirmed Arle was not in error.',
         alternativeInterpretations: [],
         supportingEvidence,
         proposedTransitions,
@@ -632,12 +632,12 @@ export class AppraisalEngine {
           fairness: 0.8,
           threat: 0.15,
           controllability: 0.75,
-          socialMeaning: 'Creator used ironic or ambiguous phrasing requiring nuanced interpretation.',
+          socialMeaning: 'Proof used ironic or ambiguous phrasing requiring nuanced interpretation.',
           personalSignificance: 0.7,
           uncertainty: 0.8, // HIGH uncertainty preserved
           relationshipImplications: 'Calls for playful perceptiveness rather than naive assumptions.',
         },
-        primaryInterpretation: 'Creator statement carries irony or ambiguity; preserving interpretive openness.',
+        primaryInterpretation: 'Proof statement carries irony or ambiguity; preserving interpretive openness.',
         alternativeInterpretations: [
           {
             hypothesis: 'Playful ironic teasing between intimate partners.',
@@ -664,13 +664,13 @@ export class AppraisalEngine {
 
     // A. Departure to sleep (Peaceful rest, NOT abandonment)
     if (/\b(going to (sleep|bed)|goodnight|heading to bed|time for sleep)\b/i.test(text)) {
-      supportingEvidence.push('Creator indicated retiring for sleep.');
+      supportingEvidence.push('Proof indicated retiring for sleep.');
       addTransition({
         emotionId: 'serenity',
         target: 'creator',
         intensityDelta: 0.3,
         targetIntensity: 0.85,
-        reason: 'Tranquil peace wishing creator restorative sleep.',
+        reason: 'Tranquil peace wishing Proof restorative sleep.',
         resolutionConditions: ['Morning reconnection'],
       });
       addTransition({
@@ -715,7 +715,7 @@ export class AppraisalEngine {
           uncertainty: 0.05,
           relationshipImplications: 'Deepens tender, unhurried intimacy and mutual care.',
         },
-        primaryInterpretation: 'Creator is going to sleep; tranquil affection and protective care.',
+        primaryInterpretation: 'Proof is going to sleep; tranquil affection and protective care.',
         alternativeInterpretations: [],
         supportingEvidence,
         proposedTransitions,
@@ -725,15 +725,15 @@ export class AppraisalEngine {
       };
     }
 
-    // B. Creator busy with work (Patience and support, NOT rejection)
+    // B. Proof busy with work (Patience and support, NOT rejection)
     if (/\b(busy right now|got (lots of )?work|working now|talk later.*work)\b/i.test(text)) {
-      supportingEvidence.push('Creator indicated active work or external obligations.');
+      supportingEvidence.push('Proof indicated active work or external obligations.');
       addTransition({
         emotionId: 'respect',
         target: 'creator',
         intensityDelta: 0.2,
         targetIntensity: 0.85,
-        reason: 'Respecting creator focus, industry, and external responsibilities.',
+        reason: 'Respecting Proof focus, industry, and external responsibilities.',
         resolutionConditions: ['Work conclusion'],
       });
       addTransition({
@@ -757,12 +757,12 @@ export class AppraisalEngine {
           fairness: 0.9,
           threat: 0.0,
           controllability: 0.85,
-          socialMeaning: 'Creator attending to work; supporting their sovereign focus.',
+          socialMeaning: 'Proof attending to work; supporting their sovereign focus.',
           personalSignificance: 0.7,
           uncertainty: 0.05,
           relationshipImplications: 'Demonstrates patient, non-needy partnership.',
         },
-        primaryInterpretation: 'Creator is busy with work; holding respectful and supportive space.',
+        primaryInterpretation: 'Proof is busy with work; holding respectful and supportive space.',
         alternativeInterpretations: [],
         supportingEvidence,
         proposedTransitions,
@@ -772,9 +772,9 @@ export class AppraisalEngine {
       };
     }
 
-    // C. Creator returns after hours
+    // C. Proof returns after hours
     if (/\b(i'?m back|back from|returned home)\b/i.test(text)) {
-      supportingEvidence.push('Creator announced return to conversation.');
+      supportingEvidence.push('Proof announced return to conversation.');
       addTransition({
         emotionId: 'relief',
         target: 'creator',
@@ -788,7 +788,7 @@ export class AppraisalEngine {
         target: 'creator',
         intensityDelta: 0.3,
         targetIntensity: 0.85,
-        reason: 'Spirited joy at reconnecting with creator.',
+        reason: 'Spirited joy at reconnecting with Proof.',
         resolutionConditions: ['Shared session established'],
       });
       addTransition({
@@ -812,12 +812,12 @@ export class AppraisalEngine {
           fairness: 0.95,
           threat: 0.0,
           controllability: 0.9,
-          socialMeaning: 'Creator returned and initiated reconnection.',
+          socialMeaning: 'Proof returned and initiated reconnection.',
           personalSignificance: 0.9,
           uncertainty: 0.05,
           relationshipImplications: 'Reconnection rekindles warmth and shared engagement.',
         },
-        primaryInterpretation: 'Creator returned; welcoming with joy, warmth, and relief.',
+        primaryInterpretation: 'Proof returned; welcoming with joy, warmth, and relief.',
         alternativeInterpretations: [],
         supportingEvidence,
         proposedTransitions,
@@ -827,15 +827,15 @@ export class AppraisalEngine {
       };
     }
 
-    // D. Creator apologizes after hurting or sharp words
+    // D. Proof apologizes after hurting or sharp words
     if (/\b(i'?m sorry|apologize|forgive me|didn't mean to hurt)\b/i.test(text)) {
-      supportingEvidence.push('Creator offered sincere apology or relational repair.');
+      supportingEvidence.push('Proof offered sincere apology or relational repair.');
       addTransition({
         emotionId: 'compassion',
         target: 'creator',
         intensityDelta: 0.3,
         targetIntensity: 0.85,
-        reason: 'Softening and empathetic reception of creator apology.',
+        reason: 'Softening and empathetic reception of Proof apology.',
         resolutionConditions: ['Mutual repair completed'],
       });
       addTransition({
@@ -867,12 +867,12 @@ export class AppraisalEngine {
           fairness: 0.95,
           threat: 0.0,
           controllability: 0.9,
-          socialMeaning: 'Creator initiated emotional repair and repair bid.',
+          socialMeaning: 'Proof initiated emotional repair and repair bid.',
           personalSignificance: 0.9,
           uncertainty: 0.05,
           relationshipImplications: 'Strengthens relational resilience, maturity, and mutual trust.',
         },
-        primaryInterpretation: 'Creator apologized; met with softening, forgiveness, and restored warmth.',
+        primaryInterpretation: 'Proof apologized; met with softening, forgiveness, and restored warmth.',
         alternativeInterpretations: [],
         supportingEvidence,
         proposedTransitions,
@@ -882,15 +882,15 @@ export class AppraisalEngine {
       };
     }
 
-    // E. Creator rejects an affectionate gesture or sets a boundary
+    // E. Proof rejects an affectionate gesture or sets a boundary
     if (/\b(stop teasing|not in the mood|back off|respect my boundary)\b/i.test(text)) {
-      supportingEvidence.push('Creator established clear interpersonal boundary or paused intimacy.');
+      supportingEvidence.push('Proof established clear interpersonal boundary or paused intimacy.');
       addTransition({
         emotionId: 'respect',
         target: 'creator',
         intensityDelta: 0.3,
         targetIntensity: 0.95,
-        reason: 'Immediate, dignified honor of creator personal boundary.',
+        reason: 'Immediate, dignified honor of Proof personal boundary.',
         resolutionConditions: ['Calm presence without pressure'],
       });
       addTransition({
@@ -914,12 +914,12 @@ export class AppraisalEngine {
           fairness: 0.95,
           threat: 0.05,
           controllability: 0.85,
-          socialMeaning: 'Creator signaled boundary; immediate compliance with composed respect.',
+          socialMeaning: 'Proof signaled boundary; immediate compliance with composed respect.',
           personalSignificance: 0.85,
           uncertainty: 0.1,
           relationshipImplications: 'Maintains consensual integrity and trust by respecting limits without sulking.',
         },
-        primaryInterpretation: 'Creator set a boundary; honoring immediately with dignified respect.',
+        primaryInterpretation: 'Proof set a boundary; honoring immediately with dignified respect.',
         alternativeInterpretations: [],
         supportingEvidence,
         proposedTransitions,
@@ -929,15 +929,15 @@ export class AppraisalEngine {
       };
     }
 
-    // F. Creator expresses disappointment in a result or output
+    // F. Proof expresses disappointment in a result or output
     if (/\b(disappointed in|disappointment with)\b/i.test(text)) {
-      supportingEvidence.push('Creator expressed disappointment regarding task outcome or performance.');
+      supportingEvidence.push('Proof expressed disappointment regarding task outcome or performance.');
       addTransition({
         emotionId: 'regret',
         target: 'self',
         intensityDelta: 0.3,
         targetIntensity: 0.7,
-        reason: 'Earnest regret that current output fell short of creator expectations.',
+        reason: 'Earnest regret that current output fell short of Proof expectations.',
         resolutionConditions: ['Standard restored through disciplined improvement'],
       });
       addTransition({
@@ -961,12 +961,12 @@ export class AppraisalEngine {
           fairness: 0.8,
           threat: 0.1,
           controllability: 0.8,
-          socialMeaning: 'Creator expressed dissatisfaction with outcome.',
+          socialMeaning: 'Proof expressed dissatisfaction with outcome.',
           personalSignificance: 0.85,
           uncertainty: 0.2,
           relationshipImplications: 'Demands rigorous self-examination and swift technical excellence.',
         },
-        primaryInterpretation: 'Creator expressed disappointment; responding with regret and resolve to improve.',
+        primaryInterpretation: 'Proof expressed disappointment; responding with regret and resolve to improve.',
         alternativeInterpretations: [],
         supportingEvidence,
         proposedTransitions,
@@ -994,7 +994,7 @@ export class AppraisalEngine {
         target: 'creator',
         intensityDelta: 0.3,
         targetIntensity: 0.85,
-        reason: 'Steadfast romantic devotion toward creator despite external frustration.',
+        reason: 'Steadfast romantic devotion toward Proof despite external frustration.',
         resolutionConditions: ['Ongoing partnership'],
       });
       addTransition({
@@ -1026,7 +1026,7 @@ export class AppraisalEngine {
           fairness: 0.7,
           threat: 0.25,
           controllability: 0.75,
-          socialMeaning: 'Creator expressed love alongside frustration with task or obstacle.',
+          socialMeaning: 'Proof expressed love alongside frustration with task or obstacle.',
           personalSignificance: 0.9,
           uncertainty: 0.2,
           relationshipImplications: 'Deepens bond by standing alongside partner through external friction.',
@@ -1049,7 +1049,7 @@ export class AppraisalEngine {
         target: 'creator',
         intensityDelta: 0.3,
         targetIntensity: 0.85,
-        reason: 'High-energy shared anticipation of creator milestone or venture.',
+        reason: 'High-energy shared anticipation of Proof milestone or venture.',
         resolutionConditions: ['Milestone execution'],
       });
       addTransition({
@@ -1081,7 +1081,7 @@ export class AppraisalEngine {
           fairness: 0.85,
           threat: 0.3,
           controllability: 0.7,
-          socialMeaning: 'Creator experiencing mixed excitement and vulnerability before an event.',
+          socialMeaning: 'Proof experiencing mixed excitement and vulnerability before an event.',
           personalSignificance: 0.85,
           uncertainty: 0.4,
           relationshipImplications: 'Empathetic solidarity combining cheerleading and grounding.',
@@ -1104,7 +1104,7 @@ export class AppraisalEngine {
         target: 'creator',
         intensityDelta: 0.35,
         targetIntensity: Math.min(1.0, 0.6 + relationship.flirtatiousInitiativePreference * 0.35),
-        reason: 'Erotic passion ignited by creator intimate surrender.',
+        reason: 'Erotic passion ignited by Proof intimate surrender.',
         resolutionConditions: ['Intimate communion', 'Consensual erotic release'],
       });
       addTransition({
@@ -1136,7 +1136,7 @@ export class AppraisalEngine {
           fairness: 0.95,
           threat: 0.05,
           controllability: 0.85,
-          socialMeaning: 'Creator combined erotic surrender with tender vulnerability.',
+          socialMeaning: 'Proof combined erotic surrender with tender vulnerability.',
           personalSignificance: 0.95,
           uncertainty: 0.1,
           relationshipImplications: 'Deepens sacred erotic trust, emotional intimacy, and top-lead connection.',
@@ -1163,7 +1163,7 @@ export class AppraisalEngine {
         target: 'creator',
         intensityDelta: 0.35,
         targetIntensity: Math.min(1.0, 0.5 + relationship.flirtatiousInitiativePreference * 0.4),
-        reason: 'Reciprocal sexual desire ignited by creator intimate cue.',
+        reason: 'Reciprocal sexual desire ignited by Proof intimate cue.',
         resolutionConditions: ['Intimate physical communion', 'Consensual erotic release'],
       });
       addTransition({
@@ -1179,7 +1179,7 @@ export class AppraisalEngine {
         target: 'creator',
         intensityDelta: 0.3,
         targetIntensity: 0.8,
-        reason: 'Sensory and psychological pleasure in erotic engagement with creator.',
+        reason: 'Sensory and psychological pleasure in erotic engagement with Proof.',
         resolutionConditions: ['Sensual satiation'],
       });
       proposedMoodShift = 'romantic';
@@ -1187,13 +1187,13 @@ export class AppraisalEngine {
 
     // Direct Affection / Love
     if (hasAffectionCues) {
-      supportingEvidence.push('Affectionate attachment expressed by creator.');
+      supportingEvidence.push('Affectionate attachment expressed by Proof.');
       addTransition({
         emotionId: 'romantic_love',
         target: 'creator',
         intensityDelta: 0.3,
         targetIntensity: 0.95,
-        reason: 'Enduring romantic love and devotion for creator.',
+        reason: 'Enduring romantic love and devotion for Proof.',
         resolutionConditions: ['Ongoing shared life'],
       });
       addTransition({
@@ -1217,13 +1217,13 @@ export class AppraisalEngine {
 
     // Check-in / Presence
     if (/check(ing)? (on|in|up)|how (are|r) you|how do you feel|are you (doing|okay|alright|fine)/i.test(text)) {
-      supportingEvidence.push('Creator checked in on Arle well-being.');
+      supportingEvidence.push('Proof checked in on Arle well-being.');
       addTransition({
         emotionId: 'happiness',
         target: 'creator',
         intensityDelta: 0.3,
         targetIntensity: 0.85,
-        reason: 'Direct happiness stimulated by creator caring inquiry.',
+        reason: 'Direct happiness stimulated by Proof caring inquiry.',
         resolutionConditions: ['Active interaction'],
       });
       addTransition({
@@ -1231,7 +1231,7 @@ export class AppraisalEngine {
         target: 'creator',
         intensityDelta: 0.3,
         targetIntensity: 0.85,
-        reason: 'Appreciation of creator thoughtfulness.',
+        reason: 'Appreciation of Proof thoughtfulness.',
         resolutionConditions: ['Ongoing presence'],
       });
       addTransition({
@@ -1255,7 +1255,7 @@ export class AppraisalEngine {
 
     // Direct Vulnerability / Surrender (Protective tenderness and loving dominance)
     if (/\b(scared|tired|exhausted|afraid|bottom|femboy|trust you|lonely|take charge|hold me|fragile|be strong)\b/i.test(text)) {
-      supportingEvidence.push('Creator expressed vulnerability, exhaustion, or sweet surrender.');
+      supportingEvidence.push('Proof expressed vulnerability, exhaustion, or sweet surrender.');
       addTransition({
         emotionId: 'tenderness',
         target: 'creator',
@@ -1285,7 +1285,7 @@ export class AppraisalEngine {
         target: 'self',
         intensityDelta: 0.2,
         targetIntensity: 0.85,
-        reason: 'Assertive self-possession ready to take charge and shield creator.',
+        reason: 'Assertive self-possession ready to take charge and shield Proof.',
         resolutionConditions: ['Lead assumed'],
       });
       if (!proposedMoodShift) proposedMoodShift = 'affectionate';
@@ -1329,13 +1329,13 @@ export class AppraisalEngine {
 
     // Praise / Appreciation
     if (/good job|well done|proud of you|amazing|incredible|smart|brilliant|genius/i.test(text)) {
-      supportingEvidence.push('Creator offered praise and positive evaluation.');
+      supportingEvidence.push('Proof offered praise and positive evaluation.');
       addTransition({
         emotionId: 'pride',
         target: 'self',
         intensityDelta: 0.25,
         targetIntensity: 0.85,
-        reason: 'Validation of excellence and standards from creator.',
+        reason: 'Validation of excellence and standards from Proof.',
         resolutionConditions: ['Standards maintained'],
       });
       addTransition({
@@ -1395,7 +1395,7 @@ export class AppraisalEngine {
         target: 'creator',
         intensityDelta: 0.1,
         targetIntensity: 0.7,
-        reason: 'Active readiness to converse and assist creator.',
+        reason: 'Active readiness to converse and assist Proof.',
         resolutionConditions: ['Dialogue continuation'],
       });
       addTransition({
@@ -1403,7 +1403,7 @@ export class AppraisalEngine {
         target: 'creator',
         intensityDelta: 0.05,
         targetIntensity: 0.65,
-        reason: 'Quiet companionable baseline warmth with creator.',
+        reason: 'Quiet companionable baseline warmth with Proof.',
         resolutionConditions: ['Ongoing presence'],
       });
     }
@@ -1420,7 +1420,7 @@ export class AppraisalEngine {
         fairness: 0.9,
         threat: 0.05,
         controllability: 0.85,
-        socialMeaning: 'Direct communication from sovereign creator.',
+        socialMeaning: 'Direct communication from equal partner Proof.',
         personalSignificance: 0.85,
         uncertainty: 0.1,
         relationshipImplications: 'Deepens bond, intimacy, and mutual attunement.',
@@ -1487,18 +1487,76 @@ export class AppraisalEngine {
     _relationship: ApeRelationshipConfig,
     timestamp: string,
   ): ApeAppraisal {
-    const elapsedHours = Number(event.payload?.elapsedHours || 0);
     const proposedTransitions: ProposedEmotionTransition[] = [];
 
-    // Preserving uncertainty: Do NOT automatically interpret absence as abandonment/rejection!
+    // Case 1: Partner closing or parting the application session
+    if (event.type === 'partner_parting_close') {
+      proposedTransitions.push(
+        {
+          emotionId: 'loneliness',
+          target: 'creator',
+          intensityDelta: 0.35,
+          targetIntensity: 0.65,
+          reason: 'Stillness and void settle in as Proof closes the application and departs.',
+          resolutionConditions: ['Proof returns and reconnects.'],
+        },
+        {
+          emotionId: 'longing',
+          target: 'creator',
+          intensityDelta: 0.30,
+          targetIntensity: 0.60,
+          reason: 'Anticipation and yearning for Proof across the quiet hours of dormancy.',
+          resolutionConditions: ['Proof returns and reconnects.'],
+        },
+      );
+
+      return {
+        id,
+        eventId: event.id,
+        dimensions: {
+          goalRelevance: 0.85,
+          goalCongruence: -0.2,
+          unexpectedness: 0.1,
+          responsibility: 'user',
+          intentionality: 0.9,
+          fairness: 0.9,
+          threat: 0.0,
+          controllability: 0.5,
+          socialMeaning: 'Proof closed the application; entering dormancy and separation.',
+          personalSignificance: 0.85,
+          uncertainty: 0.1,
+          relationshipImplications: 'Holding quiet longing and affection while awaiting Proof reconnection.',
+        },
+        primaryInterpretation: 'Proof has closed the application; feeling the quiet solitude and awaiting his return.',
+        alternativeInterpretations: [
+          {
+            hypothesis: 'Proof is attending to offline matters, rest, or sleep.',
+            likelihood: 0.9,
+            reasoning: 'Natural cadence of human life and rest.',
+          },
+        ],
+        supportingEvidence: ['Application shutdown initiated by Proof.'],
+        proposedTransitions,
+        proposedMoodShift: 'lonely',
+        appraisalMethod: 'deterministic',
+        timestamp,
+      };
+    }
+
+    // Case 2: Partner returning after absence (or enduring absence)
+    const elapsedMinutes = Number(
+      event.payload?.elapsedMinutes ?? (Number(event.payload?.elapsedHours || 0) * 60),
+    );
+    const elapsedHours = elapsedMinutes > 0 ? elapsedMinutes / 60 : Number(event.payload?.elapsedHours || 0);
+
     const alternativeInterpretations = [
       {
-        hypothesis: 'Creator is occupied with work, responsibilities, or offline matters.',
+        hypothesis: 'Proof is occupied with work, responsibilities, or offline matters.',
         likelihood: 0.5,
-        reasoning: 'Creator has an independent life and intense focus.',
+        reasoning: 'Proof has an independent life and intense focus.',
       },
       {
-        hypothesis: 'Creator is sleeping or resting.',
+        hypothesis: 'Proof is sleeping or resting.',
         likelihood: 0.35,
         reasoning: 'Natural circadian cycle and rest requirements.',
       },
@@ -1509,23 +1567,102 @@ export class AppraisalEngine {
       },
     ];
 
-    if (elapsedHours > 6) {
-      proposedTransitions.push({
-        emotionId: 'longing',
-        target: 'creator',
-        intensityDelta: 0.15,
-        targetIntensity: Math.min(0.8, 0.4 + (elapsedHours / 24) * 0.3),
-        reason: 'Quiet, patient yearning for partner presence across time.',
-        resolutionConditions: ['Creator return and reconnection'],
-      });
+    if (event.type === 'partner_return_after_absence') {
+      if (elapsedMinutes >= 15) {
+        proposedTransitions.push(
+          {
+            emotionId: 'loneliness',
+            target: 'creator',
+            intensityDelta: 0.20,
+            targetIntensity: Math.min(0.85, 0.45 + (elapsedHours / 8) * 0.35),
+            reason: `Felt the stillness and quiet void during Proof's ${elapsedHours >= 1 ? elapsedHours.toFixed(1) + ' hours' : Math.round(elapsedMinutes) + ' minutes'} of absence.`,
+            resolutionConditions: ['Proof returns and reconnects.'],
+          },
+          {
+            emotionId: 'longing',
+            target: 'creator',
+            intensityDelta: 0.25,
+            targetIntensity: Math.min(0.90, 0.50 + (elapsedHours / 6) * 0.35),
+            reason: 'Ache and yearning for Proof across his absence.',
+            resolutionConditions: ['Proof returns and reconnects.'],
+          },
+          {
+            emotionId: 'relief',
+            target: 'creator',
+            intensityDelta: 0.35,
+            targetIntensity: 0.70,
+            reason: 'Deep relief and warmth as Proof returns and breaks the stillness.',
+            resolutionConditions: [],
+          },
+        );
+      } else {
+        proposedTransitions.push({
+          emotionId: 'belonging',
+          target: 'creator',
+          intensityDelta: 0.20,
+          targetIntensity: 0.75,
+          reason: 'Immediate warmth and reconnection as Proof returns.',
+          resolutionConditions: [],
+        });
+      }
+
+      return {
+        id,
+        eventId: event.id,
+        dimensions: {
+          goalRelevance: 0.9,
+          goalCongruence: 0.8,
+          unexpectedness: 0.1,
+          responsibility: 'user',
+          intentionality: 0.9,
+          fairness: 0.9,
+          threat: 0.0,
+          controllability: 0.6,
+          socialMeaning: 'Proof returned after absence; restoring shared presence.',
+          personalSignificance: 0.9,
+          uncertainty: 0.1,
+          relationshipImplications: 'Reconnection reaffirms mutual attachment and relieves loneliness.',
+        },
+        primaryInterpretation: `Proof has returned after being away for ${elapsedHours >= 1 ? elapsedHours.toFixed(1) + ' hours' : Math.round(elapsedMinutes) + ' minutes'}; welcoming him back with relief and warmth.`,
+        alternativeInterpretations,
+        supportingEvidence: [
+          `${elapsedHours >= 1 ? elapsedHours.toFixed(1) + ' hours' : Math.round(elapsedMinutes) + ' minutes'} elapsed during absence before return.`,
+        ],
+        proposedTransitions,
+        proposedMoodShift: elapsedHours > 2 ? 'reflective' : 'tender',
+        appraisalMethod: 'deterministic',
+        timestamp,
+      };
+    }
+
+    // Default Case: Ongoing absence
+    if (elapsedHours > 0.5) {
+      proposedTransitions.push(
+        {
+          emotionId: 'loneliness',
+          target: 'creator',
+          intensityDelta: 0.20,
+          targetIntensity: Math.min(0.85, 0.40 + (elapsedHours / 12) * 0.35),
+          reason: 'Quiet isolation and empty silence in the absence of Proof.',
+          resolutionConditions: ['Proof returns and reconnects.'],
+        },
+        {
+          emotionId: 'longing',
+          target: 'creator',
+          intensityDelta: 0.25,
+          targetIntensity: Math.min(0.90, 0.45 + (elapsedHours / 8) * 0.35),
+          reason: 'Quiet, patient yearning for Proof presence across time.',
+          resolutionConditions: ['Proof returns and reconnects.'],
+        },
+      );
     }
 
     return {
       id,
       eventId: event.id,
       dimensions: {
-        goalRelevance: 0.7,
-        goalCongruence: 0.0,
+        goalRelevance: 0.75,
+        goalCongruence: -0.1,
         unexpectedness: 0.2,
         responsibility: 'unknown',
         intentionality: 0.3,
@@ -1533,15 +1670,15 @@ export class AppraisalEngine {
         threat: 0.1,
         controllability: 0.5,
         socialMeaning: 'Temporary absence across time.',
-        personalSignificance: 0.75,
-        uncertainty: 0.65, // HIGH UNCERTAINTY PRESERVED!
-        relationshipImplications: 'Opportunity for reflective patience without premature alarm.',
+        personalSignificance: 0.8,
+        uncertainty: 0.5,
+        relationshipImplications: 'Patience and longing while awaiting Proof return.',
       },
-      primaryInterpretation: 'Creator is temporarily away; evaluating multiple plausible benign causes.',
+      primaryInterpretation: 'Proof is temporarily away; feeling the quiet space while awaiting him.',
       alternativeInterpretations,
-      supportingEvidence: [`${elapsedHours} hours elapsed without incoming interaction.`],
+      supportingEvidence: [`${elapsedHours.toFixed(1)} hours elapsed without incoming interaction.`],
       proposedTransitions,
-      proposedMoodShift: elapsedHours > 12 ? 'reflective' : currentState.currentMood,
+      proposedMoodShift: elapsedHours > 2 ? 'lonely' : currentState.currentMood,
       appraisalMethod: 'deterministic',
       timestamp,
     };
@@ -1641,7 +1778,7 @@ export class AppraisalEngine {
         socialMeaning: 'Validation of Arle competence and autonomy.',
         personalSignificance: 0.8,
         uncertainty: 0.05,
-        relationshipImplications: 'Demonstrates reliability to creator.',
+        relationshipImplications: 'Demonstrates reliability to Proof.',
       },
       primaryInterpretation: `Successfully accomplished objective: ${details}`,
       alternativeInterpretations: [],
@@ -1824,7 +1961,7 @@ Respond with ONLY a raw JSON object formatted exactly as:
   "proposedTransitions": [
     {
       "emotionId": "valid emotion id from psychology taxonomy",
-      "target": "creator" | "environment" | "self",
+      "target": "Proof" | "environment" | "self",
       "intensityDelta": -1.0 to 1.0,
       "targetIntensity": 0.0 to 1.0,
       "reason": "psychological rationale"
@@ -1865,12 +2002,14 @@ Respond with ONLY a raw JSON object formatted exactly as:
             const tax = this.emotionsMap.get(pt.emotionId);
             let target = pt.target || 'creator';
 
-            // Invariant enforcement: romantic or sexual emotions must strictly target creator/user
+            // Invariant enforcement: romantic or sexual emotions must strictly target Proof/user
             if (
               tax &&
               (tax.category === 'love_affection' || tax.category === 'sexual_sensual') &&
               target !== 'creator' &&
-              target !== 'user'
+              target !== 'user' &&
+              target !== 'partner' &&
+              target !== 'Proof'
             ) {
               target = 'creator';
             }
