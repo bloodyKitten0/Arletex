@@ -153,6 +153,10 @@ import {
   SocialEmotionState,
   SocialEmotionType,
   SocialInteractionAppraisal,
+  ConversationalContext,
+  PragmaticAnalysis,
+  TurnTakingState,
+  AudienceAdaptationProfile,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -726,6 +730,18 @@ export interface ISocialEmotionsRepository {
   saveAppraisal(appraisal: SocialInteractionAppraisal): void;
   listAppraisals(targetPersonId?: string, limit?: number): SocialInteractionAppraisal[];
 }
+
+export interface ISocialCommunicationRepository {
+  saveContext(context: ConversationalContext): void;
+  getContextBySession(sessionId: string): ConversationalContext | null;
+  savePragmaticAnalysis(analysis: PragmaticAnalysis): void;
+  listPragmaticAnalyses(speakerId?: string, limit?: number): PragmaticAnalysis[];
+  recordTurnTakingEvent(event: TurnTakingState & { sessionId: string; timestamp: string }): void;
+  getLatestTurnTakingEvent(sessionId: string): (TurnTakingState & { sessionId: string; timestamp: string }) | null;
+  saveAdaptationProfile(profile: AudienceAdaptationProfile & { updatedAt: string }): void;
+  getAdaptationProfile(targetAudienceId: string): (AudienceAdaptationProfile & { updatedAt: string }) | null;
+}
+
 
 
 

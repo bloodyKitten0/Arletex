@@ -110,6 +110,7 @@ import {
   SqliteTheoryOfMindRepository,
   SqliteEmpathyPerspectiveRepository,
   SqliteSocialEmotionsRepository,
+  SqliteSocialCommunicationRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -256,6 +257,7 @@ export class ArletexBackendServer {
   public readonly tomRepo: SqliteTheoryOfMindRepository;
   public readonly empathyRepo: SqliteEmpathyPerspectiveRepository;
   public readonly socialEmotionsRepo: SqliteSocialEmotionsRepository;
+  public readonly socialCommunicationRepo: SqliteSocialCommunicationRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -327,6 +329,7 @@ export class ArletexBackendServer {
     this.tomRepo = new SqliteTheoryOfMindRepository(db);
     this.empathyRepo = new SqliteEmpathyPerspectiveRepository(db);
     this.socialEmotionsRepo = new SqliteSocialEmotionsRepository(db);
+    this.socialCommunicationRepo = new SqliteSocialCommunicationRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -368,6 +371,7 @@ export class ArletexBackendServer {
       this.tomRepo,
       this.empathyRepo,
       this.socialEmotionsRepo,
+      this.socialCommunicationRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -6103,6 +6107,101 @@ Rules:
         const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
         const appraisals = this.apeService.listSocialAppraisals(targetPersonId, limit);
         this.sendJson(res, 200, { success: true, appraisals });
+        return;
+      }
+
+      // ==========================================
+      // Social Communication & Pragmatics Routes (Milestone 40)
+      // ==========================================
+      if (url.pathname === '/api/ape/pragmatics/analyze' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.utterance || !body.speakerId) {
+          this.sendJson(res, 400, { error: 'utterance and speakerId are required' });
+          return;
+        }
+        const analysis = await this.apeService.analyzePragmatics(
+          body.utterance,
+          body.speakerId,
+          body.context,
+        );
+        this.sendJson(res, 200, { success: true, analysis });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/pragmatics/turn-taking' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.sessionId || !body.speakerId || body.inputLatencyMs === undefined) {
+          this.sendJson(res, 400, { error: 'sessionId, speakerId, and inputLatencyMs are required' });
+          return;
+        }
+        const turn = await this.apeService.evaluateTurnTaking(
+          body.sessionId,
+          body.speakerId,
+          body.inputLatencyMs,
+          body.isInterruption,
+        );
+        this.sendJson(res, 200, { success: true, turn });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/pragmatics/audience-adaptation' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.targetAudienceId || !body.socialDistance) {
+          this.sendJson(res, 400, { error: 'targetAudienceId and socialDistance are required' });
+          return;
+        }
+        const profile = await this.apeService.adaptToAudience(
+          body.targetAudienceId,
+          body.socialDistance,
+        );
+        this.sendJson(res, 200, { success: true, profile });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/pragmatics/context' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.sessionId || !body.topic || !body.discourseGoal) {
+          this.sendJson(res, 400, { error: 'sessionId, topic, and discourseGoal are required' });
+          return;
+        }
+        const context = await this.apeService.updateConversationalContext(
+          body.sessionId,
+          body.topic,
+          body.commonGroundUpdates || [],
+          body.discourseGoal,
+          body.formalityLevel,
+        );
+        this.sendJson(res, 200, { success: true, context });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/pragmatics/context' && method === 'GET') {
+        const sessionId = url.searchParams.get('sessionId');
+        if (!sessionId) {
+          this.sendJson(res, 400, { error: 'sessionId is required' });
+          return;
+        }
+        const context = this.apeService.getConversationalContext(sessionId);
+        if (!context) {
+          this.sendJson(res, 404, { error: `Conversational context not found for session: ${sessionId}` });
+          return;
+        }
+        this.sendJson(res, 200, { success: true, context });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/pragmatics/appropriateness' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.utterance || !body.context || !body.audienceProfile) {
+          this.sendJson(res, 400, { error: 'utterance, context, and audienceProfile are required' });
+          return;
+        }
+        const evaluation = this.apeService.evaluateContextualAppropriateness(
+          body.utterance,
+          body.context,
+          body.audienceProfile,
+        );
+        this.sendJson(res, 200, { success: true, evaluation });
         return;
       }
 

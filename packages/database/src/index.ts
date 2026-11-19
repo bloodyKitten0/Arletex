@@ -47,6 +47,8 @@ export * from './repositories/longTermDevelopmentRepository.js';
 export * from './repositories/theoryOfMindRepository.js';
 export * from './repositories/empathyPerspectiveRepository.js';
 export * from './repositories/socialEmotionsRepository.js';
+export * from './repositories/socialCommunicationRepository.js';
+
 
 
 

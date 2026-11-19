@@ -173,6 +173,10 @@ import {
   ProcessSocialInteractionParams,
 } from './socialEmotionsEngine.js';
 import {
+  InMemorySocialCommunicationRepository,
+  SocialCommunicationEngine,
+} from './socialCommunicationEngine.js';
+import {
   ISimulationRepository,
   IMetacognitionRepository,
   IGlobalCognitiveRepository,
@@ -196,6 +200,7 @@ import {
   ITheoryOfMindRepository,
   IEmpathyPerspectiveRepository,
   ISocialEmotionsRepository,
+  ISocialCommunicationRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
@@ -217,6 +222,8 @@ import {
   PsychologicalDimension,
   AgentMentalModel,
   SocialEmotionType,
+  SocialDistance,
+  FormalityLevel,
 } from '@arletex/contracts';
 
 export class ApeService {
@@ -272,6 +279,7 @@ export class ApeService {
   public readonly theoryOfMindEngine: TheoryOfMindEngine;
   public readonly empathyEngine: EmpathyPerspectiveEngine;
   public readonly socialEmotionsEngine: SocialEmotionsEngine;
+  public readonly socialCommunicationEngine: SocialCommunicationEngine;
 
   constructor(
     repo: IApeRepository,
@@ -314,6 +322,7 @@ export class ApeService {
     theoryOfMindRepo?: ITheoryOfMindRepository,
     empathyRepo?: IEmpathyPerspectiveRepository,
     socialEmotionsRepo?: ISocialEmotionsRepository,
+    socialCommunicationRepo?: ISocialCommunicationRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -459,6 +468,9 @@ export class ApeService {
 
     const seRepo = socialEmotionsRepo || new InMemorySocialEmotionsRepository();
     this.socialEmotionsEngine = new SocialEmotionsEngine(seRepo, logger);
+
+    const scRepo = socialCommunicationRepo || new InMemorySocialCommunicationRepository();
+    this.socialCommunicationEngine = new SocialCommunicationEngine({ repository: scRepo });
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -2664,6 +2676,57 @@ export class ApeService {
 
   public listSocialAppraisals(targetPersonId?: string, limit?: number) {
     return this.socialEmotionsEngine.listAppraisals(targetPersonId, limit);
+  }
+
+  public analyzePragmatics(
+    utterance: string,
+    speakerId: string,
+    context?: { priorTopic?: string; socialDistance?: SocialDistance; responseLatencyMs?: number },
+  ) {
+    return this.socialCommunicationEngine.analyzePragmatics(utterance, speakerId, context);
+  }
+
+  public evaluateTurnTaking(
+    sessionId: string,
+    speakerId: string,
+    inputLatencyMs: number,
+    isInterruption?: boolean,
+  ) {
+    return this.socialCommunicationEngine.evaluateTurnTaking(sessionId, speakerId, inputLatencyMs, isInterruption);
+  }
+
+  public adaptToAudience(targetAudienceId: string, socialDistance: SocialDistance) {
+    return this.socialCommunicationEngine.adaptToAudience(targetAudienceId, socialDistance);
+  }
+
+  public generatePragmaticResponse(
+    inputAnalysis: any,
+    context: any,
+    partnerIsProof: boolean,
+  ) {
+    return this.socialCommunicationEngine.generatePragmaticResponse(inputAnalysis, context, partnerIsProof);
+  }
+
+  public updateConversationalContext(
+    sessionId: string,
+    topic: string,
+    commonGroundUpdates: string[],
+    goal: string,
+    formality?: FormalityLevel,
+  ) {
+    return this.socialCommunicationEngine.updateContext(sessionId, topic, commonGroundUpdates, goal, formality);
+  }
+
+  public getConversationalContext(sessionId: string) {
+    return this.socialCommunicationEngine.getContext(sessionId);
+  }
+
+  public evaluateContextualAppropriateness(
+    utterance: string,
+    context: any,
+    audienceProfile: any,
+  ) {
+    return this.socialCommunicationEngine.evaluateContextualAppropriateness(utterance, context, audienceProfile);
   }
 }
 

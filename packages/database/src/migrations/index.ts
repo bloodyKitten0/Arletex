@@ -2650,4 +2650,76 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('social_emotions_milestone39', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 51,
+    name: '051_social_communication_milestone40',
+    up: `
+      -- Conversational Contexts (Discourse tracking, topic, common ground, goals, formality)
+      CREATE TABLE IF NOT EXISTS conversational_contexts (
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL UNIQUE,
+        participants TEXT NOT NULL,
+        active_topic TEXT NOT NULL,
+        common_ground TEXT NOT NULL,
+        discourse_goal TEXT NOT NULL,
+        formality_level TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_conv_contexts_session ON conversational_contexts (session_id);
+
+      -- Pragmatic Analyses (Indirect communication, implicatures, sarcasm, humor, nonverbal cues)
+      CREATE TABLE IF NOT EXISTS pragmatic_analyses (
+        id TEXT PRIMARY KEY,
+        utterance TEXT NOT NULL,
+        speaker_id TEXT NOT NULL,
+        literal_meaning TEXT NOT NULL,
+        implied_meaning TEXT NOT NULL,
+        has_indirect_meaning INTEGER NOT NULL,
+        speech_act_type TEXT NOT NULL,
+        sarcasm_detected INTEGER NOT NULL,
+        sarcasm_confidence REAL NOT NULL,
+        sarcasm_intent TEXT NOT NULL,
+        humor_detected INTEGER NOT NULL,
+        humor_style TEXT NOT NULL,
+        nonverbal_cues TEXT NOT NULL,
+        contextual_appropriateness REAL NOT NULL,
+        confidence REAL NOT NULL,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_pragmatics_speaker ON pragmatic_analyses (speaker_id);
+      CREATE INDEX IF NOT EXISTS idx_pragmatics_timestamp ON pragmatic_analyses (timestamp DESC);
+
+      -- Turn Taking Events (Floor control, latency, interruptions, repairs)
+      CREATE TABLE IF NOT EXISTS turn_taking_events (
+        turn_id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL,
+        speaker_id TEXT NOT NULL,
+        floor_status TEXT NOT NULL,
+        pacing_latency_ms INTEGER NOT NULL,
+        interruption_detected INTEGER NOT NULL,
+        repair_strategy TEXT,
+        turn_count INTEGER NOT NULL,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_turn_events_session ON turn_taking_events (session_id);
+      CREATE INDEX IF NOT EXISTS idx_turn_events_time ON turn_taking_events (timestamp DESC);
+
+      -- Audience Adaptation Profiles (Register, politeness, identity preservation)
+      CREATE TABLE IF NOT EXISTS audience_adaptation_profiles (
+        target_audience_id TEXT PRIMARY KEY,
+        social_distance TEXT NOT NULL,
+        adapted_register TEXT NOT NULL,
+        expressive_identity_preserved INTEGER NOT NULL,
+        applied_conventions TEXT NOT NULL,
+        politeness_strategy TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('social_communication_milestone40', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

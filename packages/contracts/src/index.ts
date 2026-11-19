@@ -822,6 +822,12 @@ export * from './empathyAndPerspective.js';
 // ==========================================
 export * from './socialEmotions.js';
 
+// ==========================================
+// Social Communication & Pragmatics Contracts (Milestone 40)
+// ==========================================
+export * from './socialCommunication.js';
+
+
 
 
 
