@@ -26,6 +26,7 @@ import {
   VideoCandidate,
 } from './interfaces.js';
 import { WebAgencyService } from './webAgencyService.js';
+import { EmailProvider } from './emailProvider.js';
 
 export interface ClosedLoopAgencyDependencies {
   agencyRepo?: IAgencyRepository;
@@ -41,6 +42,7 @@ export interface ClosedLoopAgencyDependencies {
   webAgency?: WebAgencyService;
   deviceAgency?: any;
   telegramBridge?: any;
+  emailProvider?: EmailProvider;
   logger?: ILogger;
 }
 
@@ -69,6 +71,7 @@ export class ClosedLoopAgencyService {
   private webAgency?: WebAgencyService;
   private deviceAgency?: any;
   private telegramBridge?: any;
+  private emailProvider?: EmailProvider;
   private logger: ILogger;
 
   constructor(deps: ClosedLoopAgencyDependencies) {
@@ -85,6 +88,7 @@ export class ClosedLoopAgencyService {
     this.webAgency = deps.webAgency || new WebAgencyService(deps.browserProvider, deps.logger);
     this.deviceAgency = deps.deviceAgency;
     this.telegramBridge = deps.telegramBridge;
+    this.emailProvider = deps.emailProvider;
     this.logger = (deps.logger || rootLogger).child('ClosedLoopAgencyService');
   }
 
@@ -531,7 +535,7 @@ export class ClosedLoopAgencyService {
     previousObservations: AgencyObservation[] = [],
     isPreAuthorized = false,
   ): Promise<AgencyObservation> {
-    const params = (action.payload || (action as any).parameters || {}) as Record<string, any>;
+    const params = (action.payload || (action as any).parameters || (action as any).params || {}) as Record<string, any>;
     const timestamp = new Date().toISOString();
     const taskId = task?.id || action.taskId || 'task_default';
     const taskObjective = task?.objective || action.rationale || '';
@@ -1053,6 +1057,51 @@ export class ClosedLoopAgencyService {
         provenance: 'ClosedLoopAgency:message_dispatch_unconfigured',
         data: { sent: false, chatId, textSnippet: text.slice(0, 50) },
         error: 'TelegramBridge provider not configured for message dispatch',
+      };
+    }
+
+    // 11. External Communication: Email Dispatch
+    if (action.type === 'send_email') {
+      const to = String(params['to'] || params['recipient'] || '');
+      const subject = String(params['subject'] || '(No Subject)');
+      const body = String(params['body'] || params['content'] || params['text'] || '');
+      const approvalToken = params['approvalToken'] ? String(params['approvalToken']) : undefined;
+
+      if (this.emailProvider) {
+        const sendRes = await this.emailProvider.sendEmail(
+          { to, subject, body },
+          approvalToken,
+        );
+        return {
+          id: crypto.randomUUID(),
+          taskId,
+          actionId: action.id,
+          source: 'process_table',
+          timestamp,
+          success: sendRes.success,
+          confidence: sendRes.success ? 0.98 : 0.0,
+          provenance: 'EmailProvider.sendEmail',
+          data: {
+            to,
+            subject,
+            messageId: sendRes.messageId,
+            serverAck: sendRes.serverAck,
+          },
+          error: sendRes.error || null,
+        };
+      }
+
+      return {
+        id: crypto.randomUUID(),
+        taskId,
+        actionId: action.id,
+        source: 'process_table',
+        timestamp,
+        success: false,
+        confidence: 0.0,
+        provenance: 'ClosedLoopAgency:email_dispatch_unconfigured',
+        data: { to, subject },
+        error: 'EmailProvider not configured for email dispatch',
       };
     }
 

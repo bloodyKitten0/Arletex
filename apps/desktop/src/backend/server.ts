@@ -41,6 +41,7 @@ import {
   CognitiveControlBus,
   ContinuityManager,
   DEFAULT_ARLE_SYSTEM_PROMPT,
+  EmailProvider,
   IBrowserProvider,
   ILogger,
   IntentTaskManager,
@@ -197,6 +198,7 @@ export class ArletexBackendServer {
   public readonly memorySync: MemoryExperienceSync;
   public readonly intentTaskManager: IntentTaskManager;
   public readonly autobiographicalMemoryService: AutobiographicalMemoryService;
+  public readonly emailProvider: EmailProvider;
   public readonly closedLoopAgency: ClosedLoopAgencyService;
   public readonly cognitiveControlBus: CognitiveControlBus;
 
@@ -439,6 +441,10 @@ export class ArletexBackendServer {
     // Instantiate Autobiographical Memory Service and Closed-Loop Agency with real providers
     this.browserProvider = new PlaywrightBrowserProvider(true, logger);
     this.autobiographicalMemoryService = new AutobiographicalMemoryService(this.memoryRepo, logger);
+    this.emailProvider = new EmailProvider({
+      permissionController: this.permissionController,
+      logger,
+    });
     this.closedLoopAgency = new ClosedLoopAgencyService({
       agencyRepo: this.agencyRepo,
       taskManager: this.intentTaskManager,
@@ -453,6 +459,7 @@ export class ArletexBackendServer {
       computerProvider: this.safeComputerAgency,
       deviceAgency: defaultDeviceAgency,
       telegramBridge: defaultTelegramBridge,
+      emailProvider: this.emailProvider,
       logger,
     });
 
@@ -505,6 +512,10 @@ export class ArletexBackendServer {
 
   public getAutobiographicalMemoryService(): AutobiographicalMemoryService {
     return this.autobiographicalMemoryService;
+  }
+
+  public getEmailProvider(): EmailProvider {
+    return this.emailProvider;
   }
 
   public async submitAgencyObjective(

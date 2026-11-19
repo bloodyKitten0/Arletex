@@ -329,8 +329,8 @@ export class ActionPermissionController {
     if (actionType === 'code_modify' || actionType === 'protected_code_modification' || actionType === 'edit_file') {
       return String(payload.filePath || payload.path || 'code://');
     }
-    if (actionType.startsWith('telegram_') || actionType === 'send_message') {
-      return String(payload.chatId || payload.recipient || 'telegram://');
+    if (actionType.startsWith('telegram_') || actionType === 'send_message' || actionType === 'send_email') {
+      return String(payload.to || payload.chatId || payload.recipient || 'external://');
     }
     return String(payload.targetResource || payload.target || action.type);
   }
@@ -529,8 +529,10 @@ export class ActionPermissionController {
         category = 'code_modification';
       } else if (actionType.includes('credential') || actionType.includes('keyring')) {
         category = 'credential_access';
-      } else if (actionType.startsWith('telegram_') || actionType === 'send_message') {
+      } else if (actionType.startsWith('telegram_') || actionType === 'send_message' || actionType === 'send_email') {
         category = 'external_communication';
+        if (typeof payload.subject === 'string') payloadText += ' ' + payload.subject;
+        if (typeof payload.body === 'string') payloadText += ' ' + payload.body;
       }
 
       const actionToken = (action as any).approvalToken || payload.approvalToken;
@@ -915,8 +917,8 @@ export class ActionPermissionController {
     }
 
     // 5. External Communication validation
-    if (action.type.startsWith('telegram_') || action.type === 'send_message') {
-      const recipient = String(payload.chatId || payload.recipient || payload.target || '');
+    if (action.type.startsWith('telegram_') || action.type === 'send_message' || action.type === 'send_email') {
+      const recipient = String(payload.to || payload.chatId || payload.recipient || payload.target || '');
       if (!recipient) {
         return this.recordAuthorization({
           actionId: action.id,

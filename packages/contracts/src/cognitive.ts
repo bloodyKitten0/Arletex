@@ -26,6 +26,7 @@ export const CognitiveEventTypeSchema = z.enum([
   'conversation_outcome',
   'social_interaction',
   'failure_recovery',
+  'incoming_email',
 ]);
 
 export type CognitiveEventType = z.infer<typeof CognitiveEventTypeSchema>;

@@ -85,6 +85,7 @@ export * from './agency/desktopEnvironmentProvider.js';
 export * from './agency/processSupervisor.js';
 export * from './agency/emergencyShutdownService.js';
 export * from './agency/waylandEnvironmentService.js';
+export * from './agency/emailProvider.js';
 
 // Central Cognitive Control Subsystem
 export * from './cognitive/cognitiveControlBus.js';
