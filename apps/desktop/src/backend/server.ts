@@ -99,6 +99,7 @@ import {
   SqliteEmotionalRepertoireRepository,
   SqliteEmotionalRegulationRepository,
   SqliteNeedsHomeostasisRepository,
+  SqliteIntrinsicMotivationRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -234,6 +235,7 @@ export class ArletexBackendServer {
   public readonly emotionalRepertoireRepo: SqliteEmotionalRepertoireRepository;
   public readonly emotionalRegulationRepo: SqliteEmotionalRegulationRepository;
   public readonly homeostasisRepo: SqliteNeedsHomeostasisRepository;
+  public readonly intrinsicMotivationRepo: SqliteIntrinsicMotivationRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -294,6 +296,7 @@ export class ArletexBackendServer {
     this.emotionalRepertoireRepo = new SqliteEmotionalRepertoireRepository(db);
     this.emotionalRegulationRepo = new SqliteEmotionalRegulationRepository(db);
     this.homeostasisRepo = new SqliteNeedsHomeostasisRepository(db);
+    this.intrinsicMotivationRepo = new SqliteIntrinsicMotivationRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -324,6 +327,7 @@ export class ArletexBackendServer {
       this.emotionalRepertoireRepo,
       this.emotionalRegulationRepo,
       this.homeostasisRepo,
+      this.intrinsicMotivationRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -5240,6 +5244,87 @@ Rules:
         const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
         const resolutions = this.apeService.listHomeostaticResolutions(limit);
         this.sendJson(res, 200, resolutions);
+        return;
+      }
+
+      // ==========================================
+      // Intrinsic and Extrinsic Motivation Routes (Milestone 29)
+      // ==========================================
+      if (url.pathname === '/api/ape/motivation/activities' && method === 'GET') {
+        const orientation = url.searchParams.get('orientation') as any;
+        const status = url.searchParams.get('status') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const activities = this.apeService.listMotivatedActivities({ orientation, status, limit });
+        this.sendJson(res, 200, { success: true, activities });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/motivation/create-intrinsic' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const activity = this.apeService.createIntrinsicActivity(
+          body.title,
+          body.description,
+          body.competenceDriver,
+          body.relatednessDriver,
+        );
+        this.sendJson(res, 200, { success: true, activity });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/motivation/create-extrinsic' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const activity = this.apeService.createExtrinsicActivity(
+          body.title,
+          body.description,
+          body.source,
+        );
+        this.sendJson(res, 200, { success: true, activity });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/motivation/internalize' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const record = this.apeService.internalizeExternalGoal(
+          body.activityId,
+          body.internalizedRationale,
+        );
+        this.sendJson(res, 200, { success: true, record });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/motivation/sustain' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const activity = this.apeService.sustainMotivatedActivity(
+          body.activityId,
+          body.progressIncrement || 0.1,
+        );
+        this.sendJson(res, 200, { success: true, activity });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/motivation/reassess' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const result = this.apeService.reassessActivityMotivation(
+          body.activityId,
+          body.sterilityFactor || 0.0,
+        );
+        this.sendJson(res, 200, { success: true, result });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/motivation/internalizations' && method === 'GET') {
+        const activityId = url.searchParams.get('activityId') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const records = this.apeService.getGoalInternalizations(activityId, limit);
+        this.sendJson(res, 200, records);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/motivation/reassessments' && method === 'GET') {
+        const activityId = url.searchParams.get('activityId') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const reassessments = this.apeService.getMotivationReassessments(activityId, limit);
+        this.sendJson(res, 200, reassessments);
         return;
       }
 

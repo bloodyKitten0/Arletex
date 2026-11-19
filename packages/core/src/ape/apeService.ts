@@ -133,6 +133,7 @@ import { InMemoryEmotionalAppraisalRepository, ContextualAppraisalService } from
 import { InMemoryEmotionalRepertoireRepository, EmotionalRepertoireEngine } from './emotionalRepertoireEngine.js';
 import { InMemoryEmotionalRegulationRepository, EmotionalRegulationEngine } from './emotionalRegulationEngine.js';
 import { InMemoryHomeostasisRepository, HomeostasisEngine } from './homeostasisEngine.js';
+import { InMemoryIntrinsicMotivationRepository, IntrinsicMotivationEngine } from './intrinsicMotivationEngine.js';
 import {
   ISimulationRepository,
   IMetacognitionRepository,
@@ -146,6 +147,7 @@ import {
   IEmotionalRepertoireRepository,
   IEmotionalRegulationRepository,
   IHomeostasisRepository,
+  IIntrinsicMotivationRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
@@ -156,6 +158,8 @@ import {
   HomeostaticNeedCategory,
   ResourceAvailabilityMetrics,
   ResourceBottleneck,
+  MotivationOrientation,
+  MotivationSource,
 } from '@arletex/contracts';
 
 export class ApeService {
@@ -200,6 +204,7 @@ export class ApeService {
   public readonly emotionalRepertoireEngine: EmotionalRepertoireEngine;
   public readonly emotionalRegulationEngine: EmotionalRegulationEngine;
   public readonly homeostasisEngine: HomeostasisEngine;
+  public readonly intrinsicMotivationEngine: IntrinsicMotivationEngine;
 
   constructor(
     repo: IApeRepository,
@@ -231,6 +236,7 @@ export class ApeService {
     repertoireRepo?: IEmotionalRepertoireRepository,
     regulationRepo?: IEmotionalRegulationRepository,
     homeostasisRepo?: IHomeostasisRepository,
+    intrinsicMotivationRepo?: IIntrinsicMotivationRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -343,6 +349,9 @@ export class ApeService {
 
     const hRepo = homeostasisRepo || new InMemoryHomeostasisRepository();
     this.homeostasisEngine = new HomeostasisEngine(hRepo, logger);
+
+    const mRepo = intrinsicMotivationRepo || new InMemoryIntrinsicMotivationRepository();
+    this.intrinsicMotivationEngine = new IntrinsicMotivationEngine(mRepo, logger);
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -2098,6 +2107,60 @@ export class ApeService {
 
   public listHomeostaticResolutions(limit?: number) {
     return this.homeostasisEngine.listResolutions(limit);
+  }
+
+  // ==========================================
+  // Milestone 29 — Intrinsic and Extrinsic Motivation
+  // ==========================================
+
+  public createIntrinsicActivity(
+    title: string,
+    description: string,
+    competenceDriver?: string,
+    relatednessDriver?: string,
+  ) {
+    return this.intrinsicMotivationEngine.createIntrinsicActivity(
+      title,
+      description,
+      competenceDriver,
+      relatednessDriver,
+    );
+  }
+
+  public createExtrinsicActivity(
+    title: string,
+    description: string,
+    source?: MotivationSource,
+  ) {
+    return this.intrinsicMotivationEngine.createExtrinsicActivity(title, description, source);
+  }
+
+  public internalizeExternalGoal(activityId: string, internalizedRationale: string) {
+    return this.intrinsicMotivationEngine.internalizeExternalGoal(activityId, internalizedRationale);
+  }
+
+  public sustainMotivatedActivity(activityId: string, progressIncrement: number) {
+    return this.intrinsicMotivationEngine.sustainActivityEffort(activityId, progressIncrement);
+  }
+
+  public reassessActivityMotivation(activityId: string, sterilityFactor?: number) {
+    return this.intrinsicMotivationEngine.reassessMotivation(activityId, sterilityFactor);
+  }
+
+  public listMotivatedActivities(filter?: {
+    orientation?: MotivationOrientation;
+    status?: string;
+    limit?: number;
+  }) {
+    return this.intrinsicMotivationEngine.listActivities(filter);
+  }
+
+  public getGoalInternalizations(activityId?: string, limit?: number) {
+    return this.intrinsicMotivationEngine.getInternalizations(activityId, limit);
+  }
+
+  public getMotivationReassessments(activityId?: string, limit?: number) {
+    return this.intrinsicMotivationEngine.getReassessments(activityId, limit);
   }
 }
 

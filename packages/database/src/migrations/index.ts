@@ -1990,4 +1990,65 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('needs_and_homeostasis_milestone28', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 40,
+    name: '040_intrinsic_motivation_milestone29',
+    up: `
+      -- Motivated Activities
+      CREATE TABLE IF NOT EXISTS motivated_activities (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        orientation TEXT NOT NULL,
+        source TEXT NOT NULL,
+        personal_significance_score REAL NOT NULL,
+        autonomy_index REAL NOT NULL,
+        competence_driver TEXT,
+        relatedness_driver TEXT,
+        persistence_score REAL NOT NULL,
+        current_energy REAL NOT NULL,
+        is_externally_prompted INTEGER NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_motivated_activities_orientation ON motivated_activities (orientation);
+      CREATE INDEX IF NOT EXISTS idx_motivated_activities_status ON motivated_activities (status);
+      CREATE INDEX IF NOT EXISTS idx_motivated_activities_autonomy ON motivated_activities (autonomy_index DESC);
+
+      -- Goal Internalization Records
+      CREATE TABLE IF NOT EXISTS goal_internalizations (
+        id TEXT PRIMARY KEY,
+        activity_id TEXT NOT NULL,
+        external_origin_context TEXT NOT NULL,
+        internalized_rationale TEXT NOT NULL,
+        pre_autonomy_index REAL NOT NULL,
+        post_autonomy_index REAL NOT NULL,
+        timestamp TEXT NOT NULL,
+        FOREIGN KEY (activity_id) REFERENCES motivated_activities(id) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_internalization_activity ON goal_internalizations (activity_id);
+
+      -- Motivation Reassessments
+      CREATE TABLE IF NOT EXISTS motivation_reassessments (
+        id TEXT PRIMARY KEY,
+        activity_id TEXT NOT NULL,
+        previous_energy REAL NOT NULL,
+        assessed_energy REAL NOT NULL,
+        motivation_loss_detected INTEGER NOT NULL,
+        loss_reason TEXT,
+        recommendation TEXT NOT NULL,
+        reassessment_rationale TEXT NOT NULL,
+        evaluated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_motivation_reassessments_activity ON motivation_reassessments (activity_id);
+      CREATE INDEX IF NOT EXISTS idx_motivation_reassessments_time ON motivation_reassessments (evaluated_at DESC);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('intrinsic_motivation_milestone29', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

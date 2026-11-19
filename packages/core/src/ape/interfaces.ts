@@ -110,6 +110,10 @@ import {
   HomeostaticNeedCategory,
   DriveState,
   HomeostaticActionResolution,
+  MotivatedActivity,
+  MotivationOrientation,
+  InternalizationRecord,
+  MotivationReassessmentResult,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -549,6 +553,20 @@ export interface IHomeostasisRepository {
   getActiveDrives(limit?: number): DriveState[];
   recordResolution(resolution: HomeostaticActionResolution): void;
   listResolutions(limit?: number): HomeostaticActionResolution[];
+}
+
+export interface IIntrinsicMotivationRepository {
+  saveActivity(activity: MotivatedActivity): void;
+  getActivityById(id: string): MotivatedActivity | null;
+  listActivities(filter?: {
+    orientation?: MotivationOrientation;
+    status?: string;
+    limit?: number;
+  }): MotivatedActivity[];
+  saveInternalization(record: InternalizationRecord): void;
+  getInternalizations(activityId?: string, limit?: number): InternalizationRecord[];
+  saveReassessment(record: MotivationReassessmentResult): void;
+  getReassessments(activityId?: string, limit?: number): MotivationReassessmentResult[];
 }
 
 

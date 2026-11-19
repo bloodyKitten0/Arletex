@@ -767,5 +767,10 @@ export * from './emotionalRegulation.js';
 // ==========================================
 export * from './needsAndHomeostasis.js';
 
+// ==========================================
+// Intrinsic and Extrinsic Motivation Contracts (Milestone 29)
+// ==========================================
+export * from './intrinsicMotivation.js';
+
 
 
