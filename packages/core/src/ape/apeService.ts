@@ -136,6 +136,7 @@ import { InMemoryHomeostasisRepository, HomeostasisEngine } from './homeostasisE
 import { InMemoryIntrinsicMotivationRepository, IntrinsicMotivationEngine } from './intrinsicMotivationEngine.js';
 import { InMemoryCuriosityExplorationRepository, CuriosityExplorationEngine } from './curiosityExplorationEngine.js';
 import { InMemoryRewardLearningRepository, RewardLearningEngine, EvaluateOutcomeParams } from './rewardLearningEngine.js';
+import { InMemoryHabitsAndRoutinesRepository, HabitsAndRoutinesEngine, FormHabitParams, ModifyHabitParams } from './habitsAndRoutinesEngine.js';
 import {
   ISimulationRepository,
   IMetacognitionRepository,
@@ -152,6 +153,7 @@ import {
   IIntrinsicMotivationRepository,
   ICuriosityExplorationRepository,
   IRewardLearningRepository,
+  IHabitsAndRoutinesRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
@@ -213,6 +215,7 @@ export class ApeService {
   public readonly intrinsicMotivationEngine: IntrinsicMotivationEngine;
   public readonly curiosityEngine: CuriosityExplorationEngine;
   public readonly rewardLearningEngine: RewardLearningEngine;
+  public readonly habitsEngine: HabitsAndRoutinesEngine;
 
   constructor(
     repo: IApeRepository,
@@ -247,6 +250,7 @@ export class ApeService {
     intrinsicMotivationRepo?: IIntrinsicMotivationRepository,
     curiosityRepo?: ICuriosityExplorationRepository,
     rewardLearningRepo?: IRewardLearningRepository,
+    habitsRepo?: IHabitsAndRoutinesRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -368,6 +372,9 @@ export class ApeService {
 
     const rLearnRepo = rewardLearningRepo || new InMemoryRewardLearningRepository();
     this.rewardLearningEngine = new RewardLearningEngine(rLearnRepo, logger);
+
+    const hbtRepo = habitsRepo || new InMemoryHabitsAndRoutinesRepository();
+    this.habitsEngine = new HabitsAndRoutinesEngine(hbtRepo, logger);
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -2280,6 +2287,42 @@ export class ApeService {
 
   public listDiminishingReturnAlerts(strategyId?: string, limit?: number) {
     return this.rewardLearningEngine.listDiminishingAlerts(strategyId, limit);
+  }
+
+  public formHabit(params: FormHabitParams) {
+    return this.habitsEngine.formHabit(params);
+  }
+
+  public triggerAndExecuteHabit(
+    habitId: string,
+    triggeredBy: string,
+    overrideInterruptionReason?: string,
+  ) {
+    return this.habitsEngine.triggerAndExecuteHabit(habitId, triggeredBy, overrideInterruptionReason);
+  }
+
+  public evaluateAndModifyHabit(habitId: string, updates: ModifyHabitParams) {
+    return this.habitsEngine.evaluateAndModifyHabit(habitId, updates);
+  }
+
+  public assessNoveltyRoutineBalance(routineActionsCount: number, novelExploratoryCount: number) {
+    return this.habitsEngine.assessNoveltyRoutineBalance(routineActionsCount, novelExploratoryCount);
+  }
+
+  public getHabit(habitId: string) {
+    return this.habitsEngine.getHabit(habitId);
+  }
+
+  public listHabits(domain?: string, activeOnly?: boolean, limit?: number) {
+    return this.habitsEngine.listHabits(domain, activeOnly, limit);
+  }
+
+  public listHabitExecutionLogs(habitId?: string, limit?: number) {
+    return this.habitsEngine.listExecutionLogs(habitId, limit);
+  }
+
+  public getLatestNoveltyRoutineBalance() {
+    return this.habitsEngine.getLatestBalance();
   }
 }
 

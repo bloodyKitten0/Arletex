@@ -39,6 +39,8 @@ export * from './repositories/needsHomeostasisRepository.js';
 export * from './repositories/intrinsicMotivationRepository.js';
 export * from './repositories/curiosityExplorationRepository.js';
 export * from './repositories/rewardLearningRepository.js';
+export * from './repositories/habitsAndRoutinesRepository.js';
+
 
 
 

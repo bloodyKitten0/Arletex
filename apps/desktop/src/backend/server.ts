@@ -102,6 +102,7 @@ import {
   SqliteIntrinsicMotivationRepository,
   SqliteCuriosityExplorationRepository,
   SqliteRewardLearningRepository,
+  SqliteHabitsAndRoutinesRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -240,6 +241,7 @@ export class ArletexBackendServer {
   public readonly intrinsicMotivationRepo: SqliteIntrinsicMotivationRepository;
   public readonly curiosityRepo: SqliteCuriosityExplorationRepository;
   public readonly rewardLearningRepo: SqliteRewardLearningRepository;
+  public readonly habitsRepo: SqliteHabitsAndRoutinesRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -303,6 +305,7 @@ export class ArletexBackendServer {
     this.intrinsicMotivationRepo = new SqliteIntrinsicMotivationRepository(db);
     this.curiosityRepo = new SqliteCuriosityExplorationRepository(db);
     this.rewardLearningRepo = new SqliteRewardLearningRepository(db);
+    this.habitsRepo = new SqliteHabitsAndRoutinesRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -336,6 +339,7 @@ export class ArletexBackendServer {
       this.intrinsicMotivationRepo,
       this.curiosityRepo,
       this.rewardLearningRepo,
+      this.habitsRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -5527,6 +5531,92 @@ Rules:
         const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
         const alerts = this.apeService.listDiminishingReturnAlerts(strategyId, limit);
         this.sendJson(res, 200, { success: true, alerts });
+        return;
+      }
+
+      // ==========================================
+      // Habits and Routines Routes (Milestone 32)
+      // ==========================================
+      if (url.pathname === '/api/ape/habits/list' && method === 'GET') {
+        const domain = url.searchParams.get('domain') || undefined;
+        const activeOnly = url.searchParams.get('activeOnly') === 'true';
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const habits = this.apeService.listHabits(domain, activeOnly, limit);
+        this.sendJson(res, 200, { success: true, habits });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/habits/get' && method === 'GET') {
+        const habitId = url.searchParams.get('habitId');
+        if (!habitId) {
+          this.sendJson(res, 400, { error: 'habitId query param required' });
+          return;
+        }
+        const habit = this.apeService.getHabit(habitId);
+        this.sendJson(res, 200, { success: true, habit });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/habits/form' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const habit = this.apeService.formHabit({
+          name: body.name,
+          domain: body.domain,
+          description: body.description,
+          triggers: body.triggers || [],
+          routineSteps: body.routineSteps || [],
+          initialUtility: body.initialUtility,
+        });
+        this.sendJson(res, 200, { success: true, habit });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/habits/execute' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const log = this.apeService.triggerAndExecuteHabit(
+          body.habitId,
+          body.triggeredBy,
+          body.overrideInterruptionReason,
+        );
+        this.sendJson(res, 200, { success: true, log });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/habits/modify' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const habit = this.apeService.evaluateAndModifyHabit(body.habitId, {
+          name: body.name,
+          description: body.description,
+          newRoutineSteps: body.newRoutineSteps,
+          newTriggers: body.newTriggers,
+          newUtility: body.newUtility,
+          isActive: body.isActive,
+        });
+        this.sendJson(res, 200, { success: true, habit });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/habits/logs' && method === 'GET') {
+        const habitId = url.searchParams.get('habitId') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const logs = this.apeService.listHabitExecutionLogs(habitId, limit);
+        this.sendJson(res, 200, { success: true, logs });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/habits/balance' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const balance = this.apeService.assessNoveltyRoutineBalance(
+          body.routineActionsCount ?? 0,
+          body.novelExploratoryCount ?? 0,
+        );
+        this.sendJson(res, 200, { success: true, balance });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/habits/balance' && method === 'GET') {
+        const balance = this.apeService.getLatestNoveltyRoutineBalance();
+        this.sendJson(res, 200, { success: true, balance });
         return;
       }
 

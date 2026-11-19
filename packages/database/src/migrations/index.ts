@@ -2213,4 +2213,59 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('reward_learning_milestone31', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 43,
+    name: '043_habits_and_routines_milestone32',
+    up: `
+      -- Habit Records
+      CREATE TABLE IF NOT EXISTS habit_records (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        domain TEXT NOT NULL,
+        description TEXT NOT NULL,
+        triggers_json TEXT NOT NULL DEFAULT '[]',
+        routine_steps_json TEXT NOT NULL DEFAULT '[]',
+        repetition_count INTEGER NOT NULL DEFAULT 0,
+        automaticity_score REAL NOT NULL DEFAULT 0.1,
+        utility_score REAL NOT NULL DEFAULT 0.8,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        is_modified INTEGER NOT NULL DEFAULT 0,
+        last_executed_at TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_habits_domain ON habit_records (domain);
+      CREATE INDEX IF NOT EXISTS idx_habits_active ON habit_records (is_active);
+
+      -- Habit Execution Logs
+      CREATE TABLE IF NOT EXISTS habit_execution_logs (
+        id TEXT PRIMARY KEY,
+        habit_id TEXT NOT NULL,
+        triggered_by TEXT NOT NULL,
+        completed_steps INTEGER NOT NULL,
+        was_interrupted INTEGER NOT NULL DEFAULT 0,
+        interruption_reason TEXT,
+        execution_outcome TEXT NOT NULL,
+        outcome_utility REAL NOT NULL,
+        executed_at TEXT NOT NULL,
+        FOREIGN KEY (habit_id) REFERENCES habit_records(id) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_habit_logs_habit ON habit_execution_logs (habit_id);
+      CREATE INDEX IF NOT EXISTS idx_habit_logs_time ON habit_execution_logs (executed_at DESC);
+
+      -- Novelty Versus Routine Balance
+      CREATE TABLE IF NOT EXISTS novelty_routine_balance (
+        id TEXT PRIMARY KEY,
+        routine_ratio REAL NOT NULL,
+        novelty_ratio REAL NOT NULL,
+        balance_status TEXT NOT NULL,
+        assessed_at TEXT NOT NULL
+      );
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('habits_and_routines_milestone32', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

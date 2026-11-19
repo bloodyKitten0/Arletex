@@ -123,6 +123,9 @@ import {
   OutcomeEvaluation,
   StrategyPerformanceRecord,
   DiminishingReturnAlert,
+  HabitRecord,
+  HabitExecutionLog,
+  NoveltyRoutineBalance,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -605,6 +608,17 @@ export interface IRewardLearningRepository {
   saveDiminishingAlert(alert: DiminishingReturnAlert): void;
   listDiminishingAlerts(strategyId?: string, limit?: number): DiminishingReturnAlert[];
 }
+
+export interface IHabitsAndRoutinesRepository {
+  saveHabit(habit: HabitRecord): void;
+  getHabitById(id: string): HabitRecord | null;
+  listHabits(domain?: string, activeOnly?: boolean, limit?: number): HabitRecord[];
+  saveExecutionLog(log: HabitExecutionLog): void;
+  listExecutionLogs(habitId?: string, limit?: number): HabitExecutionLog[];
+  saveBalance(balance: NoveltyRoutineBalance): void;
+  getLatestBalance(): NoveltyRoutineBalance | null;
+}
+
 
 
 

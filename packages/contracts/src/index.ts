@@ -782,6 +782,12 @@ export * from './curiosityAndExploration.js';
 // ==========================================
 export * from './rewardLearning.js';
 
+// ==========================================
+// Habits and Routines Contracts (Milestone 32)
+// ==========================================
+export * from './habitsAndRoutines.js';
+
+
 
 
 
