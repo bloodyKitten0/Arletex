@@ -477,7 +477,13 @@ export type VideoInspectResult = z.infer<typeof VideoInspectResultSchema>;
 // ==========================================
 // Inference Schemas & Types
 // ==========================================
-export const InferenceProviderTypeSchema = z.enum(['colibri', 'llama.cpp']);
+export const InferenceProviderTypeSchema = z.enum([
+  'colibri',
+  'llama.cpp',
+  'ollama',
+  'openai_compatible',
+  'vllm',
+]);
 export type InferenceProviderType = z.infer<typeof InferenceProviderTypeSchema>;
 
 export const SpecialistCodingConfigSchema = z.object({
