@@ -88,9 +88,9 @@ export class PlanningInterface {
       // 2. Arle Dedicated Browser Profile (Chrome Profile 7 - arletex.email@gmail.com)
       let targetUrl = 'https://mail.google.com';
       if (isSpotify) {
-        if (/sign\s*up|signup|register|create\s+(?:an?\s+)?account|make\s+(?:an?\s+)?account/i.test(lower)) {
+        if (/(?:sign\s*up|signup|register)\b/i.test(lower) && !/(?:choose|song|play|track|music|listen)/i.test(lower)) {
           targetUrl = 'https://www.spotify.com/signup';
-        } else if (/login|log\s*in|sign\s*in|signin/i.test(lower)) {
+        } else if (/(?:login|log\s*in|sign\s*in|signin)\b/i.test(lower) && !/(?:choose|song|play|track|music|listen)/i.test(lower)) {
           targetUrl = 'https://accounts.spotify.com/login';
         } else {
           targetUrl = 'https://open.spotify.com';

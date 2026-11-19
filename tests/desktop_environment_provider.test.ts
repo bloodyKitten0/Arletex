@@ -1,3 +1,6 @@
+process.env['NODE_ENV'] = 'test';
+process.env['VITEST'] = 'true';
+
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -334,9 +337,9 @@ NoDisplay=true
 
     const plan = await planner.formulatePlan(taskCompound);
     expect(plan.steps.length).toBe(2);
-    // Step 0: Open Spotify signup in Chrome Profile 7
+    // Step 0: Open Spotify Web player in Chrome Profile 7
     expect(plan.steps[0]!.action.type).toBe('desktop_open_browser');
-    expect(plan.steps[0]!.action.payload.url).toBe('https://www.spotify.com/signup');
+    expect(plan.steps[0]!.action.payload.url).toBe('https://open.spotify.com');
     expect(plan.steps[0]!.action.payload.profile).toBe('Profile 7');
     expect(plan.steps[0]!.action.payload.email).toBe('arletex.email@gmail.com');
     // Step 1: Ready to choose song / media control

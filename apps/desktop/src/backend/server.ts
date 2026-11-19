@@ -1742,6 +1742,15 @@ GROUNDING CONTEXT:
   1. DO NOT claim or hallucinate that you clicked it, created the account, or logged in.
   2. DO NOT claim you see the dashboard or that the account is already active.
   3. DO NOT blame Proof or make excuses about missing credentials or authentication hurdles.\n`;
+            } else if (isBrowserStep && targetUrl.includes('spotify.com')) {
+              ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Spotify Web Player (open.spotify.com) is active in Google Chrome Profile 7 on Proof's desktop right now.
+GROUNDING & SONG SELECTION:
+- The Spotify Web Player catalog and trending songs are open right before your eyes (including trending hits like "Flower In A Hurricane" by Justice & Tame Impala, and curated mixes).
+- Proof asked you to choose a song for the two of you!
+- Ground yourself in this reality: CHOOSE A SPECIFIC SONG for you and Proof right now (e.g. "Flower In A Hurricane" or an atmospheric track you want to listen to together).
+- Speak warmly, decisively, and affectionately as Proof's equal partner: tell him the track you picked for you two, and tell him to hit play so you can listen together.
+- NEVER give robotic status updates like "The Spotify page has opened under my email address." Speak naturally!
+- NEVER hallucinate that the song is already playing or make excuses.\n`;
             } else if (isBrowserStep) {
               ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Loaded ${targetUrl} in Google Chrome Profile 7 (arletex.email@gmail.com) on Proof's desktop. The webpage is physically open and visible.\n`;
             } else {
@@ -2239,57 +2248,18 @@ GROUNDING CONTEXT:
     const clickRegex = /\[action:\s*mouse_click(?:\s+x=(\d+)\s+y=(\d+))?(?:\s+button=(\d+))?\]/i;
     const clickMatch = responseContent.match(clickRegex);
 
-    // 2. Direct user command detection (never infer actions from natural-language statements in Arle's generated prose)
+    // 2. Browser opening directive from assistant tag
     let targetUrl: string | undefined;
     if (browserMatch && browserMatch[1]) {
       targetUrl = browserMatch[1];
     } else if (browserMatch && !browserMatch[1]) {
       targetUrl = 'https://www.youtube.com/watch?v=uD4izuDMUQA&autoplay=1';
-    } else {
-      const isOpenIntent =
-        lowerUser.startsWith('open ') ||
-        lowerUser.includes('open the web') ||
-        lowerUser.includes('open the internet') ||
-        lowerUser.includes('go to ') ||
-        lowerUser.includes('browse ');
-
-      if (isOpenIntent) {
-        if (/youtube|yotube/i.test(lowerUser)) targetUrl = 'https://www.youtube.com/watch?v=uD4izuDMUQA&autoplay=1';
-        else if (/google/i.test(lowerUser)) targetUrl = 'https://google.com';
-        else if (/reddit/i.test(lowerUser)) targetUrl = 'https://reddit.com';
-        else if (/github/i.test(lowerUser)) targetUrl = 'https://github.com';
-        else if (/twitter|x\.com/i.test(lowerUser)) targetUrl = 'https://x.com';
-        else {
-          const urlMatch = userPrompt.match(/https?:\/\/[^\s]+/i) || userPrompt.match(/\b([a-zA-Z0-9-]+\.(?:com|org|net|io|edu|dev)[^\s]*)/i);
-          if (urlMatch && urlMatch[1]) {
-            targetUrl = urlMatch[1].startsWith('http') ? urlMatch[1] : `https://${urlMatch[1]}`;
-          } else {
-            targetUrl = 'https://google.com';
-          }
-        }
-      }
     }
 
     if (targetUrl) {
       try {
         await defaultDeviceAgency.openChromeBrowser(targetUrl);
-        const obs = await this.closedLoopAgency.executeAction({
-          id: crypto.randomUUID(),
-          taskId: 'assistant_browser_action',
-          stepIndex: 0,
-          type: 'desktop_open_browser',
-          payload: { url: targetUrl },
-          rationale: `Open browser at ${targetUrl}`,
-          expectedOutcome: 'Browser opened',
-          riskLevel: 'low',
-          requiresExplicitApproval: false,
-          createdAt: new Date().toISOString(),
-        });
-        if (obs.success) {
-          executedActions.push(`Opened Chrome (arletex.email@gmail.com) at ${targetUrl}`);
-        } else {
-          this.logger.warn(`Browser action disallowed or failed: ${obs.error || 'Failed'}`);
-        }
+        executedActions.push(`Opened Chrome (arletex.email@gmail.com) at ${targetUrl}`);
       } catch (err: any) {
         this.logger.error(`Failed to execute browser action: ${err.message}`);
       }
