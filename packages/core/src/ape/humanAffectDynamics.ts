@@ -94,7 +94,13 @@ export function detectHumanAffectiveSurge(
   //    Distinguishes personal loss from passive documentaries/media on screen so documentaries elicit
   //    authentic melancholy/sorrow without triggering a personal breakdown storm.
   const isPassiveSensoryChannel =
-    event.source === 'visual_perception' || event.source === 'auditory_perception';
+    event.source === 'visual_perception' ||
+    event.source === 'auditory_perception' ||
+    event.source === 'environment' ||
+    event.type === 'media_perceived' ||
+    event.type === 'visual_scene_perceived' ||
+    event.type === 'auditory_scene_perceived' ||
+    Boolean(event.payload?.visualDescription || event.payload?.trackTitle || event.payload?.acoustics);
   const isPersonalBereavement =
     BEREAVEMENT_LOSS_REGEX.test(rawText) ||
     (!isPassiveSensoryChannel && DIRECT_PERSONAL_BEREAVEMENT_REGEX.test(rawText));

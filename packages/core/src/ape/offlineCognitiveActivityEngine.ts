@@ -14,6 +14,8 @@ import crypto from 'node:crypto';
 export interface OfflineCognitiveActivityEngineOptions {
   repository: IOfflineCognitiveActivityRepository;
   initialPolicy?: Partial<OfflineSchedulerPolicy>;
+  memoryRepository?: { list: (filter?: any) => any[] };
+  goalRepository?: { listActiveGoals?: () => any[]; listGoals?: () => any[] };
 }
 
 export class InMemoryOfflineCognitiveActivityRepository implements IOfflineCognitiveActivityRepository {
@@ -103,10 +105,14 @@ export class InMemoryOfflineCognitiveActivityRepository implements IOfflineCogni
 
 export class OfflineCognitiveActivityEngine {
   private readonly repository: IOfflineCognitiveActivityRepository;
+  private readonly memoryRepository?: { list: (filter?: any) => any[] };
+  private readonly goalRepository?: { listActiveGoals?: () => any[]; listGoals?: () => any[] };
   private policy: OfflineSchedulerPolicy;
 
   constructor(options: OfflineCognitiveActivityEngineOptions) {
     this.repository = options.repository;
+    this.memoryRepository = options.memoryRepository;
+    this.goalRepository = options.goalRepository;
     this.policy = {
       maxConcurrentTasks: options.initialPolicy?.maxConcurrentTasks ?? 2,
       allowBackgroundResearch: options.initialPolicy?.allowBackgroundResearch ?? true,
@@ -174,7 +180,12 @@ export class OfflineCognitiveActivityEngine {
    */
   public executeActivity(
     id: string,
-    executionResult?: { insights: string[]; artifacts?: string[] },
+    executionResult?: {
+      insights?: string[];
+      artifacts?: string[];
+      progress?: number;
+      status?: 'in_progress' | 'completed' | 'paused' | 'aborted';
+    },
   ): OfflineActivityRecord {
     const activity = this.repository.getActivity(id);
     if (!activity) {
@@ -183,13 +194,23 @@ export class OfflineCognitiveActivityEngine {
 
     const now = new Date().toISOString();
     activity.startedAt = activity.startedAt ?? now;
-    activity.status = 'completed';
-    activity.progress = 1.0;
-    activity.completedAt = now;
+
+    const progress = executionResult?.progress !== undefined ? executionResult.progress : 1.0;
+    activity.progress = Math.min(1.0, Math.max(0, progress));
+
+    if (executionResult?.status) {
+      activity.status = executionResult.status;
+    } else {
+      activity.status = activity.progress >= 1.0 ? 'completed' : 'in_progress';
+    }
+
+    if (activity.status === 'completed') {
+      activity.completedAt = now;
+    }
 
     if (executionResult?.insights && executionResult.insights.length > 0) {
       activity.insights = [...activity.insights, ...executionResult.insights];
-    } else {
+    } else if (activity.status === 'completed') {
       activity.insights.push(`Completed structured offline processing for: ${activity.title}`);
     }
 
@@ -203,16 +224,55 @@ export class OfflineCognitiveActivityEngine {
 
   /**
    * Performs memory consolidation, belief reassessment, and intention maintenance.
+   * Leverages real memory and goal repositories when available to calculate genuine deltas.
    */
   public runConsolidationCycle(options?: {
     memoriesExamined?: number;
     beliefsReassessed?: number;
     intentionsPreserved?: number;
   }): ConsolidationRun {
-    const examined = options?.memoriesExamined ?? 12;
-    const consolidated = Math.max(1, Math.floor(examined * 0.75));
-    const beliefs = options?.beliefsReassessed ?? 3;
-    const intentions = options?.intentionsPreserved ?? 5;
+    let examined = options?.memoriesExamined;
+    let consolidated: number | undefined;
+    let beliefs = options?.beliefsReassessed;
+    let intentions = options?.intentionsPreserved;
+
+    if (this.memoryRepository && typeof this.memoryRepository.list === 'function') {
+      try {
+        const mems = this.memoryRepository.list({ limit: 50 }) || [];
+        if (examined === undefined) {
+          examined = mems.length;
+        }
+        if (mems.length > 0) {
+          const consolidatedMems = mems.filter(
+            (m: any) => (m.importance ?? 0.5) >= 0.4 || (m.confidence ?? 0.5) >= 0.6,
+          );
+          consolidated = consolidatedMems.length;
+        }
+      } catch {
+        // Fallback
+      }
+    }
+
+    if (this.goalRepository) {
+      try {
+        const activeGoals =
+          typeof this.goalRepository.listActiveGoals === 'function'
+            ? this.goalRepository.listActiveGoals()
+            : typeof this.goalRepository.listGoals === 'function'
+              ? this.goalRepository.listGoals()
+              : [];
+        if (intentions === undefined && activeGoals) {
+          intentions = activeGoals.length;
+        }
+      } catch {
+        // Fallback
+      }
+    }
+
+    examined = examined ?? 12;
+    consolidated = consolidated ?? Math.max(1, Math.floor(examined * 0.75));
+    beliefs = beliefs ?? 3;
+    intentions = intentions ?? 5;
 
     const run: ConsolidationRun = {
       id: crypto.randomUUID(),

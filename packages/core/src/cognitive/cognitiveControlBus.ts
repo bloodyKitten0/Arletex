@@ -2,7 +2,6 @@ import crypto from 'node:crypto';
 import {
   ActionProposal,
   ActionType,
-  AgencyObservation,
   ApeAppraisal,
   ApeEvent,
   ApeEventCategory,
@@ -271,24 +270,24 @@ export class CognitiveControlBus {
         }
       }
 
-      // Stage 12: Outcome Verification
+      // Stage 12: Outcome Verification (Empirical Evidence Verification - No Synthetic Observations)
       stagesCompleted.push('outcome_verification');
-      if (this.verificationEngine && proposal && !verifiedFact) {
-        const dummyObs: AgencyObservation = {
-          id: crypto.randomUUID(),
-          taskId: proposal.taskId,
-          actionId: proposal.id,
-          source: 'browser_dom',
-          timestamp: new Date().toISOString(),
-          success: actionOutcomeSuccess,
-          confidence: 0.95,
-          provenance: 'CognitiveControlBus:action_execution',
-          data: { details: decision.chosenAlternativeReason },
-          error: actionOutcomeSuccess ? null : permissionReason,
-        };
-        const verification = this.verificationEngine.verify(proposal, dummyObs);
-        actionOutcomeSuccess = verification.verified;
-        verifiedFact = verification.observedOutcome;
+      if (proposal) {
+        if (!isAuthorized) {
+          actionOutcomeSuccess = false;
+          verifiedFact = undefined;
+        } else if (!verifiedFact) {
+          // An external agency or research action proposal requires empirical verification
+          // If no empirical observation was produced, verification fails closed
+          actionOutcomeSuccess = false;
+          verifiedFact = undefined;
+          this.logger.warn(
+            `Action proposal ${proposal.id} for decision ${decision.id} completed without empirical observation; verification failed closed.`,
+          );
+        }
+      } else if (isAuthorized && !verifiedFact) {
+        // Internal cognitive or expressive action (speak, reflect, rest)
+        verifiedFact = decision.chosenAlternativeReason;
       }
 
       // Stage 13: Memory Integration (Truthful Epistemic Provenance)
@@ -654,6 +653,10 @@ export class CognitiveControlBus {
 
   public getDecisionHistory(limit = 20): CognitiveDecision[] {
     return this.decisionHistory.slice(0, limit);
+  }
+
+  public getVerificationEngine(): VerificationEngine | undefined {
+    return this.verificationEngine;
   }
 
   public getDeduplicationStats(): { totalProcessed: number; deduplicatedCount: number } {

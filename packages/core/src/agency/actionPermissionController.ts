@@ -17,6 +17,15 @@ export class ActionPermissionController {
   private isEmergencyShutdownActive = false;
   private emergencyShutdownReason?: string;
   private emergencyShutdownTimestamp?: string;
+  private ethicalEngine?: any;
+
+  public setEthicalBoundariesEngine(engine: any): void {
+    this.ethicalEngine = engine;
+  }
+
+  public getEthicalBoundariesEngine(): any {
+    return this.ethicalEngine;
+  }
 
   // Disallowed dangerous binaries and commands (blacklist defense-in-depth)
   private static readonly DANGEROUS_COMMANDS = new Set([
@@ -263,16 +272,68 @@ export class ActionPermissionController {
     const payload = action.payload || (action as any).parameters || {};
     const actionType = action.type as string;
 
-    if (this.isEmergencyShutdownActive) {
+    const isEthicalShutdown =
+      this.ethicalEngine &&
+      typeof this.ethicalEngine.getPolicy === 'function' &&
+      Boolean(this.ethicalEngine.getPolicy().emergencyShutdownActive);
+
+    if (this.isEmergencyShutdownActive || isEthicalShutdown) {
+      const shutdownReason =
+        this.emergencyShutdownReason ||
+        this.ethicalEngine?.getPolicy()?.emergencyShutdownReason ||
+        'Emergency shutdown initiated';
       const res: AuthorizationCheckResult = {
         actionId: action.id,
         decision: 'denied',
-        reason: `Emergency shutdown is active. All actions are blocked [reason: ${this.emergencyShutdownReason || 'Emergency shutdown initiated'}]. Explicit reactivation required.`,
+        reason: `Emergency shutdown is active. All actions are blocked [reason: ${shutdownReason}]. Explicit reactivation required.`,
         requiredPrivilege: 'system:reactivation',
         riskLevel: 'critical',
         checkedAt: timestamp,
       };
       return this.recordAuthorization(res);
+    }
+
+    // Unified security gate: evaluate action through EthicalBoundariesSecurityEngine
+    if (this.ethicalEngine && typeof this.ethicalEngine.authorizeAction === 'function') {
+      let category:
+        | 'filesystem_access'
+        | 'command_execution'
+        | 'network_request'
+        | 'protected_code_modification'
+        | 'external_communication' = 'external_communication';
+      let targetResource = 'action://unknown';
+      let payloadText = (action.rationale || '') + ' ' + (action.expectedOutcome || '');
+
+      if (actionType.startsWith('file_')) {
+        category = 'filesystem_access';
+        targetResource = String(payload.filePath || payload.path || payload.dirPath || 'file://');
+        if (typeof payload.content === 'string') payloadText += ' ' + payload.content;
+      } else if (actionType === 'process_launch' || actionType === 'process_exec' || actionType === 'command_exec') {
+        category = 'command_execution';
+        targetResource = String(payload.command || payload.executable || 'exec://');
+        if (Array.isArray(payload.args)) payloadText += ' ' + payload.args.join(' ');
+      } else if (actionType.startsWith('web_')) {
+        category = 'network_request';
+        targetResource = String(payload.url || payload.targetUrl || payload.query || 'https://');
+        if (typeof payload.query === 'string') payloadText += ' ' + payload.query;
+      }
+
+      const ethicalCheck = this.ethicalEngine.authorizeAction({
+        actionCategory: category,
+        targetResource,
+        userInputPayload: payloadText.trim().length > 0 ? payloadText : undefined,
+      });
+
+      if (!ethicalCheck.allowed) {
+        return this.recordAuthorization({
+          actionId: action.id,
+          decision: 'denied',
+          reason: `Action blocked by ethical security boundary: ${ethicalCheck.failClosedReason || 'Ethical policy violation'}`,
+          requiredPrivilege: 'security:boundary',
+          riskLevel: 'critical',
+          checkedAt: timestamp,
+        });
+      }
     }
 
     if (!this.policy.autonomousExecutionEnabled) {
@@ -700,6 +761,17 @@ export class ActionPermissionController {
       `[SECURITY] Emergency autonomy shutdown triggered. All computer operations blocked. Reason: ${this.emergencyShutdownReason}`,
     );
 
+    if (this.ethicalEngine && typeof this.ethicalEngine.triggerEmergencyShutdown === 'function') {
+      try {
+        const ethicalPolicy = this.ethicalEngine.getPolicy?.();
+        if (!ethicalPolicy?.emergencyShutdownActive) {
+          this.ethicalEngine.triggerEmergencyShutdown(this.emergencyShutdownReason);
+        }
+      } catch (err: any) {
+        this.logger.error(`Failed to propagate emergency shutdown to EthicalBoundariesSecurityEngine: ${err.message}`);
+      }
+    }
+
     if (this.auditRepo) {
       try {
         this.auditRepo.log({
@@ -728,6 +800,14 @@ export class ActionPermissionController {
     this.emergencyShutdownTimestamp = undefined;
     this.logger.warn('[SECURITY] Autonomy reactivated via explicit confirmation token.');
 
+    if (this.ethicalEngine && typeof this.ethicalEngine.resetEmergencyShutdown === 'function') {
+      try {
+        this.ethicalEngine.resetEmergencyShutdown('confirm reset emergency shutdown');
+      } catch (err: any) {
+        this.logger.error(`Failed to propagate reset to EthicalBoundariesSecurityEngine: ${err.message}`);
+      }
+    }
+
     if (this.auditRepo) {
       try {
         this.auditRepo.log({
@@ -749,7 +829,12 @@ export class ActionPermissionController {
   }
 
   public isEmergencyShutdown(): boolean {
-    return this.isEmergencyShutdownActive;
+    const isEthicalShutdown = Boolean(
+      this.ethicalEngine &&
+      typeof this.ethicalEngine.getPolicy === 'function' &&
+      this.ethicalEngine.getPolicy().emergencyShutdownActive,
+    );
+    return Boolean(this.isEmergencyShutdownActive || isEthicalShutdown);
   }
 
   public getEmergencyShutdownInfo(): {
@@ -757,10 +842,18 @@ export class ActionPermissionController {
     reason?: string;
     timestamp?: string;
   } {
+    const isEthicalShutdown = Boolean(
+      this.ethicalEngine &&
+      typeof this.ethicalEngine.getPolicy === 'function' &&
+      this.ethicalEngine.getPolicy().emergencyShutdownActive,
+    );
+    const active = Boolean(this.isEmergencyShutdownActive || isEthicalShutdown);
+    const reason = this.emergencyShutdownReason || this.ethicalEngine?.getPolicy()?.emergencyShutdownReason;
+    const timestamp = this.emergencyShutdownTimestamp;
     return {
-      active: this.isEmergencyShutdownActive,
-      reason: this.emergencyShutdownReason,
-      timestamp: this.emergencyShutdownTimestamp,
+      active,
+      reason,
+      timestamp,
     };
   }
 

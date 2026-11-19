@@ -36,6 +36,9 @@ import {
 import {
   ActionPermissionController,
   ApeService,
+  AutobiographicalMemoryService,
+  ClosedLoopAgencyService,
+  CognitiveControlBus,
   ContinuityManager,
   DEFAULT_ARLE_SYSTEM_PROMPT,
   ILogger,
@@ -189,6 +192,9 @@ export class ArletexBackendServer {
   public readonly planningInterface: PlanningInterface;
   public readonly memorySync: MemoryExperienceSync;
   public readonly intentTaskManager: IntentTaskManager;
+  public readonly autobiographicalMemoryService: AutobiographicalMemoryService;
+  public readonly closedLoopAgency: ClosedLoopAgencyService;
+  public readonly cognitiveControlBus: CognitiveControlBus;
 
   // Persistent Individual Continuity Subsystem
   public readonly continuityRepo: ContinuityRepository;
@@ -422,6 +428,40 @@ export class ArletexBackendServer {
     this.intentTaskManager = new IntentTaskManager(this.agencyRepo, logger);
     defaultDeviceAgency.setPermissionController(this.permissionController);
 
+    // Connect universal security boundaries
+    this.permissionController.setEthicalBoundariesEngine(this.apeService.ethicalBoundariesSecurityEngine);
+    this.apeService.ethicalBoundariesSecurityEngine.setActionPermissionController(this.permissionController);
+
+    // Instantiate Autobiographical Memory Service and Closed-Loop Agency
+    this.autobiographicalMemoryService = new AutobiographicalMemoryService(this.memoryRepo, logger);
+    this.closedLoopAgency = new ClosedLoopAgencyService({
+      agencyRepo: this.agencyRepo,
+      taskManager: this.intentTaskManager,
+      planningInterface: this.planningInterface,
+      permissionController: this.permissionController,
+      verificationEngine: this.verificationEngine,
+      memorySync: this.memorySync,
+      apeService: this.apeService,
+      autobiographicalMemoryService: this.autobiographicalMemoryService,
+      webAgency: this.webAgency,
+      logger,
+    });
+
+    // Instantiate the 16-stage Canonical CognitiveControlBus
+    this.cognitiveControlBus = new CognitiveControlBus({
+      apeService: this.apeService,
+      permissionController: this.permissionController,
+      verificationEngine: this.verificationEngine,
+      memorySink: this.memoryRepo as any,
+      autobiographicalMemoryService: this.autobiographicalMemoryService,
+      intentTaskManager: this.intentTaskManager,
+      closedLoopAgency: this.closedLoopAgency,
+      logger,
+    });
+
+    // Mount CognitiveControlBus on ApeService as the canonical cognitive pipeline
+    this.apeService.setCognitiveControlBus(this.cognitiveControlBus);
+
     // Instantiate Persistent Individual Continuity Subsystem
     const continuityBackupDir =
       config.databasePath !== ':memory:'
@@ -444,6 +484,18 @@ export class ArletexBackendServer {
 
   public getPermissionController(): ActionPermissionController {
     return this.permissionController;
+  }
+
+  public getCognitiveControlBus(): CognitiveControlBus {
+    return this.cognitiveControlBus;
+  }
+
+  public getClosedLoopAgency(): ClosedLoopAgencyService {
+    return this.closedLoopAgency;
+  }
+
+  public getAutobiographicalMemoryService(): AutobiographicalMemoryService {
+    return this.autobiographicalMemoryService;
   }
 
   public async submitAgencyObjective(
@@ -572,11 +624,13 @@ export class ArletexBackendServer {
           };
         } else if (action.type === 'app_launch') {
           const app = String(params['app'] || params['appName'] || 'steam');
-          let appRes = { success: true, message: 'App launched' };
+          let appRes: { success: boolean; message: string };
           if (app.toLowerCase().includes('steam')) {
             appRes = await defaultDeviceAgency.launchSteam(params['steamAppId'] as string);
           } else if (app.toLowerCase().includes('chrome')) {
             appRes = await defaultDeviceAgency.openChromeBrowser(params['url'] as string);
+          } else {
+            appRes = { success: false, message: `Unsupported application launch target: ${app}` };
           }
           obs = {
             id: crypto.randomUUID(),

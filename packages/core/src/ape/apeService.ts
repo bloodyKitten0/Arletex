@@ -334,6 +334,84 @@ export class ApeService {
   public readonly securityEngine: EthicalBoundariesSecurityEngine;
   public readonly evaluationEngine: LongitudinalEvaluationEngine;
   public readonly consciousnessEngine: FunctionalConsciousnessEngine;
+  private cognitiveBus?: any;
+
+  public setCognitiveControlBus(bus: any): void {
+    this.cognitiveBus = bus;
+  }
+
+  public getCognitiveControlBus(): any {
+    return this.cognitiveBus;
+  }
+
+  public get ethicalBoundariesSecurityEngine(): EthicalBoundariesSecurityEngine {
+    return this.securityEngine;
+  }
+
+  private mapApeEventToCognitiveEventType(apeType: string): string {
+    const directTypes = new Set([
+      'user_message',
+      'telegram_message',
+      'telegram_media',
+      'media_perceived',
+      'agency_observation',
+      'action_executed',
+      'task_outcome',
+      'goal_activated',
+      'goal_progress',
+      'goal_failed',
+      'goal_completed',
+      'project_milestone',
+      'intellectual_question',
+      'belief_formed',
+      'belief_revised',
+      'environmental_change',
+      'internal_tick',
+      'reflection_cycle',
+    ]);
+    if (directTypes.has(apeType)) return apeType;
+
+    const lower = apeType.toLowerCase();
+    if (lower.includes('dialogue') || lower.includes('chat') || lower.includes('statement') || lower.includes('message')) {
+      return 'user_message';
+    }
+    if (lower.includes('telegram')) {
+      return 'telegram_message';
+    }
+    if (lower.includes('perception') || lower.includes('visual') || lower.includes('audio') || lower.includes('screen')) {
+      return 'media_perceived';
+    }
+    if (lower.includes('milestone') || lower.includes('goal_completed')) {
+      return 'project_milestone';
+    }
+    if (lower.includes('goal')) {
+      return 'goal_progress';
+    }
+    if (lower.includes('question') || lower.includes('inquiry')) {
+      return 'intellectual_question';
+    }
+    if (lower.includes('belief')) {
+      return 'belief_revised';
+    }
+    if (lower.includes('reflection') || lower.includes('dream') || lower.includes('consolidation')) {
+      return 'reflection_cycle';
+    }
+    if (lower.includes('agency') || lower.includes('action')) {
+      return 'action_executed';
+    }
+    return 'internal_tick';
+  }
+
+  private mapApeSourceToCognitiveSource(source?: string): 'user' | 'telegram' | 'agency' | 'timer' | 'internal' | 'environment' {
+    if (!source) return 'internal';
+    const lower = source.toLowerCase();
+    if (lower === 'user') return 'user';
+    if (lower === 'telegram') return 'telegram';
+    if (lower.includes('agency') || lower.includes('tool') || lower.includes('device')) return 'agency';
+    if (lower.includes('timer') || lower.includes('clock') || lower.includes('scheduler')) return 'timer';
+    if (lower.includes('env') || lower.includes('vision') || lower.includes('audio') || lower.includes('sensor')) return 'environment';
+    return 'internal';
+  }
 
   constructor(
     repo: IApeRepository,
@@ -751,11 +829,42 @@ export class ApeService {
     // 2. Mark event as processing
     this.repo.saveEventProcessingStatus(event.id, 'processing');
 
+    // 3. If CognitiveControlBus is mounted and this event did not originate from it,
+    // dispatch through the canonical 16-stage cognitive pipeline
+    if (this.cognitiveBus && !event.payload?._fromCognitiveBus) {
+      try {
+        const cogType = this.mapApeEventToCognitiveEventType(event.type);
+        const cogSource = this.mapApeSourceToCognitiveSource(event.source);
+        const busResult = await this.cognitiveBus.dispatch({
+          id: event.id,
+          type: cogType,
+          source: cogSource,
+          actor: event.actor,
+          payload: {
+            ...event.payload,
+            _fromCognitiveBus: true,
+            originalApeType: event.type,
+            originalApeCategory: event.category,
+          },
+          timestamp: event.timestamp,
+        });
+
+        this.repo.saveEventProcessingStatus(event.id, busResult.success ? 'processed' : 'failed', busResult.error);
+        return {
+          processed: busResult.success,
+          state: this.getState(),
+          masterState: this.getMasterState(),
+        };
+      } catch (err: any) {
+        this.logger.error(`CognitiveControlBus dispatch failed for event ${event.id}; falling back to direct cycle:`, err);
+      }
+    }
+
     try {
       const currentAffective = this.getState();
       const relationshipConfig = this.getRelationshipConfig();
 
-      // 3. Execute Complete Cross-Engine Cognitive Cycle across all 6 engines
+      // 4. Execute Complete Cross-Engine Cognitive Cycle across all 6 engines
       const cycleResult: CrossEngineCycleResult = await this.crossEngineCycle.executeCycle(
         event,
         currentAffective,

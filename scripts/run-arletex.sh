@@ -6,7 +6,7 @@ cd "$PROJECT_DIR"
 
 PORT="8080"
 SPECIALIST_PORT="39282"
-MODEL_PATH="${1:-/home/proof/models/qwen-heretic/Qwen3.5-9B-Heretic-Q4_K_M.gguf}"
+MODEL_PATH="${1:-${ARLETEX_MODEL_PATH:-/home/proof/models/qwen-heretic/Qwen3.5-9B-Heretic-Q4_K_M.gguf}}"
 
 echo "=========================================================="
 echo " Starting Arletex (Arle Artificial Individual)"
@@ -54,7 +54,19 @@ fi
 # 2. Start specialist ML services if not already running
 if ! curl -s "http://127.0.0.1:$SPECIALIST_PORT/health" >/dev/null 2>&1; then
   echo "Starting Specialist ML Services on port $SPECIALIST_PORT..."
-  .venv/bin/python apps/desktop/py-services/specialists_server.py "$SPECIALIST_PORT" >/tmp/arletex-specialists.log 2>&1 &
+  PYTHON_BIN="${PYTHON_BIN:-}"
+  if [ -z "$PYTHON_BIN" ]; then
+    if [ -x "$PROJECT_DIR/.venv/bin/python" ]; then
+      PYTHON_BIN="$PROJECT_DIR/.venv/bin/python"
+    elif [ -x "$PROJECT_DIR/.venv/bin/python3" ]; then
+      PYTHON_BIN="$PROJECT_DIR/.venv/bin/python3"
+    elif command -v python3 >/dev/null 2>&1; then
+      PYTHON_BIN="$(command -v python3)"
+    else
+      PYTHON_BIN="python"
+    fi
+  fi
+  "$PYTHON_BIN" apps/desktop/py-services/specialists_server.py "$SPECIALIST_PORT" >/tmp/arletex-specialists.log 2>&1 &
   SPECIALISTS_PID=$!
   echo "Waiting for specialist services to come online..."
   for i in {1..20}; do

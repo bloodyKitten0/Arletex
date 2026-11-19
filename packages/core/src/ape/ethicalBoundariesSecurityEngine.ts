@@ -129,6 +129,15 @@ export class InMemoryEthicalBoundariesSecurityRepository implements IEthicalBoun
 
 export class EthicalBoundariesSecurityEngine {
   private readonly repository: IEthicalBoundariesSecurityRepository;
+  private actionPermissionController?: any;
+
+  public setActionPermissionController(controller: any): void {
+    this.actionPermissionController = controller;
+  }
+
+  public getActionPermissionController(): any {
+    return this.actionPermissionController;
+  }
 
   constructor(options: EthicalBoundariesSecurityEngineOptions) {
     this.repository = options.repository;
@@ -439,6 +448,16 @@ export class EthicalBoundariesSecurityEngine {
     policy.emergencyShutdownReason = reason;
     this.repository.savePolicyState(policy);
 
+    if (this.actionPermissionController && typeof this.actionPermissionController.emergencyShutdown === 'function') {
+      try {
+        if (!this.actionPermissionController.isEmergencyShutdown?.()) {
+          this.actionPermissionController.emergencyShutdown(reason);
+        }
+      } catch (err: any) {
+        // Prevent cyclic failure
+      }
+    }
+
     this.logAuditEvent({
       eventType: 'emergency_shutdown',
       actionCategory: 'external_communication',
@@ -462,6 +481,16 @@ export class EthicalBoundariesSecurityEngine {
     policy.emergencyShutdownActive = false;
     policy.emergencyShutdownReason = undefined;
     this.repository.savePolicyState(policy);
+
+    if (this.actionPermissionController && typeof this.actionPermissionController.reactivateAutonomy === 'function') {
+      try {
+        if (this.actionPermissionController.isEmergencyShutdown?.()) {
+          this.actionPermissionController.reactivateAutonomy('CONFIRM_REACTIVATION');
+        }
+      } catch (err: any) {
+        // Prevent cyclic failure
+      }
+    }
 
     this.logAuditEvent({
       eventType: 'policy_updated',
