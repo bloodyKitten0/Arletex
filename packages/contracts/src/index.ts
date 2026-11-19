@@ -722,5 +722,10 @@ export * from './metacognition.js';
 // ==========================================
 export * from './globalCognitiveIntegration.js';
 
+// ==========================================
+// Executive Functions Contracts (Milestone 20)
+// ==========================================
+export * from './executiveFunctions.js';
+
 
 

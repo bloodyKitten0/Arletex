@@ -1581,4 +1581,66 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('global_cognitive_integration_milestone19', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 31,
+    name: '031_executive_functions_milestone20',
+    up: `
+      -- Action Inhibitions (Inhibitory control and impulse suppression evaluations)
+      CREATE TABLE IF NOT EXISTS action_inhibitions (
+        id TEXT PRIMARY KEY,
+        action_name TEXT NOT NULL,
+        proposed_payload_json TEXT NOT NULL DEFAULT '{}',
+        risk_score REAL NOT NULL,
+        is_inhibited INTEGER NOT NULL,
+        inhibition_reason TEXT,
+        alternative_action TEXT,
+        evaluated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_action_inhibitions_evaluated ON action_inhibitions (evaluated_at);
+      CREATE INDEX IF NOT EXISTS idx_action_inhibitions_name ON action_inhibitions (action_name);
+
+      -- Executive Task Switches (Context-preserving task switching and cognitive flexibility)
+      CREATE TABLE IF NOT EXISTS executive_task_switches (
+        id TEXT PRIMARY KEY,
+        previous_task_id TEXT NOT NULL,
+        next_task_id TEXT NOT NULL,
+        previous_task_priority REAL NOT NULL,
+        next_task_priority REAL NOT NULL,
+        switch_reason TEXT NOT NULL,
+        context_saved INTEGER NOT NULL,
+        justification TEXT NOT NULL,
+        switched_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_executive_switches_time ON executive_task_switches (switched_at);
+
+      -- Executive Working Memory Gatings (Top-down working memory gating directives)
+      CREATE TABLE IF NOT EXISTS executive_memory_gatings (
+        id TEXT PRIMARY KEY,
+        target_buffer_id TEXT NOT NULL,
+        operation TEXT NOT NULL,
+        item_priority REAL NOT NULL,
+        reason TEXT NOT NULL,
+        applied_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_executive_gatings_time ON executive_memory_gatings (applied_at);
+
+      -- Executive Control State (Sustained attention, distraction resistance, cognitive control)
+      CREATE TABLE IF NOT EXISTS executive_control_states (
+        id TEXT PRIMARY KEY,
+        active_goal_id TEXT NOT NULL,
+        sustained_attention_duration_ms REAL NOT NULL,
+        distraction_resistance_score REAL NOT NULL,
+        cognitive_flexibility_score REAL NOT NULL,
+        inhibited_action_count INTEGER NOT NULL,
+        task_switch_count INTEGER NOT NULL,
+        last_updated_at TEXT NOT NULL
+      );
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('executive_functions_milestone20', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

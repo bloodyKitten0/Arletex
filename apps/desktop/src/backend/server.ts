@@ -90,6 +90,7 @@ import {
   SqliteSimulationRepository,
   SqliteMetacognitionRepository,
   SqliteGlobalCognitiveRepository,
+  SqliteExecutiveRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -215,6 +216,9 @@ export class ArletexBackendServer {
   // Global Cognitive Integration Subsystem (Milestone 19)
   public readonly globalCognitiveRepo: SqliteGlobalCognitiveRepository;
 
+  // Executive Functions Subsystem (Milestone 20)
+  public readonly executiveRepo: SqliteExecutiveRepository;
+
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
   private port = 0;
@@ -265,6 +269,7 @@ export class ArletexBackendServer {
     this.simulationRepo = new SqliteSimulationRepository(db);
     this.metacognitionRepo = new SqliteMetacognitionRepository(db);
     this.globalCognitiveRepo = new SqliteGlobalCognitiveRepository(db);
+    this.executiveRepo = new SqliteExecutiveRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -286,6 +291,7 @@ export class ArletexBackendServer {
       this.simulationRepo,
       this.metacognitionRepo,
       this.globalCognitiveRepo,
+      this.executiveRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -4626,6 +4632,64 @@ Rules:
           return;
         }
         this.sendJson(res, 200, cycle);
+        return;
+      }
+
+      // ==========================================
+      // Executive Functions Routes (Milestone 20)
+      // ==========================================
+      if (url.pathname === '/api/ape/executive/inhibit' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const evaluation = this.apeService.evaluateActionInhibition(body);
+        this.sendJson(res, 200, { success: true, evaluation });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/executive/task-switch' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const record = this.apeService.executeTaskSwitch(body);
+        this.sendJson(res, 201, { success: true, record });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/executive/wm-gating' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const directive = this.apeService.regulateWorkingMemoryGating(body);
+        this.sendJson(res, 201, { success: true, directive });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/executive/delayed-gratification' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const evaluation = this.apeService.evaluateDelayedGratification(body);
+        this.sendJson(res, 200, { success: true, evaluation });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/executive/select-response' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const selection = this.apeService.selectOptimalResponse(body.candidates);
+        this.sendJson(res, 200, { success: true, selection });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/executive/state' && method === 'GET') {
+        const state = this.apeService.executiveEngine.getControlState();
+        this.sendJson(res, 200, state || {});
+        return;
+      }
+
+      if (url.pathname === '/api/ape/executive/inhibitions' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const inhibitions = this.apeService.executiveEngine.listInhibitions(limit);
+        this.sendJson(res, 200, inhibitions);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/executive/switches' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const switches = this.apeService.executiveEngine.listTaskSwitches(limit);
+        this.sendJson(res, 200, switches);
         return;
       }
 

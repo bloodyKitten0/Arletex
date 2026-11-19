@@ -124,7 +124,13 @@ import { InMemoryPredictiveRepository, PredictiveCognitionEngine } from './predi
 import { InMemorySimulationRepository, SimulationEngine } from './simulationEngine.js';
 import { InMemoryMetacognitionRepository, MetacognitionEngine } from './metacognitionEngine.js';
 import { InMemoryGlobalCognitiveRepository, GlobalCognitiveIntegrationEngine } from './globalCognitiveEngine.js';
-import { ISimulationRepository, IMetacognitionRepository, IGlobalCognitiveRepository } from './interfaces.js';
+import { InMemoryExecutiveRepository, ExecutiveEngine } from './executiveEngine.js';
+import {
+  ISimulationRepository,
+  IMetacognitionRepository,
+  IGlobalCognitiveRepository,
+  IExecutiveRepository,
+} from './interfaces.js';
 
 export class ApeService {
   private readonly repo: IApeRepository;
@@ -159,6 +165,7 @@ export class ApeService {
   public readonly simulationEngine: SimulationEngine;
   public readonly metacognitionEngine: MetacognitionEngine;
   public readonly globalCognitiveEngine: GlobalCognitiveIntegrationEngine;
+  public readonly executiveEngine: ExecutiveEngine;
 
   constructor(
     repo: IApeRepository,
@@ -181,6 +188,7 @@ export class ApeService {
     simulationRepo?: ISimulationRepository,
     metacognitionRepo?: IMetacognitionRepository,
     globalCognitiveRepo?: IGlobalCognitiveRepository,
+    executiveRepo?: IExecutiveRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -266,6 +274,9 @@ export class ApeService {
       metacognitionEngine: this.metacognitionEngine,
       logger,
     });
+
+    const execRepo = executiveRepo || new InMemoryExecutiveRepository();
+    this.executiveEngine = new ExecutiveEngine({ repository: execRepo, logger });
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -1623,6 +1634,30 @@ export class ApeService {
 
   public getUnifiedCognitiveSnapshot() {
     return this.globalCognitiveEngine.generateUnifiedSnapshot();
+  }
+
+  // ==========================================
+  // Milestone 20 — Executive Functions
+  // ==========================================
+
+  public evaluateActionInhibition(input: Parameters<ExecutiveEngine['evaluateActionInhibition']>[0]) {
+    return this.executiveEngine.evaluateActionInhibition(input);
+  }
+
+  public executeTaskSwitch(input: Parameters<ExecutiveEngine['switchTask']>[0]) {
+    return this.executiveEngine.switchTask(input);
+  }
+
+  public regulateWorkingMemoryGating(input: Parameters<ExecutiveEngine['regulateWorkingMemory']>[0]) {
+    return this.executiveEngine.regulateWorkingMemory(input);
+  }
+
+  public evaluateDelayedGratification(input: Parameters<ExecutiveEngine['evaluateDelayedGratification']>[0]) {
+    return this.executiveEngine.evaluateDelayedGratification(input);
+  }
+
+  public selectOptimalResponse(candidates: Parameters<ExecutiveEngine['selectOptimalResponse']>[0]) {
+    return this.executiveEngine.selectOptimalResponse(candidates);
   }
 }
 

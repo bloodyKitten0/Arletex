@@ -82,6 +82,10 @@ import {
   MetacognitiveContradictionItem,
   GlobalCognitiveCycleEvent,
   GlobalCognitiveSnapshot,
+  ActionInhibitionEvaluation,
+  TaskSwitchRecord,
+  WorkingMemoryGatingDirective,
+  ExecutiveControlState,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -426,6 +430,22 @@ export interface IGlobalCognitiveRepository {
 
   saveSnapshot(snapshot: GlobalCognitiveSnapshot): void;
   getLatestSnapshot(): GlobalCognitiveSnapshot | null;
+}
+
+export interface IExecutiveRepository {
+  saveInhibition(inhibition: ActionInhibitionEvaluation): void;
+  getInhibitionById(id: string): ActionInhibitionEvaluation | null;
+  listInhibitions(limit?: number): ActionInhibitionEvaluation[];
+
+  saveTaskSwitch(record: TaskSwitchRecord): void;
+  getTaskSwitchById(id: string): TaskSwitchRecord | null;
+  listTaskSwitches(limit?: number): TaskSwitchRecord[];
+
+  saveMemoryGating(gating: WorkingMemoryGatingDirective): void;
+  listMemoryGatings(targetBufferId?: string, limit?: number): WorkingMemoryGatingDirective[];
+
+  saveControlState(state: ExecutiveControlState): void;
+  getControlState(): ExecutiveControlState | null;
 }
 
 
