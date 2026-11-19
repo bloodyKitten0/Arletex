@@ -129,6 +129,10 @@ import {
   TemperamentProfile,
   SituationalPersonalityExpression,
   PersonalityEvolutionRecord,
+  MoralPrinciple,
+  MoralPrincipleCategory,
+  EthicalDilemmaResolution,
+  MoralLearningRecord,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -630,6 +634,18 @@ export interface ITemperamentPersonalityRepository {
   saveEvolutionRecord(record: PersonalityEvolutionRecord): void;
   listEvolutionRecords(traitKey?: string, limit?: number): PersonalityEvolutionRecord[];
 }
+
+export interface IValuesMoralRepository {
+  savePrinciple(principle: MoralPrinciple): void;
+  getPrincipleById(id: string): MoralPrinciple | null;
+  listPrinciples(category?: MoralPrincipleCategory, limit?: number): MoralPrinciple[];
+  saveResolution(resolution: EthicalDilemmaResolution): void;
+  getResolutionById(id: string): EthicalDilemmaResolution | null;
+  listResolutions(limit?: number): EthicalDilemmaResolution[];
+  saveMoralLearning(record: MoralLearningRecord): void;
+  listMoralLearningRecords(principleId?: string, limit?: number): MoralLearningRecord[];
+}
+
 
 
 

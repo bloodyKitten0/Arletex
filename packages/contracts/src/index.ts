@@ -792,6 +792,12 @@ export * from './habitsAndRoutines.js';
 // ==========================================
 export * from './temperamentAndPersonality.js';
 
+// ==========================================
+// Values and Moral Cognition Contracts (Milestone 34)
+// ==========================================
+export * from './valuesAndMoralCognition.js';
+
+
 
 
 

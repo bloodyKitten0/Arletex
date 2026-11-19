@@ -104,6 +104,7 @@ import {
   SqliteRewardLearningRepository,
   SqliteHabitsAndRoutinesRepository,
   SqliteTemperamentPersonalityRepository,
+  SqliteValuesMoralRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -244,6 +245,7 @@ export class ArletexBackendServer {
   public readonly rewardLearningRepo: SqliteRewardLearningRepository;
   public readonly habitsRepo: SqliteHabitsAndRoutinesRepository;
   public readonly temperamentRepo: SqliteTemperamentPersonalityRepository;
+  public readonly valuesMoralRepo: SqliteValuesMoralRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -309,6 +311,7 @@ export class ArletexBackendServer {
     this.rewardLearningRepo = new SqliteRewardLearningRepository(db);
     this.habitsRepo = new SqliteHabitsAndRoutinesRepository(db);
     this.temperamentRepo = new SqliteTemperamentPersonalityRepository(db);
+    this.valuesMoralRepo = new SqliteValuesMoralRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -344,6 +347,7 @@ export class ArletexBackendServer {
       this.rewardLearningRepo,
       this.habitsRepo,
       this.temperamentRepo,
+      this.valuesMoralRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -5667,6 +5671,89 @@ Rules:
         const traitKey = url.searchParams.get('traitKey') || undefined;
         const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
         const records = this.apeService.listPersonalityEvolutionRecords(traitKey, limit);
+        this.sendJson(res, 200, { success: true, records });
+        return;
+      }
+
+      // ==========================================
+      // Values and Moral Cognition Routes (Milestone 34)
+      // ==========================================
+      if (url.pathname === '/api/ape/moral/principles' && method === 'GET') {
+        const category = url.searchParams.get('category') as any;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const principles = this.apeService.listMoralPrinciples(category, limit);
+        this.sendJson(res, 200, { success: true, principles });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/moral/principle' && method === 'GET') {
+        const id = url.searchParams.get('id');
+        if (!id) {
+          this.sendJson(res, 400, { error: 'id query param required' });
+          return;
+        }
+        const principle = this.apeService.getMoralPrinciple(id);
+        this.sendJson(res, 200, { success: true, principle });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/moral/assess-harm' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const assessment = this.apeService.assessMoralHarm(
+          body.scenario,
+          body.potentialImpacts || [],
+        );
+        this.sendJson(res, 200, { success: true, assessment });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/moral/evaluate-intent' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const evaluation = this.apeService.evaluateIntention(
+          body.actorId,
+          body.outcomeWasHarmful ?? false,
+          body.contextSignals || [],
+        );
+        this.sendJson(res, 200, { success: true, evaluation });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/moral/resolve-dilemma' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const resolution = this.apeService.resolveEthicalDilemma({
+          scenario: body.scenario,
+          competingValues: body.competingValues,
+          contextSignals: body.contextSignals,
+          proposedOptionA: body.proposedOptionA,
+          proposedOptionB: body.proposedOptionB,
+        });
+        this.sendJson(res, 200, { success: true, resolution });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/moral/reconsider-principle' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const record = this.apeService.reconsiderMoralPrinciple(
+          body.principleId,
+          body.deltaWeight,
+          body.reflectionSummary,
+          body.dilemmaId,
+        );
+        this.sendJson(res, 200, { success: true, record });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/moral/resolutions' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const resolutions = this.apeService.listEthicalResolutions(limit);
+        this.sendJson(res, 200, { success: true, resolutions });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/moral/learning-records' && method === 'GET') {
+        const principleId = url.searchParams.get('principleId') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const records = this.apeService.listMoralLearningRecords(principleId, limit);
         this.sendJson(res, 200, { success: true, records });
         return;
       }

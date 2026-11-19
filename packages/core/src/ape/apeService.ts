@@ -138,6 +138,7 @@ import { InMemoryCuriosityExplorationRepository, CuriosityExplorationEngine } fr
 import { InMemoryRewardLearningRepository, RewardLearningEngine, EvaluateOutcomeParams } from './rewardLearningEngine.js';
 import { InMemoryHabitsAndRoutinesRepository, HabitsAndRoutinesEngine, FormHabitParams, ModifyHabitParams } from './habitsAndRoutinesEngine.js';
 import { InMemoryTemperamentPersonalityRepository, TemperamentPersonalityEngine } from './temperamentPersonalityEngine.js';
+import { InMemoryValuesMoralRepository, ValuesMoralEngine, ResolveDilemmaParams } from './valuesMoralEngine.js';
 import {
   ISimulationRepository,
   IMetacognitionRepository,
@@ -156,6 +157,7 @@ import {
   IRewardLearningRepository,
   IHabitsAndRoutinesRepository,
   ITemperamentPersonalityRepository,
+  IValuesMoralRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
@@ -172,6 +174,7 @@ import {
   RewardDimension,
   SituationType,
   CorePersonalityTraits,
+  MoralPrincipleCategory,
 } from '@arletex/contracts';
 
 export class ApeService {
@@ -221,6 +224,7 @@ export class ApeService {
   public readonly rewardLearningEngine: RewardLearningEngine;
   public readonly habitsEngine: HabitsAndRoutinesEngine;
   public readonly temperamentEngine: TemperamentPersonalityEngine;
+  public readonly moralEngine: ValuesMoralEngine;
 
   constructor(
     repo: IApeRepository,
@@ -257,6 +261,7 @@ export class ApeService {
     rewardLearningRepo?: IRewardLearningRepository,
     habitsRepo?: IHabitsAndRoutinesRepository,
     temperamentRepo?: ITemperamentPersonalityRepository,
+    valuesMoralRepo?: IValuesMoralRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -384,6 +389,9 @@ export class ApeService {
 
     const tempRepo = temperamentRepo || new InMemoryTemperamentPersonalityRepository();
     this.temperamentEngine = new TemperamentPersonalityEngine(tempRepo, logger);
+
+    const vmRepo = valuesMoralRepo || new InMemoryValuesMoralRepository();
+    this.moralEngine = new ValuesMoralEngine(vmRepo, logger);
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -2364,6 +2372,52 @@ export class ApeService {
 
   public listPersonalityEvolutionRecords(traitKey?: string, limit?: number) {
     return this.temperamentEngine.listEvolutionRecords(traitKey, limit);
+  }
+
+  public assessMoralHarm(scenario: string, potentialImpacts: string[]) {
+    return this.moralEngine.assessHarm(scenario, potentialImpacts);
+  }
+
+  public evaluateIntention(
+    actorId: string,
+    outcomeWasHarmful: boolean,
+    contextSignals?: string[],
+  ) {
+    return this.moralEngine.evaluateIntention(actorId, outcomeWasHarmful, contextSignals);
+  }
+
+  public resolveEthicalDilemma(params: ResolveDilemmaParams) {
+    return this.moralEngine.resolveEthicalDilemma(params);
+  }
+
+  public reconsiderMoralPrinciple(
+    principleId: string,
+    deltaWeight: number,
+    reflectionSummary: string,
+    dilemmaId?: string,
+  ) {
+    return this.moralEngine.reconsiderPrinciple(
+      principleId,
+      deltaWeight,
+      reflectionSummary,
+      dilemmaId,
+    );
+  }
+
+  public getMoralPrinciple(id: string) {
+    return this.moralEngine.getPrinciple(id);
+  }
+
+  public listMoralPrinciples(category?: MoralPrincipleCategory, limit?: number) {
+    return this.moralEngine.listPrinciples(category, limit);
+  }
+
+  public listEthicalResolutions(limit?: number) {
+    return this.moralEngine.listResolutions(limit);
+  }
+
+  public listMoralLearningRecords(principleId?: string, limit?: number) {
+    return this.moralEngine.listMoralLearningRecords(principleId, limit);
   }
 }
 

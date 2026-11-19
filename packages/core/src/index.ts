@@ -51,6 +51,7 @@ export * from './ape/curiosityExplorationEngine.js';
 export * from './ape/rewardLearningEngine.js';
 export * from './ape/habitsAndRoutinesEngine.js';
 export * from './ape/temperamentPersonalityEngine.js';
+export * from './ape/valuesMoralEngine.js';
 export * from './ape/apeService.js';
 
 // Digital Agency Subsystem

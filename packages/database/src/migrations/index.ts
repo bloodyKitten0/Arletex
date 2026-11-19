@@ -2314,4 +2314,54 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('temperament_and_personality_milestone33', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 45,
+    name: '045_values_and_moral_cognition_milestone34',
+    up: `
+      -- Moral Principles
+      CREATE TABLE IF NOT EXISTS moral_principles (
+        id TEXT PRIMARY KEY,
+        category TEXT NOT NULL,
+        statement TEXT NOT NULL,
+        weight REAL NOT NULL,
+        rationale TEXT NOT NULL,
+        is_revisable INTEGER NOT NULL DEFAULT 1,
+        last_reconsidered_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_moral_principles_category ON moral_principles (category);
+
+      -- Ethical Dilemma Resolutions
+      CREATE TABLE IF NOT EXISTS ethical_dilemma_resolutions (
+        id TEXT PRIMARY KEY,
+        scenario TEXT NOT NULL,
+        competing_values_json TEXT NOT NULL,
+        harm_assessment_json TEXT NOT NULL,
+        intention_evaluation_json TEXT NOT NULL,
+        chosen_action TEXT NOT NULL,
+        ethical_justification TEXT NOT NULL,
+        resolved_principles_json TEXT NOT NULL DEFAULT '[]',
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_dilemmas_time ON ethical_dilemma_resolutions (timestamp DESC);
+
+      -- Moral Learning Records
+      CREATE TABLE IF NOT EXISTS moral_learning_records (
+        id TEXT PRIMARY KEY,
+        dilemma_id TEXT,
+        principle_id TEXT NOT NULL,
+        previous_weight REAL NOT NULL,
+        new_weight REAL NOT NULL,
+        reflection_summary TEXT NOT NULL,
+        reconsidered_at TEXT NOT NULL,
+        FOREIGN KEY (principle_id) REFERENCES moral_principles(id) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_moral_learning_principle ON moral_learning_records (principle_id);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('values_and_moral_cognition_milestone34', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];
