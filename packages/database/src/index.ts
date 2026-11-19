@@ -50,6 +50,8 @@ export * from './repositories/socialEmotionsRepository.js';
 export * from './repositories/socialCommunicationRepository.js';
 export * from './repositories/relationshipsAttachmentRepository.js';
 export * from './repositories/socialLearningCultureRepository.js';
+export * from './repositories/expressiveIdentityRepository.js';
+
 
 
 

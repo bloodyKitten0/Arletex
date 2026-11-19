@@ -113,6 +113,7 @@ import {
   SqliteSocialCommunicationRepository,
   SqliteRelationshipsAttachmentRepository,
   SqliteSocialLearningCultureRepository,
+  SqliteExpressiveIdentityRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -262,6 +263,7 @@ export class ArletexBackendServer {
   public readonly socialCommunicationRepo: SqliteSocialCommunicationRepository;
   public readonly relationshipsAttachmentRepo: SqliteRelationshipsAttachmentRepository;
   public readonly socialLearningCultureRepo: SqliteSocialLearningCultureRepository;
+  public readonly expressiveIdentityRepo: SqliteExpressiveIdentityRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -336,6 +338,7 @@ export class ArletexBackendServer {
     this.socialCommunicationRepo = new SqliteSocialCommunicationRepository(db);
     this.relationshipsAttachmentRepo = new SqliteRelationshipsAttachmentRepository(db);
     this.socialLearningCultureRepo = new SqliteSocialLearningCultureRepository(db);
+    this.expressiveIdentityRepo = new SqliteExpressiveIdentityRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -380,6 +383,7 @@ export class ArletexBackendServer {
       this.socialCommunicationRepo,
       this.relationshipsAttachmentRepo,
       this.socialLearningCultureRepo,
+      this.expressiveIdentityRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -6346,6 +6350,61 @@ Rules:
         const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
         const observations = this.apeService.listObservationalLearningRecords(actorId, limit);
         this.sendJson(res, 200, { success: true, observations });
+        return;
+      }
+
+      // ==========================================
+      // Stable Expressive Identity Routes (Milestone 43)
+      // ==========================================
+      if (url.pathname === '/api/ape/expressive-identity/profile' && method === 'GET') {
+        const profile = await this.apeService.getExpressiveVoiceProfile();
+        this.sendJson(res, 200, { success: true, profile });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/expressive-identity/evaluate-draft' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.draft) {
+          this.sendJson(res, 400, { error: 'draft is required' });
+          return;
+        }
+        const evaluation = await this.apeService.evaluateDraftVoice(body.draft, {
+          recentUtterances: body.recentUtterances,
+        });
+        this.sendJson(res, 200, { success: true, evaluation });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/expressive-identity/model-guidance' && method === 'GET') {
+        const modelFamily = url.searchParams.get('modelFamily') || 'qwen';
+        const guidance = await this.apeService.generatePromptGuidanceForModel(modelFamily);
+        this.sendJson(res, 200, { success: true, guidance });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/expressive-identity/story-fragment' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.theme) {
+          this.sendJson(res, 400, { error: 'theme is required' });
+          return;
+        }
+        const fragment = await this.apeService.composeStoryFragment(body.theme, body.emotionalColoring);
+        this.sendJson(res, 200, { success: true, fragment });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/expressive-identity/natural-disagreement' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.partnerClaim || !body.arleCounterthesis || !body.contextTopic) {
+          this.sendJson(res, 400, { error: 'partnerClaim, arleCounterthesis, and contextTopic are required' });
+          return;
+        }
+        const guidance = this.apeService.formulateNaturalDisagreement(
+          body.partnerClaim,
+          body.arleCounterthesis,
+          body.contextTopic,
+        );
+        this.sendJson(res, 200, { success: true, ...guidance });
         return;
       }
 

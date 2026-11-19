@@ -185,6 +185,10 @@ import {
   SocialLearningCultureEngine,
 } from './socialLearningCultureEngine.js';
 import {
+  InMemoryExpressiveIdentityRepository,
+  ExpressiveIdentityEngine,
+} from './expressiveIdentityEngine.js';
+import {
   ISimulationRepository,
   IMetacognitionRepository,
   IGlobalCognitiveRepository,
@@ -211,6 +215,7 @@ import {
   ISocialCommunicationRepository,
   IRelationshipsAttachmentRepository,
   ISocialLearningCultureRepository,
+  IExpressiveIdentityRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
@@ -292,6 +297,7 @@ export class ApeService {
   public readonly socialCommunicationEngine: SocialCommunicationEngine;
   public readonly relationshipsAttachmentEngine: RelationshipsAttachmentEngine;
   public readonly socialLearningCultureEngine: SocialLearningCultureEngine;
+  public readonly expressiveIdentityEngine: ExpressiveIdentityEngine;
 
   constructor(
     repo: IApeRepository,
@@ -337,6 +343,7 @@ export class ApeService {
     socialCommunicationRepo?: ISocialCommunicationRepository,
     relationshipsAttachmentRepo?: IRelationshipsAttachmentRepository,
     socialLearningCultureRepo?: ISocialLearningCultureRepository,
+    expressiveIdentityRepo?: IExpressiveIdentityRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -491,6 +498,9 @@ export class ApeService {
 
     const slcRepo = socialLearningCultureRepo || new InMemorySocialLearningCultureRepository();
     this.socialLearningCultureEngine = new SocialLearningCultureEngine({ repository: slcRepo });
+
+    const eiRepo = expressiveIdentityRepo || new InMemoryExpressiveIdentityRepository();
+    this.expressiveIdentityEngine = new ExpressiveIdentityEngine({ repository: eiRepo });
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -2850,6 +2860,34 @@ export class ApeService {
 
   public listObservationalLearningRecords(actorId?: string, limit?: number) {
     return (this.socialLearningCultureEngine as any).repository?.listObservationalRecords(actorId, limit) ?? [];
+  }
+
+  public getExpressiveVoiceProfile() {
+    return this.expressiveIdentityEngine.getOrInitializeProfile();
+  }
+
+  public evaluateDraftVoice(draft: string, context?: { recentUtterances?: string[] }) {
+    return this.expressiveIdentityEngine.evaluateDraftVoice(draft, context);
+  }
+
+  public generatePromptGuidanceForModel(modelFamily: string) {
+    return this.expressiveIdentityEngine.generatePromptGuidanceForModel(modelFamily);
+  }
+
+  public composeStoryFragment(theme: string, emotionalColoring?: string) {
+    return this.expressiveIdentityEngine.composeStoryFragment(theme, emotionalColoring);
+  }
+
+  public formulateNaturalDisagreement(
+    partnerClaim: string,
+    arleCounterthesis: string,
+    contextTopic: string,
+  ) {
+    return this.expressiveIdentityEngine.formulateNaturalDisagreement(
+      partnerClaim,
+      arleCounterthesis,
+      contextTopic,
+    );
   }
 }
 

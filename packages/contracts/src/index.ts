@@ -837,6 +837,12 @@ export * from './relationshipsAndAttachment.js';
 // ==========================================
 export * from './socialLearningAndCulture.js';
 
+// ==========================================
+// Stable Expressive Identity Contracts (Milestone 43)
+// ==========================================
+export * from './stableExpressiveIdentity.js';
+
+
 
 
 

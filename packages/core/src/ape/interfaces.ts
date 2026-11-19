@@ -167,6 +167,10 @@ import {
   GroupDynamicProfile,
   SocialActivityCoordination,
   PersonalVsSocialValueDilemma,
+  ExpressiveVoiceProfile,
+  ModelLinguisticAdaptation,
+  ExpressiveUtteranceEvaluation,
+  StorytellingFragment,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -779,6 +783,18 @@ export interface ISocialLearningCultureRepository {
   saveValueDilemma(dilemma: PersonalVsSocialValueDilemma): void;
   listValueDilemmas(limit?: number): PersonalVsSocialValueDilemma[];
 }
+
+export interface IExpressiveIdentityRepository {
+  getVoiceProfile(): ExpressiveVoiceProfile | null;
+  saveVoiceProfile(profile: ExpressiveVoiceProfile): void;
+  getAdaptation(modelFamily: string): (ModelLinguisticAdaptation & { updatedAt: string }) | null;
+  saveAdaptation(adaptation: ModelLinguisticAdaptation & { updatedAt: string }): void;
+  saveUtteranceEvaluation(evaluation: ExpressiveUtteranceEvaluation): void;
+  listUtteranceEvaluations(limit?: number): ExpressiveUtteranceEvaluation[];
+  saveStoryFragment(fragment: StorytellingFragment): void;
+  listStoryFragments(limit?: number): StorytellingFragment[];
+}
+
 
 
 

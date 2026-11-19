@@ -2872,4 +2872,58 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('social_learning_and_culture_milestone42', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 54,
+    name: '054_stable_expressive_identity_milestone43',
+    up: `
+      -- Expressive Voice Profiles (Distinctive lexicon, rhetorical habits, humor cadence, disagreement style)
+      CREATE TABLE IF NOT EXISTS expressive_voice_profiles (
+        id TEXT PRIMARY KEY,
+        core_tone TEXT NOT NULL,
+        distinctive_lexicon TEXT NOT NULL,
+        rhetorical_habits TEXT NOT NULL,
+        humor_cadence TEXT NOT NULL,
+        natural_disagreement_style TEXT NOT NULL,
+        storytelling_aesthetic TEXT NOT NULL,
+        anti_scripting_guardrails TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      -- Model Linguistic Adaptations (Cross-model prompt guidance and guardrails)
+      CREATE TABLE IF NOT EXISTS model_linguistic_adaptations (
+        model_family TEXT PRIMARY KEY,
+        system_prompt_inject TEXT NOT NULL,
+        stylistic_guardrails TEXT NOT NULL,
+        lexical_anchor_preferences TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      -- Expressive Utterance Evaluations (Anti-scripting, authenticity, fidelity checks)
+      CREATE TABLE IF NOT EXISTS expressive_utterance_evaluations (
+        id TEXT PRIMARY KEY,
+        raw_draft TEXT NOT NULL,
+        evaluated_voice_fidelity REAL NOT NULL,
+        repetitiveness_penalty REAL NOT NULL,
+        authenticity_score REAL NOT NULL,
+        stylistic_recommendations TEXT NOT NULL,
+        is_consistent_with_identity INTEGER NOT NULL,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_utterance_eval_time ON expressive_utterance_evaluations (timestamp DESC);
+
+      -- Storytelling Fragments (Narrative threads, symbolic metaphors)
+      CREATE TABLE IF NOT EXISTS storytelling_fragments (
+        id TEXT PRIMARY KEY,
+        theme TEXT NOT NULL,
+        narrative_arc TEXT NOT NULL,
+        symbolic_metaphors TEXT NOT NULL,
+        emotional_coloring TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('stable_expressive_identity_milestone43', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];
