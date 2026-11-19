@@ -300,6 +300,19 @@ NoDisplay=true
     expect(planTenor.steps.length).toBeGreaterThan(0);
     expect(planTenor.steps[0]!.action.type).toBe('desktop_open_file');
     expect(planTenor.steps[0]!.action.payload.fileName).toBe('tenor (5).gif');
+
+    // 4. Sign up in spotify using your email
+    const taskSpotifySignup: any = {
+      id: 'task-spotify-signup',
+      objective: 'Try to sign up in spotify using your email',
+      initiator: 'user',
+    };
+    const planSignup = await planner.formulatePlan(taskSpotifySignup);
+    expect(planSignup.steps.length).toBeGreaterThan(0);
+    expect(planSignup.steps[0]!.action.type).toBe('desktop_open_browser');
+    expect(planSignup.steps[0]!.action.payload.url).toBe('https://www.spotify.com/signup');
+    expect(planSignup.steps[0]!.action.payload.profile).toBe('Profile 7');
+    expect(planSignup.steps[0]!.action.payload.email).toBe('arletex.email@gmail.com');
   });
 
   it('13. DesktopEnvironmentProvider.openInArleBrowser returns Chrome Profile 7 launch result in test mode', async () => {

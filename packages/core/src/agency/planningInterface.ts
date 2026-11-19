@@ -75,12 +75,18 @@ export class PlanningInterface {
     } else if (
       /(?:open|check|show|view|access)\s+(?:it\s+on\s+)?(?:her|your|my|arle(?:'s)?\s+)?(?:email|gmail|inbox)/i.test(lower) ||
       /(?:open|launch)\s+.*(?:on\s+(?:her|your)\s+email)/i.test(lower) ||
-      /(?:open|launch|go\s+to)\s+(?:gmail|google\s+mail)/i.test(lower)
+      /(?:open|launch|go\s+to)\s+(?:gmail|google\s+mail)/i.test(lower) ||
+      /(?:try\s+to\s+)?(?:sign\s*up|register|create\s+(?:an?\s+)?account|log\s*in|login)\s+(?:in|to|for|on)?\s*(?:spotify|gmail|google|discord|telegram)?/i.test(lower) ||
+      /(?:sign\s*up|register|log\s*in|login).*using\s+(?:your|her|my|arle(?:'s)?\s+)?(?:email|account)/i.test(lower)
     ) {
       // 2. Arle Dedicated Browser Profile (Chrome Profile 7 - arletex.email@gmail.com)
       let targetUrl = 'https://mail.google.com';
       if (lower.includes('spotify')) {
-        targetUrl = 'https://open.spotify.com';
+        if (/sign\s*up|register|create/i.test(lower)) {
+          targetUrl = 'https://www.spotify.com/signup';
+        } else {
+          targetUrl = 'https://open.spotify.com';
+        }
       }
 
       assumptions.push('Google Chrome is installed with Profile 7 (arletex.email@gmail.com).');

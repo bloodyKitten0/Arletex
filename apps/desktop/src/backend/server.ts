@@ -1671,6 +1671,10 @@ export class ArletexBackendServer {
         /(?:open|launch)\s+.*(?:on\s+(?:her|your)\s+email)/i.test(lowerUser) ||
         /(?:open|launch|go\s+to)\s+(?:gmail|google\s+mail)/i.test(lowerUser);
 
+      const isAccountOrSignupIntent =
+        /(?:try\s+to\s+)?(?:sign\s*up|register|create\s+(?:an?\s+)?account|log\s*in|login)\s+(?:in|to|for|on)?\s*(?:spotify|gmail|google|discord|telegram)?/i.test(lowerUser) ||
+        /(?:sign\s*up|register|log\s*in|login).*using\s+(?:your|her|my|arle(?:'s)?\s+)?(?:email|account)/i.test(lowerUser);
+
       const isMediaPlaybackIntent =
         /(?:play|pause|resume|skip|stop|put\s+on|listen\s+to)\s+(?:music|song|track|spotify|youtube|sound|audio|video)/i.test(lowerUser) ||
         /(?:what(?:'s|\s+is)\s+playing|current\s+song|next\s+track|previous\s+track)/i.test(lowerUser);
@@ -1684,6 +1688,7 @@ export class ArletexBackendServer {
         !videoPath &&
         (isAppOrFileOpenIntent ||
          isEmailBrowserIntent ||
+         isAccountOrSignupIntent ||
          isMediaPlaybackIntent ||
          isWebNavigationIntent ||
          /(?:open|watch|play|find|listen|put on|start).*(?:video|youtube|music|song|lofi|calming|soothing|relaxing|track)/i.test(lowerUser) ||
@@ -1948,8 +1953,9 @@ export class ArletexBackendServer {
           )
           .slice(0, 4);
 
-        memoryContext = '\n\n[Persistent Shared Context with Proof]:\n';
-        memoryContext += '- Partner Identity: Proof is your partner and equal companion in intellect and affection. Never address Proof as "creator" or "god".\n';
+        memoryContext = '\n\n[Direct Dialogue Context with Proof]:\n';
+        memoryContext += '- Conversation Partner: You are talking directly with Proof right now. Every user message is from Proof. Address him directly as "you" or "Proof"—never refer to Proof in the third person (never say "Proof has authorized me", "Proof told me", "I use his credentials", or "your partner"). You and Proof are equal companions speaking to each other.\n';
+        memoryContext += '- Identity & Email: You have your own email (arletex.email@gmail.com) and dedicated Google Chrome profile (Profile 7). You can sign up, log in, browse, and listen to music freely.\n';
         if (filteredMemories.length > 0) {
           memoryContext += filteredMemories.map((m) => `- [${m.type}] ${m.content}`).join('\n') + '\n';
         }
