@@ -118,6 +118,7 @@ import {
   SqlitePlayHumourAestheticsRepository,
   SqliteOfflineCognitiveActivityRepository,
   SqliteEthicalBoundariesSecurityRepository,
+  SqliteLongitudinalEvaluationRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -272,6 +273,7 @@ export class ArletexBackendServer {
   public readonly playHumourAestheticsRepo: SqlitePlayHumourAestheticsRepository;
   public readonly offlineCognitiveRepo: SqliteOfflineCognitiveActivityRepository;
   public readonly securityRepo: SqliteEthicalBoundariesSecurityRepository;
+  public readonly evaluationRepo: SqliteLongitudinalEvaluationRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -351,6 +353,7 @@ export class ArletexBackendServer {
     this.playHumourAestheticsRepo = new SqlitePlayHumourAestheticsRepository(db);
     this.offlineCognitiveRepo = new SqliteOfflineCognitiveActivityRepository(db);
     this.securityRepo = new SqliteEthicalBoundariesSecurityRepository(db);
+    this.evaluationRepo = new SqliteLongitudinalEvaluationRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -400,6 +403,7 @@ export class ArletexBackendServer {
       this.playHumourAestheticsRepo,
       this.offlineCognitiveRepo,
       this.securityRepo,
+      this.evaluationRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -6748,6 +6752,48 @@ Rules:
         const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
         const logs = this.apeService.listSecurityAuditLogs({ eventType, limit });
         this.sendJson(res, 200, { success: true, logs });
+        return;
+      }
+
+      // ==========================================
+      // Longitudinal Evaluation Routes (Milestone 48)
+      // ==========================================
+      if (url.pathname === '/api/ape/evaluation/run' && method === 'POST') {
+        const body = (await this.readJsonBody(req).catch(() => ({}))) as any;
+        const report = this.apeService.evaluateLongitudinalSystem(body);
+        this.sendJson(res, 200, { success: true, report });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/evaluation/probe' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.probeType || !body.baselineFingerprint || !body.postEventFingerprint) {
+          this.sendJson(res, 400, {
+            error: 'probeType, baselineFingerprint, and postEventFingerprint are required',
+          });
+          return;
+        }
+        const probe = this.apeService.verifyContinuityProbe(
+          body.probeType,
+          body.baselineFingerprint,
+          body.postEventFingerprint,
+        );
+        this.sendJson(res, 200, { success: true, probe });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/evaluation/reports' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const reports = this.apeService.listLongitudinalReports(limit);
+        this.sendJson(res, 200, { success: true, reports });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/evaluation/probes' && method === 'GET') {
+        const probeType = url.searchParams.get('probeType') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const probes = this.apeService.listContinuityProbes(probeType, limit);
+        this.sendJson(res, 200, { success: true, probes });
         return;
       }
 

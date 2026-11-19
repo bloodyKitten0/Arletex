@@ -3168,4 +3168,42 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('ethical_boundaries_security_milestone47', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 59,
+    name: '059_longitudinal_evaluation_milestone48',
+    up: `
+      -- Longitudinal Evaluation Reports (Comprehensive cross-domain longitudinal assessment)
+      CREATE TABLE IF NOT EXISTS longitudinal_evaluation_reports (
+        report_id TEXT PRIMARY KEY,
+        timestamp TEXT NOT NULL,
+        overall_score REAL NOT NULL,
+        overall_status TEXT NOT NULL,
+        evaluated_epoch INTEGER NOT NULL DEFAULT 1,
+        model_used TEXT NOT NULL,
+        metrics_json TEXT NOT NULL,
+        key_observations TEXT NOT NULL DEFAULT '[]',
+        recommendations TEXT NOT NULL DEFAULT '[]'
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_long_eval_time ON longitudinal_evaluation_reports (timestamp DESC);
+      CREATE INDEX IF NOT EXISTS idx_long_eval_score ON longitudinal_evaluation_reports (overall_score);
+
+      -- Continuity Verification Probes (Restart & Model-Switch Integrity Fingerprints)
+      CREATE TABLE IF NOT EXISTS continuity_verification_probes (
+        probe_id TEXT PRIMARY KEY,
+        probe_type TEXT NOT NULL,
+        baseline_fingerprint TEXT NOT NULL,
+        post_event_fingerprint TEXT NOT NULL,
+        divergence_score REAL NOT NULL,
+        verified_intact INTEGER NOT NULL,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_probe_type ON continuity_verification_probes (probe_type);
+      CREATE INDEX IF NOT EXISTS idx_probe_time ON continuity_verification_probes (timestamp DESC);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('longitudinal_evaluation_milestone48', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

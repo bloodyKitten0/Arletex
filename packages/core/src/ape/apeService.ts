@@ -205,6 +205,10 @@ import {
   EthicalBoundariesSecurityEngine,
 } from './ethicalBoundariesSecurityEngine.js';
 import {
+  InMemoryLongitudinalEvaluationRepository,
+  LongitudinalEvaluationEngine,
+} from './longitudinalEvaluationEngine.js';
+import {
   ISimulationRepository,
   IMetacognitionRepository,
   IGlobalCognitiveRepository,
@@ -236,6 +240,7 @@ import {
   IPlayHumourAestheticsRepository,
   IOfflineCognitiveActivityRepository,
   IEthicalBoundariesSecurityRepository,
+  ILongitudinalEvaluationRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
@@ -322,6 +327,7 @@ export class ApeService {
   public readonly playHumourAestheticsEngine: PlayHumourAestheticsEngine;
   public readonly offlineCognitiveEngine: OfflineCognitiveActivityEngine;
   public readonly securityEngine: EthicalBoundariesSecurityEngine;
+  public readonly evaluationEngine: LongitudinalEvaluationEngine;
 
   constructor(
     repo: IApeRepository,
@@ -372,6 +378,7 @@ export class ApeService {
     playHumourAestheticsRepo?: IPlayHumourAestheticsRepository,
     offlineCognitiveRepo?: IOfflineCognitiveActivityRepository,
     securityRepo?: IEthicalBoundariesSecurityRepository,
+    evaluationRepo?: ILongitudinalEvaluationRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -542,6 +549,9 @@ export class ApeService {
 
     const secRepo = securityRepo || new InMemoryEthicalBoundariesSecurityRepository();
     this.securityEngine = new EthicalBoundariesSecurityEngine({ repository: secRepo });
+
+    const evalRepo = evaluationRepo || new InMemoryLongitudinalEvaluationRepository();
+    this.evaluationEngine = new LongitudinalEvaluationEngine({ repository: evalRepo });
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -3113,6 +3123,25 @@ export class ApeService {
 
   public listSecurityAuditLogs(filter?: any) {
     return this.securityEngine.listAuditLogs(filter);
+  }
+
+  // ==========================================
+  // Milestone 48: Longitudinal Evaluation
+  // ==========================================
+  public evaluateLongitudinalSystem(input?: any) {
+    return this.evaluationEngine.evaluateSystem(input);
+  }
+
+  public verifyContinuityProbe(probeType: any, baseline: string, postEvent: string) {
+    return this.evaluationEngine.verifyContinuity(probeType, baseline, postEvent);
+  }
+
+  public listLongitudinalReports(limit?: number) {
+    return this.evaluationEngine.listReports(limit);
+  }
+
+  public listContinuityProbes(probeType?: string, limit?: number) {
+    return this.evaluationEngine.listProbes(probeType, limit);
   }
 }
 

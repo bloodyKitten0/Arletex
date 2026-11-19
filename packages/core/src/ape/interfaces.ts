@@ -190,6 +190,8 @@ import {
   SecurityBoundaryPolicy,
   SecurityActionCategory,
   SecurityAuditEventType,
+  LongitudinalEvaluationReport,
+  ContinuityVerificationProbe,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -870,6 +872,15 @@ export interface IEthicalBoundariesSecurityRepository {
   getPolicyState(): SecurityBoundaryPolicy | null;
   savePolicyState(policy: SecurityBoundaryPolicy): void;
 }
+
+export interface ILongitudinalEvaluationRepository {
+  saveReport(report: LongitudinalEvaluationReport): void;
+  getReport(id: string): LongitudinalEvaluationReport | null;
+  listReports(limit?: number): LongitudinalEvaluationReport[];
+  saveProbe(probe: ContinuityVerificationProbe): void;
+  listProbes(probeType?: string, limit?: number): ContinuityVerificationProbe[];
+}
+
 
 
 

@@ -862,6 +862,12 @@ export * from './offlineCognitiveActivity.js';
 // ==========================================
 export * from './ethicalBoundariesSecurity.js';
 
+// ==========================================
+// Longitudinal Evaluation Contracts (Milestone 48)
+// ==========================================
+export * from './longitudinalEvaluation.js';
+
+
 
 
 
