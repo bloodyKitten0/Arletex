@@ -24,5 +24,6 @@ export * from './repositories/learningRepository.js';
 export * from './repositories/reasoningRepository.js';
 export * from './repositories/causalRepository.js';
 export * from './repositories/predictiveRepository.js';
+export * from './repositories/simulationRepository.js';
 
 

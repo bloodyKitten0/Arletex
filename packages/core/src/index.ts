@@ -34,6 +34,7 @@ export * from './ape/learningAdaptationEngine.js';
 export * from './ape/generalReasoningEngine.js';
 export * from './ape/causalReasoningEngine.js';
 export * from './ape/predictiveCognitionEngine.js';
+export * from './ape/simulationEngine.js';
 export * from './ape/apeService.js';
 
 // Digital Agency Subsystem

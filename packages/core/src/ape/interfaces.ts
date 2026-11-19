@@ -74,6 +74,9 @@ import {
   CognitivePrediction,
   PredictionStatus,
   PredictionType,
+  SimulationScenario,
+  SimulationScenarioType,
+  AlternativeDecisionEvaluation,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -376,6 +379,21 @@ export interface IPredictiveRepository {
     limit?: number;
   }): CognitivePrediction[];
   deletePrediction(id: string): void;
+}
+
+export interface ISimulationRepository {
+  saveScenario(scenario: SimulationScenario): void;
+  getScenarioById(id: string): SimulationScenario | null;
+  listScenarios(filter?: {
+    type?: SimulationScenarioType;
+    limit?: number;
+  }): SimulationScenario[];
+  deleteScenario(id: string): void;
+
+  saveDecisionEvaluation(evaluation: AlternativeDecisionEvaluation): void;
+  getDecisionEvaluationById(id: string): AlternativeDecisionEvaluation | null;
+  listDecisionEvaluations(limit?: number): AlternativeDecisionEvaluation[];
+  deleteDecisionEvaluation(id: string): void;
 }
 
 

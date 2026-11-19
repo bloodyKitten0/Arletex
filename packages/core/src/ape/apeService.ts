@@ -121,6 +121,8 @@ import { InMemoryLearningRepository, LearningAdaptationEngine } from './learning
 import { InMemoryReasoningRepository, GeneralReasoningEngine } from './generalReasoningEngine.js';
 import { InMemoryCausalRepository, CausalReasoningEngine } from './causalReasoningEngine.js';
 import { InMemoryPredictiveRepository, PredictiveCognitionEngine } from './predictiveCognitionEngine.js';
+import { InMemorySimulationRepository, SimulationEngine } from './simulationEngine.js';
+import { ISimulationRepository } from './interfaces.js';
 
 export class ApeService {
   private readonly repo: IApeRepository;
@@ -152,6 +154,7 @@ export class ApeService {
   public readonly reasoningEngine: GeneralReasoningEngine;
   public readonly causalEngine: CausalReasoningEngine;
   public readonly predictiveEngine: PredictiveCognitionEngine;
+  public readonly simulationEngine: SimulationEngine;
 
   constructor(
     repo: IApeRepository,
@@ -171,6 +174,7 @@ export class ApeService {
     reasoningRepo?: IReasoningRepository,
     causalRepo?: ICausalRepository,
     predictiveRepo?: IPredictiveRepository,
+    simulationRepo?: ISimulationRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -219,6 +223,9 @@ export class ApeService {
 
     const predRepo = predictiveRepo || new InMemoryPredictiveRepository();
     this.predictiveEngine = new PredictiveCognitionEngine({ repository: predRepo, logger });
+
+    const simRepo = simulationRepo || new InMemorySimulationRepository();
+    this.simulationEngine = new SimulationEngine({ repository: simRepo, logger });
 
     this.appraisalEngine = new AppraisalEngine(emotions, inferenceGateway);
     this.transitionEngine = new AffectiveTransitionEngine(this.repo, emotions, moods);
@@ -1526,6 +1533,34 @@ export class ApeService {
 
   public getPredictiveSummary() {
     return this.predictiveEngine.getPredictiveSummary();
+  }
+
+  // ==========================================
+  // Milestone 17 — Simulation & Hypothetical Cognition
+  // ==========================================
+
+  public simulateScenario(input: Parameters<SimulationEngine['generateScenario']>[0]) {
+    return this.simulationEngine.generateScenario(input);
+  }
+
+  public reasonCounterfactual(input: Parameters<SimulationEngine['reasonCounterfactual']>[0]) {
+    return this.simulationEngine.reasonCounterfactual(input);
+  }
+
+  public explorePossibilities(input: Parameters<SimulationEngine['explorePossibilities']>[0]) {
+    return this.simulationEngine.explorePossibilities(input);
+  }
+
+  public simulateFuture(input: Parameters<SimulationEngine['simulateFuture']>[0]) {
+    return this.simulationEngine.simulateFuture(input);
+  }
+
+  public evaluateAlternativeDecisions(input: Parameters<SimulationEngine['evaluateAlternativeDecisions']>[0]) {
+    return this.simulationEngine.evaluateAlternativeDecisions(input);
+  }
+
+  public constructCreativeHypothetical(input: Parameters<SimulationEngine['constructCreativeHypothetical']>[0]) {
+    return this.simulationEngine.constructCreativeHypothetical(input);
   }
 }
 

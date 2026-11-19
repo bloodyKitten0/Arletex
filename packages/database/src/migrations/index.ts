@@ -1440,4 +1440,48 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('predictive_cognition_milestone16', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 28,
+    name: '028_imagination_and_simulation_milestone17',
+    up: `
+      -- Simulation Scenarios (Hypothetical cognition, scenario generation, counterfactuals, creative hypotheticals)
+      CREATE TABLE IF NOT EXISTS simulation_scenarios (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        baseline_context TEXT NOT NULL,
+        counterfactual_premise_json TEXT,
+        hypothetical_params_json TEXT NOT NULL DEFAULT '{}',
+        branches_json TEXT NOT NULL DEFAULT '[]',
+        uncertainty REAL NOT NULL,
+        plausibility REAL NOT NULL,
+        is_imagined INTEGER NOT NULL DEFAULT 1,
+        is_episodic_memory INTEGER NOT NULL DEFAULT 0,
+        recommended_action TEXT,
+        insights_json TEXT NOT NULL DEFAULT '[]',
+        created_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_simulation_scenarios_type ON simulation_scenarios (type);
+      CREATE INDEX IF NOT EXISTS idx_simulation_scenarios_created ON simulation_scenarios (created_at);
+
+      -- Alternative Decisions (Evaluations of decision options through simulated outcomes)
+      CREATE TABLE IF NOT EXISTS alternative_decisions (
+        id TEXT PRIMARY KEY,
+        decision_context TEXT NOT NULL,
+        options_json TEXT NOT NULL DEFAULT '[]',
+        selected_option_id TEXT NOT NULL,
+        rationale TEXT NOT NULL,
+        is_imagined INTEGER NOT NULL DEFAULT 1,
+        is_episodic_memory INTEGER NOT NULL DEFAULT 0,
+        evaluated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_alternative_decisions_evaluated ON alternative_decisions (evaluated_at);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('imagination_and_simulation_milestone17', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

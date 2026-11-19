@@ -707,5 +707,10 @@ export * from './causal.js';
 // ==========================================
 export * from './predictive.js';
 
+// ==========================================
+// Imagination and Simulation Contracts (Milestone 17)
+// ==========================================
+export * from './simulation.js';
+
 
 

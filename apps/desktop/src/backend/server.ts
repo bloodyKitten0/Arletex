@@ -87,6 +87,7 @@ import {
   SqliteReasoningRepository,
   SqliteCausalRepository,
   SqlitePredictiveRepository,
+  SqliteSimulationRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -203,6 +204,9 @@ export class ArletexBackendServer {
   // Predictive Cognition Subsystem (Milestone 16)
   public readonly predictiveRepo: SqlitePredictiveRepository;
 
+  // Imagination and Simulation Subsystem (Milestone 17)
+  public readonly simulationRepo: SqliteSimulationRepository;
+
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
   private port = 0;
@@ -250,6 +254,7 @@ export class ArletexBackendServer {
     this.reasoningRepo = new SqliteReasoningRepository(db);
     this.causalRepo = new SqliteCausalRepository(db);
     this.predictiveRepo = new SqlitePredictiveRepository(db);
+    this.simulationRepo = new SqliteSimulationRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -268,6 +273,7 @@ export class ArletexBackendServer {
       this.reasoningRepo,
       this.causalRepo,
       this.predictiveRepo,
+      this.simulationRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -4419,6 +4425,77 @@ Rules:
       if (url.pathname === '/api/ape/predictive/summary' && method === 'GET') {
         const summary = this.apeService.getPredictiveSummary();
         this.sendJson(res, 200, summary);
+        return;
+      }
+
+      // ==========================================
+      // Imagination and Simulation Routes (Milestone 17)
+      // ==========================================
+      if (url.pathname === '/api/ape/simulation/scenario' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const scenario = this.apeService.simulateScenario(body);
+        this.sendJson(res, 201, { success: true, scenario });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/simulation/counterfactual' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const scenario = this.apeService.reasonCounterfactual(body);
+        this.sendJson(res, 201, { success: true, scenario });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/simulation/possibilities' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const scenario = this.apeService.explorePossibilities(body);
+        this.sendJson(res, 201, { success: true, scenario });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/simulation/future' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const scenario = this.apeService.simulateFuture(body);
+        this.sendJson(res, 201, { success: true, scenario });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/simulation/evaluate-decisions' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const evaluation = this.apeService.evaluateAlternativeDecisions(body);
+        this.sendJson(res, 200, { success: true, evaluation });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/simulation/creative' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const scenario = this.apeService.constructCreativeHypothetical(body);
+        this.sendJson(res, 201, { success: true, scenario });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/simulation/scenarios' && method === 'GET') {
+        const type = url.searchParams.get('type') as any;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
+        const scenarios = this.apeService.simulationEngine.listScenarios({ type, limit });
+        this.sendJson(res, 200, scenarios);
+        return;
+      }
+
+      if (url.pathname.startsWith('/api/ape/simulation/scenarios/') && method === 'GET') {
+        const id = url.pathname.slice('/api/ape/simulation/scenarios/'.length);
+        const scenario = this.apeService.simulationEngine.getScenario(id);
+        if (!scenario) {
+          this.sendJson(res, 404, { error: 'Scenario not found' });
+          return;
+        }
+        this.sendJson(res, 200, scenario);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/simulation/decisions' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const evaluations = this.apeService.simulationEngine.listDecisionEvaluations(limit);
+        this.sendJson(res, 200, evaluations);
         return;
       }
 
