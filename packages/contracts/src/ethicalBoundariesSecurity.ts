@@ -23,7 +23,7 @@ export const SecurityAuthorizationDecisionSchema = z.object({
   actionCategory: SecurityActionCategorySchema,
   targetResource: z.string(),
   requestedPermission: SecurityPermissionLevelSchema,
-  allowed: boolean(),
+  allowed: z.boolean(),
   failClosedReason: z.string().optional(),
   approvalRequired: z.boolean().default(false),
   isApproved: z.boolean().default(false),
@@ -99,9 +99,10 @@ export const AuthorizeSecurityActionInputSchema = z.object({
   requestedPermission: SecurityPermissionLevelSchema.default('standard'),
   userInputPayload: z.string().optional(),
   userApproved: z.boolean().optional(),
+  approvalToken: z.string().optional(),
+  actionDigest: z.string().optional(),
+  userId: z.string().optional(),
   contextNotes: z.string().optional(),
 });
 export type AuthorizeSecurityActionInput = z.infer<typeof AuthorizeSecurityActionInputSchema>;
-function boolean() {
-  return z.boolean();
-}
+

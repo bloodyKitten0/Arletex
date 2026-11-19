@@ -131,11 +131,26 @@ export class SafeComputerAgencyService implements IComputerProvider {
         }
         child.unref();
 
-        // Verification probe: detect premature startup failure within 400ms
-        setTimeout(() => {
+        // Verification probe: detect premature startup failure and check active window presence
+        setTimeout(async () => {
           if (!settled) {
             settled = true;
-            resolve({ pid, isRunning: pid > 0 });
+            let windowFound: boolean | undefined = undefined;
+            try {
+              const win = await this.getActiveWindow();
+              if (
+                win &&
+                (win.appName.toLowerCase().includes(appName.toLowerCase()) ||
+                  win.title.toLowerCase().includes(appName.toLowerCase()))
+              ) {
+                windowFound = true;
+              } else {
+                windowFound = false;
+              }
+            } catch {
+              windowFound = false;
+            }
+            resolve({ pid, isRunning: pid > 0, windowFound } as any);
           }
         }, 400);
       } catch (err: any) {

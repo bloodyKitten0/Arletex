@@ -418,4 +418,193 @@ describe('P0 Adversarial Correctness and Security Boundary Suite', () => {
     expect(goodReset.success).toBe(true);
     expect(permissionController.isEmergencyShutdown()).toBe(false);
   });
+
+  // 14. Approval token scope and user identity validation
+  it('14. Approval token scope and user binding: rejects tokens with scope or user mismatch', () => {
+    const action: ActionProposal = {
+      id: crypto.randomUUID(),
+      taskId: crypto.randomUUID(),
+      stepIndex: 0,
+      type: 'execute_command',
+      payload: { command: 'code /tmp/safe.txt', userId: 'Proof' },
+      rationale: 'Open safe text file in code editor',
+      expectedOutcome: 'Editor opened',
+      riskLevel: 'high',
+      requiresExplicitApproval: true,
+      createdAt: new Date().toISOString(),
+    };
+
+    const digest = ActionPermissionController.computeActionDigest(action);
+    const target = ActionPermissionController.extractTargetResource(action);
+
+    // 14a. Token issued for 'system_read_file' scope presented for 'execute_command'
+    const wrongScopeToken = permissionController.createApprovalToken({
+      actionDigest: digest,
+      targetResource: target,
+      scope: 'action:system_read_file',
+      userId: 'Proof',
+    });
+
+    const scopeMismatchRes = permissionController.evaluate({
+      ...action,
+      payload: { ...action.payload, approvalToken: wrongScopeToken.token },
+    });
+    expect(scopeMismatchRes.decision).toBe('denied');
+    expect(scopeMismatchRes.reason).toContain('Approval token rejected: Approval token is bound to a different scope');
+
+    // 14b. Token issued for a different user
+    const otherUserToken = permissionController.createApprovalToken({
+      actionDigest: digest,
+      targetResource: target,
+      scope: 'action:execute_command',
+      userId: 'bloodyKitten0',
+    });
+
+    const userMismatchRes = permissionController.evaluate({
+      ...action,
+      payload: { ...action.payload, userId: 'Proof', approvalToken: otherUserToken.token },
+    });
+    expect(userMismatchRes.decision).toBe('denied');
+    expect(userMismatchRes.reason).toContain('Approval token is bound to a different user identity');
+  });
+
+  // 15. Recursive canonicalization invariance
+  it('15. Recursive canonicalization invariance: nested object key order variations produce identical digests', () => {
+    const action1: ActionProposal = {
+      id: crypto.randomUUID(),
+      taskId: 'task-1',
+      stepIndex: 0,
+      type: 'execute_command',
+      payload: {
+        config: { z: 1, a: 2, nested: { b: 20, a: 10 } },
+        items: [1, 2, { y: 2, x: 1 }],
+      },
+      rationale: 'Test canonicalization',
+      expectedOutcome: 'Deterministic digest',
+      riskLevel: 'low',
+      requiresExplicitApproval: false,
+      createdAt: '2026-11-19T00:00:00.000Z',
+    };
+
+    const action2: ActionProposal = {
+      ...action1,
+      payload: {
+        items: [1, 2, { x: 1, y: 2 }],
+        config: { a: 2, nested: { a: 10, b: 20 }, z: 1 },
+      },
+    };
+
+    const digest1 = ActionPermissionController.computeActionDigest(action1);
+    const digest2 = ActionPermissionController.computeActionDigest(action2);
+    expect(digest1).toBe(digest2);
+  });
+
+  // 16. Universal execution boundary routes filesystem and commands through closed-loop verification
+  it('16. Universal execution boundary: executes and empirically verifies filesystem and command operations', async () => {
+    const mockComputer = {
+      launchApp: async () => ({ pid: 1234, isRunning: true, windowFound: true }),
+      getActiveWindow: async () => ({ title: 'Code - safe.txt', appName: 'Code' }),
+      focusWindow: async () => true,
+      captureScreen: async () => ({ imageBase64: 'base64data', width: 1920, height: 1080 }),
+      readFile: async (fp: string) => `Content of ${fp}`,
+      writeFile: async (_fp: string, content: string) => ({ success: true, sizeBytes: content.length }),
+      listFiles: async () => ['file1.txt', 'file2.txt'],
+      executeCommand: async (cmd: string) => ({ exitCode: 0, stdout: `Executed ${cmd}`, stderr: '' }),
+    };
+
+    const verificationEngine = new VerificationEngine(rootLogger);
+    const agency = new ClosedLoopAgencyService({
+      permissionController,
+      computerProvider: mockComputer,
+      verificationEngine,
+      logger: rootLogger,
+    });
+
+    // Write file action
+    const writeAction: ActionProposal = {
+      id: crypto.randomUUID(),
+      taskId: crypto.randomUUID(),
+      stepIndex: 0,
+      type: 'system_write_file',
+      payload: { filePath: '/tmp/test.txt', content: 'hello world' },
+      rationale: 'Write test file',
+      expectedOutcome: 'File written safely',
+      riskLevel: 'medium',
+      requiresExplicitApproval: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    const writeObs = await agency.executeAction(writeAction);
+    expect(writeObs.success).toBe(true);
+    expect(writeObs.data?.sizeBytes).toBe(11);
+
+    const writeVer = verificationEngine.verify(writeAction, writeObs);
+    expect(writeVer.verified).toBe(true);
+    expect(writeVer.status).toBe('verified_successful');
+
+    // Read file action
+    const readAction: ActionProposal = {
+      ...writeAction,
+      id: crypto.randomUUID(),
+      type: 'system_read_file',
+    };
+    const readObs = await agency.executeAction(readAction);
+    expect(readObs.success).toBe(true);
+    const readVer = verificationEngine.verify(readAction, readObs);
+    expect(readVer.verified).toBe(true);
+    expect(readVer.observedOutcome).toContain('File content read');
+
+    // Command exec action
+    const cmdAction: ActionProposal = {
+      ...writeAction,
+      id: crypto.randomUUID(),
+      type: 'execute_command',
+      payload: { command: 'echo hello' },
+    };
+    const cmdObs = await agency.executeAction(cmdAction);
+    expect(cmdObs.success).toBe(true);
+    const cmdVer = verificationEngine.verify(cmdAction, cmdObs);
+    expect(cmdVer.verified).toBe(true);
+    expect(cmdVer.status).toBe('verified_successful');
+  });
+
+  // 17. Application launch verification fails when window is missing
+  it('17. App launch verification: fails when process starts but window is not detected', () => {
+    const verificationEngine = new VerificationEngine(rootLogger);
+    const action: ActionProposal = {
+      id: crypto.randomUUID(),
+      taskId: crypto.randomUUID(),
+      stepIndex: 0,
+      type: 'app_launch',
+      payload: { appName: 'google-chrome' },
+      rationale: 'Launch Chrome browser',
+      expectedOutcome: 'Window opens with title Google Chrome',
+      riskLevel: 'medium',
+      requiresExplicitApproval: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Observation with process running but windowFound: false
+    const failedObservation = {
+      id: crypto.randomUUID(),
+      taskId: action.taskId,
+      actionId: action.id,
+      source: 'process_table' as const,
+      timestamp: new Date().toISOString(),
+      success: true,
+      confidence: 1.0,
+      provenance: 'ComputerProvider.launchApp',
+      data: {
+        appName: 'google-chrome',
+        pid: 4321,
+        isRunning: true,
+        windowFound: false,
+      },
+    };
+
+    const ver = verificationEngine.verify(action, failedObservation);
+    expect(ver.verified).toBe(false);
+    expect(ver.status).toBe('partially_successful');
+    expect(ver.failureReason).toContain('Application window for \'google-chrome\' not visible or failed to map');
+  });
 });

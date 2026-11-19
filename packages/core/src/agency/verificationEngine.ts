@@ -321,6 +321,105 @@ export class VerificationEngine {
       };
     }
 
+    // 4b. File Read Verification
+    if (action.type === 'system_read_file') {
+      const filePath = action.payload?.filePath as string;
+      const content = observation.data?.content;
+      const verified = Boolean(observation.success && content !== undefined);
+      return {
+        actionId: action.id,
+        expectedOutcome: `Read file contents of ${filePath}`,
+        observedOutcome: verified
+          ? `File content read (${String(content).length} chars)`
+          : (observation.error || 'Failed to read file'),
+        verified,
+        confidence: verified ? 1.0 : 0.0,
+        status: verified ? 'verified_successful' : 'failed',
+        failureReason: verified ? null : (observation.error || 'Failed to read file'),
+        isRecoverable: !verified,
+        evidence: observation.data || {},
+        timestamp,
+      };
+    }
+
+    // 4c. Directory Listing Verification
+    if (action.type === 'system_list_directory') {
+      const dirPath = action.payload?.dirPath as string;
+      const entries = observation.data?.entries;
+      const verified = Boolean(observation.success && Array.isArray(entries));
+      return {
+        actionId: action.id,
+        expectedOutcome: `List directory entries of ${dirPath}`,
+        observedOutcome: verified
+          ? `Discovered ${entries.length} directory entry(ies)`
+          : (observation.error || 'Failed to list directory'),
+        verified,
+        confidence: verified ? 1.0 : 0.0,
+        status: verified ? 'verified_successful' : 'failed',
+        failureReason: verified ? null : (observation.error || 'Failed to list directory'),
+        isRecoverable: !verified,
+        evidence: observation.data || {},
+        timestamp,
+      };
+    }
+
+    // 4d. Command Execution Verification
+    if (action.type === 'execute_command') {
+      const cmd = String(action.payload?.command || '');
+      const exitCode = observation.data?.exitCode;
+      const verified = Boolean(observation.success && exitCode === 0);
+      return {
+        actionId: action.id,
+        expectedOutcome: `Command '${cmd}' completes with exit code 0`,
+        observedOutcome: verified
+          ? `Command completed successfully (exit code 0)`
+          : `Command failed with exit code ${exitCode ?? 'unknown'} [${observation.error || observation.data?.stderr || ''}]`,
+        verified,
+        confidence: 1.0,
+        status: verified ? 'verified_successful' : 'failed',
+        failureReason: verified ? null : (observation.error || `Process exited with code ${exitCode}`),
+        isRecoverable: !verified,
+        evidence: observation.data || {},
+        timestamp,
+      };
+    }
+
+    // 4e. External Communication Verification
+    if (action.type.startsWith('telegram_') || action.type === 'send_message') {
+      const sent = Boolean(observation.success && (observation.data?.messageId || observation.data?.sent));
+      return {
+        actionId: action.id,
+        expectedOutcome: action.expectedOutcome || 'Message delivered to recipient',
+        observedOutcome: sent
+          ? `Message delivered (messageId: ${observation.data?.messageId || 'acknowledged'})`
+          : (observation.error || 'Message dispatch failed'),
+        verified: sent,
+        confidence: sent ? 0.98 : 0.0,
+        status: sent ? 'verified_successful' : 'failed',
+        failureReason: sent ? null : (observation.error || 'Message dispatch failed'),
+        isRecoverable: !sent,
+        evidence: observation.data || {},
+        timestamp,
+      };
+    }
+
+    // 4f. Desktop Input Emulation Verification
+    if (action.type.startsWith('desktop_') && action.type !== 'desktop_take_screenshot') {
+      const executed = Boolean(observation.success && observation.data?.executed);
+      return {
+        actionId: action.id,
+        expectedOutcome: action.expectedOutcome,
+        observedOutcome: executed ? `Input action ${action.type} executed successfully` : (observation.error || 'Input execution failed'),
+        verified: executed,
+        confidence: executed ? 0.95 : 0.0,
+        status: executed ? 'verified_successful' : 'failed',
+        failureReason: executed ? null : (observation.error || 'Input execution failed'),
+        isRecoverable: !executed,
+        evidence: observation.data || {},
+        timestamp,
+      };
+    }
+
     // 5. Screen Capture & Environmental Inspection Verification
     if (action.type === 'desktop_take_screenshot' || action.type === 'capture_screen') {
       const hasImage = Boolean(

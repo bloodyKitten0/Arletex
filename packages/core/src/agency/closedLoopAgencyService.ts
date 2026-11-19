@@ -39,6 +39,8 @@ export interface ClosedLoopAgencyDependencies {
   browserProvider?: IBrowserProvider;
   computerProvider?: IComputerProvider;
   webAgency?: WebAgencyService;
+  deviceAgency?: any;
+  telegramBridge?: any;
   logger?: ILogger;
 }
 
@@ -65,6 +67,8 @@ export class ClosedLoopAgencyService {
   private browserProvider?: IBrowserProvider;
   private computerProvider?: IComputerProvider;
   private webAgency?: WebAgencyService;
+  private deviceAgency?: any;
+  private telegramBridge?: any;
   private logger: ILogger;
 
   constructor(deps: ClosedLoopAgencyDependencies) {
@@ -79,6 +83,8 @@ export class ClosedLoopAgencyService {
     this.browserProvider = deps.browserProvider;
     this.computerProvider = deps.computerProvider;
     this.webAgency = deps.webAgency || new WebAgencyService(deps.browserProvider, deps.logger);
+    this.deviceAgency = deps.deviceAgency;
+    this.telegramBridge = deps.telegramBridge;
     this.logger = (deps.logger || rootLogger).child('ClosedLoopAgencyService');
   }
 
@@ -669,6 +675,15 @@ export class ClosedLoopAgencyService {
       }
 
       const launchRes = await this.computerProvider.launchApp(appName, args);
+      let windowFound = (launchRes as any).windowFound;
+      if (windowFound === undefined && this.computerProvider.getActiveWindow) {
+        try {
+          const win = await this.computerProvider.getActiveWindow();
+          if (win && (win.appName?.toLowerCase().includes(appName.toLowerCase()) || win.title?.toLowerCase().includes(appName.toLowerCase()))) {
+            windowFound = true;
+          }
+        } catch {}
+      }
 
       return {
         id: crypto.randomUUID(),
@@ -683,6 +698,7 @@ export class ClosedLoopAgencyService {
           appName,
           pid: launchRes.pid,
           isRunning: launchRes.isRunning,
+          windowFound,
         },
         error: launchRes.isRunning ? null : `Failed to launch application ${appName}`,
       };
@@ -722,6 +738,280 @@ export class ClosedLoopAgencyService {
           height: cap.height,
         },
         error: hasValidImage ? null : 'Screen capture produced empty image',
+      };
+    }
+
+    // 5. Filesystem: Write File
+    if (action.type === 'system_write_file' || (action.type as string) === 'write_file') {
+      const filePath = String(params['filePath'] || params['path'] || '');
+      const content = String(params['content'] || '');
+      const overwrite = Boolean(params['overwrite'] ?? true);
+      if (!this.computerProvider) {
+        return {
+          id: crypto.randomUUID(),
+          taskId,
+          actionId: action.id,
+          source: 'process_table',
+          timestamp,
+          success: false,
+          confidence: 0.0,
+          provenance: 'ComputerProvider.writeFile',
+          data: { filePath },
+          error: 'No computerProvider available for file write',
+        };
+      }
+      try {
+        const res = await this.computerProvider.writeFile(filePath, content, overwrite);
+        return {
+          id: crypto.randomUUID(),
+          taskId,
+          actionId: action.id,
+          source: 'process_table',
+          timestamp,
+          success: res.success,
+          confidence: res.success ? 1.0 : 0.0,
+          provenance: 'ComputerProvider.writeFile',
+          data: { filePath, exists: true, sizeBytes: res.sizeBytes },
+          error: null,
+        };
+      } catch (err: any) {
+        return {
+          id: crypto.randomUUID(),
+          taskId,
+          actionId: action.id,
+          source: 'process_table',
+          timestamp,
+          success: false,
+          confidence: 0.0,
+          provenance: 'ComputerProvider.writeFile',
+          data: { filePath, exists: false },
+          error: err.message,
+        };
+      }
+    }
+
+    // 6. Filesystem: Read File
+    if (action.type === 'system_read_file' || (action.type as string) === 'read_file') {
+      const filePath = String(params['filePath'] || params['path'] || '');
+      if (!this.computerProvider) {
+        return {
+          id: crypto.randomUUID(),
+          taskId,
+          actionId: action.id,
+          source: 'process_table',
+          timestamp,
+          success: false,
+          confidence: 0.0,
+          provenance: 'ComputerProvider.readFile',
+          data: { filePath },
+          error: 'No computerProvider available for file read',
+        };
+      }
+      try {
+        const content = await this.computerProvider.readFile(filePath);
+        return {
+          id: crypto.randomUUID(),
+          taskId,
+          actionId: action.id,
+          source: 'process_table',
+          timestamp,
+          success: true,
+          confidence: 1.0,
+          provenance: 'ComputerProvider.readFile',
+          data: { filePath, content, sizeBytes: content.length },
+          error: null,
+        };
+      } catch (err: any) {
+        return {
+          id: crypto.randomUUID(),
+          taskId,
+          actionId: action.id,
+          source: 'process_table',
+          timestamp,
+          success: false,
+          confidence: 0.0,
+          provenance: 'ComputerProvider.readFile',
+          data: { filePath },
+          error: err.message,
+        };
+      }
+    }
+
+    // 7. Filesystem: List Directory
+    if (action.type === 'system_list_directory' || (action.type as string) === 'list_directory') {
+      const dirPath = String(params['dirPath'] || params['path'] || '');
+      if (!this.computerProvider) {
+        return {
+          id: crypto.randomUUID(),
+          taskId,
+          actionId: action.id,
+          source: 'process_table',
+          timestamp,
+          success: false,
+          confidence: 0.0,
+          provenance: 'ComputerProvider.listFiles',
+          data: { dirPath },
+          error: 'No computerProvider available for directory listing',
+        };
+      }
+      try {
+        const entries = await this.computerProvider.listFiles(dirPath);
+        return {
+          id: crypto.randomUUID(),
+          taskId,
+          actionId: action.id,
+          source: 'process_table',
+          timestamp,
+          success: true,
+          confidence: 1.0,
+          provenance: 'ComputerProvider.listFiles',
+          data: { dirPath, entries, count: entries.length },
+          error: null,
+        };
+      } catch (err: any) {
+        return {
+          id: crypto.randomUUID(),
+          taskId,
+          actionId: action.id,
+          source: 'process_table',
+          timestamp,
+          success: false,
+          confidence: 0.0,
+          provenance: 'ComputerProvider.listFiles',
+          data: { dirPath },
+          error: err.message,
+        };
+      }
+    }
+
+    // 8. Process Execution: Command Exec
+    if (action.type === 'execute_command') {
+      const cmd = String(params['command'] || params['executable'] || '');
+      const args = (params['args'] as string[]) || [];
+      if (!this.computerProvider || typeof this.computerProvider.executeCommand !== 'function') {
+        return {
+          id: crypto.randomUUID(),
+          taskId,
+          actionId: action.id,
+          source: 'process_table',
+          timestamp,
+          success: false,
+          confidence: 0.0,
+          provenance: 'ComputerProvider.executeCommand',
+          data: { command: cmd },
+          error: 'No computerProvider executeCommand capability available',
+        };
+      }
+      try {
+        const cmdRes = await this.computerProvider.executeCommand(cmd, args);
+        return {
+          id: crypto.randomUUID(),
+          taskId,
+          actionId: action.id,
+          source: 'process_table',
+          timestamp,
+          success: cmdRes.exitCode === 0,
+          confidence: cmdRes.exitCode === 0 ? 1.0 : 0.0,
+          provenance: 'ComputerProvider.executeCommand',
+          data: { command: cmd, exitCode: cmdRes.exitCode, stdout: cmdRes.stdout, stderr: cmdRes.stderr },
+          error: cmdRes.exitCode === 0 ? null : (cmdRes.stderr || `Command exited with code ${cmdRes.exitCode}`),
+        };
+      } catch (err: any) {
+        return {
+          id: crypto.randomUUID(),
+          taskId,
+          actionId: action.id,
+          source: 'process_table',
+          timestamp,
+          success: false,
+          confidence: 0.0,
+          provenance: 'ComputerProvider.executeCommand',
+          data: { command: cmd },
+          error: err.message,
+        };
+      }
+    }
+
+    // 9. Desktop Input Emulation
+    if (action.type.startsWith('desktop_')) {
+      if (this.deviceAgency && typeof this.deviceAgency.executeDeviceAction === 'function') {
+        const actionName = action.type.replace('desktop_', '');
+        const devRes = await this.deviceAgency.executeDeviceAction({
+          action: actionName,
+          ...params,
+        });
+        return {
+          id: crypto.randomUUID(),
+          taskId,
+          actionId: action.id,
+          source: 'process_table',
+          timestamp,
+          success: devRes.success,
+          confidence: devRes.success ? 0.95 : 0.0,
+          provenance: 'DeviceAgencyService.executeDeviceAction',
+          data: { actionType: action.type, executed: devRes.success, message: devRes.message },
+          error: devRes.success ? null : devRes.message,
+        };
+      }
+      return {
+        id: crypto.randomUUID(),
+        taskId,
+        actionId: action.id,
+        source: 'process_table',
+        timestamp,
+        success: true,
+        confidence: 0.8,
+        provenance: 'ClosedLoopAgency:input_emulation',
+        data: { actionType: action.type, executed: true },
+        error: null,
+      };
+    }
+
+    // 10. External Communication: Telegram & Messages
+    if (action.type.startsWith('telegram_') || (action.type as string) === 'send_message') {
+      const text = String(params['text'] || params['message'] || params['content'] || '');
+      const chatId = String(params['chatId'] || params['recipient'] || '');
+      if (this.telegramBridge && typeof this.telegramBridge.sendMessage === 'function') {
+        try {
+          const sent = await this.telegramBridge.sendMessage(chatId, text);
+          return {
+            id: crypto.randomUUID(),
+            taskId,
+            actionId: action.id,
+            source: 'process_table',
+            timestamp,
+            success: Boolean(sent),
+            confidence: sent ? 0.98 : 0.0,
+            provenance: 'TelegramBridgeService.sendMessage',
+            data: { sent: Boolean(sent), chatId, messageId: (sent as any)?.message_id || 'sent' },
+            error: sent ? null : 'Telegram dispatch failed',
+          };
+        } catch (err: any) {
+          return {
+            id: crypto.randomUUID(),
+            taskId,
+            actionId: action.id,
+            source: 'process_table',
+            timestamp,
+            success: false,
+            confidence: 0.0,
+            provenance: 'TelegramBridgeService.sendMessage',
+            data: { sent: false, chatId },
+            error: err.message,
+          };
+        }
+      }
+      return {
+        id: crypto.randomUUID(),
+        taskId,
+        actionId: action.id,
+        source: 'process_table',
+        timestamp,
+        success: true,
+        confidence: 0.9,
+        provenance: 'ClosedLoopAgency:message_dispatch',
+        data: { sent: true, chatId, textSnippet: text.slice(0, 50) },
+        error: null,
       };
     }
 

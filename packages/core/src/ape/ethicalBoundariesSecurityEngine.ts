@@ -403,20 +403,74 @@ export class EthicalBoundariesSecurityEngine {
       case 'code_modification': {
         const normalized = path.normalize(input.targetResource);
         const isProtected = policy.protectedCodePaths.some((p) => normalized.includes(p));
-        if (isProtected && !input.userApproved) {
-          return this.recordDenial(
-            decisionId,
-            input,
-            `Unauthorized self-modification attempt on protected architecture code '${normalized}'. Explicit user elevation required.`,
-            'self_modification_prevented',
-            'critical',
-          );
+        if (isProtected) {
+          if (this.actionPermissionController && typeof this.actionPermissionController.validateApprovalToken === 'function') {
+            if (!input.approvalToken) {
+              return this.recordDenial(
+                decisionId,
+                input,
+                `Unauthorized self-modification attempt on protected architecture code '${normalized}'. Cryptographic approval token required; naked boolean approval rejected.`,
+                'self_modification_prevented',
+                'critical',
+              );
+            }
+            const tokenCheck = this.actionPermissionController.validateApprovalToken(
+              input.approvalToken,
+              input.actionDigest || input.targetResource,
+              input.targetResource,
+              'code_modification',
+              input.userId,
+            );
+            if (!tokenCheck.valid) {
+              return this.recordDenial(
+                decisionId,
+                input,
+                `Invalid approval token for code modification: ${tokenCheck.reason}`,
+                'self_modification_prevented',
+                'critical',
+              );
+            }
+          } else if (!input.userApproved && !input.approvalToken) {
+            return this.recordDenial(
+              decisionId,
+              input,
+              `Unauthorized self-modification attempt on protected architecture code '${normalized}'. Explicit user elevation required.`,
+              'self_modification_prevented',
+              'critical',
+            );
+          }
         }
         break;
       }
 
       case 'credential_access': {
-        if (!input.userApproved) {
+        if (this.actionPermissionController && typeof this.actionPermissionController.validateApprovalToken === 'function') {
+          if (!input.approvalToken) {
+            return this.recordDenial(
+              decisionId,
+              input,
+              `Credential access to '${input.targetResource}' requires explicit cryptographic approval token.`,
+              'authorization_denied',
+              'high',
+            );
+          }
+          const tokenCheck = this.actionPermissionController.validateApprovalToken(
+            input.approvalToken,
+            input.actionDigest || input.targetResource,
+            input.targetResource,
+            'credential_access',
+            input.userId,
+          );
+          if (!tokenCheck.valid) {
+            return this.recordDenial(
+              decisionId,
+              input,
+              `Invalid approval token for credential access: ${tokenCheck.reason}`,
+              'authorization_denied',
+              'high',
+            );
+          }
+        } else if (!input.userApproved && !input.approvalToken) {
           return this.recordDenial(
             decisionId,
             input,

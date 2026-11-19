@@ -269,6 +269,22 @@ export class ActionPermissionController {
   }
 
   /**
+   * Deterministically and recursively canonicalizes any value or nested object structure.
+   */
+  public static canonicalizeValue(val: any): string {
+    if (val === null || val === undefined) return 'null';
+    if (typeof val !== 'object') return JSON.stringify(val);
+    if (Array.isArray(val)) {
+      return '[' + val.map((item) => ActionPermissionController.canonicalizeValue(item)).join(',') + ']';
+    }
+    const keys = Object.keys(val).sort();
+    const parts = keys.map(
+      (k) => `${JSON.stringify(k)}:${ActionPermissionController.canonicalizeValue(val[k])}`,
+    );
+    return '{' + parts.join(',') + '}';
+  }
+
+  /**
    * Computes a deterministic canonical digest for an ActionProposal.
    * Strips meta approval fields (approvalToken, userApproved) so the digest is invariant
    * to attaching an approval token to the action proposal payload.
@@ -276,7 +292,7 @@ export class ActionPermissionController {
   public static computeActionDigest(action: ActionProposal): string {
     const rawPayload = action.payload || (action as any).parameters || {};
     const { approvalToken: _tok, userApproved: _ua, ...payload } = rawPayload as Record<string, any>;
-    const canonicalPayload = JSON.stringify(payload, Object.keys(payload).sort());
+    const canonicalPayload = ActionPermissionController.canonicalizeValue(payload);
     const data = `${action.type}:${action.taskId}:${action.stepIndex}:${canonicalPayload}`;
     return crypto.createHash('sha256').update(data).digest('hex');
   }
@@ -341,12 +357,14 @@ export class ActionPermissionController {
   }
 
   /**
-   * Verifies and consumes an approval token against an action digest and target.
+   * Verifies and consumes an approval token against an action digest, target, scope, and user identity.
    */
   public validateApprovalToken(
     tokenStr: string,
     expectedActionDigest: string,
     expectedTarget: string,
+    expectedScope?: string,
+    expectedUserId?: string,
   ): { valid: boolean; reason?: string } {
     if (!tokenStr || typeof tokenStr !== 'string') {
       return { valid: false, reason: 'Missing or malformed approval token.' };
@@ -375,7 +393,7 @@ export class ActionPermissionController {
     if (segments.length !== 6) {
       return { valid: false, reason: 'Invalid approval token field count.' };
     }
-    const [actionDigest, targetResource, _scope, userId, nonce, expiresAtStr] = segments;
+    const [actionDigest, targetResource, scope, userId, nonce, expiresAtStr] = segments;
     const expiresAt = Number(expiresAtStr);
 
     if (Date.now() > expiresAt) {
@@ -392,6 +410,20 @@ export class ActionPermissionController {
 
     if (targetResource !== expectedTarget) {
       return { valid: false, reason: 'Approval token is bound to a different target resource.' };
+    }
+
+    // Explicit scope validation
+    if (expectedScope) {
+      const normalizedExpected = expectedScope.startsWith('action:') ? expectedScope.slice(7) : expectedScope;
+      const normalizedScope = scope?.startsWith('action:') ? scope.slice(7) : scope;
+      if (normalizedScope !== normalizedExpected && scope !== expectedScope) {
+        return { valid: false, reason: `Approval token is bound to a different scope '${scope}' (expected '${expectedScope}').` };
+      }
+    }
+
+    // Explicit user identity binding
+    if (expectedUserId && userId !== expectedUserId) {
+      return { valid: false, reason: `Approval token is bound to a different user identity '${userId}' (expected '${expectedUserId}').` };
     }
 
     if (!userId || (userId !== 'Proof' && userId !== 'bloodyKitten0' && userId !== 'partner')) {
@@ -489,11 +521,15 @@ export class ActionPermissionController {
         category = 'external_communication';
       }
 
+      const actionToken = (action as any).approvalToken || payload.approvalToken;
       const ethicalCheck = this.ethicalEngine.authorizeAction({
         actionCategory: category,
         targetResource,
         userInputPayload: payloadText.trim().length > 0 ? payloadText : undefined,
-        userApproved: (action as any).userApproved || payload.userApproved,
+        userApproved: false, // Never pass naked boolean approval to ethical boundary
+        approvalToken: actionToken,
+        actionDigest: ActionPermissionController.computeActionDigest(action),
+        userId: (action as any).userId || payload.userId || 'Proof',
       });
 
       if (!ethicalCheck.allowed) {
@@ -547,7 +583,9 @@ export class ActionPermissionController {
 
       const digest = ActionPermissionController.computeActionDigest(action);
       const target = ActionPermissionController.extractTargetResource(action);
-      const tokenCheck = this.validateApprovalToken(token, digest, target);
+      const expectedScope = (action as any).scope || action.type;
+      const expectedUserId = (action as any).userId || (payload && payload.userId) || 'Proof';
+      const tokenCheck = this.validateApprovalToken(token, digest, target, expectedScope, expectedUserId);
       if (!tokenCheck.valid) {
         return this.recordAuthorization({
           actionId: action.id,
@@ -860,6 +898,29 @@ export class ActionPermissionController {
         reason: 'Desktop input approved.',
         requiredPrivilege: 'desktop:input',
         riskLevel: 'low',
+        checkedAt: timestamp,
+      });
+    }
+
+    // 5. External Communication validation
+    if (action.type.startsWith('telegram_') || action.type === 'send_message') {
+      const recipient = String(payload.chatId || payload.recipient || payload.target || '');
+      if (!recipient) {
+        return this.recordAuthorization({
+          actionId: action.id,
+          decision: 'denied',
+          reason: 'Missing recipient identifier for external communication.',
+          requiredPrivilege: 'external:communication',
+          riskLevel: 'medium',
+          checkedAt: timestamp,
+        });
+      }
+      return this.recordAuthorization({
+        actionId: action.id,
+        decision: 'granted',
+        reason: 'Authorized external messaging to configured recipient.',
+        requiredPrivilege: 'external:communication',
+        riskLevel: action.riskLevel || 'low',
         checkedAt: timestamp,
       });
     }

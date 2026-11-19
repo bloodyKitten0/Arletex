@@ -99,6 +99,11 @@ export const ActionTypeSchema = z.enum([
   'system_read_file',
   'system_write_file',
   'system_list_directory',
+
+  // External communication actions
+  'send_message',
+  'telegram_message',
+  'telegram_send_message',
 ]);
 export type ActionType = z.infer<typeof ActionTypeSchema>;
 
@@ -178,6 +183,7 @@ export const ExecutionStatusSchema = z.enum([
   'attempted',
   'executing',
   'executed',
+  'observed',
   'executed_unverified',
   'verified_outcome',
   'verified_successful',
