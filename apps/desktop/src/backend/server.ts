@@ -86,6 +86,7 @@ import {
   SqliteLearningRepository,
   SqliteReasoningRepository,
   SqliteCausalRepository,
+  SqlitePredictiveRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -199,6 +200,9 @@ export class ArletexBackendServer {
   // Causal Reasoning Subsystem (Milestone 15)
   public readonly causalRepo: SqliteCausalRepository;
 
+  // Predictive Cognition Subsystem (Milestone 16)
+  public readonly predictiveRepo: SqlitePredictiveRepository;
+
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
   private port = 0;
@@ -245,6 +249,7 @@ export class ArletexBackendServer {
     this.learningRepo = new SqliteLearningRepository(db);
     this.reasoningRepo = new SqliteReasoningRepository(db);
     this.causalRepo = new SqliteCausalRepository(db);
+    this.predictiveRepo = new SqlitePredictiveRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -262,6 +267,7 @@ export class ArletexBackendServer {
       this.learningRepo,
       this.reasoningRepo,
       this.causalRepo,
+      this.predictiveRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -4329,6 +4335,89 @@ Rules:
 
       if (url.pathname === '/api/ape/causal/summary' && method === 'GET') {
         const summary = this.apeService.getCausalSummary();
+        this.sendJson(res, 200, summary);
+        return;
+      }
+
+      // ==========================================
+      // Predictive Cognition Subsystem Routes (Milestone 16)
+      // ==========================================
+      if (url.pathname === '/api/ape/predictive/prediction' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const prediction = this.apeService.makeCognitivePrediction(body);
+        this.sendJson(res, 201, { success: true, prediction });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/predictive/resolve' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const resolved = this.apeService.resolveCognitivePrediction(
+          body.id,
+          body.actualOutcome,
+          body.notes,
+          body.resolvedAt,
+        );
+        this.sendJson(res, 200, { success: true, prediction: resolved });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/predictive/obstacles' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const obstacles = this.apeService.predictOperationalObstacles(
+          body.taskOrPlanDescription,
+          body.domain,
+        );
+        this.sendJson(res, 200, { success: true, obstacles });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/predictive/consequences' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const consequences = this.apeService.predictActionConsequences(
+          body.intendedAction,
+          body.context,
+          body.domain,
+        );
+        this.sendJson(res, 200, { success: true, consequences });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/predictive/behavior' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const predictions = this.apeService.predictEntityBehavior(
+          body.agentOrEntity,
+          body.context,
+          body.likelyActions,
+          body.domain,
+        );
+        this.sendJson(res, 200, { success: true, predictions });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/predictive/predictions' && method === 'GET') {
+        const domain = url.searchParams.get('domain') || undefined;
+        const status = url.searchParams.get('status') as any;
+        const predictionType = url.searchParams.get('predictionType') as any;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
+        const predictions = this.apeService.predictiveEngine['repo'].listPredictions({
+          domain,
+          status,
+          predictionType,
+          limit,
+        });
+        this.sendJson(res, 200, predictions);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/predictive/metrics' && method === 'GET') {
+        const domain = url.searchParams.get('domain') || undefined;
+        const metrics = this.apeService.getPredictionAccuracyMetrics(domain);
+        this.sendJson(res, 200, metrics);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/predictive/summary' && method === 'GET') {
+        const summary = this.apeService.getPredictiveSummary();
         this.sendJson(res, 200, summary);
         return;
       }

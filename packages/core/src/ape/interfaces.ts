@@ -71,6 +71,9 @@ import {
   ReasoningParadigm,
   CausalGraphModel,
   CausalIntervention,
+  CognitivePrediction,
+  PredictionStatus,
+  PredictionType,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -360,6 +363,19 @@ export interface ICausalRepository {
 
   recordIntervention(intervention: CausalIntervention): void;
   listInterventions(graphId?: string): CausalIntervention[];
+}
+
+export interface IPredictiveRepository {
+  createPrediction(prediction: CognitivePrediction): void;
+  getPredictionById(id: string): CognitivePrediction | null;
+  updatePrediction(prediction: CognitivePrediction): void;
+  listPredictions(filter?: {
+    domain?: string;
+    status?: PredictionStatus;
+    predictionType?: PredictionType;
+    limit?: number;
+  }): CognitivePrediction[];
+  deletePrediction(id: string): void;
 }
 
 

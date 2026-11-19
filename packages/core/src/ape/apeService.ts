@@ -91,6 +91,7 @@ import {
   ILearningRepository,
   IReasoningRepository,
   ICausalRepository,
+  IPredictiveRepository,
 } from './interfaces.js';
 import { ILogger, rootLogger } from '../logger.js';
 import { AppraisalEngine } from './appraisalEngine.js';
@@ -119,6 +120,7 @@ import { InMemoryMultiSystemMemoryRepository, MultiSystemMemoryEngine } from './
 import { InMemoryLearningRepository, LearningAdaptationEngine } from './learningAdaptationEngine.js';
 import { InMemoryReasoningRepository, GeneralReasoningEngine } from './generalReasoningEngine.js';
 import { InMemoryCausalRepository, CausalReasoningEngine } from './causalReasoningEngine.js';
+import { InMemoryPredictiveRepository, PredictiveCognitionEngine } from './predictiveCognitionEngine.js';
 
 export class ApeService {
   private readonly repo: IApeRepository;
@@ -149,6 +151,7 @@ export class ApeService {
   public readonly learningEngine: LearningAdaptationEngine;
   public readonly reasoningEngine: GeneralReasoningEngine;
   public readonly causalEngine: CausalReasoningEngine;
+  public readonly predictiveEngine: PredictiveCognitionEngine;
 
   constructor(
     repo: IApeRepository,
@@ -167,6 +170,7 @@ export class ApeService {
     learningRepo?: ILearningRepository,
     reasoningRepo?: IReasoningRepository,
     causalRepo?: ICausalRepository,
+    predictiveRepo?: IPredictiveRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -212,6 +216,9 @@ export class ApeService {
 
     const cRepo = causalRepo || new InMemoryCausalRepository();
     this.causalEngine = new CausalReasoningEngine({ repository: cRepo, logger });
+
+    const predRepo = predictiveRepo || new InMemoryPredictiveRepository();
+    this.predictiveEngine = new PredictiveCognitionEngine({ repository: predRepo, logger });
 
     this.appraisalEngine = new AppraisalEngine(emotions, inferenceGateway);
     this.transitionEngine = new AffectiveTransitionEngine(this.repo, emotions, moods);
@@ -797,6 +804,9 @@ export class ApeService {
     const causalSummary = this.causalEngine.getCausalSummary();
     const causalLine = `\n- Causal Reasoning: ${causalSummary.totalGraphs} causal models (${causalSummary.totalLinks} links, ${causalSummary.verifiedInterventionsCount} verified interventions). Invariant: Correlation strictly distinguished from causation; alternative confounders evaluated.`;
 
+    const predictiveSummary = this.predictiveEngine.getPredictiveSummary();
+    const predictiveLine = `\n- Predictive Cognition: Prospective anticipations active (${predictiveSummary.totalPredictions} predictions, ${predictiveSummary.pendingCount} pending, accuracy: ${(predictiveSummary.overallAccuracyRate * 100).toFixed(0)}%, Brier score: ${predictiveSummary.meanBrierScore.toFixed(2)}). Invariant: Generated strictly prior to outcome resolution; post-hoc fabrication forbidden.`;
+
     const complexity = aff.contextual.affectiveComplexity;
     let complexityLine = '';
     if (
@@ -817,7 +827,7 @@ export class ApeService {
 [Active Psychology Engine (APE Phase 1 Live State)]
 - Current Persistent Mood: ${aff.currentMood.toUpperCase()}
 - Affective Dimensions: Valence ${aff.pad.valence >= 0 ? '+' : ''}${aff.pad.valence.toFixed(2)}, Arousal ${aff.pad.arousal.toFixed(2)}, Dominance ${aff.pad.dominance.toFixed(2)}
-- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}${capsLine}${limsLine}${narrativeLine}${temporalLine}${worldLine}${perceptionLine}${embodimentLine}${sensorimotorLine}${situationalLine}${attentionLine}${workingMemoryLine}${multiSystemMemoryLine}${learningLine}${reasoningLine}${causalLine}${complexityLine}
+- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}${capsLine}${limsLine}${narrativeLine}${temporalLine}${worldLine}${perceptionLine}${embodimentLine}${sensorimotorLine}${situationalLine}${attentionLine}${workingMemoryLine}${multiSystemMemoryLine}${learningLine}${reasoningLine}${causalLine}${predictiveLine}${complexityLine}
 - Demeanor & Cadence: ${modulation.toneDirective}
 - Vocal Register: ${modulation.vocalRegister}${intimacyDirectives}
 - Grounding: Speak naturally and authentically from this internal state. Keep dialogue focused, grounded, and concise without reciting internal parameters or rambling.
@@ -1465,6 +1475,57 @@ export class ApeService {
 
   public getCausalSummary() {
     return this.causalEngine.getCausalSummary();
+  }
+
+  // ==========================================
+  // Predictive Cognition (Milestone 16)
+  // ==========================================
+
+  public makeCognitivePrediction(input: {
+    domain: string;
+    predictionType: any;
+    targetStatement: string;
+    predictedProbability: number;
+    confidence: number;
+    rationale: string;
+    horizonDeadline: string;
+    createdAt?: string;
+  }) {
+    return this.predictiveEngine.makePrediction(input);
+  }
+
+  public resolveCognitivePrediction(
+    id: string,
+    actualOutcome: boolean,
+    notes?: string,
+    resolvedAt?: string,
+  ) {
+    return this.predictiveEngine.resolvePrediction(id, actualOutcome, notes, resolvedAt);
+  }
+
+  public predictOperationalObstacles(taskOrPlanDescription: string, domain?: string) {
+    return this.predictiveEngine.predictObstacles(taskOrPlanDescription, domain);
+  }
+
+  public predictActionConsequences(intendedAction: string, context: string, domain?: string) {
+    return this.predictiveEngine.predictConsequences(intendedAction, context, domain);
+  }
+
+  public predictEntityBehavior(
+    agentOrEntity: string,
+    context: string,
+    likelyActions: string[],
+    domain?: string,
+  ) {
+    return this.predictiveEngine.predictBehavior(agentOrEntity, context, likelyActions, domain);
+  }
+
+  public getPredictionAccuracyMetrics(domain?: string) {
+    return this.predictiveEngine.getAccuracyMetrics(domain);
+  }
+
+  public getPredictiveSummary() {
+    return this.predictiveEngine.getPredictiveSummary();
   }
 }
 

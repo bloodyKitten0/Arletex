@@ -1408,4 +1408,36 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('causal_reasoning_milestone15', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 27,
+    name: '027_predictive_cognition_milestone16',
+    up: `
+      -- Cognitive Predictions (prospective probabilistic predictions across events, consequences, behavior, obstacles)
+      CREATE TABLE IF NOT EXISTS cognitive_predictions (
+        id TEXT PRIMARY KEY,
+        domain TEXT NOT NULL,
+        prediction_type TEXT NOT NULL,
+        target_statement TEXT NOT NULL,
+        predicted_probability REAL NOT NULL,
+        confidence REAL NOT NULL,
+        rationale TEXT NOT NULL,
+        horizon_deadline TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        actual_outcome INTEGER,
+        actual_outcome_notes TEXT,
+        resolved_at TEXT,
+        prediction_error REAL,
+        brier_score REAL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_cognitive_predictions_domain ON cognitive_predictions (domain);
+      CREATE INDEX IF NOT EXISTS idx_cognitive_predictions_status ON cognitive_predictions (status);
+      CREATE INDEX IF NOT EXISTS idx_cognitive_predictions_deadline ON cognitive_predictions (horizon_deadline);
+      CREATE INDEX IF NOT EXISTS idx_cognitive_predictions_created ON cognitive_predictions (created_at);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('predictive_cognition_milestone16', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

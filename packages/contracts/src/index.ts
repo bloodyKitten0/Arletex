@@ -702,5 +702,10 @@ export * from './reasoning.js';
 // ==========================================
 export * from './causal.js';
 
+// ==========================================
+// Predictive Cognition Contracts (Milestone 16)
+// ==========================================
+export * from './predictive.js';
+
 
 
