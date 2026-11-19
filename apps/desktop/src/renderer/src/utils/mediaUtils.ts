@@ -212,6 +212,7 @@ export async function playSpeechQueue(
       firstChunk.leadPaddingMs,
     );
 
+    let playedAnyChunk = false;
     for (let i = 0; i < chunks.length; i++) {
       if (queueId !== activeQueueId || isCancelled) return;
 
@@ -231,6 +232,7 @@ export async function playSpeechQueue(
       }
 
       if (!currentRes?.audioBase64 || isCancelled) continue;
+      playedAnyChunk = true;
 
       await new Promise<void>((resolve) => {
         if (queueId !== activeQueueId || isCancelled) {
@@ -265,6 +267,9 @@ export async function playSpeechQueue(
         audio.onerror = cleanup;
         audio.play().catch(cleanup);
       });
+    }
+    if (!playedAnyChunk && !isCancelled && chunks.length > 0) {
+      if (onError) onError(new Error('Voice synthesis returned no audio data. Kokoro model may be initializing.'));
     }
   } catch (err) {
     if (onError && !isCancelled) onError(err);

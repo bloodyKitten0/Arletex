@@ -30,6 +30,38 @@ RMVPE_PATH = default_rmvpe if os.path.exists(default_rmvpe) else (
     os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "rmvpe.pt")
 )
 
+# Guard against EIO / BrokenPipeError if stdout/stderr was attached to a closed terminal
+class SafeStream:
+    def __init__(self, stream):
+        self._stream = stream
+    def write(self, s):
+        try:
+            return self._stream.write(s)
+        except (OSError, IOError):
+            return len(s) if isinstance(s, (str, bytes)) else 0
+    def flush(self):
+        try:
+            self._stream.flush()
+        except (OSError, IOError):
+            pass
+    def fileno(self):
+        try:
+            return self._stream.fileno()
+        except Exception:
+            return 1
+    def isatty(self):
+        try:
+            return self._stream.isatty()
+        except Exception:
+            return False
+    def __getattr__(self, attr):
+        return getattr(self._stream, attr)
+
+if sys.stdout is not None:
+    sys.stdout = SafeStream(sys.stdout)
+if sys.stderr is not None:
+    sys.stderr = SafeStream(sys.stderr)
+
 # Patch PyAV for newer versions where metadata_errors argument was removed
 try:
     import av
