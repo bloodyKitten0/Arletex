@@ -77,6 +77,9 @@ import {
   SimulationScenario,
   SimulationScenarioType,
   AlternativeDecisionEvaluation,
+  CognitiveAssessment,
+  MetacognitiveCorrection,
+  MetacognitiveContradictionItem,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -394,6 +397,22 @@ export interface ISimulationRepository {
   getDecisionEvaluationById(id: string): AlternativeDecisionEvaluation | null;
   listDecisionEvaluations(limit?: number): AlternativeDecisionEvaluation[];
   deleteDecisionEvaluation(id: string): void;
+}
+
+export interface IMetacognitionRepository {
+  saveAssessment(assessment: CognitiveAssessment): void;
+  getAssessmentById(id: string): CognitiveAssessment | null;
+  listAssessments(filter?: { targetDomain?: string; limit?: number }): CognitiveAssessment[];
+  deleteAssessment(id: string): void;
+
+  saveCorrection(correction: MetacognitiveCorrection): void;
+  getCorrectionById(id: string): MetacognitiveCorrection | null;
+  listCorrections(filter?: { assessmentId?: string; limit?: number }): MetacognitiveCorrection[];
+
+  saveContradiction(contradiction: MetacognitiveContradictionItem): void;
+  getContradictionById(id: string): MetacognitiveContradictionItem | null;
+  listContradictions(filter?: { status?: MetacognitiveContradictionItem['status']; limit?: number }): MetacognitiveContradictionItem[];
+  updateContradictionStatus(id: string, status: MetacognitiveContradictionItem['status'], notes?: string): void;
 }
 
 

@@ -122,7 +122,8 @@ import { InMemoryReasoningRepository, GeneralReasoningEngine } from './generalRe
 import { InMemoryCausalRepository, CausalReasoningEngine } from './causalReasoningEngine.js';
 import { InMemoryPredictiveRepository, PredictiveCognitionEngine } from './predictiveCognitionEngine.js';
 import { InMemorySimulationRepository, SimulationEngine } from './simulationEngine.js';
-import { ISimulationRepository } from './interfaces.js';
+import { InMemoryMetacognitionRepository, MetacognitionEngine } from './metacognitionEngine.js';
+import { ISimulationRepository, IMetacognitionRepository } from './interfaces.js';
 
 export class ApeService {
   private readonly repo: IApeRepository;
@@ -155,6 +156,7 @@ export class ApeService {
   public readonly causalEngine: CausalReasoningEngine;
   public readonly predictiveEngine: PredictiveCognitionEngine;
   public readonly simulationEngine: SimulationEngine;
+  public readonly metacognitionEngine: MetacognitionEngine;
 
   constructor(
     repo: IApeRepository,
@@ -175,6 +177,7 @@ export class ApeService {
     causalRepo?: ICausalRepository,
     predictiveRepo?: IPredictiveRepository,
     simulationRepo?: ISimulationRepository,
+    metacognitionRepo?: IMetacognitionRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -226,6 +229,9 @@ export class ApeService {
 
     const simRepo = simulationRepo || new InMemorySimulationRepository();
     this.simulationEngine = new SimulationEngine({ repository: simRepo, logger });
+
+    const metaRepo = metacognitionRepo || new InMemoryMetacognitionRepository();
+    this.metacognitionEngine = new MetacognitionEngine({ repository: metaRepo, logger });
 
     this.appraisalEngine = new AppraisalEngine(emotions, inferenceGateway);
     this.transitionEngine = new AffectiveTransitionEngine(this.repo, emotions, moods);
@@ -1561,6 +1567,34 @@ export class ApeService {
 
   public constructCreativeHypothetical(input: Parameters<SimulationEngine['constructCreativeHypothetical']>[0]) {
     return this.simulationEngine.constructCreativeHypothetical(input);
+  }
+
+  // ==========================================
+  // Milestone 18 — Metacognition
+  // ==========================================
+
+  public assessCognitiveProcess(input: Parameters<MetacognitionEngine['evaluateCognitiveProcess']>[0]) {
+    return this.metacognitionEngine.evaluateCognitiveProcess(input);
+  }
+
+  public calibrateConfidence(statedConfidence: number, evidenceSufficiency: number, hasContradictions?: boolean) {
+    return this.metacognitionEngine.calibrateConfidence(statedConfidence, evidenceSufficiency, hasContradictions);
+  }
+
+  public detectContradictions(statements: string[]) {
+    return this.metacognitionEngine.detectContradictions(statements);
+  }
+
+  public assessEvidenceSufficiency(input: Parameters<MetacognitionEngine['assessEvidenceSufficiency']>[0]) {
+    return this.metacognitionEngine.assessEvidenceSufficiency(input);
+  }
+
+  public initiateSelfCorrection(input: Parameters<MetacognitionEngine['initiateSelfCorrection']>[0]) {
+    return this.metacognitionEngine.initiateSelfCorrection(input);
+  }
+
+  public decideInvestigation(assessmentId: string) {
+    return this.metacognitionEngine.decideInvestigation(assessmentId);
   }
 }
 

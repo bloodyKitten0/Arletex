@@ -712,5 +712,10 @@ export * from './predictive.js';
 // ==========================================
 export * from './simulation.js';
 
+// ==========================================
+// Metacognition Contracts (Milestone 18)
+// ==========================================
+export * from './metacognition.js';
+
 
 

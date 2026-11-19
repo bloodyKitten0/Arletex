@@ -88,6 +88,7 @@ import {
   SqliteCausalRepository,
   SqlitePredictiveRepository,
   SqliteSimulationRepository,
+  SqliteMetacognitionRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -207,6 +208,9 @@ export class ArletexBackendServer {
   // Imagination and Simulation Subsystem (Milestone 17)
   public readonly simulationRepo: SqliteSimulationRepository;
 
+  // Metacognition Subsystem (Milestone 18)
+  public readonly metacognitionRepo: SqliteMetacognitionRepository;
+
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
   private port = 0;
@@ -255,6 +259,7 @@ export class ArletexBackendServer {
     this.causalRepo = new SqliteCausalRepository(db);
     this.predictiveRepo = new SqlitePredictiveRepository(db);
     this.simulationRepo = new SqliteSimulationRepository(db);
+    this.metacognitionRepo = new SqliteMetacognitionRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -274,6 +279,7 @@ export class ArletexBackendServer {
       this.causalRepo,
       this.predictiveRepo,
       this.simulationRepo,
+      this.metacognitionRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -4496,6 +4502,90 @@ Rules:
         const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
         const evaluations = this.apeService.simulationEngine.listDecisionEvaluations(limit);
         this.sendJson(res, 200, evaluations);
+        return;
+      }
+
+      // ==========================================
+      // Metacognition Subsystem Routes (Milestone 18)
+      // ==========================================
+      if (url.pathname === '/api/ape/metacognition/assess' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const assessment = this.apeService.assessCognitiveProcess(body);
+        this.sendJson(res, 201, { success: true, assessment });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/metacognition/calibrate' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const calibration = this.apeService.calibrateConfidence(
+          body.statedConfidence,
+          body.evidenceSufficiency,
+          body.hasContradictions,
+        );
+        this.sendJson(res, 200, { success: true, calibration });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/metacognition/contradictions' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const contradictions = this.apeService.detectContradictions(body.statements);
+        this.sendJson(res, 200, { success: true, contradictions });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/metacognition/evidence-sufficiency' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const assessment = this.apeService.assessEvidenceSufficiency(body);
+        this.sendJson(res, 200, { success: true, assessment });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/metacognition/correct' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const correction = this.apeService.initiateSelfCorrection(body);
+        this.sendJson(res, 201, { success: true, correction });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/metacognition/investigate' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const decision = this.apeService.decideInvestigation(body.assessmentId);
+        this.sendJson(res, 200, { success: true, decision });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/metacognition/assessments' && method === 'GET') {
+        const targetDomain = url.searchParams.get('targetDomain') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
+        const assessments = this.apeService.metacognitionEngine.listAssessments({ targetDomain, limit });
+        this.sendJson(res, 200, assessments);
+        return;
+      }
+
+      if (url.pathname.startsWith('/api/ape/metacognition/assessments/') && method === 'GET') {
+        const id = url.pathname.slice('/api/ape/metacognition/assessments/'.length);
+        const assessment = this.apeService.metacognitionEngine.getAssessment(id);
+        if (!assessment) {
+          this.sendJson(res, 404, { error: 'Assessment not found' });
+          return;
+        }
+        this.sendJson(res, 200, assessment);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/metacognition/corrections' && method === 'GET') {
+        const assessmentId = url.searchParams.get('assessmentId') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
+        const corrections = this.apeService.metacognitionEngine.listCorrections({ assessmentId, limit });
+        this.sendJson(res, 200, corrections);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/metacognition/contradictions' && method === 'GET') {
+        const status = url.searchParams.get('status') as any;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
+        const contradictions = this.apeService.metacognitionEngine.listContradictions({ status, limit });
+        this.sendJson(res, 200, contradictions);
         return;
       }
 

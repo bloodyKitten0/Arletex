@@ -1484,4 +1484,65 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('imagination_and_simulation_milestone17', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 29,
+    name: '029_metacognition_milestone18',
+    up: `
+      -- Cognitive Assessments (Metacognitive evaluations of confidence calibration, uncertainty, evidence sufficiency, reasoning flaws)
+      CREATE TABLE IF NOT EXISTS cognitive_assessments (
+        id TEXT PRIMARY KEY,
+        target_cognition_id TEXT NOT NULL,
+        target_domain TEXT NOT NULL,
+        stated_confidence REAL NOT NULL,
+        calibrated_confidence REAL NOT NULL,
+        epistemic_uncertainty REAL NOT NULL,
+        aleatoric_uncertainty REAL NOT NULL,
+        evidence_sufficiency REAL NOT NULL,
+        is_evidence_sufficient INTEGER NOT NULL,
+        identified_assumptions_json TEXT NOT NULL DEFAULT '[]',
+        detected_contradictions_json TEXT NOT NULL DEFAULT '[]',
+        reasoning_quality_score REAL NOT NULL,
+        recognized_errors_json TEXT NOT NULL DEFAULT '[]',
+        needs_investigation INTEGER NOT NULL,
+        investigation_focus TEXT,
+        self_correction_initiated INTEGER NOT NULL,
+        corrective_actions_json TEXT NOT NULL DEFAULT '[]',
+        assessed_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_cognitive_assessments_domain ON cognitive_assessments (target_domain);
+      CREATE INDEX IF NOT EXISTS idx_cognitive_assessments_assessed ON cognitive_assessments (assessed_at);
+
+      -- Metacognitive Corrections (Self-correction records adjusting beliefs, assertions, and confidences)
+      CREATE TABLE IF NOT EXISTS metacognitive_corrections (
+        id TEXT PRIMARY KEY,
+        assessment_id TEXT NOT NULL,
+        original_claim TEXT NOT NULL,
+        corrected_claim TEXT NOT NULL,
+        confidence_adjustment REAL NOT NULL,
+        rationale TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'applied',
+        applied_at TEXT
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_metacognitive_corrections_assessment ON metacognitive_corrections (assessment_id);
+
+      -- Metacognitive Contradictions (Tracked contradictions across beliefs, premises, and observations)
+      CREATE TABLE IF NOT EXISTS metacognitive_contradictions (
+        id TEXT PRIMARY KEY,
+        statement_a TEXT NOT NULL,
+        statement_b TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'detected',
+        notes TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_metacognitive_contradictions_status ON metacognitive_contradictions (status);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('metacognition_milestone18', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];
