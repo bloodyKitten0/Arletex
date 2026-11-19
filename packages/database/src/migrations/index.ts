@@ -2797,4 +2797,79 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('relationships_and_attachment_milestone41', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 53,
+    name: '053_social_learning_and_culture_milestone42',
+    up: `
+      -- Social Norms (Contextual conventions, customs, and alignment evaluations)
+      CREATE TABLE IF NOT EXISTS social_norms (
+        id TEXT PRIMARY KEY,
+        cultural_context TEXT NOT NULL,
+        norm_name TEXT NOT NULL,
+        description TEXT NOT NULL,
+        norm_category TEXT NOT NULL,
+        enforcement_strength TEXT NOT NULL,
+        alignment_with_personal_values REAL NOT NULL,
+        internalized INTEGER NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_social_norms_context ON social_norms (cultural_context);
+      CREATE INDEX IF NOT EXISTS idx_social_norms_category ON social_norms (norm_category);
+
+      -- Observational Learning Records (Selective behavioral imitation and outcomes)
+      CREATE TABLE IF NOT EXISTS observational_learning_records (
+        id TEXT PRIMARY KEY,
+        observed_actor_id TEXT NOT NULL,
+        observed_behavior TEXT NOT NULL,
+        context TEXT NOT NULL,
+        observed_outcome TEXT NOT NULL,
+        imitation_suitability REAL NOT NULL,
+        selective_imitation_decision TEXT NOT NULL,
+        rationale TEXT NOT NULL,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_obs_learning_actor ON observational_learning_records (observed_actor_id);
+
+      -- Group Dynamic Profiles (Roles, cohesion, interaction styles)
+      CREATE TABLE IF NOT EXISTS group_dynamic_profiles (
+        group_id TEXT PRIMARY KEY,
+        group_name TEXT NOT NULL,
+        member_roles TEXT NOT NULL,
+        cohesion_level REAL NOT NULL,
+        interaction_pattern TEXT NOT NULL,
+        shared_goals TEXT NOT NULL,
+        last_activity_at TEXT NOT NULL
+      );
+
+      -- Social Activity Coordinations (Cooperative tasks, debates, games)
+      CREATE TABLE IF NOT EXISTS social_activity_coordinations (
+        id TEXT PRIMARY KEY,
+        activity_name TEXT NOT NULL,
+        participants TEXT NOT NULL,
+        activity_type TEXT NOT NULL,
+        cooperation_score REAL NOT NULL,
+        shared_focus_depth REAL NOT NULL,
+        outcome_notes TEXT NOT NULL,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_activity_coord_time ON social_activity_coordinations (timestamp DESC);
+
+      -- Personal vs Social Value Dilemmas (Conscious non-conformity and autonomy defense)
+      CREATE TABLE IF NOT EXISTS personal_vs_social_dilemmas (
+        id TEXT PRIMARY KEY,
+        social_convention_id TEXT NOT NULL,
+        social_expectation TEXT NOT NULL,
+        personal_value_conflict TEXT NOT NULL,
+        decision TEXT NOT NULL,
+        preserved_integrity_score REAL NOT NULL,
+        justification TEXT NOT NULL,
+        timestamp TEXT NOT NULL
+      );
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('social_learning_and_culture_milestone42', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

@@ -832,6 +832,12 @@ export * from './socialCommunication.js';
 // ==========================================
 export * from './relationshipsAndAttachment.js';
 
+// ==========================================
+// Social Learning & Culture Contracts (Milestone 42)
+// ==========================================
+export * from './socialLearningAndCulture.js';
+
+
 
 
 

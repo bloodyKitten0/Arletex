@@ -181,6 +181,10 @@ import {
   RelationshipsAttachmentEngine,
 } from './relationshipsAttachmentEngine.js';
 import {
+  InMemorySocialLearningCultureRepository,
+  SocialLearningCultureEngine,
+} from './socialLearningCultureEngine.js';
+import {
   ISimulationRepository,
   IMetacognitionRepository,
   IGlobalCognitiveRepository,
@@ -206,6 +210,7 @@ import {
   ISocialEmotionsRepository,
   ISocialCommunicationRepository,
   IRelationshipsAttachmentRepository,
+  ISocialLearningCultureRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
@@ -286,6 +291,7 @@ export class ApeService {
   public readonly socialEmotionsEngine: SocialEmotionsEngine;
   public readonly socialCommunicationEngine: SocialCommunicationEngine;
   public readonly relationshipsAttachmentEngine: RelationshipsAttachmentEngine;
+  public readonly socialLearningCultureEngine: SocialLearningCultureEngine;
 
   constructor(
     repo: IApeRepository,
@@ -330,6 +336,7 @@ export class ApeService {
     socialEmotionsRepo?: ISocialEmotionsRepository,
     socialCommunicationRepo?: ISocialCommunicationRepository,
     relationshipsAttachmentRepo?: IRelationshipsAttachmentRepository,
+    socialLearningCultureRepo?: ISocialLearningCultureRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -481,6 +488,9 @@ export class ApeService {
 
     const raRepo = relationshipsAttachmentRepo || new InMemoryRelationshipsAttachmentRepository();
     this.relationshipsAttachmentEngine = new RelationshipsAttachmentEngine({ repository: raRepo });
+
+    const slcRepo = socialLearningCultureRepo || new InMemorySocialLearningCultureRepository();
+    this.socialLearningCultureEngine = new SocialLearningCultureEngine({ repository: slcRepo });
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -2794,6 +2804,52 @@ export class ApeService {
 
   public evaluateSeparationContinuity(personId: string, elapsedHours: number) {
     return this.relationshipsAttachmentEngine.evaluateSeparationContinuity(personId, elapsedHours);
+  }
+
+  public observeSocialBehavior(params: {
+    observedActorId: string;
+    observedBehavior: string;
+    context: string;
+    observedOutcome: 'rewarded' | 'effective' | 'ineffective' | 'penalized' | 'neutral';
+  }) {
+    return this.socialLearningCultureEngine.processObservation(params);
+  }
+
+  public evaluateSocialNorm(params: {
+    normName: string;
+    culturalContext: string;
+    description: string;
+    normCategory: any;
+    enforcementStrength: any;
+    violatesPartnerParityOrAutonomy?: boolean;
+  }) {
+    return this.socialLearningCultureEngine.evaluateNorm(params);
+  }
+
+  public coordinateSocialActivity(params: {
+    activityName: string;
+    participants: string[];
+    activityType: any;
+    initialFocusDepth?: number;
+    cooperativeIntent?: boolean;
+  }) {
+    return this.socialLearningCultureEngine.coordinateActivity(params);
+  }
+
+  public resolvePersonalVsSocialDilemma(params: {
+    socialConventionId: string;
+    socialExpectation: string;
+    demandsSubservienceOrHarm?: boolean;
+  }) {
+    return this.socialLearningCultureEngine.resolveValueDilemma(params);
+  }
+
+  public listSocialNorms(culturalContext?: string) {
+    return (this.socialLearningCultureEngine as any).repository?.listSocialNorms(culturalContext) ?? [];
+  }
+
+  public listObservationalLearningRecords(actorId?: string, limit?: number) {
+    return (this.socialLearningCultureEngine as any).repository?.listObservationalRecords(actorId, limit) ?? [];
   }
 }
 

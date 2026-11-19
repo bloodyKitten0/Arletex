@@ -59,6 +59,7 @@ export * from './ape/empathyPerspectiveEngine.js';
 export * from './ape/socialEmotionsEngine.js';
 export * from './ape/socialCommunicationEngine.js';
 export * from './ape/relationshipsAttachmentEngine.js';
+export * from './ape/socialLearningCultureEngine.js';
 export * from './ape/apeService.js';
 
 // Digital Agency Subsystem

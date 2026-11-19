@@ -162,6 +162,11 @@ import {
   RelationalConflict,
   ApologyAndRepair,
   ConflictStatus,
+  SocialNorm,
+  ObservationalLearningRecord,
+  GroupDynamicProfile,
+  SocialActivityCoordination,
+  PersonalVsSocialValueDilemma,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -759,6 +764,22 @@ export interface IRelationshipsAttachmentRepository {
   saveApologyRepair(repair: ApologyAndRepair): void;
   listApologyRepairs(conflictId: string): ApologyAndRepair[];
 }
+
+export interface ISocialLearningCultureRepository {
+  saveSocialNorm(norm: SocialNorm): void;
+  getSocialNorm(id: string): SocialNorm | null;
+  listSocialNorms(culturalContext?: string): SocialNorm[];
+  saveObservationalRecord(record: ObservationalLearningRecord): void;
+  listObservationalRecords(actorId?: string, limit?: number): ObservationalLearningRecord[];
+  saveGroupProfile(profile: GroupDynamicProfile): void;
+  getGroupProfile(groupId: string): GroupDynamicProfile | null;
+  listGroupProfiles(): GroupDynamicProfile[];
+  saveActivityCoordination(activity: SocialActivityCoordination): void;
+  listActivityCoordinations(limit?: number): SocialActivityCoordination[];
+  saveValueDilemma(dilemma: PersonalVsSocialValueDilemma): void;
+  listValueDilemmas(limit?: number): PersonalVsSocialValueDilemma[];
+}
+
 
 
 

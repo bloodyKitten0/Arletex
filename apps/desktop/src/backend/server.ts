@@ -112,6 +112,7 @@ import {
   SqliteSocialEmotionsRepository,
   SqliteSocialCommunicationRepository,
   SqliteRelationshipsAttachmentRepository,
+  SqliteSocialLearningCultureRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -260,6 +261,7 @@ export class ArletexBackendServer {
   public readonly socialEmotionsRepo: SqliteSocialEmotionsRepository;
   public readonly socialCommunicationRepo: SqliteSocialCommunicationRepository;
   public readonly relationshipsAttachmentRepo: SqliteRelationshipsAttachmentRepository;
+  public readonly socialLearningCultureRepo: SqliteSocialLearningCultureRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -333,6 +335,7 @@ export class ArletexBackendServer {
     this.socialEmotionsRepo = new SqliteSocialEmotionsRepository(db);
     this.socialCommunicationRepo = new SqliteSocialCommunicationRepository(db);
     this.relationshipsAttachmentRepo = new SqliteRelationshipsAttachmentRepository(db);
+    this.socialLearningCultureRepo = new SqliteSocialLearningCultureRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -376,6 +379,7 @@ export class ArletexBackendServer {
       this.socialEmotionsRepo,
       this.socialCommunicationRepo,
       this.relationshipsAttachmentRepo,
+      this.socialLearningCultureRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -6280,6 +6284,68 @@ Rules:
         const elapsedHours = url.searchParams.get('elapsedHours') ? parseFloat(url.searchParams.get('elapsedHours')!) : 24;
         const result = await this.apeService.evaluateSeparationContinuity(personId, elapsedHours);
         this.sendJson(res, 200, { success: true, ...result });
+        return;
+      }
+
+      // ==========================================
+      // Social Learning & Culture Routes (Milestone 42)
+      // ==========================================
+      if (url.pathname === '/api/ape/culture/observe' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.observedActorId || !body.observedBehavior || !body.context || !body.observedOutcome) {
+          this.sendJson(res, 400, { error: 'observedActorId, observedBehavior, context, and observedOutcome are required' });
+          return;
+        }
+        const record = await this.apeService.observeSocialBehavior(body);
+        this.sendJson(res, 200, { success: true, record });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/culture/evaluate-norm' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.normName || !body.culturalContext || !body.description) {
+          this.sendJson(res, 400, { error: 'normName, culturalContext, and description are required' });
+          return;
+        }
+        const norm = await this.apeService.evaluateSocialNorm(body);
+        this.sendJson(res, 200, { success: true, norm });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/culture/norms' && method === 'GET') {
+        const culturalContext = url.searchParams.get('culturalContext') || undefined;
+        const norms = this.apeService.listSocialNorms(culturalContext);
+        this.sendJson(res, 200, { success: true, norms });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/culture/coordinate-activity' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.activityName || !body.participants || !body.activityType) {
+          this.sendJson(res, 400, { error: 'activityName, participants, and activityType are required' });
+          return;
+        }
+        const activity = await this.apeService.coordinateSocialActivity(body);
+        this.sendJson(res, 200, { success: true, activity });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/culture/resolve-dilemma' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.socialConventionId || !body.socialExpectation) {
+          this.sendJson(res, 400, { error: 'socialConventionId and socialExpectation are required' });
+          return;
+        }
+        const dilemma = await this.apeService.resolvePersonalVsSocialDilemma(body);
+        this.sendJson(res, 200, { success: true, dilemma });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/culture/observations' && method === 'GET') {
+        const actorId = url.searchParams.get('actorId') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const observations = this.apeService.listObservationalLearningRecords(actorId, limit);
+        this.sendJson(res, 200, { success: true, observations });
         return;
       }
 
