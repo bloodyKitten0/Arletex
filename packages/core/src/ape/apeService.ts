@@ -177,6 +177,10 @@ import {
   SocialCommunicationEngine,
 } from './socialCommunicationEngine.js';
 import {
+  InMemoryRelationshipsAttachmentRepository,
+  RelationshipsAttachmentEngine,
+} from './relationshipsAttachmentEngine.js';
+import {
   ISimulationRepository,
   IMetacognitionRepository,
   IGlobalCognitiveRepository,
@@ -201,6 +205,7 @@ import {
   IEmpathyPerspectiveRepository,
   ISocialEmotionsRepository,
   ISocialCommunicationRepository,
+  IRelationshipsAttachmentRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
@@ -280,6 +285,7 @@ export class ApeService {
   public readonly empathyEngine: EmpathyPerspectiveEngine;
   public readonly socialEmotionsEngine: SocialEmotionsEngine;
   public readonly socialCommunicationEngine: SocialCommunicationEngine;
+  public readonly relationshipsAttachmentEngine: RelationshipsAttachmentEngine;
 
   constructor(
     repo: IApeRepository,
@@ -323,6 +329,7 @@ export class ApeService {
     empathyRepo?: IEmpathyPerspectiveRepository,
     socialEmotionsRepo?: ISocialEmotionsRepository,
     socialCommunicationRepo?: ISocialCommunicationRepository,
+    relationshipsAttachmentRepo?: IRelationshipsAttachmentRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -471,6 +478,9 @@ export class ApeService {
 
     const scRepo = socialCommunicationRepo || new InMemorySocialCommunicationRepository();
     this.socialCommunicationEngine = new SocialCommunicationEngine({ repository: scRepo });
+
+    const raRepo = relationshipsAttachmentRepo || new InMemoryRelationshipsAttachmentRepository();
+    this.relationshipsAttachmentEngine = new RelationshipsAttachmentEngine({ repository: raRepo });
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -2727,6 +2737,63 @@ export class ApeService {
     audienceProfile: any,
   ) {
     return this.socialCommunicationEngine.evaluateContextualAppropriateness(utterance, context, audienceProfile);
+  }
+
+  public getAttachmentBond(personId: string) {
+    return this.relationshipsAttachmentEngine.getOrInitializeBond(personId);
+  }
+
+  public recordSharedHistoryEvent(
+    personId: string,
+    eventParams: {
+      title: string;
+      eventType: any;
+      significance: number;
+      narrativeSummary: string;
+      emotionalValence: number;
+    },
+  ) {
+    return this.relationshipsAttachmentEngine.recordSharedEvent(personId, eventParams);
+  }
+
+  public listSharedHistoryEvents(personId: string, limit?: number) {
+    return (this.relationshipsAttachmentEngine as any).repository?.listSharedEvents(personId, limit) ?? [];
+  }
+
+  public recognizeRelationalConflict(params: {
+    personId: string;
+    triggerReason: string;
+    disagreementSummary: string;
+    arlePerspective: string;
+    inferredPartnerPerspective: string;
+    severity?: number;
+  }) {
+    return this.relationshipsAttachmentEngine.recognizeConflict(params);
+  }
+
+  public submitApologyAndRepair(params: {
+    conflictId: string;
+    initiator: 'arle' | 'partner';
+    acknowledgment: string;
+    validatesImpact: boolean;
+    remedialCommitment: string;
+  }) {
+    return this.relationshipsAttachmentEngine.submitApology(params);
+  }
+
+  public assertRelationshipBoundary(
+    personId: string,
+    boundary: {
+      category: any;
+      description: string;
+      enforcementLevel?: any;
+    },
+  ) {
+    return this.relationshipsAttachmentEngine.assertBoundary(personId, boundary);
+  }
+
+  public evaluateSeparationContinuity(personId: string, elapsedHours: number) {
+    return this.relationshipsAttachmentEngine.evaluateSeparationContinuity(personId, elapsedHours);
   }
 }
 

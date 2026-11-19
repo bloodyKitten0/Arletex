@@ -827,6 +827,12 @@ export * from './socialEmotions.js';
 // ==========================================
 export * from './socialCommunication.js';
 
+// ==========================================
+// Relationships & Attachment Contracts (Milestone 41)
+// ==========================================
+export * from './relationshipsAndAttachment.js';
+
+
 
 
 

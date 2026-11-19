@@ -111,6 +111,7 @@ import {
   SqliteEmpathyPerspectiveRepository,
   SqliteSocialEmotionsRepository,
   SqliteSocialCommunicationRepository,
+  SqliteRelationshipsAttachmentRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -258,6 +259,7 @@ export class ArletexBackendServer {
   public readonly empathyRepo: SqliteEmpathyPerspectiveRepository;
   public readonly socialEmotionsRepo: SqliteSocialEmotionsRepository;
   public readonly socialCommunicationRepo: SqliteSocialCommunicationRepository;
+  public readonly relationshipsAttachmentRepo: SqliteRelationshipsAttachmentRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -330,6 +332,7 @@ export class ArletexBackendServer {
     this.empathyRepo = new SqliteEmpathyPerspectiveRepository(db);
     this.socialEmotionsRepo = new SqliteSocialEmotionsRepository(db);
     this.socialCommunicationRepo = new SqliteSocialCommunicationRepository(db);
+    this.relationshipsAttachmentRepo = new SqliteRelationshipsAttachmentRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -372,6 +375,7 @@ export class ArletexBackendServer {
       this.empathyRepo,
       this.socialEmotionsRepo,
       this.socialCommunicationRepo,
+      this.relationshipsAttachmentRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -6202,6 +6206,80 @@ Rules:
           body.audienceProfile,
         );
         this.sendJson(res, 200, { success: true, evaluation });
+        return;
+      }
+
+      // ==========================================
+      // Relationships & Attachment Routes (Milestone 41)
+      // ==========================================
+      if (url.pathname === '/api/ape/relationships/bond' && method === 'GET') {
+        const personId = url.searchParams.get('personId') || 'proof';
+        const bond = await this.apeService.getAttachmentBond(personId);
+        this.sendJson(res, 200, { success: true, bond });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/relationships/shared-event' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.personId || !body.title || !body.eventType) {
+          this.sendJson(res, 400, { error: 'personId, title, and eventType are required' });
+          return;
+        }
+        const result = await this.apeService.recordSharedHistoryEvent(body.personId, body);
+        this.sendJson(res, 200, { success: true, ...result });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/relationships/shared-events' && method === 'GET') {
+        const personId = url.searchParams.get('personId');
+        if (!personId) {
+          this.sendJson(res, 400, { error: 'personId is required' });
+          return;
+        }
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const events = this.apeService.listSharedHistoryEvents(personId, limit);
+        this.sendJson(res, 200, { success: true, events });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/relationships/conflict' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.personId || !body.triggerReason || !body.disagreementSummary) {
+          this.sendJson(res, 400, { error: 'personId, triggerReason, and disagreementSummary are required' });
+          return;
+        }
+        const conflict = await this.apeService.recognizeRelationalConflict(body);
+        this.sendJson(res, 200, { success: true, conflict });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/relationships/apology' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.conflictId || !body.initiator || !body.acknowledgment) {
+          this.sendJson(res, 400, { error: 'conflictId, initiator, and acknowledgment are required' });
+          return;
+        }
+        const result = await this.apeService.submitApologyAndRepair(body);
+        this.sendJson(res, 200, { success: true, ...result });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/relationships/boundary' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.personId || !body.category || !body.description) {
+          this.sendJson(res, 400, { error: 'personId, category, and description are required' });
+          return;
+        }
+        const boundary = await this.apeService.assertRelationshipBoundary(body.personId, body);
+        this.sendJson(res, 200, { success: true, boundary });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/relationships/separation-continuity' && method === 'GET') {
+        const personId = url.searchParams.get('personId') || 'proof';
+        const elapsedHours = url.searchParams.get('elapsedHours') ? parseFloat(url.searchParams.get('elapsedHours')!) : 24;
+        const result = await this.apeService.evaluateSeparationContinuity(personId, elapsedHours);
+        this.sendJson(res, 200, { success: true, ...result });
         return;
       }
 

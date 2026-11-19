@@ -157,6 +157,11 @@ import {
   PragmaticAnalysis,
   TurnTakingState,
   AudienceAdaptationProfile,
+  AttachmentBond,
+  SharedHistoryEvent,
+  RelationalConflict,
+  ApologyAndRepair,
+  ConflictStatus,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -741,6 +746,20 @@ export interface ISocialCommunicationRepository {
   saveAdaptationProfile(profile: AudienceAdaptationProfile & { updatedAt: string }): void;
   getAdaptationProfile(targetAudienceId: string): (AudienceAdaptationProfile & { updatedAt: string }) | null;
 }
+
+export interface IRelationshipsAttachmentRepository {
+  saveBond(bond: AttachmentBond): void;
+  getBond(personId: string): AttachmentBond | null;
+  listBonds(): AttachmentBond[];
+  saveSharedEvent(event: SharedHistoryEvent): void;
+  listSharedEvents(personId: string, limit?: number): SharedHistoryEvent[];
+  saveConflict(conflict: RelationalConflict): void;
+  getConflict(id: string): RelationalConflict | null;
+  listConflicts(personId?: string, status?: ConflictStatus): RelationalConflict[];
+  saveApologyRepair(repair: ApologyAndRepair): void;
+  listApologyRepairs(conflictId: string): ApologyAndRepair[];
+}
+
 
 
 

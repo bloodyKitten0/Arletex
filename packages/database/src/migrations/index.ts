@@ -2722,4 +2722,79 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('social_communication_milestone40', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 52,
+    name: '052_relationships_and_attachment_milestone41',
+    up: `
+      -- Relationship & Attachment Bonds (Grounded long-term relational representations)
+      CREATE TABLE IF NOT EXISTS relationship_attachment_bonds (
+        person_id TEXT PRIMARY KEY,
+        stage TEXT NOT NULL,
+        attachment_style TEXT NOT NULL,
+        trust_cognitive REAL NOT NULL,
+        trust_affective REAL NOT NULL,
+        affection_depth REAL NOT NULL,
+        familiarity_score REAL NOT NULL,
+        reciprocity_ratio REAL NOT NULL,
+        separation_security REAL NOT NULL,
+        established_boundaries TEXT NOT NULL,
+        last_interacted_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_rel_bonds_stage ON relationship_attachment_bonds (stage);
+
+      -- Shared History Events (Significant relational events and mutual milestones)
+      CREATE TABLE IF NOT EXISTS shared_history_events (
+        id TEXT PRIMARY KEY,
+        person_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        significance REAL NOT NULL,
+        narrative_summary TEXT NOT NULL,
+        emotional_valence REAL NOT NULL,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_shared_events_person ON shared_history_events (person_id);
+      CREATE INDEX IF NOT EXISTS idx_shared_events_time ON shared_history_events (timestamp DESC);
+
+      -- Relational Conflicts (Tracking disagreements, perspectives, and reconciliation status)
+      CREATE TABLE IF NOT EXISTS relational_conflicts (
+        id TEXT PRIMARY KEY,
+        person_id TEXT NOT NULL,
+        trigger_reason TEXT NOT NULL,
+        status TEXT NOT NULL,
+        severity REAL NOT NULL,
+        disagreement_summary TEXT NOT NULL,
+        arle_perspective TEXT NOT NULL,
+        inferred_partner_perspective TEXT NOT NULL,
+        resolution_notes TEXT,
+        reconciliation_timestamp TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_rel_conflicts_person ON relational_conflicts (person_id);
+      CREATE INDEX IF NOT EXISTS idx_rel_conflicts_status ON relational_conflicts (status);
+
+      -- Apology & Repair Records
+      CREATE TABLE IF NOT EXISTS apology_repairs (
+        id TEXT PRIMARY KEY,
+        conflict_id TEXT NOT NULL,
+        initiator TEXT NOT NULL,
+        acknowledgment TEXT NOT NULL,
+        validates_impact INTEGER NOT NULL,
+        remedial_commitment TEXT NOT NULL,
+        is_accepted INTEGER NOT NULL,
+        repaired_trust_increment REAL NOT NULL,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_apologies_conflict ON apology_repairs (conflict_id);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('relationships_and_attachment_milestone41', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];
