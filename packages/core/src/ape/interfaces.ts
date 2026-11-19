@@ -89,6 +89,10 @@ import {
   SelfGeneratedGoal,
   SelfGeneratedGoalStatus,
   GoalOriginType,
+  MultiStagePlan,
+  MultiStagePlanStatus,
+  LongTermCommitment,
+  LongTermCommitmentStatus,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -458,6 +462,19 @@ export interface ISelfGeneratedGoalRepository {
   deleteGoal(id: string): void;
   recordTrigger(trigger: { id: string; triggerType: string; sourceEntityId?: string; generatedGoalId: string; rationale: string; createdAt: string }): void;
   listTriggers(generatedGoalId?: string): Array<{ id: string; triggerType: string; sourceEntityId?: string; generatedGoalId: string; rationale: string; createdAt: string }>;
+}
+
+export interface IPersistentPlanningRepository {
+  savePlan(plan: MultiStagePlan): void;
+  getPlanById(id: string): MultiStagePlan | null;
+  getPlanByGoalId(goalId: string): MultiStagePlan | null;
+  listPlans(filter?: { status?: MultiStagePlanStatus; limit?: number }): MultiStagePlan[];
+  deletePlan(id: string): void;
+
+  saveCommitment(commitment: LongTermCommitment): void;
+  getCommitmentById(id: string): LongTermCommitment | null;
+  listCommitments(filter?: { stakeholder?: string; status?: LongTermCommitmentStatus; limit?: number }): LongTermCommitment[];
+  deleteCommitment(id: string): void;
 }
 
 

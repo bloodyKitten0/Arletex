@@ -92,6 +92,7 @@ import {
   SqliteGlobalCognitiveRepository,
   SqliteExecutiveRepository,
   SqliteSelfGeneratedGoalRepository,
+  SqlitePersistentPlanningRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -220,6 +221,7 @@ export class ArletexBackendServer {
   // Executive Functions Subsystem (Milestone 20)
   public readonly executiveRepo: SqliteExecutiveRepository;
   public readonly goalRepo: SqliteSelfGeneratedGoalRepository;
+  public readonly planningRepo: SqlitePersistentPlanningRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -273,6 +275,7 @@ export class ArletexBackendServer {
     this.globalCognitiveRepo = new SqliteGlobalCognitiveRepository(db);
     this.executiveRepo = new SqliteExecutiveRepository(db);
     this.goalRepo = new SqliteSelfGeneratedGoalRepository(db);
+    this.planningRepo = new SqlitePersistentPlanningRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -296,6 +299,7 @@ export class ArletexBackendServer {
       this.globalCognitiveRepo,
       this.executiveRepo,
       this.goalRepo,
+      this.planningRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -4780,6 +4784,96 @@ Rules:
         const goalId = url.searchParams.get('goalId') || undefined;
         const triggers = this.apeService.selfGeneratedGoalEngine.listTriggers(goalId);
         this.sendJson(res, 200, triggers);
+        return;
+      }
+
+      // ==========================================
+      // Planning and Long-Term Intention Routes (Milestone 22)
+      // ==========================================
+      if (url.pathname === '/api/ape/planning/decompose' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const plan = this.apeService.decomposeGoalIntoPlan(body);
+        this.sendJson(res, 201, { success: true, plan });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/planning/custom' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const plan = this.apeService.createCustomPlan(body);
+        this.sendJson(res, 201, { success: true, plan });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/planning/start-stage' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const plan = this.apeService.startPlanStage(body.planId, body.stageId);
+        this.sendJson(res, 200, { success: true, plan });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/planning/advance-stage' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const plan = this.apeService.advancePlanStageProgress(body.planId, body.stageId, body.progress, body.checkpoint);
+        this.sendJson(res, 200, { success: true, plan });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/planning/complete-stage' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const plan = this.apeService.completePlanStage(body.planId, body.stageId);
+        this.sendJson(res, 200, { success: true, plan });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/planning/interrupt' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const plan = this.apeService.handlePlanInterruption(body.planId, body.stageId, body.reason, body.context);
+        this.sendJson(res, 200, { success: true, plan });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/planning/recover' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const plan = this.apeService.recoverUnfinishedPlan(body.planId);
+        this.sendJson(res, 200, { success: true, plan });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/planning/revise' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const plan = this.apeService.revisePlan(body.planId, body.updates);
+        this.sendJson(res, 200, { success: true, plan });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/planning/commitments' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const commitment = this.apeService.registerCommitment(body);
+        this.sendJson(res, 201, { success: true, commitment });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/planning/commitments/fulfill' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const commitment = this.apeService.fulfillLongTermCommitment(body.commitmentId, body.evidence);
+        this.sendJson(res, 200, { success: true, commitment });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/planning/plans' && method === 'GET') {
+        const status = url.searchParams.get('status') as any;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 100;
+        const plans = this.apeService.planningEngine.listPlans({ status, limit });
+        this.sendJson(res, 200, plans);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/planning/commitments' && method === 'GET') {
+        const stakeholder = url.searchParams.get('stakeholder') || undefined;
+        const status = url.searchParams.get('status') as any;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 100;
+        const commitments = this.apeService.planningEngine.listCommitments({ stakeholder, status, limit });
+        this.sendJson(res, 200, commitments);
         return;
       }
 

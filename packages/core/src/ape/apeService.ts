@@ -126,12 +126,14 @@ import { InMemoryMetacognitionRepository, MetacognitionEngine } from './metacogn
 import { InMemoryGlobalCognitiveRepository, GlobalCognitiveIntegrationEngine } from './globalCognitiveEngine.js';
 import { InMemoryExecutiveRepository, ExecutiveEngine } from './executiveEngine.js';
 import { InMemorySelfGeneratedGoalRepository, SelfGeneratedGoalEngine } from './selfGeneratedGoalEngine.js';
+import { InMemoryPersistentPlanningRepository, PersistentPlanningEngine } from './persistentPlanningEngine.js';
 import {
   ISimulationRepository,
   IMetacognitionRepository,
   IGlobalCognitiveRepository,
   IExecutiveRepository,
   ISelfGeneratedGoalRepository,
+  IPersistentPlanningRepository,
 } from './interfaces.js';
 
 export class ApeService {
@@ -169,6 +171,7 @@ export class ApeService {
   public readonly globalCognitiveEngine: GlobalCognitiveIntegrationEngine;
   public readonly executiveEngine: ExecutiveEngine;
   public readonly selfGeneratedGoalEngine: SelfGeneratedGoalEngine;
+  public readonly planningEngine: PersistentPlanningEngine;
 
   constructor(
     repo: IApeRepository,
@@ -193,6 +196,7 @@ export class ApeService {
     globalCognitiveRepo?: IGlobalCognitiveRepository,
     executiveRepo?: IExecutiveRepository,
     selfGeneratedGoalRepo?: ISelfGeneratedGoalRepository,
+    planningRepo?: IPersistentPlanningRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -284,6 +288,9 @@ export class ApeService {
 
     const goalRepo = selfGeneratedGoalRepo || new InMemorySelfGeneratedGoalRepository();
     this.selfGeneratedGoalEngine = new SelfGeneratedGoalEngine({ repository: goalRepo, logger });
+
+    const planRepo = planningRepo || new InMemoryPersistentPlanningRepository();
+    this.planningEngine = new PersistentPlanningEngine({ repository: planRepo, logger });
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -1720,6 +1727,68 @@ export class ApeService {
 
   public synthesizeAutonomousGoalsFromState(context: Parameters<SelfGeneratedGoalEngine['synthesizeAutonomousGoalsFromState']>[0]) {
     return this.selfGeneratedGoalEngine.synthesizeAutonomousGoalsFromState(context);
+  }
+
+  // ==========================================
+  // Milestone 22 — Planning and Long-Term Intention
+  // ==========================================
+
+  public decomposeGoalIntoPlan(goal: Parameters<PersistentPlanningEngine['decomposeGoalIntoPlan']>[0]) {
+    return this.planningEngine.decomposeGoalIntoPlan(goal);
+  }
+
+  public createCustomPlan(params: Parameters<PersistentPlanningEngine['createCustomPlan']>[0]) {
+    return this.planningEngine.createCustomPlan(params);
+  }
+
+  public startPlanStage(planId: string, stageId: string) {
+    return this.planningEngine.startStage(planId, stageId);
+  }
+
+  public advancePlanStageProgress(
+    planId: string,
+    stageId: string,
+    progress: number,
+    checkpoint?: Record<string, unknown>,
+  ) {
+    return this.planningEngine.advanceStageProgress(planId, stageId, progress, checkpoint);
+  }
+
+  public completePlanStage(planId: string, stageId: string) {
+    return this.planningEngine.completeStage(planId, stageId);
+  }
+
+  public handlePlanInterruption(
+    planId: string,
+    stageId: string,
+    reason: string,
+    context?: Record<string, unknown>,
+  ) {
+    return this.planningEngine.handleInterruption(planId, stageId, reason, context);
+  }
+
+  public recoverUnfinishedPlan(planId: string) {
+    return this.planningEngine.recoverUnfinishedPlan(planId);
+  }
+
+  public revisePlan(planId: string, updates: Parameters<PersistentPlanningEngine['revisePlan']>[1]) {
+    return this.planningEngine.revisePlan(planId, updates);
+  }
+
+  public registerCommitment(params: Parameters<PersistentPlanningEngine['registerCommitment']>[0]) {
+    return this.planningEngine.registerCommitment(params);
+  }
+
+  public fulfillLongTermCommitment(commitmentId: string, evidence: string) {
+    return this.planningEngine.fulfillCommitment(commitmentId, evidence);
+  }
+
+  public renegotiateLongTermCommitment(commitmentId: string, newStatement: string, newDue?: string) {
+    return this.planningEngine.renegotiateCommitment(commitmentId, newStatement, newDue);
+  }
+
+  public evaluatePlanProgress(planId: string) {
+    return this.planningEngine.evaluatePlanProgress(planId);
   }
 }
 

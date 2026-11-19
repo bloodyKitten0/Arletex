@@ -732,5 +732,10 @@ export * from './executiveFunctions.js';
 // ==========================================
 export * from './selfGeneratedGoals.js';
 
+// ==========================================
+// Planning and Long-Term Intention Contracts (Milestone 22)
+// ==========================================
+export * from './persistentPlanning.js';
+
 
 

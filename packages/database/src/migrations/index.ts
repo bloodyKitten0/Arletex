@@ -1686,4 +1686,51 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('self_generated_goals_milestone21', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 33,
+    name: '033_persistent_planning_milestone22',
+    up: `
+      -- Persistent Multi-Stage Plans (Autonomous decomposition, scheduling, and execution tracking)
+      CREATE TABLE IF NOT EXISTS persistent_plans (
+        id TEXT PRIMARY KEY,
+        goal_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        stages_json TEXT NOT NULL DEFAULT '[]',
+        overall_priority REAL NOT NULL DEFAULT 0.7,
+        overall_progress REAL NOT NULL DEFAULT 0.0,
+        status TEXT NOT NULL DEFAULT 'active',
+        scheduled_start TEXT NOT NULL,
+        target_completion TEXT NOT NULL,
+        revisions_history_json TEXT NOT NULL DEFAULT '[]',
+        recovery_state_json TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_persistent_plans_goal ON persistent_plans (goal_id);
+      CREATE INDEX IF NOT EXISTS idx_persistent_plans_status ON persistent_plans (status);
+      CREATE INDEX IF NOT EXISTS idx_persistent_plans_priority ON persistent_plans (overall_priority DESC);
+
+      -- Long-Term Commitments (Persistent promises, partner obligations, and autonomous pledges)
+      CREATE TABLE IF NOT EXISTS long_term_commitments (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        stakeholder TEXT NOT NULL,
+        promise_statement TEXT NOT NULL,
+        associated_plan_id TEXT,
+        due_timestamp TEXT,
+        status TEXT NOT NULL DEFAULT 'active',
+        fulfillment_evidence TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_long_term_commitments_status ON long_term_commitments (status);
+      CREATE INDEX IF NOT EXISTS idx_long_term_commitments_stakeholder ON long_term_commitments (stakeholder);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('persistent_planning_milestone22', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

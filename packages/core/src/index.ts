@@ -39,6 +39,7 @@ export * from './ape/metacognitionEngine.js';
 export * from './ape/globalCognitiveEngine.js';
 export * from './ape/executiveEngine.js';
 export * from './ape/selfGeneratedGoalEngine.js';
+export * from './ape/persistentPlanningEngine.js';
 export * from './ape/apeService.js';
 
 // Digital Agency Subsystem
