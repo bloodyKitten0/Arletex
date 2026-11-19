@@ -636,32 +636,166 @@ export class ApeRepository implements IApeRepository {
     eventType: string;
     source: string;
     result: any;
+    state?: 'pending' | 'in_flight' | 'completed' | 'failed';
     createdAt?: string;
   }): void {
     const createdAt = record.createdAt || new Date().toISOString();
+    const state = record.state || 'completed';
     this.db
       .prepare(`
         INSERT OR REPLACE INTO cognitive_idempotency_records (
-          idempotency_key, event_id, event_type, source, result_json, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?)
+          idempotency_key, event_id, event_type, source, state, result_json, created_at, completed_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `)
       .run(
         record.idempotencyKey,
         record.eventId,
         record.eventType,
         record.source,
+        state,
         JSON.stringify(record.result),
         createdAt,
+        state === 'completed' || state === 'failed' ? createdAt : null,
       );
   }
 
-  public getIdempotencyRecord(idempotencyKey: string): any | null {
-    const row = this.db
-      .prepare('SELECT result_json FROM cognitive_idempotency_records WHERE idempotency_key = ?')
-      .get(idempotencyKey) as any;
-    if (!row?.result_json) return null;
+  public claimInFlightEvent(record: {
+    idempotencyKey: string;
+    eventId: string;
+    eventType: string;
+    source: string;
+    startedAt?: string;
+  }): { claimed: boolean; existingRecord?: { state: string; result: any } } {
+    const startedAt = record.startedAt || new Date().toISOString();
+    const existing = this.db
+      .prepare('SELECT state, result_json FROM cognitive_idempotency_records WHERE idempotency_key = ?')
+      .get(record.idempotencyKey) as any;
+
+    if (existing) {
+      let parsedResult: any = null;
+      try {
+        parsedResult = JSON.parse(existing.result_json || '{}');
+      } catch {}
+      return {
+        claimed: false,
+        existingRecord: {
+          state: existing.state || 'completed',
+          result: parsedResult,
+        },
+      };
+    }
+
     try {
-      return JSON.parse(row.result_json);
+      this.db
+        .prepare(`
+          INSERT INTO cognitive_idempotency_records (
+            idempotency_key, event_id, event_type, source, state, started_at, created_at, result_json
+          ) VALUES (?, ?, ?, ?, 'in_flight', ?, ?, '{}')
+        `)
+        .run(
+          record.idempotencyKey,
+          record.eventId,
+          record.eventType,
+          record.source,
+          startedAt,
+          startedAt,
+        );
+      return { claimed: true };
+    } catch {
+      // Constraint collision fallback
+      const conflict = this.db
+        .prepare('SELECT state, result_json FROM cognitive_idempotency_records WHERE idempotency_key = ?')
+        .get(record.idempotencyKey) as any;
+      let parsedResult: any = null;
+      try {
+        parsedResult = JSON.parse(conflict?.result_json || '{}');
+      } catch {}
+      return {
+        claimed: false,
+        existingRecord: {
+          state: conflict?.state || 'completed',
+          result: parsedResult,
+        },
+      };
+    }
+  }
+
+  public completeEventRecord(
+    idempotencyKey: string,
+    result: any,
+    state: 'completed' | 'failed' = 'completed',
+  ): void {
+    const completedAt = new Date().toISOString();
+    const res = this.db
+      .prepare(`
+        UPDATE cognitive_idempotency_records
+        SET state = ?, result_json = ?, completed_at = ?
+        WHERE idempotency_key = ?
+      `)
+      .run(state, JSON.stringify(result), completedAt, idempotencyKey);
+
+    if (res.changes === 0) {
+      this.db
+        .prepare(`
+          INSERT OR REPLACE INTO cognitive_idempotency_records (
+            idempotency_key, event_id, event_type, source, state, result_json, created_at, completed_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .run(
+          idempotencyKey,
+          result.eventId || 'unknown',
+          result.eventType || 'unknown',
+          result.source || 'unknown',
+          state,
+          JSON.stringify(result),
+          completedAt,
+          completedAt,
+        );
+    }
+  }
+
+  public recoverInFlightEvents(): Array<{ idempotencyKey: string; eventId: string; eventType: string }> {
+    const rows = this.db
+      .prepare("SELECT idempotency_key, event_id, event_type FROM cognitive_idempotency_records WHERE state = 'in_flight'")
+      .all() as any[];
+
+    if (rows && rows.length > 0) {
+      const now = new Date().toISOString();
+      const failureResult = JSON.stringify({
+        pipelineCompleted: false,
+        success: false,
+        error: 'InterruptedByCrashRecovery: In-flight execution interrupted by host termination',
+        recoveredAt: now,
+      });
+
+      this.db
+        .prepare(`
+          UPDATE cognitive_idempotency_records
+          SET state = 'failed', result_json = ?, completed_at = ?
+          WHERE state = 'in_flight'
+        `)
+        .run(failureResult, now);
+
+      return rows.map((r) => ({
+        idempotencyKey: r.idempotency_key,
+        eventId: r.event_id,
+        eventType: r.event_type,
+      }));
+    }
+
+    return [];
+  }
+
+  public getIdempotencyRecord(idempotencyKey: string): { state: string; result: any } | null {
+    const row = this.db
+      .prepare('SELECT state, result_json FROM cognitive_idempotency_records WHERE idempotency_key = ?')
+      .get(idempotencyKey) as any;
+    if (!row) return null;
+    try {
+      return {
+        state: row.state || 'completed',
+        result: JSON.parse(row.result_json || '{}'),
+      };
     } catch {
       return null;
     }

@@ -302,18 +302,27 @@ export class VerificationEngine {
       const filePath = action.payload?.filePath as string;
       const fileExists = Boolean(observation.data?.exists);
       const sizeBytes = Number(observation.data?.sizeBytes || 0);
+      const sha256 = observation.data?.sha256;
+      const expectedSha256 = observation.data?.expectedSha256;
+      const hashMatched = sha256 && expectedSha256 ? sha256 === expectedSha256 : true;
 
-      const verified = fileExists && sizeBytes > 0;
+      const verified = Boolean(fileExists && sizeBytes >= 0 && hashMatched && observation.success);
       return {
         actionId: action.id,
         expectedOutcome: `File written at ${filePath}`,
         observedOutcome: verified
-          ? `File exists (${sizeBytes} bytes)`
-          : 'File missing or zero length on disk',
+          ? `File exists (${sizeBytes} bytes${sha256 ? `, sha256: ${sha256.slice(0, 8)}... verified` : ''})`
+          : (!hashMatched
+              ? 'SHA-256 hash mismatch: file contents on disk do not match written payload'
+              : 'File missing or zero length on disk'),
         verified,
         confidence: 1.0,
         status: verified ? 'verified_successful' : 'failed',
-        failureReason: verified ? null : 'Filesystem write could not be verified on disk',
+        failureReason: verified
+          ? null
+          : (!hashMatched
+              ? 'SHA-256 content verification failed upon read-back'
+              : 'Filesystem write could not be verified on disk'),
         isRecoverable: !verified,
         recommendedStrategy: verified ? undefined : 'replan_sub_steps',
         evidence: observation.data || {},

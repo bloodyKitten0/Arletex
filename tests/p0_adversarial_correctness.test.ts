@@ -10,6 +10,7 @@ import {
   VerificationEngine,
   CognitiveControlBus,
   ApeService,
+  EthicalBoundariesSecurityEngine,
   rootLogger,
 } from '@arletex/core';
 import {
@@ -501,20 +502,27 @@ describe('P0 Adversarial Correctness and Security Boundary Suite', () => {
 
   // 16. Universal execution boundary routes filesystem and commands through closed-loop verification
   it('16. Universal execution boundary: executes and empirically verifies filesystem and command operations', async () => {
+    const mockFiles = new Map<string, string>();
     const mockComputer = {
       launchApp: async () => ({ pid: 1234, isRunning: true, windowFound: true }),
       getActiveWindow: async () => ({ title: 'Code - safe.txt', appName: 'Code' }),
       focusWindow: async () => true,
       captureScreen: async () => ({ imageBase64: 'base64data', width: 1920, height: 1080 }),
-      readFile: async (fp: string) => `Content of ${fp}`,
-      writeFile: async (_fp: string, content: string) => ({ success: true, sizeBytes: content.length }),
+      readFile: async (fp: string) => mockFiles.get(fp) || `Content of ${fp}`,
+      writeFile: async (fp: string, content: string) => {
+        mockFiles.set(fp, content);
+        return { success: true, sizeBytes: content.length };
+      },
       listFiles: async () => ['file1.txt', 'file2.txt'],
       executeCommand: async (cmd: string) => ({ exitCode: 0, stdout: `Executed ${cmd}`, stderr: '' }),
     };
 
     const verificationEngine = new VerificationEngine(rootLogger);
+    const localPermissionController = new ActionPermissionController({
+      allowedApplications: ['echo', 'code'],
+    });
     const agency = new ClosedLoopAgencyService({
-      permissionController,
+      permissionController: localPermissionController,
       computerProvider: mockComputer,
       verificationEngine,
       logger: rootLogger,
@@ -606,5 +614,202 @@ describe('P0 Adversarial Correctness and Security Boundary Suite', () => {
     expect(ver.verified).toBe(false);
     expect(ver.status).toBe('partially_successful');
     expect(ver.failureReason).toContain('Application window for \'google-chrome\' not visible or failed to map');
+  });
+
+  // 18. Token double-consumption and scope grammar unification (code_modify <-> code_modification)
+  it('18. Token double-consumption & scope grammar: passes ethical gate without premature nonce consumption', () => {
+    const permController = new ActionPermissionController();
+    const ethicalEngine = apeService.ethicalBoundariesSecurityEngine;
+    permController.setEthicalBoundariesEngine(ethicalEngine);
+    ethicalEngine.setActionPermissionController(permController);
+
+    const action: ActionProposal = {
+      id: crypto.randomUUID(),
+      taskId: crypto.randomUUID(),
+      stepIndex: 0,
+      type: 'code_modify',
+      payload: { filePath: 'packages/core/src/ape/ethicalBoundariesSecurityEngine.ts', changes: 'test modification' },
+      rationale: 'Modify core engine code',
+      expectedOutcome: 'Code modified',
+      riskLevel: 'critical',
+      requiresExplicitApproval: true,
+      createdAt: new Date().toISOString(),
+    };
+
+    const digest = ActionPermissionController.computeActionDigest(action);
+    const target = ActionPermissionController.extractTargetResource(action);
+
+    // Issue approval token with canonical scope 'code_modification'
+    const approval = permController.createApprovalToken({
+      actionDigest: digest,
+      targetResource: target,
+      scope: 'code_modification',
+      userId: 'Proof',
+    });
+
+    const approvedAction: ActionProposal = {
+      ...action,
+      payload: { ...action.payload, approvalToken: approval.token },
+    };
+
+    // Evaluate action through permission controller (which queries ethicalEngine first, then validates token)
+    const result = permController.evaluate(approvedAction);
+    expect(result.decision).toBe('granted');
+
+    // Second evaluation with the same token must fail due to nonce consumption
+    const replayResult = permController.evaluate(approvedAction);
+    expect(replayResult.decision).toBe('denied');
+    expect(replayResult.reason).toContain('replay attack detected');
+  });
+
+  // 19. timingSafeEqual buffer length mismatch guard
+  it('19. timingSafeEqual guard: malformed or truncated HMAC token signature returns false without panic', () => {
+    const permController = new ActionPermissionController();
+    const digest = 'a'.repeat(64);
+    const target = '/tmp/safe.txt';
+
+    // Normal token
+    const tokenObj = permController.createApprovalToken({
+      actionDigest: digest,
+      targetResource: target,
+      scope: 'action:test',
+      userId: 'Proof',
+    });
+
+    const [body, _hmac] = tokenObj.token.split('.');
+
+    // 19a. Truncated HMAC signature
+    const truncatedToken = `${body}.deadbeef`;
+    const checkTruncated = permController.validateApprovalToken(truncatedToken, digest, target, 'action:test', 'Proof');
+    expect(checkTruncated.valid).toBe(false);
+    expect(checkTruncated.reason).toContain('signature verification failed');
+
+    // 19b. Oversized HMAC signature
+    const oversizedToken = `${body}.${'f'.repeat(128)}`;
+    const checkOversized = permController.validateApprovalToken(oversizedToken, digest, target, 'action:test', 'Proof');
+    expect(checkOversized.valid).toBe(false);
+    expect(checkOversized.reason).toContain('signature verification failed');
+
+    // 19c. Empty signature
+    const emptySigToken = `${body}.`;
+    const checkEmpty = permController.validateApprovalToken(emptySigToken, digest, target, 'action:test', 'Proof');
+    expect(checkEmpty.valid).toBe(false);
+  });
+
+  // 20. Filesystem write SHA-256 read-back failure detection
+  it('20. Filesystem write SHA-256 read-back: fails when disk contents differ from written payload', async () => {
+    const mockCorruptedComputer = {
+      writeFile: async () => ({ success: true, sizeBytes: 11 }),
+      readFile: async () => 'tampered or corrupted content on disk',
+    };
+
+    const verificationEngine = new VerificationEngine(rootLogger);
+    const agency = new ClosedLoopAgencyService({
+      permissionController: new ActionPermissionController({ allowedFilesystemPaths: ['/tmp'] }),
+      computerProvider: mockCorruptedComputer as any,
+      verificationEngine,
+      logger: rootLogger,
+    });
+
+    const writeAction: ActionProposal = {
+      id: crypto.randomUUID(),
+      taskId: crypto.randomUUID(),
+      stepIndex: 0,
+      type: 'system_write_file',
+      payload: { filePath: '/tmp/safe.txt', content: 'hello world' },
+      rationale: 'Write test file with integrity check',
+      expectedOutcome: 'File written safely',
+      riskLevel: 'low',
+      requiresExplicitApproval: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    const obs = await agency.executeAction(writeAction);
+    expect(obs.success).toBe(false);
+    expect(obs.error).toContain('SHA-256 hash mismatch');
+
+    const ver = verificationEngine.verify(writeAction, obs);
+    expect(ver.verified).toBe(false);
+    expect(ver.status).toBe('failed');
+  });
+
+  // 21. Fake-success elimination for unconfigured providers
+  it('21. Fake-success elimination: desktop and telegram fail closed when providers are not configured', async () => {
+    const emptyAgency = new ClosedLoopAgencyService({
+      permissionController: new ActionPermissionController(),
+      logger: rootLogger,
+    });
+
+    // Desktop input without provider
+    const desktopAction: ActionProposal = {
+      id: crypto.randomUUID(),
+      taskId: crypto.randomUUID(),
+      stepIndex: 0,
+      type: 'desktop_mouse_click',
+      payload: { x: 100, y: 200 },
+      rationale: 'Click mouse',
+      expectedOutcome: 'Mouse clicked',
+      riskLevel: 'low',
+      requiresExplicitApproval: false,
+      createdAt: new Date().toISOString(),
+    };
+    const desktopObs = await emptyAgency.executeAction(desktopAction);
+    expect(desktopObs.success).toBe(false);
+    expect(desktopObs.confidence).toBe(0.0);
+    expect(desktopObs.error).toContain('DeviceAgency provider not configured');
+
+    // Telegram dispatch without provider
+    const telegramAction: ActionProposal = {
+      id: crypto.randomUUID(),
+      taskId: crypto.randomUUID(),
+      stepIndex: 0,
+      type: 'telegram_send_message',
+      payload: { chatId: '12345', text: 'Hello Proof' },
+      rationale: 'Send message',
+      expectedOutcome: 'Message delivered',
+      riskLevel: 'low',
+      requiresExplicitApproval: false,
+      createdAt: new Date().toISOString(),
+    };
+    const telegramObs = await emptyAgency.executeAction(telegramAction);
+    expect(telegramObs.success).toBe(false);
+    expect(telegramObs.confidence).toBe(0.0);
+    expect(telegramObs.error).toContain('TelegramBridge provider not configured');
+  });
+
+  // 22. Durable idempotency atomic claim and crash recovery
+  it('22. Durable idempotency & crash recovery: recovers interrupted in-flight events across restarts', async () => {
+    // Simulate in-flight claim before simulated crash
+    const claimResult = apeRepo.claimInFlightEvent({
+      idempotencyKey: 'test_event:user:crash_demo',
+      eventId: 'event-crash-123',
+      eventType: 'user_message',
+      source: 'user',
+    });
+    expect(claimResult.claimed).toBe(true);
+
+    // Verify event is in in_flight state
+    const inFlightRecord = apeRepo.getIdempotencyRecord('test_event:user:crash_demo');
+    expect(inFlightRecord?.state).toBe('in_flight');
+
+    // Re-claiming the same key while in-flight is denied
+    const secondClaim = apeRepo.claimInFlightEvent({
+      idempotencyKey: 'test_event:user:crash_demo',
+      eventId: 'event-crash-123',
+      eventType: 'user_message',
+      source: 'user',
+    });
+    expect(secondClaim.claimed).toBe(false);
+
+    // Simulate process crash and restart: call recoverInFlightEvents()
+    const recovered = apeRepo.recoverInFlightEvents();
+    expect(recovered.length).toBe(1);
+    expect(recovered[0]?.idempotencyKey).toBe('test_event:user:crash_demo');
+    expect(recovered[0]?.eventId).toBe('event-crash-123');
+
+    // Verify event transitioned to failed with crash recovery provenance
+    const postRecovery = apeRepo.getIdempotencyRecord('test_event:user:crash_demo');
+    expect(postRecovery?.state).toBe('failed');
+    expect(postRecovery?.result?.error).toContain('InterruptedByCrashRecovery');
   });
 });

@@ -200,7 +200,7 @@ export class ClosedLoopAgencyService {
       // 5. EXECUTE: Dispatch to active subsystem
       let obs: AgencyObservation;
       try {
-        obs = await this.executeAction(action, task, observations);
+        obs = await this.executeAction(action, task, observations, true);
       } catch (execErr: any) {
         obs = {
           id: crypto.randomUUID(),
@@ -529,11 +529,32 @@ export class ClosedLoopAgencyService {
     action: ActionProposal,
     task?: AgencyTask,
     previousObservations: AgencyObservation[] = [],
+    isPreAuthorized = false,
   ): Promise<AgencyObservation> {
     const params = (action.payload || (action as any).parameters || {}) as Record<string, any>;
     const timestamp = new Date().toISOString();
     const taskId = task?.id || action.taskId || 'task_default';
     const taskObjective = task?.objective || action.rationale || '';
+
+    // Secure Execution Boundary: check permission policy if not already pre-authorized in executeClosedLoop
+    if (!isPreAuthorized) {
+      const auth = this.permissionController.authorize(action);
+      if (!auth.allowed) {
+        this.logger.warn(`Action ${action.id} (${action.type}) rejected at execution boundary: ${auth.denialReason}`);
+        return {
+          id: crypto.randomUUID(),
+          taskId,
+          actionId: action.id,
+          source: 'process_table',
+          timestamp,
+          success: false,
+          confidence: 0.0,
+          provenance: 'ClosedLoopAgency:execution_boundary_denied',
+          data: { denialReason: auth.denialReason },
+          error: auth.denialReason || 'Unauthorized action at execution boundary',
+        };
+      }
+    }
 
     // 1. Web Video Selection & Navigation
     if (action.type === 'web_select_video' || action.type === 'web_navigate' || action.type === 'navigate_browser') {
@@ -762,17 +783,37 @@ export class ClosedLoopAgencyService {
       }
       try {
         const res = await this.computerProvider.writeFile(filePath, content, overwrite);
+        let sha256: string | null = null;
+        const expectedSha256 = crypto.createHash('sha256').update(content).digest('hex');
+        let contentVerified = false;
+        if (res.success && typeof this.computerProvider.readFile === 'function') {
+          try {
+            const readBack = await this.computerProvider.readFile(filePath);
+            sha256 = crypto.createHash('sha256').update(readBack).digest('hex');
+            contentVerified = sha256 === expectedSha256;
+          } catch {
+            // Read back failed
+          }
+        }
+        const writeSuccess = res.success && (sha256 ? contentVerified : true);
         return {
           id: crypto.randomUUID(),
           taskId,
           actionId: action.id,
           source: 'process_table',
           timestamp,
-          success: res.success,
-          confidence: res.success ? 1.0 : 0.0,
+          success: writeSuccess,
+          confidence: writeSuccess ? 1.0 : 0.0,
           provenance: 'ComputerProvider.writeFile',
-          data: { filePath, exists: true, sizeBytes: res.sizeBytes },
-          error: null,
+          data: {
+            filePath,
+            exists: res.success,
+            sizeBytes: res.sizeBytes,
+            sha256,
+            expectedSha256,
+            contentVerified,
+          },
+          error: writeSuccess ? null : (contentVerified ? 'File write failed' : 'Content SHA-256 hash mismatch upon read-back'),
         };
       } catch (err: any) {
         return {
@@ -959,11 +1000,11 @@ export class ClosedLoopAgencyService {
         actionId: action.id,
         source: 'process_table',
         timestamp,
-        success: true,
-        confidence: 0.8,
-        provenance: 'ClosedLoopAgency:input_emulation',
-        data: { actionType: action.type, executed: true },
-        error: null,
+        success: false,
+        confidence: 0.0,
+        provenance: 'ClosedLoopAgency:input_emulation_unconfigured',
+        data: { actionType: action.type, executed: false },
+        error: 'DeviceAgency provider not configured for desktop input emulation',
       };
     }
 
@@ -1007,11 +1048,11 @@ export class ClosedLoopAgencyService {
         actionId: action.id,
         source: 'process_table',
         timestamp,
-        success: true,
-        confidence: 0.9,
-        provenance: 'ClosedLoopAgency:message_dispatch',
-        data: { sent: true, chatId, textSnippet: text.slice(0, 50) },
-        error: null,
+        success: false,
+        confidence: 0.0,
+        provenance: 'ClosedLoopAgency:message_dispatch_unconfigured',
+        data: { sent: false, chatId, textSnippet: text.slice(0, 50) },
+        error: 'TelegramBridge provider not configured for message dispatch',
       };
     }
 
@@ -1066,7 +1107,7 @@ export class ClosedLoopAgencyService {
 
     let recoveryObs: AgencyObservation;
     try {
-      recoveryObs = await this.executeAction(recoveryAction, task, observations);
+      recoveryObs = await this.executeAction(recoveryAction, task, observations, true);
     } catch (err: any) {
       recoveryObs = {
         id: crypto.randomUUID(),

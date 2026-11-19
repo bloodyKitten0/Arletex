@@ -89,6 +89,8 @@ export const ActionTypeSchema = z.enum([
   'app_launch',
   'app_focus_window',
   'execute_command',
+  'desktop_open_browser',
+  'desktop_launch_steam',
   'desktop_mouse_move',
   'desktop_mouse_click',
   'desktop_key_press',
@@ -99,6 +101,9 @@ export const ActionTypeSchema = z.enum([
   'system_read_file',
   'system_write_file',
   'system_list_directory',
+  'code_modify',
+  'protected_code_modification',
+  'edit_file',
 
   // External communication actions
   'send_message',

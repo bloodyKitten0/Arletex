@@ -3308,4 +3308,19 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('canonical_cognitive_pipeline_and_durable_idempotency', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 62,
+    name: '062_durable_idempotency_lifecycle_and_in_flight_recovery',
+    up: `
+      -- Lifecycle states and crash recovery for cognitive idempotency
+      ALTER TABLE cognitive_idempotency_records ADD COLUMN state TEXT DEFAULT 'completed';
+      ALTER TABLE cognitive_idempotency_records ADD COLUMN started_at TEXT;
+      ALTER TABLE cognitive_idempotency_records ADD COLUMN completed_at TEXT;
+
+      CREATE INDEX IF NOT EXISTS idx_cog_idempotency_state ON cognitive_idempotency_records (state);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('durable_idempotency_lifecycle_and_in_flight_recovery', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

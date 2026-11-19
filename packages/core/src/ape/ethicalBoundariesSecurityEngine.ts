@@ -420,6 +420,7 @@ export class EthicalBoundariesSecurityEngine {
               input.targetResource,
               'code_modification',
               input.userId,
+              false, // Inspect token validity without consuming single-use nonce
             );
             if (!tokenCheck.valid) {
               return this.recordDenial(
@@ -460,6 +461,7 @@ export class EthicalBoundariesSecurityEngine {
             input.targetResource,
             'credential_access',
             input.userId,
+            false, // Inspect token validity without consuming single-use nonce
           );
           if (!tokenCheck.valid) {
             return this.recordDenial(

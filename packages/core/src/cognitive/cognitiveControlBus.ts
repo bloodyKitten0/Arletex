@@ -90,6 +90,21 @@ export class CognitiveControlBus {
     });
   }
 
+  /**
+   * Resumes and recovers interrupted in-flight events across host process restarts.
+   */
+  public recoverInFlightEvents(): Array<{ idempotencyKey: string; eventId: string; eventType: string }> {
+    const repo = (this.apeService as any)?.repo;
+    if (repo && typeof repo.recoverInFlightEvents === 'function') {
+      const recovered = repo.recoverInFlightEvents();
+      if (recovered.length > 0) {
+        this.logger.warn(`[CrashRecovery] Recovered ${recovered.length} interrupted in-flight event(s) from previous cycle:`, recovered);
+      }
+      return recovered;
+    }
+    return [];
+  }
+
   private async dispatchInternal(
     input: Partial<CognitiveEvent> & {
       type: CognitiveEventType;
@@ -118,14 +133,40 @@ export class CognitiveControlBus {
     // Check durable SQLite idempotency repository
     const repo = (this.apeService as any)?.repo;
     if (repo && typeof repo.getIdempotencyRecord === 'function') {
-      const persisted = repo.getIdempotencyRecord(idempotencyKey);
-      if (persisted) {
+      const persistedRecord = repo.getIdempotencyRecord(idempotencyKey);
+      const persisted = persistedRecord?.result !== undefined ? persistedRecord.result : persistedRecord;
+      if (persisted && (persistedRecord?.state === 'completed' || persistedRecord?.state === 'failed' || !persistedRecord?.state)) {
         this.totalDeduplicated++;
         this.logger.info(`Deduplicated event [${input.type}] with key "${idempotencyKey}" (durable SQLite)`);
         this.idempotencyCache.set(idempotencyKey, persisted);
         return {
           ...persisted,
           wasDeduplicated: true,
+        };
+      }
+    }
+
+    // Atomic in-flight claim: prevent race conditions and mark processing
+    if (repo && typeof repo.claimInFlightEvent === 'function') {
+      const claim = repo.claimInFlightEvent({
+        idempotencyKey,
+        eventId,
+        eventType: input.type,
+        source: input.source,
+        startedAt: timestamp,
+      });
+
+      if (!claim.claimed && claim.existingRecord) {
+        const existing = claim.existingRecord.result;
+        this.totalDeduplicated++;
+        this.logger.info(`Deduplicated event [${input.type}] with key "${idempotencyKey}" (claimed in state: ${claim.existingRecord.state})`);
+        return {
+          ...(existing || {}),
+          eventId,
+          idempotencyKey,
+          wasDeduplicated: true,
+          pipelineCompleted: claim.existingRecord.state === 'completed',
+          success: claim.existingRecord.state === 'completed',
         };
       }
     }
@@ -503,20 +544,19 @@ export class CognitiveControlBus {
         if (oldestKey) this.idempotencyCache.delete(oldestKey);
       }
 
-      // Persist durable idempotency record into SQLite repository if available
+      // Persist durable idempotency record into SQLite repository if available (atomic completion, fail on write errors)
       const repo = (this.apeService as any)?.repo;
-      if (repo && typeof repo.saveIdempotencyRecord === 'function') {
-        try {
-          repo.saveIdempotencyRecord({
-            idempotencyKey,
-            eventId: event.id,
-            eventType: event.type,
-            source: event.source,
-            result,
-          });
-        } catch (e: any) {
-          this.logger.warn(`Failed to persist durable idempotency record: ${e.message}`);
-        }
+      if (repo && typeof repo.completeEventRecord === 'function') {
+        repo.completeEventRecord(idempotencyKey, result, 'completed');
+      } else if (repo && typeof repo.saveIdempotencyRecord === 'function') {
+        repo.saveIdempotencyRecord({
+          idempotencyKey,
+          eventId: event.id,
+          eventType: event.type,
+          source: event.source,
+          result,
+          state: 'completed',
+        });
       }
 
       this.eventHistory.unshift(event);
@@ -528,6 +568,13 @@ export class CognitiveControlBus {
       event.status = 'failed';
       event.error = err.message;
       this.logger.error(`Error in cognitive control bus pipeline for event ${event.id}:`, err);
+
+      const repo = (this.apeService as any)?.repo;
+      if (repo && typeof repo.completeEventRecord === 'function') {
+        try {
+          repo.completeEventRecord(idempotencyKey, { error: err.message, eventId: event.id }, 'failed');
+        } catch {}
+      }
 
       const failResult: CognitiveCycleResult = {
         eventId: event.id,

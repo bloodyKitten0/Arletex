@@ -451,6 +451,8 @@ export class ArletexBackendServer {
       webAgency: this.webAgency,
       browserProvider: this.browserProvider,
       computerProvider: this.safeComputerAgency,
+      deviceAgency: defaultDeviceAgency,
+      telegramBridge: defaultTelegramBridge,
       logger,
     });
 
@@ -575,6 +577,13 @@ export class ArletexBackendServer {
       });
     } catch (cErr: any) {
       this.logger.error(`Continuity initialization error: ${cErr.message}`);
+    }
+
+    // Recover any in-flight cognitive events interrupted by prior crash
+    try {
+      this.cognitiveControlBus.recoverInFlightEvents();
+    } catch (recErr: any) {
+      this.logger.warn(`In-flight cognitive event recovery note: ${recErr.message}`);
     }
 
     return new Promise((resolve, reject) => {
@@ -2159,11 +2168,22 @@ export class ArletexBackendServer {
 
     if (targetUrl) {
       try {
-        const res = await defaultDeviceAgency.openChromeBrowser(targetUrl);
-        if (res.success) {
+        const obs = await this.closedLoopAgency.executeAction({
+          id: crypto.randomUUID(),
+          taskId: 'assistant_browser_action',
+          stepIndex: 0,
+          type: 'desktop_open_browser',
+          payload: { url: targetUrl },
+          rationale: `Open browser at ${targetUrl}`,
+          expectedOutcome: 'Browser opened',
+          riskLevel: 'low',
+          requiresExplicitApproval: false,
+          createdAt: new Date().toISOString(),
+        });
+        if (obs.success) {
           executedActions.push(`Opened Chrome (arletex.email@gmail.com) at ${targetUrl}`);
         } else {
-          this.logger.warn(`Browser action disallowed or failed: ${res.message}`);
+          this.logger.warn(`Browser action disallowed or failed: ${obs.error || 'Failed'}`);
         }
       } catch (err: any) {
         this.logger.error(`Failed to execute browser action: ${err.message}`);
@@ -2182,11 +2202,22 @@ export class ArletexBackendServer {
     if (shouldLaunchSteam && !targetUrl) {
       try {
         const appId = steamMatch ? steamMatch[1] : undefined;
-        const res = await defaultDeviceAgency.launchSteam(appId);
-        if (res.success) {
+        const obs = await this.closedLoopAgency.executeAction({
+          id: crypto.randomUUID(),
+          taskId: 'assistant_steam_action',
+          stepIndex: 0,
+          type: 'desktop_launch_steam',
+          payload: { steamAppId: appId },
+          rationale: `Launch Steam ${appId ? `for game ${appId}` : 'client'}`,
+          expectedOutcome: 'Steam client launched',
+          riskLevel: 'low',
+          requiresExplicitApproval: false,
+          createdAt: new Date().toISOString(),
+        });
+        if (obs.success) {
           executedActions.push(`Launched Steam ${appId ? `(Game ID: ${appId})` : 'client'}`);
         } else {
-          this.logger.warn(`Steam action disallowed or failed: ${res.message}`);
+          this.logger.warn(`Steam action disallowed or failed: ${obs.error || 'Failed'}`);
         }
       } catch (err: any) {
         this.logger.error(`Failed to execute Steam action: ${err.message}`);
@@ -2204,8 +2235,23 @@ export class ArletexBackendServer {
 
     if (shouldCaptureScreen) {
       try {
-        const capture = await defaultDeviceAgency.captureScreen();
-        executedActions.push(`Captured monitor frame (${capture.width}x${capture.height})`);
+        const obs = await this.closedLoopAgency.executeAction({
+          id: crypto.randomUUID(),
+          taskId: 'assistant_screen_capture',
+          stepIndex: 0,
+          type: 'desktop_take_screenshot',
+          payload: {},
+          rationale: 'Capture screen monitor frame',
+          expectedOutcome: 'Screen frame captured',
+          riskLevel: 'low',
+          requiresExplicitApproval: false,
+          createdAt: new Date().toISOString(),
+        });
+        if (obs.success) {
+          executedActions.push(`Captured monitor frame (${obs.data?.width || 1920}x${obs.data?.height || 1080})`);
+        } else {
+          this.logger.warn(`Screen capture disallowed or failed: ${obs.error || 'Failed'}`);
+        }
       } catch (err: any) {
         this.logger.error(`Failed to capture screen: ${err.message}`);
       }
@@ -2213,11 +2259,22 @@ export class ArletexBackendServer {
 
     if (typeMatch && typeMatch[1]) {
       try {
-        const res = await defaultDeviceAgency.executeDeviceAction({ action: 'type_text', text: typeMatch[1] });
-        if (res.success) {
+        const obs = await this.closedLoopAgency.executeAction({
+          id: crypto.randomUUID(),
+          taskId: 'assistant_type_text',
+          stepIndex: 0,
+          type: 'desktop_type_text',
+          payload: { text: typeMatch[1] },
+          rationale: `Type text: ${typeMatch[1]}`,
+          expectedOutcome: 'Text typed',
+          riskLevel: 'low',
+          requiresExplicitApproval: false,
+          createdAt: new Date().toISOString(),
+        });
+        if (obs.success) {
           executedActions.push(`Typed text: "${typeMatch[1]}"`);
         } else {
-          this.logger.warn(`Type text action disallowed or failed: ${res.message}`);
+          this.logger.warn(`Type text action disallowed or failed: ${obs.error || 'Failed'}`);
         }
       } catch (err: any) {
         this.logger.error(`Failed to type text: ${err.message}`);
@@ -2226,11 +2283,22 @@ export class ArletexBackendServer {
 
     if (keyMatch && keyMatch[1]) {
       try {
-        const res = await defaultDeviceAgency.executeDeviceAction({ action: 'key_press', key: keyMatch[1] });
-        if (res.success) {
+        const obs = await this.closedLoopAgency.executeAction({
+          id: crypto.randomUUID(),
+          taskId: 'assistant_key_press',
+          stepIndex: 0,
+          type: 'desktop_key_press',
+          payload: { key: keyMatch[1] },
+          rationale: `Press key: ${keyMatch[1]}`,
+          expectedOutcome: 'Key pressed',
+          riskLevel: 'low',
+          requiresExplicitApproval: false,
+          createdAt: new Date().toISOString(),
+        });
+        if (obs.success) {
           executedActions.push(`Pressed key: ${keyMatch[1]}`);
         } else {
-          this.logger.warn(`Key press action disallowed or failed: ${res.message}`);
+          this.logger.warn(`Key press action disallowed or failed: ${obs.error || 'Failed'}`);
         }
       } catch (err: any) {
         this.logger.error(`Failed to press key: ${err.message}`);
@@ -2242,11 +2310,22 @@ export class ArletexBackendServer {
         const x = clickMatch[1] ? parseInt(clickMatch[1], 10) : undefined;
         const y = clickMatch[2] ? parseInt(clickMatch[2], 10) : undefined;
         const button = clickMatch[3] ? parseInt(clickMatch[3], 10) : 1;
-        const res = await defaultDeviceAgency.executeDeviceAction({ action: 'mouse_click', x, y, button });
-        if (res.success) {
+        const obs = await this.closedLoopAgency.executeAction({
+          id: crypto.randomUUID(),
+          taskId: 'assistant_mouse_click',
+          stepIndex: 0,
+          type: 'desktop_mouse_click',
+          payload: { x, y, button },
+          rationale: `Mouse click at (${x}, ${y})`,
+          expectedOutcome: 'Mouse clicked',
+          riskLevel: 'low',
+          requiresExplicitApproval: false,
+          createdAt: new Date().toISOString(),
+        });
+        if (obs.success) {
           executedActions.push(`Clicked mouse at (${x}, ${y})`);
         } else {
-          this.logger.warn(`Mouse click action disallowed or failed: ${res.message}`);
+          this.logger.warn(`Mouse click action disallowed or failed: ${obs.error || 'Failed'}`);
         }
       } catch (err: any) {
         this.logger.error(`Failed to click mouse: ${err.message}`);

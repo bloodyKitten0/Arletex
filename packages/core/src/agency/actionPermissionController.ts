@@ -293,7 +293,9 @@ export class ActionPermissionController {
     const rawPayload = action.payload || (action as any).parameters || {};
     const { approvalToken: _tok, userApproved: _ua, ...payload } = rawPayload as Record<string, any>;
     const canonicalPayload = ActionPermissionController.canonicalizeValue(payload);
-    const data = `${action.type}:${action.taskId}:${action.stepIndex}:${canonicalPayload}`;
+    const risk = action.riskLevel || 'normal';
+    const reqApproval = Boolean(action.requiresExplicitApproval || (action as any).requiresApproval);
+    const data = `${action.type}:${action.taskId}:${action.stepIndex}:${risk}:${reqApproval}:${canonicalPayload}`;
     return crypto.createHash('sha256').update(data).digest('hex');
   }
 
@@ -365,6 +367,7 @@ export class ActionPermissionController {
     expectedTarget: string,
     expectedScope?: string,
     expectedUserId?: string,
+    consume: boolean = true,
   ): { valid: boolean; reason?: string } {
     if (!tokenStr || typeof tokenStr !== 'string') {
       return { valid: false, reason: 'Missing or malformed approval token.' };
@@ -385,7 +388,9 @@ export class ActionPermissionController {
     }
     const expectedHmac = crypto.createHmac('sha256', this.signingSecret).update(body).digest('hex');
 
-    if (!crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(expectedHmac))) {
+    const hmacBuf = Buffer.from(hmac);
+    const expectedHmacBuf = Buffer.from(expectedHmac);
+    if (hmacBuf.byteLength !== expectedHmacBuf.byteLength || !crypto.timingSafeEqual(hmacBuf, expectedHmacBuf)) {
       return { valid: false, reason: 'Approval token signature verification failed (tampered token).' };
     }
 
@@ -412,10 +417,15 @@ export class ActionPermissionController {
       return { valid: false, reason: 'Approval token is bound to a different target resource.' };
     }
 
-    // Explicit scope validation
+    // Explicit scope validation with grammar normalization (e.g. code_modify <-> code_modification)
     if (expectedScope) {
-      const normalizedExpected = expectedScope.startsWith('action:') ? expectedScope.slice(7) : expectedScope;
-      const normalizedScope = scope?.startsWith('action:') ? scope.slice(7) : scope;
+      const normalizeScope = (s: string) => {
+        let n = s.startsWith('action:') ? s.slice(7) : s;
+        if (n === 'code_modify') n = 'code_modification';
+        return n;
+      };
+      const normalizedExpected = normalizeScope(expectedScope);
+      const normalizedScope = normalizeScope(scope || '');
       if (normalizedScope !== normalizedExpected && scope !== expectedScope) {
         return { valid: false, reason: `Approval token is bound to a different scope '${scope}' (expected '${expectedScope}').` };
       }
@@ -430,7 +440,9 @@ export class ActionPermissionController {
       return { valid: false, reason: `Approval token issued to unauthorized user '${userId}'.` };
     }
 
-    this.consumedNonces.add(nonce!);
+    if (consume) {
+      this.consumedNonces.add(nonce!);
+    }
     return { valid: true };
   }
 
@@ -925,12 +937,35 @@ export class ActionPermissionController {
       });
     }
 
+    // 6. Code modification validation (requires explicit approval token for protected architecture paths)
+    if (action.type === 'code_modify' || action.type === 'protected_code_modification' || action.type === 'edit_file') {
+      const targetPath = String(payload.filePath || payload.path || '');
+      if (!targetPath) {
+        return this.recordAuthorization({
+          actionId: action.id,
+          decision: 'denied',
+          reason: 'Missing target file path for code modification.',
+          requiredPrivilege: 'code:modify',
+          riskLevel: 'critical',
+          checkedAt: timestamp,
+        });
+      }
+      return this.recordAuthorization({
+        actionId: action.id,
+        decision: 'granted',
+        reason: 'Authorized code modification with verified approval token.',
+        requiredPrivilege: 'code:modify',
+        riskLevel: action.riskLevel || 'critical',
+        checkedAt: timestamp,
+      });
+    }
+
     // Mandatory deny-by-default for unknown or unclassified actions
     this.logger.warn(`Action '${action.type}' rejected by deny-by-default security controller.`);
     return this.recordAuthorization({
       actionId: action.id,
       decision: 'denied',
-      reason: `Action type '${action.type}' is unrecognized and denied by default security policy.`,
+      reason: `Unsupported agency action type '${action.type}' is unrecognized and denied by default security policy.`,
       requiredPrivilege: 'unknown',
       riskLevel: 'high',
       checkedAt: timestamp,
