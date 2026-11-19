@@ -106,6 +106,7 @@ import {
   SqliteTemperamentPersonalityRepository,
   SqliteValuesMoralRepository,
   SqliteSelfEvaluationEfficacyRepository,
+  SqliteLongTermDevelopmentRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -248,6 +249,7 @@ export class ArletexBackendServer {
   public readonly temperamentRepo: SqliteTemperamentPersonalityRepository;
   public readonly valuesMoralRepo: SqliteValuesMoralRepository;
   public readonly efficacyRepo: SqliteSelfEvaluationEfficacyRepository;
+  public readonly longTermDevelopmentRepo: SqliteLongTermDevelopmentRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -315,6 +317,7 @@ export class ArletexBackendServer {
     this.temperamentRepo = new SqliteTemperamentPersonalityRepository(db);
     this.valuesMoralRepo = new SqliteValuesMoralRepository(db);
     this.efficacyRepo = new SqliteSelfEvaluationEfficacyRepository(db);
+    this.longTermDevelopmentRepo = new SqliteLongTermDevelopmentRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -352,6 +355,7 @@ export class ArletexBackendServer {
       this.temperamentRepo,
       this.valuesMoralRepo,
       this.efficacyRepo,
+      this.longTermDevelopmentRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -5843,6 +5847,50 @@ Rules:
         this.sendJson(res, 200, { success: true, evidence });
         return;
       }
+
+      // ==========================================
+      // Milestone 36: Long-Term Psychological Development Routes
+      // ==========================================
+      if (url.pathname === '/api/ape/development-longterm/overview' && method === 'GET') {
+        const overview = this.apeService.getDevelopmentOverview();
+        this.sendJson(res, 200, { success: true, overview });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/development-longterm/record-change' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const entry = this.apeService.recordDevelopmentChange(body);
+        this.sendJson(res, 201, { success: true, entry });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/development-longterm/start-epoch' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const epoch = this.apeService.startDevelopmentEpoch(body);
+        this.sendJson(res, 201, { success: true, epoch });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/development-longterm/history' && method === 'GET') {
+        const dimension = (url.searchParams.get('dimension') as any) || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const history = this.apeService.listDevelopmentHistory(dimension, limit);
+        this.sendJson(res, 200, { success: true, history });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/development-longterm/epochs' && method === 'GET') {
+        const epochs = this.apeService.listDevelopmentEpochs();
+        this.sendJson(res, 200, { success: true, epochs });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/development-longterm/anchors' && method === 'GET') {
+        const anchors = this.apeService.listIdentityAnchors();
+        this.sendJson(res, 200, { success: true, anchors });
+        return;
+      }
+
 
 
       // ==========================================

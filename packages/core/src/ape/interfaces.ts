@@ -138,6 +138,10 @@ import {
   CapabilityLimitation,
   SelfImprovementGoal,
   SelfEvaluationSnapshot,
+  PsychologicalDimension,
+  DevelopmentHistoryEntry,
+  IdentityAnchor,
+  DevelopmentEpoch,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -665,6 +669,19 @@ export interface ISelfEvaluationEfficacyRepository {
   saveSnapshot(snapshot: SelfEvaluationSnapshot): void;
   getLatestSnapshot(): SelfEvaluationSnapshot | null;
 }
+
+export interface ILongTermDevelopmentRepository {
+  saveHistoryEntry(entry: DevelopmentHistoryEntry): void;
+  listHistoryEntries(dimension?: PsychologicalDimension, limit?: number): DevelopmentHistoryEntry[];
+  countHistoryEntries(): number;
+  saveIdentityAnchor(anchor: IdentityAnchor): void;
+  getIdentityAnchor(anchorKey: string): IdentityAnchor | null;
+  listIdentityAnchors(): IdentityAnchor[];
+  saveEpoch(epoch: DevelopmentEpoch): void;
+  getCurrentEpoch(): DevelopmentEpoch | null;
+  listEpochs(): DevelopmentEpoch[];
+}
+
 
 
 

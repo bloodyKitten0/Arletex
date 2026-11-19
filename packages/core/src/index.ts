@@ -53,6 +53,7 @@ export * from './ape/habitsAndRoutinesEngine.js';
 export * from './ape/temperamentPersonalityEngine.js';
 export * from './ape/valuesMoralEngine.js';
 export * from './ape/selfEvaluationEfficacyEngine.js';
+export * from './ape/longTermDevelopmentEngine.js';
 export * from './ape/apeService.js';
 
 // Digital Agency Subsystem

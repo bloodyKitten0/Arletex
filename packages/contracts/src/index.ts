@@ -802,6 +802,11 @@ export * from './valuesAndMoralCognition.js';
 // ==========================================
 export * from './selfEvaluationAndEfficacy.js';
 
+// ==========================================
+// Long-Term Psychological Development Contracts (Milestone 36)
+// ==========================================
+export * from './longTermDevelopment.js';
+
 
 
 

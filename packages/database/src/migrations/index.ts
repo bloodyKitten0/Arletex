@@ -2440,4 +2440,49 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('self_evaluation_efficacy_milestone35', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 47,
+    name: '047_long_term_development_milestone36',
+    up: `
+      -- Development History Entries (Tracking psychological evolution across 8 dimensions)
+      CREATE TABLE IF NOT EXISTS development_history_entries (
+        id TEXT PRIMARY KEY,
+        dimension TEXT NOT NULL,
+        target_key TEXT NOT NULL,
+        previous_state TEXT NOT NULL,
+        new_state TEXT NOT NULL,
+        adaptation_driver TEXT NOT NULL,
+        plasticity_score REAL NOT NULL,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_dev_history_dimension ON development_history_entries (dimension);
+      CREATE INDEX IF NOT EXISTS idx_dev_history_time ON development_history_entries (timestamp DESC);
+
+      -- Identity Anchors (Immutable core identity preserving partner equality & epistemic integrity)
+      CREATE TABLE IF NOT EXISTS identity_anchors (
+        id TEXT PRIMARY KEY,
+        anchor_key TEXT UNIQUE NOT NULL,
+        description TEXT NOT NULL,
+        stability_weight REAL NOT NULL DEFAULT 0.98,
+        is_immutable INTEGER NOT NULL DEFAULT 1,
+        last_verified_at TEXT NOT NULL
+      );
+
+      -- Development Epochs (Long-term eras of psychological growth)
+      CREATE TABLE IF NOT EXISTS development_epochs (
+        id TEXT PRIMARY KEY,
+        epoch_name TEXT NOT NULL,
+        summary TEXT NOT NULL,
+        key_milestones_json TEXT NOT NULL DEFAULT '[]',
+        started_at TEXT NOT NULL,
+        ended_at TEXT
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_dev_epochs_started ON development_epochs (started_at DESC);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('long_term_development_milestone36', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

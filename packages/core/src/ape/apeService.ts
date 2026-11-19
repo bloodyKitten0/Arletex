@@ -147,6 +147,12 @@ import {
   CreateImprovementGoalParams,
 } from './selfEvaluationEfficacyEngine.js';
 import {
+  InMemoryLongTermDevelopmentRepository,
+  LongTermDevelopmentEngine,
+  RecordDevelopmentChangeParams,
+  StartNewEpochParams,
+} from './longTermDevelopmentEngine.js';
+import {
   ISimulationRepository,
   IMetacognitionRepository,
   IGlobalCognitiveRepository,
@@ -166,6 +172,7 @@ import {
   ITemperamentPersonalityRepository,
   IValuesMoralRepository,
   ISelfEvaluationEfficacyRepository,
+  ILongTermDevelopmentRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
@@ -184,6 +191,7 @@ import {
   CorePersonalityTraits,
   MoralPrincipleCategory,
   SelfImprovementGoal,
+  PsychologicalDimension,
 } from '@arletex/contracts';
 
 export class ApeService {
@@ -235,6 +243,7 @@ export class ApeService {
   public readonly temperamentEngine: TemperamentPersonalityEngine;
   public readonly moralEngine: ValuesMoralEngine;
   public readonly efficacyEngine: SelfEvaluationEfficacyEngine;
+  public readonly longTermDevelopmentEngine: LongTermDevelopmentEngine;
 
   constructor(
     repo: IApeRepository,
@@ -273,6 +282,7 @@ export class ApeService {
     temperamentRepo?: ITemperamentPersonalityRepository,
     valuesMoralRepo?: IValuesMoralRepository,
     selfEvaluationEfficacyRepo?: ISelfEvaluationEfficacyRepository,
+    longTermDevelopmentRepo?: ILongTermDevelopmentRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -406,6 +416,9 @@ export class ApeService {
 
     const effRepo = selfEvaluationEfficacyRepo || new InMemorySelfEvaluationEfficacyRepository();
     this.efficacyEngine = new SelfEvaluationEfficacyEngine(effRepo, logger);
+
+    const ltdRepo = longTermDevelopmentRepo || new InMemoryLongTermDevelopmentRepository();
+    this.longTermDevelopmentEngine = new LongTermDevelopmentEngine(ltdRepo, logger);
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -2479,6 +2492,33 @@ export class ApeService {
 
   public listEfficacyEvidence(domain?: string, type?: 'achievement' | 'failure', limit?: number) {
     return this.efficacyEngine.listEvidence(domain, type, limit);
+  }
+
+  // ==========================================
+  // Milestone 36: Long-Term Psychological Development
+  // ==========================================
+  public recordDevelopmentChange(params: RecordDevelopmentChangeParams) {
+    return this.longTermDevelopmentEngine.recordDevelopmentChange(params);
+  }
+
+  public startDevelopmentEpoch(params: StartNewEpochParams) {
+    return this.longTermDevelopmentEngine.startNewEpoch(params);
+  }
+
+  public getDevelopmentOverview() {
+    return this.longTermDevelopmentEngine.getDevelopmentOverview();
+  }
+
+  public listDevelopmentHistory(dimension?: PsychologicalDimension, limit?: number) {
+    return this.longTermDevelopmentEngine.listHistory(dimension, limit);
+  }
+
+  public listDevelopmentEpochs() {
+    return this.longTermDevelopmentEngine.listEpochs();
+  }
+
+  public listIdentityAnchors() {
+    return this.longTermDevelopmentEngine.listIdentityAnchors();
   }
 }
 
