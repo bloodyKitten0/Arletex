@@ -94,6 +94,7 @@ import {
   SqliteSelfGeneratedGoalRepository,
   SqlitePersistentPlanningRepository,
   SqliteDeliberationRepository,
+  SqliteAutonomousAgencyRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -224,6 +225,7 @@ export class ArletexBackendServer {
   public readonly goalRepo: SqliteSelfGeneratedGoalRepository;
   public readonly planningRepo: SqlitePersistentPlanningRepository;
   public readonly deliberationRepo: SqliteDeliberationRepository;
+  public readonly autonomousAgencyRepo: SqliteAutonomousAgencyRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -279,6 +281,7 @@ export class ArletexBackendServer {
     this.goalRepo = new SqliteSelfGeneratedGoalRepository(db);
     this.planningRepo = new SqlitePersistentPlanningRepository(db);
     this.deliberationRepo = new SqliteDeliberationRepository(db);
+    this.autonomousAgencyRepo = new SqliteAutonomousAgencyRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -304,6 +307,7 @@ export class ArletexBackendServer {
       this.goalRepo,
       this.planningRepo,
       this.deliberationRepo,
+      this.autonomousAgencyRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -4910,6 +4914,89 @@ Rules:
         const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 100;
         const conflicts = this.apeService.deliberationEngine.listConflicts({ status, limit });
         this.sendJson(res, 200, conflicts);
+        return;
+      }
+
+      // ==========================================
+      // Autonomous Agency Routes (Milestone 24)
+      // ==========================================
+      if (url.pathname === '/api/ape/autonomous-agency/initiate' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const activity = this.apeService.initiateAutonomousActivity(body);
+        this.sendJson(res, 201, { success: true, activity });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/autonomous-agency/research' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const activity = await this.apeService.executeAutonomousResearch(body);
+        this.sendJson(res, 200, { success: true, activity });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/autonomous-agency/file-op' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const activity = await this.apeService.executeAutonomousFileOperation(body);
+        this.sendJson(res, 200, { success: true, activity });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/autonomous-agency/app-interaction' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const activity = await this.apeService.executeAutonomousAppInteraction(body);
+        this.sendJson(res, 200, { success: true, activity });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/autonomous-agency/browser' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const activity = await this.apeService.executeAutonomousBrowserInteraction(body);
+        this.sendJson(res, 200, { success: true, activity });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/autonomous-agency/verify' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const activity = this.apeService.verifyAutonomousActivity(body.activityId, body.criteria, body.observedEvidence);
+        this.sendJson(res, 200, { success: true, activity });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/autonomous-agency/interrupt' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const activity = this.apeService.handleAutonomousActivityInterruption(body.activityId, body.reason);
+        this.sendJson(res, 200, { success: true, activity });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/autonomous-agency/recover' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const activity = await this.apeService.recoverFailedAutonomousActivity(body.activityId, body.recoveryStrategy);
+        this.sendJson(res, 200, { success: true, activity });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/autonomous-agency/proactive-message' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const activity = this.apeService.dispatchProactiveCommunication(body.activityId, body.messageText, body.rationale, body.channel);
+        this.sendJson(res, 200, { success: true, activity });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/autonomous-agency/run-goal-cycle' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const cycleResult = await this.apeService.runAutonomousGoalCycle(body.goal);
+        this.sendJson(res, 200, { success: true, ...cycleResult });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/autonomous-agency/activities' && method === 'GET') {
+        const status = url.searchParams.get('status') as any;
+        const type = url.searchParams.get('type') as any;
+        const goalId = url.searchParams.get('goalId') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 100;
+        const activities = this.apeService.autonomousAgencyEngine.listActivities({ status, type, goalId, limit });
+        this.sendJson(res, 200, activities);
         return;
       }
 

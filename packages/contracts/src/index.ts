@@ -742,5 +742,10 @@ export * from './persistentPlanning.js';
 // ==========================================
 export * from './deliberationAndConflict.js';
 
+// ==========================================
+// Autonomous Agency Contracts (Milestone 24)
+// ==========================================
+export * from './autonomousAgency.js';
+
 
 

@@ -95,6 +95,9 @@ import {
   LongTermCommitmentStatus,
   InternalConflictRecord,
   InternalConflictStatus,
+  AutonomousActivityRecord,
+  AutonomousActivityStatus,
+  AutonomousActivityType,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -484,6 +487,18 @@ export interface IDeliberationRepository {
   getConflictById(id: string): InternalConflictRecord | null;
   listConflicts(filter?: { status?: InternalConflictStatus; limit?: number }): InternalConflictRecord[];
   deleteConflict(id: string): void;
+}
+
+export interface IAutonomousActivityRepository {
+  saveActivity(activity: AutonomousActivityRecord): void;
+  getActivityById(id: string): AutonomousActivityRecord | null;
+  listActivities(filter?: {
+    status?: AutonomousActivityStatus;
+    type?: AutonomousActivityType;
+    goalId?: string;
+    limit?: number;
+  }): AutonomousActivityRecord[];
+  deleteActivity(id: string): void;
 }
 
 

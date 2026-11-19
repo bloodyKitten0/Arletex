@@ -1760,4 +1760,37 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('deliberation_and_conflict_milestone23', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 35,
+    name: '035_autonomous_agency_milestone24',
+    up: `
+      -- Autonomous Activities (Independent execution, research, projects, verification, and proactive actions)
+      CREATE TABLE IF NOT EXISTS autonomous_activities (
+        id TEXT PRIMARY KEY,
+        goal_id TEXT,
+        plan_id TEXT,
+        type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        permission_level TEXT NOT NULL,
+        target_resource TEXT NOT NULL,
+        parameters_json TEXT NOT NULL DEFAULT '{}',
+        execution_result_json TEXT,
+        verification_json TEXT,
+        failure_info_json TEXT,
+        proactive_message_json TEXT,
+        status TEXT NOT NULL DEFAULT 'initiated',
+        initiated_at TEXT NOT NULL,
+        completed_at TEXT,
+        interrupted_at TEXT
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_autonomous_activities_status ON autonomous_activities (status);
+      CREATE INDEX IF NOT EXISTS idx_autonomous_activities_type ON autonomous_activities (type);
+      CREATE INDEX IF NOT EXISTS idx_autonomous_activities_goal ON autonomous_activities (goal_id);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('autonomous_agency_milestone24', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

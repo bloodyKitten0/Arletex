@@ -128,6 +128,7 @@ import { InMemoryExecutiveRepository, ExecutiveEngine } from './executiveEngine.
 import { InMemorySelfGeneratedGoalRepository, SelfGeneratedGoalEngine } from './selfGeneratedGoalEngine.js';
 import { InMemoryPersistentPlanningRepository, PersistentPlanningEngine } from './persistentPlanningEngine.js';
 import { InMemoryDeliberationRepository, DeliberationEngine } from './deliberationEngine.js';
+import { InMemoryAutonomousActivityRepository, AutonomousAgencyEngine } from './autonomousAgencyEngine.js';
 import {
   ISimulationRepository,
   IMetacognitionRepository,
@@ -136,6 +137,7 @@ import {
   ISelfGeneratedGoalRepository,
   IPersistentPlanningRepository,
   IDeliberationRepository,
+  IAutonomousActivityRepository,
 } from './interfaces.js';
 
 export class ApeService {
@@ -175,6 +177,7 @@ export class ApeService {
   public readonly selfGeneratedGoalEngine: SelfGeneratedGoalEngine;
   public readonly planningEngine: PersistentPlanningEngine;
   public readonly deliberationEngine: DeliberationEngine;
+  public readonly autonomousAgencyEngine: AutonomousAgencyEngine;
 
   constructor(
     repo: IApeRepository,
@@ -201,6 +204,7 @@ export class ApeService {
     selfGeneratedGoalRepo?: ISelfGeneratedGoalRepository,
     planningRepo?: IPersistentPlanningRepository,
     deliberationRepo?: IDeliberationRepository,
+    autonomousAgencyRepo?: IAutonomousActivityRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -298,6 +302,9 @@ export class ApeService {
 
     const dRepo = deliberationRepo || new InMemoryDeliberationRepository();
     this.deliberationEngine = new DeliberationEngine({ repository: dRepo, logger });
+
+    const aaRepo = autonomousAgencyRepo || new InMemoryAutonomousActivityRepository();
+    this.autonomousAgencyEngine = new AutonomousAgencyEngine({ repository: aaRepo, logger });
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -1818,6 +1825,50 @@ export class ApeService {
     reassessment: Parameters<DeliberationEngine['recordPostDecisionReassessment']>[1],
   ) {
     return this.deliberationEngine.recordPostDecisionReassessment(conflictId, reassessment);
+  }
+
+  // ==========================================
+  // Milestone 24 — Autonomous Agency
+  // ==========================================
+
+  public initiateAutonomousActivity(params: Parameters<AutonomousAgencyEngine['initiateActivity']>[0]) {
+    return this.autonomousAgencyEngine.initiateActivity(params);
+  }
+
+  public executeAutonomousResearch(params: Parameters<AutonomousAgencyEngine['executeResearch']>[0]) {
+    return this.autonomousAgencyEngine.executeResearch(params);
+  }
+
+  public executeAutonomousFileOperation(params: Parameters<AutonomousAgencyEngine['executeFileOperation']>[0]) {
+    return this.autonomousAgencyEngine.executeFileOperation(params);
+  }
+
+  public executeAutonomousAppInteraction(params: Parameters<AutonomousAgencyEngine['executeApplicationInteraction']>[0]) {
+    return this.autonomousAgencyEngine.executeApplicationInteraction(params);
+  }
+
+  public executeAutonomousBrowserInteraction(params: Parameters<AutonomousAgencyEngine['executeBrowserInteraction']>[0]) {
+    return this.autonomousAgencyEngine.executeBrowserInteraction(params);
+  }
+
+  public verifyAutonomousActivity(activityId: string, criteria: string, observedEvidence: string) {
+    return this.autonomousAgencyEngine.verifyActivityAction(activityId, criteria, observedEvidence);
+  }
+
+  public handleAutonomousActivityInterruption(activityId: string, reason: string) {
+    return this.autonomousAgencyEngine.handleActivityInterruption(activityId, reason);
+  }
+
+  public recoverFailedAutonomousActivity(activityId: string, recoveryStrategy: string) {
+    return this.autonomousAgencyEngine.recoverFailedActivity(activityId, recoveryStrategy);
+  }
+
+  public dispatchProactiveCommunication(activityId: string, messageText: string, rationale: string, channel?: string) {
+    return this.autonomousAgencyEngine.dispatchProactiveCommunication(activityId, messageText, rationale, channel);
+  }
+
+  public runAutonomousGoalCycle(goal: Parameters<AutonomousAgencyEngine['runAutonomousGoalCycle']>[0]) {
+    return this.autonomousAgencyEngine.runAutonomousGoalCycle(goal);
   }
 }
 

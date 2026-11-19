@@ -31,5 +31,6 @@ export * from './repositories/executiveRepository.js';
 export * from './repositories/goalRepository.js';
 export * from './repositories/persistentPlanningRepository.js';
 export * from './repositories/deliberationRepository.js';
+export * from './repositories/autonomousAgencyRepository.js';
 
 
