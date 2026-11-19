@@ -160,6 +160,14 @@ import {
   PredictSocialActionParams,
 } from './theoryOfMindEngine.js';
 import {
+  InMemoryEmpathyPerspectiveRepository,
+  EmpathyPerspectiveEngine,
+  InferExperienceParams,
+  TakePerspectiveParams,
+  SynthesizeResponseParams,
+  RevisePerspectiveParams,
+} from './empathyPerspectiveEngine.js';
+import {
   ISimulationRepository,
   IMetacognitionRepository,
   IGlobalCognitiveRepository,
@@ -181,6 +189,7 @@ import {
   ISelfEvaluationEfficacyRepository,
   ILongTermDevelopmentRepository,
   ITheoryOfMindRepository,
+  IEmpathyPerspectiveRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
@@ -254,6 +263,7 @@ export class ApeService {
   public readonly efficacyEngine: SelfEvaluationEfficacyEngine;
   public readonly longTermDevelopmentEngine: LongTermDevelopmentEngine;
   public readonly theoryOfMindEngine: TheoryOfMindEngine;
+  public readonly empathyEngine: EmpathyPerspectiveEngine;
 
   constructor(
     repo: IApeRepository,
@@ -294,6 +304,7 @@ export class ApeService {
     selfEvaluationEfficacyRepo?: ISelfEvaluationEfficacyRepository,
     longTermDevelopmentRepo?: ILongTermDevelopmentRepository,
     theoryOfMindRepo?: ITheoryOfMindRepository,
+    empathyRepo?: IEmpathyPerspectiveRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -433,6 +444,9 @@ export class ApeService {
 
     const tomRepo = theoryOfMindRepo || new InMemoryTheoryOfMindRepository();
     this.theoryOfMindEngine = new TheoryOfMindEngine(tomRepo, logger);
+
+    const empRepo = empathyRepo || new InMemoryEmpathyPerspectiveRepository();
+    this.empathyEngine = new EmpathyPerspectiveEngine(empRepo, logger);
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -2576,6 +2590,45 @@ export class ApeService {
 
   public listSocialPredictions(agentId?: string, limit?: number) {
     return this.theoryOfMindEngine.listSocialPredictions(agentId, limit);
+  }
+
+  // ==========================================
+  // Milestone 38: Empathy and Perspective-Taking
+  // ==========================================
+  public inferExperience(params: InferExperienceParams) {
+    return this.empathyEngine.inferExperience(params);
+  }
+
+  public takePerspective(params: TakePerspectiveParams) {
+    return this.empathyEngine.takePerspective(params);
+  }
+
+  public synthesizeEmpatheticResponse(params: SynthesizeResponseParams) {
+    return this.empathyEngine.synthesizeEmpatheticResponse(params);
+  }
+
+  public revisePerspective(params: RevisePerspectiveParams) {
+    return this.empathyEngine.revisePerspective(params);
+  }
+
+  public getPerspectiveModel(targetPersonId: string) {
+    return this.empathyEngine.getPerspectiveModel(targetPersonId);
+  }
+
+  public listPerspectiveModels() {
+    return this.empathyEngine.listPerspectiveModels();
+  }
+
+  public listInferredExperiences(targetPersonId?: string, limit?: number) {
+    return this.empathyEngine.listExperiences(targetPersonId, limit);
+  }
+
+  public listEmpatheticResponses(targetPersonId?: string, limit?: number) {
+    return this.empathyEngine.listResponses(targetPersonId, limit);
+  }
+
+  public listPerspectiveRevisions(perspectiveId?: string, limit?: number) {
+    return this.empathyEngine.listRevisions(perspectiveId, limit);
   }
 }
 

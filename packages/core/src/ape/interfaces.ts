@@ -146,6 +146,10 @@ import {
   InferredBelief,
   InferredIntention,
   SocialPrediction,
+  InferredExperience,
+  PerspectiveTakingModel,
+  EmpatheticResponse,
+  PerspectiveRevisionRecord,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -698,6 +702,20 @@ export interface ITheoryOfMindRepository {
   saveSocialPrediction(prediction: SocialPrediction): void;
   listSocialPredictions(agentId?: string, limit?: number): SocialPrediction[];
 }
+
+export interface IEmpathyPerspectiveRepository {
+  saveExperience(experience: InferredExperience): void;
+  getExperienceById(id: string): InferredExperience | null;
+  listExperiences(targetPersonId?: string, limit?: number): InferredExperience[];
+  savePerspectiveModel(model: PerspectiveTakingModel): void;
+  getPerspectiveModel(targetPersonId: string): PerspectiveTakingModel | null;
+  listPerspectiveModels(): PerspectiveTakingModel[];
+  saveResponse(response: EmpatheticResponse): void;
+  listResponses(targetPersonId?: string, limit?: number): EmpatheticResponse[];
+  saveRevision(revision: PerspectiveRevisionRecord): void;
+  listRevisions(perspectiveId?: string, limit?: number): PerspectiveRevisionRecord[];
+}
+
 
 
 

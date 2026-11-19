@@ -108,6 +108,7 @@ import {
   SqliteSelfEvaluationEfficacyRepository,
   SqliteLongTermDevelopmentRepository,
   SqliteTheoryOfMindRepository,
+  SqliteEmpathyPerspectiveRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -252,6 +253,7 @@ export class ArletexBackendServer {
   public readonly efficacyRepo: SqliteSelfEvaluationEfficacyRepository;
   public readonly longTermDevelopmentRepo: SqliteLongTermDevelopmentRepository;
   public readonly tomRepo: SqliteTheoryOfMindRepository;
+  public readonly empathyRepo: SqliteEmpathyPerspectiveRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -321,6 +323,7 @@ export class ArletexBackendServer {
     this.efficacyRepo = new SqliteSelfEvaluationEfficacyRepository(db);
     this.longTermDevelopmentRepo = new SqliteLongTermDevelopmentRepository(db);
     this.tomRepo = new SqliteTheoryOfMindRepository(db);
+    this.empathyRepo = new SqliteEmpathyPerspectiveRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -360,6 +363,7 @@ export class ArletexBackendServer {
       this.efficacyRepo,
       this.longTermDevelopmentRepo,
       this.tomRepo,
+      this.empathyRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -5969,6 +5973,83 @@ Rules:
         this.sendJson(res, 200, { success: true, predictions });
         return;
       }
+
+      // ==========================================
+      // Milestone 38: Empathy and Perspective-Taking Routes
+      // ==========================================
+      if (url.pathname === '/api/ape/empathy/infer-experience' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const experience = this.apeService.inferExperience(body);
+        this.sendJson(res, 201, { success: true, experience });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/empathy/experiences' && method === 'GET') {
+        const targetPersonId = url.searchParams.get('targetPersonId') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const experiences = this.apeService.listInferredExperiences(targetPersonId, limit);
+        this.sendJson(res, 200, { success: true, experiences });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/empathy/take-perspective' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const perspective = this.apeService.takePerspective(body);
+        this.sendJson(res, 201, { success: true, perspective });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/empathy/perspective' && method === 'GET') {
+        const targetPersonId = url.searchParams.get('targetPersonId');
+        if (!targetPersonId) {
+          this.sendJson(res, 400, { error: 'Query parameter "targetPersonId" is required' });
+          return;
+        }
+        const perspective = this.apeService.getPerspectiveModel(targetPersonId);
+        if (!perspective) {
+          this.sendJson(res, 404, { error: `Perspective model not found for: ${targetPersonId}` });
+          return;
+        }
+        this.sendJson(res, 200, { success: true, perspective });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/empathy/perspectives' && method === 'GET') {
+        const perspectives = this.apeService.listPerspectiveModels();
+        this.sendJson(res, 200, { success: true, perspectives });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/empathy/synthesize-response' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const response = this.apeService.synthesizeEmpatheticResponse(body);
+        this.sendJson(res, 201, { success: true, response });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/empathy/responses' && method === 'GET') {
+        const targetPersonId = url.searchParams.get('targetPersonId') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const responses = this.apeService.listEmpatheticResponses(targetPersonId, limit);
+        this.sendJson(res, 200, { success: true, responses });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/empathy/revise-perspective' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const result = this.apeService.revisePerspective(body);
+        this.sendJson(res, 200, { success: true, ...result });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/empathy/revisions' && method === 'GET') {
+        const perspectiveId = url.searchParams.get('perspectiveId') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const revisions = this.apeService.listPerspectiveRevisions(perspectiveId, limit);
+        this.sendJson(res, 200, { success: true, revisions });
+        return;
+      }
+
 
 
 

@@ -812,6 +812,11 @@ export * from './longTermDevelopment.js';
 // ==========================================
 export * from './theoryOfMind.js';
 
+// ==========================================
+// Empathy and Perspective-Taking Contracts (Milestone 38)
+// ==========================================
+export * from './empathyAndPerspective.js';
+
 
 
 

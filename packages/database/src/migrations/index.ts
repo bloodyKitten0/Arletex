@@ -2547,4 +2547,69 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('theory_of_mind_milestone37', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 49,
+    name: '049_empathy_and_perspective_milestone38',
+    up: `
+      -- Inferred Experiences (Emotional cue recognition & affective inference with epistemic modesty)
+      CREATE TABLE IF NOT EXISTS empathy_inferred_experiences (
+        id TEXT PRIMARY KEY,
+        target_person_id TEXT NOT NULL,
+        observed_cues_json TEXT NOT NULL DEFAULT '[]',
+        primary_inferred_affect TEXT NOT NULL,
+        inferred_needs_json TEXT NOT NULL DEFAULT '[]',
+        confidence REAL NOT NULL,
+        epistemic_modality TEXT NOT NULL,
+        inferred_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_empathy_exp_target ON empathy_inferred_experiences (target_person_id);
+      CREATE INDEX IF NOT EXISTS idx_empathy_exp_time ON empathy_inferred_experiences (inferred_at DESC);
+
+      -- Perspective Taking Models (Modeling another individual's contextual viewpoint)
+      CREATE TABLE IF NOT EXISTS empathy_perspective_models (
+        id TEXT PRIMARY KEY,
+        target_person_id TEXT NOT NULL,
+        current_context TEXT NOT NULL,
+        inferred_point_of_view TEXT NOT NULL,
+        underlying_pressures_json TEXT NOT NULL DEFAULT '[]',
+        relationship_bond TEXT NOT NULL,
+        last_revised_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_empathy_persp_target ON empathy_perspective_models (target_person_id);
+
+      -- Empathetic Responses (Compassionate response synthesis with empathy vs agreement distinction)
+      CREATE TABLE IF NOT EXISTS empathy_responses (
+        id TEXT PRIMARY KEY,
+        target_person_id TEXT NOT NULL,
+        experience_id TEXT NOT NULL,
+        perspective_id TEXT NOT NULL,
+        validates_emotion INTEGER NOT NULL DEFAULT 1,
+        agrees_with_premise INTEGER NOT NULL DEFAULT 1,
+        empathy_statement TEXT NOT NULL,
+        epistemic_humility_disclaimer TEXT NOT NULL,
+        supportive_action_suggestion TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_empathy_resp_target ON empathy_responses (target_person_id);
+      CREATE INDEX IF NOT EXISTS idx_empathy_resp_time ON empathy_responses (created_at DESC);
+
+      -- Perspective Revision Records (Updating perspective models upon new evidence)
+      CREATE TABLE IF NOT EXISTS empathy_perspective_revisions (
+        id TEXT PRIMARY KEY,
+        perspective_id TEXT NOT NULL,
+        previous_understanding TEXT NOT NULL,
+        new_understanding TEXT NOT NULL,
+        revision_reason TEXT NOT NULL,
+        revised_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_empathy_rev_persp ON empathy_perspective_revisions (perspective_id);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('empathy_and_perspective_milestone38', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];
