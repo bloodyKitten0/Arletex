@@ -56,6 +56,7 @@ export * from './ape/selfEvaluationEfficacyEngine.js';
 export * from './ape/longTermDevelopmentEngine.js';
 export * from './ape/theoryOfMindEngine.js';
 export * from './ape/empathyPerspectiveEngine.js';
+export * from './ape/socialEmotionsEngine.js';
 export * from './ape/apeService.js';
 
 // Digital Agency Subsystem

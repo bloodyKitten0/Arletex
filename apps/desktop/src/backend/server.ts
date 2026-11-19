@@ -109,6 +109,7 @@ import {
   SqliteLongTermDevelopmentRepository,
   SqliteTheoryOfMindRepository,
   SqliteEmpathyPerspectiveRepository,
+  SqliteSocialEmotionsRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -254,6 +255,7 @@ export class ArletexBackendServer {
   public readonly longTermDevelopmentRepo: SqliteLongTermDevelopmentRepository;
   public readonly tomRepo: SqliteTheoryOfMindRepository;
   public readonly empathyRepo: SqliteEmpathyPerspectiveRepository;
+  public readonly socialEmotionsRepo: SqliteSocialEmotionsRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -324,6 +326,7 @@ export class ArletexBackendServer {
     this.longTermDevelopmentRepo = new SqliteLongTermDevelopmentRepository(db);
     this.tomRepo = new SqliteTheoryOfMindRepository(db);
     this.empathyRepo = new SqliteEmpathyPerspectiveRepository(db);
+    this.socialEmotionsRepo = new SqliteSocialEmotionsRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -364,6 +367,7 @@ export class ArletexBackendServer {
       this.longTermDevelopmentRepo,
       this.tomRepo,
       this.empathyRepo,
+      this.socialEmotionsRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -6049,6 +6053,59 @@ Rules:
         this.sendJson(res, 200, { success: true, revisions });
         return;
       }
+
+      // ==========================================
+      // Milestone 39: Social Emotions Routes
+      // ==========================================
+      if (url.pathname === '/api/ape/social-emotions/process-interaction' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const result = this.apeService.processSocialInteraction(body);
+        this.sendJson(res, 201, { success: true, ...result });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/social-emotions/snapshot' && method === 'GET') {
+        const targetPersonId = url.searchParams.get('targetPersonId');
+        if (!targetPersonId) {
+          this.sendJson(res, 400, { error: 'Query parameter "targetPersonId" is required' });
+          return;
+        }
+        const snapshot = this.apeService.getSocialEmotionsSnapshot(targetPersonId);
+        this.sendJson(res, 200, { success: true, snapshot });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/social-emotions/states' && method === 'GET') {
+        const targetPersonId = url.searchParams.get('targetPersonId') || undefined;
+        const emotions = this.apeService.listSocialEmotionStates(targetPersonId);
+        this.sendJson(res, 200, { success: true, emotions });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/social-emotions/state' && method === 'GET') {
+        const targetPersonId = url.searchParams.get('targetPersonId');
+        const emotion = url.searchParams.get('emotion') as any;
+        if (!targetPersonId || !emotion) {
+          this.sendJson(res, 400, { error: 'Query parameters "targetPersonId" and "emotion" are required' });
+          return;
+        }
+        const state = this.apeService.getSocialEmotionState(targetPersonId, emotion);
+        if (!state) {
+          this.sendJson(res, 404, { error: `Social emotion state not found for: ${targetPersonId}/${emotion}` });
+          return;
+        }
+        this.sendJson(res, 200, { success: true, state });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/social-emotions/appraisals' && method === 'GET') {
+        const targetPersonId = url.searchParams.get('targetPersonId') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const appraisals = this.apeService.listSocialAppraisals(targetPersonId, limit);
+        this.sendJson(res, 200, { success: true, appraisals });
+        return;
+      }
+
 
 
 

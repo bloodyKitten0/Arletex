@@ -817,6 +817,11 @@ export * from './theoryOfMind.js';
 // ==========================================
 export * from './empathyAndPerspective.js';
 
+// ==========================================
+// Social Emotions Contracts (Milestone 39)
+// ==========================================
+export * from './socialEmotions.js';
+
 
 
 

@@ -168,6 +168,11 @@ import {
   RevisePerspectiveParams,
 } from './empathyPerspectiveEngine.js';
 import {
+  InMemorySocialEmotionsRepository,
+  SocialEmotionsEngine,
+  ProcessSocialInteractionParams,
+} from './socialEmotionsEngine.js';
+import {
   ISimulationRepository,
   IMetacognitionRepository,
   IGlobalCognitiveRepository,
@@ -190,6 +195,7 @@ import {
   ILongTermDevelopmentRepository,
   ITheoryOfMindRepository,
   IEmpathyPerspectiveRepository,
+  ISocialEmotionsRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
@@ -210,6 +216,7 @@ import {
   SelfImprovementGoal,
   PsychologicalDimension,
   AgentMentalModel,
+  SocialEmotionType,
 } from '@arletex/contracts';
 
 export class ApeService {
@@ -264,6 +271,7 @@ export class ApeService {
   public readonly longTermDevelopmentEngine: LongTermDevelopmentEngine;
   public readonly theoryOfMindEngine: TheoryOfMindEngine;
   public readonly empathyEngine: EmpathyPerspectiveEngine;
+  public readonly socialEmotionsEngine: SocialEmotionsEngine;
 
   constructor(
     repo: IApeRepository,
@@ -305,6 +313,7 @@ export class ApeService {
     longTermDevelopmentRepo?: ILongTermDevelopmentRepository,
     theoryOfMindRepo?: ITheoryOfMindRepository,
     empathyRepo?: IEmpathyPerspectiveRepository,
+    socialEmotionsRepo?: ISocialEmotionsRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -447,6 +456,9 @@ export class ApeService {
 
     const empRepo = empathyRepo || new InMemoryEmpathyPerspectiveRepository();
     this.empathyEngine = new EmpathyPerspectiveEngine(empRepo, logger);
+
+    const seRepo = socialEmotionsRepo || new InMemorySocialEmotionsRepository();
+    this.socialEmotionsEngine = new SocialEmotionsEngine(seRepo, logger);
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -2629,6 +2641,29 @@ export class ApeService {
 
   public listPerspectiveRevisions(perspectiveId?: string, limit?: number) {
     return this.empathyEngine.listRevisions(perspectiveId, limit);
+  }
+
+  // ==========================================
+  // Milestone 39: Social Emotions
+  // ==========================================
+  public processSocialInteraction(params: ProcessSocialInteractionParams) {
+    return this.socialEmotionsEngine.processSocialInteraction(params);
+  }
+
+  public getSocialEmotionsSnapshot(targetPersonId: string) {
+    return this.socialEmotionsEngine.getSnapshot(targetPersonId);
+  }
+
+  public getSocialEmotionState(targetPersonId: string, emotion: SocialEmotionType) {
+    return this.socialEmotionsEngine.getEmotionState(targetPersonId, emotion);
+  }
+
+  public listSocialEmotionStates(targetPersonId?: string) {
+    return this.socialEmotionsEngine.listEmotionStates(targetPersonId);
+  }
+
+  public listSocialAppraisals(targetPersonId?: string, limit?: number) {
+    return this.socialEmotionsEngine.listAppraisals(targetPersonId, limit);
   }
 }
 

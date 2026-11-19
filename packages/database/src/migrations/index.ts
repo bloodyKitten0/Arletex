@@ -2612,4 +2612,42 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('empathy_and_perspective_milestone38', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 50,
+    name: '050_social_emotions_milestone39',
+    up: `
+      -- Social Emotion States (Causally grounded social emotions: trust, affection, gratitude, guilt, pride, etc.)
+      CREATE TABLE IF NOT EXISTS social_emotion_states (
+        id TEXT PRIMARY KEY,
+        target_person_id TEXT NOT NULL,
+        emotion TEXT NOT NULL,
+        intensity REAL NOT NULL,
+        causal_basis TEXT NOT NULL,
+        last_triggered_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE (target_person_id, emotion)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_social_emotions_person ON social_emotion_states (target_person_id);
+      CREATE INDEX IF NOT EXISTS idx_social_emotions_type ON social_emotion_states (emotion);
+
+      -- Social Interaction Appraisals (Tracking interaction, interpretation, and expectation discrepancy)
+      CREATE TABLE IF NOT EXISTS social_interaction_appraisals (
+        id TEXT PRIMARY KEY,
+        target_person_id TEXT NOT NULL,
+        interaction_type TEXT NOT NULL,
+        interpretation TEXT NOT NULL,
+        prior_expectation TEXT NOT NULL,
+        actual_outcome TEXT NOT NULL,
+        expectation_discrepancy REAL NOT NULL,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_social_appraisals_person ON social_interaction_appraisals (target_person_id);
+      CREATE INDEX IF NOT EXISTS idx_social_appraisals_time ON social_interaction_appraisals (timestamp DESC);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('social_emotions_milestone39', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

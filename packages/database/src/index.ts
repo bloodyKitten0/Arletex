@@ -46,6 +46,7 @@ export * from './repositories/selfEvaluationEfficacyRepository.js';
 export * from './repositories/longTermDevelopmentRepository.js';
 export * from './repositories/theoryOfMindRepository.js';
 export * from './repositories/empathyPerspectiveRepository.js';
+export * from './repositories/socialEmotionsRepository.js';
 
 
 

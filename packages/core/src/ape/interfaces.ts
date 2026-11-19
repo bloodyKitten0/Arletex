@@ -150,6 +150,9 @@ import {
   PerspectiveTakingModel,
   EmpatheticResponse,
   PerspectiveRevisionRecord,
+  SocialEmotionState,
+  SocialEmotionType,
+  SocialInteractionAppraisal,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -715,6 +718,15 @@ export interface IEmpathyPerspectiveRepository {
   saveRevision(revision: PerspectiveRevisionRecord): void;
   listRevisions(perspectiveId?: string, limit?: number): PerspectiveRevisionRecord[];
 }
+
+export interface ISocialEmotionsRepository {
+  saveEmotionState(state: SocialEmotionState): void;
+  getEmotionState(targetPersonId: string, emotion: SocialEmotionType): SocialEmotionState | null;
+  listEmotionStates(targetPersonId?: string): SocialEmotionState[];
+  saveAppraisal(appraisal: SocialInteractionAppraisal): void;
+  listAppraisals(targetPersonId?: string, limit?: number): SocialInteractionAppraisal[];
+}
+
 
 
 
