@@ -288,19 +288,13 @@ export class DesktopEnvironmentProvider {
       return { success: true, pid: 99999, message: `Opened in Chrome Profile 7 (test mode): ${targetUrl}` };
     }
 
-    // Tab de-duplication: avoid re-opening the identical URL within 45 seconds,
-    // and avoid opening multiple tabs if any Spotify page is already active
+    // Tab de-duplication: avoid re-opening the identical URL within 10 seconds
     const now = Date.now();
-    const isSpotifyTarget = targetUrl.includes('spotify.com');
-    const wasSpotifyOpenedRecently =
-      DesktopEnvironmentProvider.lastOpenedBrowserUrl?.includes('spotify.com') &&
-      now - DesktopEnvironmentProvider.lastOpenedBrowserTime < 60000;
-
     if (
-      (DesktopEnvironmentProvider.lastOpenedBrowserUrl === targetUrl && now - DesktopEnvironmentProvider.lastOpenedBrowserTime < 45000) ||
-      (isSpotifyTarget && wasSpotifyOpenedRecently)
+      DesktopEnvironmentProvider.lastOpenedBrowserUrl === targetUrl &&
+      now - DesktopEnvironmentProvider.lastOpenedBrowserTime < 10000
     ) {
-      this.logger.info(`URL "${targetUrl}" or related application is already open in Chrome Profile 7; skipping redundant tab spawn.`);
+      this.logger.info(`URL "${targetUrl}" is already open in Chrome Profile 7; skipping redundant tab spawn.`);
       return {
         success: true,
         message: `Google Chrome Profile 7 is already open at: ${targetUrl}`,
