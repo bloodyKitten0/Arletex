@@ -48,6 +48,7 @@ export * from './ape/emotionalRegulationEngine.js';
 export * from './ape/homeostasisEngine.js';
 export * from './ape/intrinsicMotivationEngine.js';
 export * from './ape/curiosityExplorationEngine.js';
+export * from './ape/rewardLearningEngine.js';
 export * from './ape/apeService.js';
 
 // Digital Agency Subsystem

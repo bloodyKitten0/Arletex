@@ -101,6 +101,7 @@ import {
   SqliteNeedsHomeostasisRepository,
   SqliteIntrinsicMotivationRepository,
   SqliteCuriosityExplorationRepository,
+  SqliteRewardLearningRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -238,6 +239,7 @@ export class ArletexBackendServer {
   public readonly homeostasisRepo: SqliteNeedsHomeostasisRepository;
   public readonly intrinsicMotivationRepo: SqliteIntrinsicMotivationRepository;
   public readonly curiosityRepo: SqliteCuriosityExplorationRepository;
+  public readonly rewardLearningRepo: SqliteRewardLearningRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -300,6 +302,7 @@ export class ArletexBackendServer {
     this.homeostasisRepo = new SqliteNeedsHomeostasisRepository(db);
     this.intrinsicMotivationRepo = new SqliteIntrinsicMotivationRepository(db);
     this.curiosityRepo = new SqliteCuriosityExplorationRepository(db);
+    this.rewardLearningRepo = new SqliteRewardLearningRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -332,6 +335,7 @@ export class ArletexBackendServer {
       this.homeostasisRepo,
       this.intrinsicMotivationRepo,
       this.curiosityRepo,
+      this.rewardLearningRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -5435,6 +5439,94 @@ Rules:
           body.familiarityBaseline ?? 0.25,
         );
         this.sendJson(res, 200, { success: true, record });
+        return;
+      }
+
+      // ==========================================
+      // Reward Learning Routes (Milestone 31)
+      // ==========================================
+      if (url.pathname === '/api/ape/reward/strategies' && method === 'GET') {
+        const domain = url.searchParams.get('domain') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const strategies = this.apeService.listStrategyPerformances(domain, limit);
+        this.sendJson(res, 200, { success: true, strategies });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/reward/register-strategy' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const strategy = this.apeService.registerStrategy(
+          body.strategyId,
+          body.strategyName,
+          body.domain,
+          body.initialEffectiveness ?? 0.5,
+        );
+        this.sendJson(res, 200, { success: true, strategy });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/reward/strategy' && method === 'GET') {
+        const strategyId = url.searchParams.get('strategyId');
+        if (!strategyId) {
+          this.sendJson(res, 400, { error: 'strategyId query param required' });
+          return;
+        }
+        const strategy = this.apeService.getStrategyPerformance(strategyId);
+        this.sendJson(res, 200, { success: true, strategy });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/reward/predict' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const prediction = this.apeService.predictReward(
+          body.strategyId,
+          body.domain,
+          body.contextDescription,
+          body.predictedUtility,
+          body.predictedDimensions,
+        );
+        this.sendJson(res, 200, { success: true, prediction });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/reward/predictions' && method === 'GET') {
+        const strategyId = url.searchParams.get('strategyId') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const predictions = this.apeService.listRewardPredictions(strategyId, limit);
+        this.sendJson(res, 200, { success: true, predictions });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/reward/evaluate' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const evaluation = this.apeService.evaluateOutcome({
+          strategyId: body.strategyId,
+          predictionId: body.predictionId,
+          domain: body.domain,
+          contextDescription: body.contextDescription,
+          expectedUtility: body.expectedUtility,
+          observedUtility: body.observedUtility,
+          dimensionScores: body.dimensionScores,
+          outcomeDetails: body.outcomeDetails,
+        });
+        this.sendJson(res, 200, { success: true, evaluation });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/reward/evaluations' && method === 'GET') {
+        const strategyId = url.searchParams.get('strategyId') || undefined;
+        const domain = url.searchParams.get('domain') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const evaluations = this.apeService.listOutcomeEvaluations(strategyId, domain, limit);
+        this.sendJson(res, 200, { success: true, evaluations });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/reward/diminishing-alerts' && method === 'GET') {
+        const strategyId = url.searchParams.get('strategyId') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const alerts = this.apeService.listDiminishingReturnAlerts(strategyId, limit);
+        this.sendJson(res, 200, { success: true, alerts });
         return;
       }
 

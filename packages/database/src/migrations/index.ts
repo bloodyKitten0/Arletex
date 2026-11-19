@@ -2135,4 +2135,82 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('curiosity_exploration_milestone30', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 42,
+    name: '042_reward_learning_milestone31',
+    up: `
+      -- Reward Predictions
+      CREATE TABLE IF NOT EXISTS reward_predictions (
+        id TEXT PRIMARY KEY,
+        strategy_id TEXT NOT NULL,
+        domain TEXT NOT NULL,
+        context_description TEXT NOT NULL,
+        predicted_utility REAL NOT NULL,
+        predicted_dimensions_json TEXT NOT NULL DEFAULT '{}',
+        predicted_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_reward_predictions_strategy ON reward_predictions (strategy_id);
+      CREATE INDEX IF NOT EXISTS idx_reward_predictions_domain ON reward_predictions (domain);
+
+      -- Outcome Evaluations
+      CREATE TABLE IF NOT EXISTS outcome_evaluations (
+        id TEXT PRIMARY KEY,
+        strategy_id TEXT NOT NULL,
+        prediction_id TEXT,
+        domain TEXT NOT NULL,
+        context_description TEXT NOT NULL,
+        expected_utility REAL NOT NULL,
+        observed_utility REAL NOT NULL,
+        prediction_error REAL NOT NULL,
+        dimension_scores_json TEXT NOT NULL DEFAULT '{}',
+        is_success INTEGER NOT NULL,
+        is_failure INTEGER NOT NULL,
+        outcome_details TEXT NOT NULL,
+        is_autonomously_evaluated INTEGER NOT NULL,
+        evaluated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_outcome_evaluations_strategy ON outcome_evaluations (strategy_id);
+      CREATE INDEX IF NOT EXISTS idx_outcome_evaluations_domain ON outcome_evaluations (domain);
+      CREATE INDEX IF NOT EXISTS idx_outcome_evaluations_time ON outcome_evaluations (evaluated_at DESC);
+
+      -- Strategy Performance Records
+      CREATE TABLE IF NOT EXISTS strategy_performance (
+        strategy_id TEXT PRIMARY KEY,
+        strategy_name TEXT NOT NULL,
+        domain TEXT NOT NULL,
+        usage_count INTEGER NOT NULL,
+        success_count INTEGER NOT NULL,
+        failure_count INTEGER NOT NULL,
+        average_predicted_reward REAL NOT NULL,
+        average_actual_reward REAL NOT NULL,
+        cumulative_prediction_error REAL NOT NULL,
+        effectiveness_score REAL NOT NULL,
+        is_preferred INTEGER NOT NULL,
+        diminishing_returns_detected INTEGER NOT NULL,
+        marginal_reward_history_json TEXT NOT NULL DEFAULT '[]',
+        last_adapted_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_strategy_perf_domain ON strategy_performance (domain);
+      CREATE INDEX IF NOT EXISTS idx_strategy_perf_eff ON strategy_performance (effectiveness_score DESC);
+
+      -- Diminishing Return Alerts
+      CREATE TABLE IF NOT EXISTS diminishing_return_alerts (
+        id TEXT PRIMARY KEY,
+        strategy_id TEXT NOT NULL,
+        domain TEXT NOT NULL,
+        consecutive_drops INTEGER NOT NULL,
+        recent_marginal_gains_json TEXT NOT NULL DEFAULT '[]',
+        recommended_action TEXT NOT NULL,
+        detected_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_diminishing_alerts_strategy ON diminishing_return_alerts (strategy_id);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('reward_learning_milestone31', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

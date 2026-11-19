@@ -135,6 +135,7 @@ import { InMemoryEmotionalRegulationRepository, EmotionalRegulationEngine } from
 import { InMemoryHomeostasisRepository, HomeostasisEngine } from './homeostasisEngine.js';
 import { InMemoryIntrinsicMotivationRepository, IntrinsicMotivationEngine } from './intrinsicMotivationEngine.js';
 import { InMemoryCuriosityExplorationRepository, CuriosityExplorationEngine } from './curiosityExplorationEngine.js';
+import { InMemoryRewardLearningRepository, RewardLearningEngine, EvaluateOutcomeParams } from './rewardLearningEngine.js';
 import {
   ISimulationRepository,
   IMetacognitionRepository,
@@ -150,6 +151,7 @@ import {
   IHomeostasisRepository,
   IIntrinsicMotivationRepository,
   ICuriosityExplorationRepository,
+  IRewardLearningRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
@@ -163,6 +165,7 @@ import {
   MotivationOrientation,
   MotivationSource,
   InvestigationStep,
+  RewardDimension,
 } from '@arletex/contracts';
 
 export class ApeService {
@@ -209,6 +212,7 @@ export class ApeService {
   public readonly homeostasisEngine: HomeostasisEngine;
   public readonly intrinsicMotivationEngine: IntrinsicMotivationEngine;
   public readonly curiosityEngine: CuriosityExplorationEngine;
+  public readonly rewardLearningEngine: RewardLearningEngine;
 
   constructor(
     repo: IApeRepository,
@@ -242,6 +246,7 @@ export class ApeService {
     homeostasisRepo?: IHomeostasisRepository,
     intrinsicMotivationRepo?: IIntrinsicMotivationRepository,
     curiosityRepo?: ICuriosityExplorationRepository,
+    rewardLearningRepo?: IRewardLearningRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -360,6 +365,9 @@ export class ApeService {
 
     const curRepo = curiosityRepo || new InMemoryCuriosityExplorationRepository();
     this.curiosityEngine = new CuriosityExplorationEngine(curRepo, logger);
+
+    const rLearnRepo = rewardLearningRepo || new InMemoryRewardLearningRepository();
+    this.rewardLearningEngine = new RewardLearningEngine(rLearnRepo, logger);
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -2218,6 +2226,60 @@ export class ApeService {
 
   public listNoveltyDetections(limit?: number) {
     return this.curiosityEngine.listNoveltyDetections(limit);
+  }
+
+  public predictReward(
+    strategyId: string,
+    domain: string,
+    contextDescription: string,
+    predictedUtility?: number,
+    predictedDimensions?: Partial<Record<RewardDimension, number>>,
+  ) {
+    return this.rewardLearningEngine.predictReward(
+      strategyId,
+      domain,
+      contextDescription,
+      predictedUtility,
+      predictedDimensions,
+    );
+  }
+
+  public evaluateOutcome(params: EvaluateOutcomeParams) {
+    return this.rewardLearningEngine.evaluateOutcome(params);
+  }
+
+  public registerStrategy(
+    strategyId: string,
+    strategyName: string,
+    domain: string,
+    initialEffectiveness?: number,
+  ) {
+    return this.rewardLearningEngine.registerStrategy(
+      strategyId,
+      strategyName,
+      domain,
+      initialEffectiveness,
+    );
+  }
+
+  public getStrategyPerformance(strategyId: string) {
+    return this.rewardLearningEngine.getStrategy(strategyId);
+  }
+
+  public listStrategyPerformances(domain?: string, limit?: number) {
+    return this.rewardLearningEngine.listStrategies(domain, limit);
+  }
+
+  public listOutcomeEvaluations(strategyId?: string, domain?: string, limit?: number) {
+    return this.rewardLearningEngine.listOutcomeEvaluations(strategyId, domain, limit);
+  }
+
+  public listRewardPredictions(strategyId?: string, limit?: number) {
+    return this.rewardLearningEngine.listPredictions(strategyId, limit);
+  }
+
+  public listDiminishingReturnAlerts(strategyId?: string, limit?: number) {
+    return this.rewardLearningEngine.listDiminishingAlerts(strategyId, limit);
   }
 }
 

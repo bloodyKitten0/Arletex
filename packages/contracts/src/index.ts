@@ -777,5 +777,11 @@ export * from './intrinsicMotivation.js';
 // ==========================================
 export * from './curiosityAndExploration.js';
 
+// ==========================================
+// Reward Learning Contracts (Milestone 31)
+// ==========================================
+export * from './rewardLearning.js';
+
+
 
 

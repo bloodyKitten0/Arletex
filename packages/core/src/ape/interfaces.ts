@@ -119,6 +119,10 @@ import {
   ExploratoryQuestion,
   IndependentInvestigationRecord,
   DiscoveredInterest,
+  RewardPrediction,
+  OutcomeEvaluation,
+  StrategyPerformanceRecord,
+  DiminishingReturnAlert,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -587,5 +591,20 @@ export interface ICuriosityExplorationRepository {
   getInterestById(id: string): DiscoveredInterest | null;
   listInterests(limit?: number): DiscoveredInterest[];
 }
+
+export interface IRewardLearningRepository {
+  savePrediction(prediction: RewardPrediction): void;
+  getPredictionById(id: string): RewardPrediction | null;
+  listPredictions(strategyId?: string, limit?: number): RewardPrediction[];
+  saveOutcomeEvaluation(evaluation: OutcomeEvaluation): void;
+  getOutcomeEvaluationById(id: string): OutcomeEvaluation | null;
+  listOutcomeEvaluations(strategyId?: string, domain?: string, limit?: number): OutcomeEvaluation[];
+  saveStrategyPerformance(strategy: StrategyPerformanceRecord): void;
+  getStrategyPerformance(strategyId: string): StrategyPerformanceRecord | null;
+  listStrategyPerformances(domain?: string, limit?: number): StrategyPerformanceRecord[];
+  saveDiminishingAlert(alert: DiminishingReturnAlert): void;
+  listDiminishingAlerts(strategyId?: string, limit?: number): DiminishingReturnAlert[];
+}
+
 
 
