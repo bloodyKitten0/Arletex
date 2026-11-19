@@ -105,6 +105,7 @@ import {
   SqliteHabitsAndRoutinesRepository,
   SqliteTemperamentPersonalityRepository,
   SqliteValuesMoralRepository,
+  SqliteSelfEvaluationEfficacyRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -246,6 +247,7 @@ export class ArletexBackendServer {
   public readonly habitsRepo: SqliteHabitsAndRoutinesRepository;
   public readonly temperamentRepo: SqliteTemperamentPersonalityRepository;
   public readonly valuesMoralRepo: SqliteValuesMoralRepository;
+  public readonly efficacyRepo: SqliteSelfEvaluationEfficacyRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -312,6 +314,7 @@ export class ArletexBackendServer {
     this.habitsRepo = new SqliteHabitsAndRoutinesRepository(db);
     this.temperamentRepo = new SqliteTemperamentPersonalityRepository(db);
     this.valuesMoralRepo = new SqliteValuesMoralRepository(db);
+    this.efficacyRepo = new SqliteSelfEvaluationEfficacyRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -348,6 +351,7 @@ export class ArletexBackendServer {
       this.habitsRepo,
       this.temperamentRepo,
       this.valuesMoralRepo,
+      this.efficacyRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -5757,6 +5761,89 @@ Rules:
         this.sendJson(res, 200, { success: true, records });
         return;
       }
+
+      // ==========================================
+      // Milestone 35: Self-Evaluation and Self-Efficacy Routes
+      // ==========================================
+      if (url.pathname === '/api/ape/efficacy/competences' && method === 'GET') {
+        const competences = this.apeService.listDomainCompetences();
+        this.sendJson(res, 200, { success: true, competences });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/efficacy/competence' && method === 'GET') {
+        const domain = url.searchParams.get('domain');
+        if (!domain) {
+          this.sendJson(res, 400, { error: 'Query parameter "domain" is required' });
+          return;
+        }
+        const competence = this.apeService.getDomainCompetence(domain);
+        if (!competence) {
+          this.sendJson(res, 404, { error: `Domain competence not found for: ${domain}` });
+          return;
+        }
+        this.sendJson(res, 200, { success: true, competence });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/efficacy/record-evidence' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const result = this.apeService.recordEfficacyEvidence(body);
+        this.sendJson(res, 200, { success: true, ...result });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/efficacy/limitations' && method === 'GET') {
+        const domain = url.searchParams.get('domain') || undefined;
+        const limitations = this.apeService.listCapabilityLimitations(domain);
+        this.sendJson(res, 200, { success: true, limitations });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/efficacy/limitations' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const limitation = this.apeService.registerCapabilityLimitation(body);
+        this.sendJson(res, 201, { success: true, limitation });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/efficacy/improvement-goals' && method === 'GET') {
+        const domain = url.searchParams.get('domain') || undefined;
+        const status = url.searchParams.get('status') || undefined;
+        const goals = this.apeService.listSelfImprovementGoals(domain, status);
+        this.sendJson(res, 200, { success: true, goals });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/efficacy/improvement-goals' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const goal = this.apeService.createSelfImprovementGoal(body);
+        this.sendJson(res, 201, { success: true, goal });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/efficacy/improvement-goals' && method === 'PATCH') {
+        const body = (await this.readJsonBody(req)) as any;
+        const goal = this.apeService.updateSelfImprovementProgress(body.goalId, body.progress, body.status);
+        this.sendJson(res, 200, { success: true, goal });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/efficacy/evaluate-self' && method === 'POST') {
+        const snapshot = this.apeService.evaluateSelf();
+        this.sendJson(res, 200, { success: true, snapshot });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/efficacy/evidence' && method === 'GET') {
+        const domain = url.searchParams.get('domain') || undefined;
+        const type = (url.searchParams.get('type') as any) || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const evidence = this.apeService.listEfficacyEvidence(domain, type, limit);
+        this.sendJson(res, 200, { success: true, evidence });
+        return;
+      }
+
 
       // ==========================================
       // Digital Agency Subsystem Routes

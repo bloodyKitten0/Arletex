@@ -42,6 +42,7 @@ export * from './repositories/rewardLearningRepository.js';
 export * from './repositories/habitsAndRoutinesRepository.js';
 export * from './repositories/temperamentPersonalityRepository.js';
 export * from './repositories/valuesMoralRepository.js';
+export * from './repositories/selfEvaluationEfficacyRepository.js';
 
 
 

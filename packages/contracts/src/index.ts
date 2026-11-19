@@ -797,6 +797,11 @@ export * from './temperamentAndPersonality.js';
 // ==========================================
 export * from './valuesAndMoralCognition.js';
 
+// ==========================================
+// Self-Evaluation and Self-Efficacy Contracts (Milestone 35)
+// ==========================================
+export * from './selfEvaluationAndEfficacy.js';
+
 
 
 

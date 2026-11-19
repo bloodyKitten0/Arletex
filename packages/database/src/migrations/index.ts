@@ -2364,4 +2364,80 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('values_and_moral_cognition_milestone34', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 46,
+    name: '046_self_evaluation_efficacy_milestone35',
+    up: `
+      -- Domain Competences
+      CREATE TABLE IF NOT EXISTS domain_competences (
+        domain TEXT PRIMARY KEY,
+        level TEXT NOT NULL,
+        calibrated_confidence REAL NOT NULL,
+        success_count INTEGER NOT NULL DEFAULT 0,
+        failure_count INTEGER NOT NULL DEFAULT 0,
+        demonstrated_evidence_ids_json TEXT NOT NULL DEFAULT '[]',
+        last_assessed_at TEXT NOT NULL
+      );
+
+      -- Efficacy Evidence (Achievements and Failures with diagnostic details)
+      CREATE TABLE IF NOT EXISTS efficacy_evidence (
+        id TEXT PRIMARY KEY,
+        domain TEXT NOT NULL,
+        type TEXT NOT NULL,
+        task_description TEXT NOT NULL,
+        difficulty REAL NOT NULL,
+        outcome_description TEXT NOT NULL,
+        lessons_learned TEXT,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_efficacy_evidence_domain ON efficacy_evidence (domain);
+      CREATE INDEX IF NOT EXISTS idx_efficacy_evidence_type ON efficacy_evidence (type);
+      CREATE INDEX IF NOT EXISTS idx_efficacy_evidence_time ON efficacy_evidence (timestamp DESC);
+
+      -- Capability Limitations
+      CREATE TABLE IF NOT EXISTS capability_limitations (
+        id TEXT PRIMARY KEY,
+        domain TEXT NOT NULL,
+        limitation TEXT NOT NULL,
+        mitigation_strategy TEXT NOT NULL,
+        is_strict_constraint INTEGER NOT NULL DEFAULT 1,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_cap_limitations_domain ON capability_limitations (domain);
+
+      -- Self-Improvement Goals
+      CREATE TABLE IF NOT EXISTS self_improvement_goals (
+        id TEXT PRIMARY KEY,
+        domain TEXT NOT NULL,
+        identified_weakness TEXT NOT NULL,
+        target_capability TEXT NOT NULL,
+        progress REAL NOT NULL DEFAULT 0.0,
+        action_steps_json TEXT NOT NULL DEFAULT '[]',
+        status TEXT NOT NULL DEFAULT 'active',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_self_improvement_domain ON self_improvement_goals (domain);
+      CREATE INDEX IF NOT EXISTS idx_self_improvement_status ON self_improvement_goals (status);
+
+      -- Self Evaluation Snapshots
+      CREATE TABLE IF NOT EXISTS self_evaluation_snapshots (
+        id TEXT PRIMARY KEY,
+        overall_confidence REAL NOT NULL,
+        domain_competences_json TEXT NOT NULL,
+        active_limitations_json TEXT NOT NULL,
+        active_improvements_json TEXT NOT NULL,
+        evidence_summary_json TEXT NOT NULL,
+        evaluated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_self_eval_time ON self_evaluation_snapshots (evaluated_at DESC);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('self_evaluation_efficacy_milestone35', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

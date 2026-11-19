@@ -133,6 +133,11 @@ import {
   MoralPrincipleCategory,
   EthicalDilemmaResolution,
   MoralLearningRecord,
+  DomainCompetence,
+  EfficacyEvidence,
+  CapabilityLimitation,
+  SelfImprovementGoal,
+  SelfEvaluationSnapshot,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -645,6 +650,22 @@ export interface IValuesMoralRepository {
   saveMoralLearning(record: MoralLearningRecord): void;
   listMoralLearningRecords(principleId?: string, limit?: number): MoralLearningRecord[];
 }
+
+export interface ISelfEvaluationEfficacyRepository {
+  saveDomainCompetence(competence: DomainCompetence): void;
+  getDomainCompetence(domain: string): DomainCompetence | null;
+  listDomainCompetences(): DomainCompetence[];
+  saveEvidence(evidence: EfficacyEvidence): void;
+  listEvidence(domain?: string, type?: 'achievement' | 'failure', limit?: number): EfficacyEvidence[];
+  saveLimitation(limitation: CapabilityLimitation): void;
+  listLimitations(domain?: string): CapabilityLimitation[];
+  saveImprovementGoal(goal: SelfImprovementGoal): void;
+  getImprovementGoalById(id: string): SelfImprovementGoal | null;
+  listImprovementGoals(domain?: string, status?: string): SelfImprovementGoal[];
+  saveSnapshot(snapshot: SelfEvaluationSnapshot): void;
+  getLatestSnapshot(): SelfEvaluationSnapshot | null;
+}
+
 
 
 

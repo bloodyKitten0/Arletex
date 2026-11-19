@@ -140,6 +140,13 @@ import { InMemoryHabitsAndRoutinesRepository, HabitsAndRoutinesEngine, FormHabit
 import { InMemoryTemperamentPersonalityRepository, TemperamentPersonalityEngine } from './temperamentPersonalityEngine.js';
 import { InMemoryValuesMoralRepository, ValuesMoralEngine, ResolveDilemmaParams } from './valuesMoralEngine.js';
 import {
+  InMemorySelfEvaluationEfficacyRepository,
+  SelfEvaluationEfficacyEngine,
+  RecordEvidenceParams,
+  RegisterLimitationParams,
+  CreateImprovementGoalParams,
+} from './selfEvaluationEfficacyEngine.js';
+import {
   ISimulationRepository,
   IMetacognitionRepository,
   IGlobalCognitiveRepository,
@@ -158,6 +165,7 @@ import {
   IHabitsAndRoutinesRepository,
   ITemperamentPersonalityRepository,
   IValuesMoralRepository,
+  ISelfEvaluationEfficacyRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
@@ -175,6 +183,7 @@ import {
   SituationType,
   CorePersonalityTraits,
   MoralPrincipleCategory,
+  SelfImprovementGoal,
 } from '@arletex/contracts';
 
 export class ApeService {
@@ -225,6 +234,7 @@ export class ApeService {
   public readonly habitsEngine: HabitsAndRoutinesEngine;
   public readonly temperamentEngine: TemperamentPersonalityEngine;
   public readonly moralEngine: ValuesMoralEngine;
+  public readonly efficacyEngine: SelfEvaluationEfficacyEngine;
 
   constructor(
     repo: IApeRepository,
@@ -262,6 +272,7 @@ export class ApeService {
     habitsRepo?: IHabitsAndRoutinesRepository,
     temperamentRepo?: ITemperamentPersonalityRepository,
     valuesMoralRepo?: IValuesMoralRepository,
+    selfEvaluationEfficacyRepo?: ISelfEvaluationEfficacyRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -392,6 +403,9 @@ export class ApeService {
 
     const vmRepo = valuesMoralRepo || new InMemoryValuesMoralRepository();
     this.moralEngine = new ValuesMoralEngine(vmRepo, logger);
+
+    const effRepo = selfEvaluationEfficacyRepo || new InMemorySelfEvaluationEfficacyRepository();
+    this.efficacyEngine = new SelfEvaluationEfficacyEngine(effRepo, logger);
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -2418,6 +2432,53 @@ export class ApeService {
 
   public listMoralLearningRecords(principleId?: string, limit?: number) {
     return this.moralEngine.listMoralLearningRecords(principleId, limit);
+  }
+
+  // ==========================================
+  // Milestone 35: Self-Evaluation and Self-Efficacy
+  // ==========================================
+  public recordEfficacyEvidence(params: RecordEvidenceParams) {
+    return this.efficacyEngine.recordEvidence(params);
+  }
+
+  public registerCapabilityLimitation(params: RegisterLimitationParams) {
+    return this.efficacyEngine.registerLimitation(params);
+  }
+
+  public createSelfImprovementGoal(params: CreateImprovementGoalParams) {
+    return this.efficacyEngine.createImprovementGoal(params);
+  }
+
+  public updateSelfImprovementProgress(
+    goalId: string,
+    progress: number,
+    status?: SelfImprovementGoal['status'],
+  ) {
+    return this.efficacyEngine.updateImprovementProgress(goalId, progress, status);
+  }
+
+  public evaluateSelf() {
+    return this.efficacyEngine.evaluateSelf();
+  }
+
+  public getDomainCompetence(domain: string) {
+    return this.efficacyEngine.getDomainCompetence(domain);
+  }
+
+  public listDomainCompetences() {
+    return this.efficacyEngine.listDomainCompetences();
+  }
+
+  public listCapabilityLimitations(domain?: string) {
+    return this.efficacyEngine.listLimitations(domain);
+  }
+
+  public listSelfImprovementGoals(domain?: string, status?: string) {
+    return this.efficacyEngine.listImprovementGoals(domain, status);
+  }
+
+  public listEfficacyEvidence(domain?: string, type?: 'achievement' | 'failure', limit?: number) {
+    return this.efficacyEngine.listEvidence(domain, type, limit);
   }
 }
 
