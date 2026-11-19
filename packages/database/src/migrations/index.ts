@@ -1937,4 +1937,57 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('emotional_regulation_milestone27', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 39,
+    name: '039_needs_and_homeostasis_milestone28',
+    up: `
+      -- Homeostatic Needs
+      CREATE TABLE IF NOT EXISTS homeostatic_needs (
+        id TEXT PRIMARY KEY,
+        category TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL,
+        description TEXT NOT NULL,
+        target_optimal_level REAL NOT NULL,
+        current_level REAL NOT NULL,
+        deficit REAL NOT NULL,
+        urgency_weight REAL NOT NULL,
+        priority_score REAL NOT NULL,
+        last_satisfied_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_homeostatic_needs_priority ON homeostatic_needs (priority_score DESC);
+
+      -- Homeostatic Regulatory Drives
+      CREATE TABLE IF NOT EXISTS homeostatic_drives (
+        id TEXT PRIMARY KEY,
+        need_category TEXT NOT NULL,
+        drive_label TEXT NOT NULL,
+        intensity REAL NOT NULL,
+        action_tendency TEXT NOT NULL,
+        behavioral_directive TEXT NOT NULL,
+        generated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_homeostatic_drives_intensity ON homeostatic_drives (intensity DESC);
+      CREATE INDEX IF NOT EXISTS idx_homeostatic_drives_time ON homeostatic_drives (generated_at DESC);
+
+      -- Homeostatic Action Resolutions & Need Satisfaction
+      CREATE TABLE IF NOT EXISTS homeostatic_action_resolutions (
+        id TEXT PRIMARY KEY,
+        need_category TEXT NOT NULL,
+        action_taken TEXT NOT NULL,
+        pre_deficit REAL NOT NULL,
+        post_deficit REAL NOT NULL,
+        deficit_reduction REAL NOT NULL,
+        resource_freed_bytes INTEGER,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_homeostatic_resolutions_time ON homeostatic_action_resolutions (timestamp DESC);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('needs_and_homeostasis_milestone28', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

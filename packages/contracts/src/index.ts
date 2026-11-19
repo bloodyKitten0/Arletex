@@ -762,5 +762,10 @@ export * from './emotionalRepertoire.js';
 // ==========================================
 export * from './emotionalRegulation.js';
 
+// ==========================================
+// Needs, Drives and Homeostasis Contracts (Milestone 28)
+// ==========================================
+export * from './needsAndHomeostasis.js';
+
 
 

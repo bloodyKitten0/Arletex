@@ -132,6 +132,7 @@ import { InMemoryAutonomousActivityRepository, AutonomousAgencyEngine } from './
 import { InMemoryEmotionalAppraisalRepository, ContextualAppraisalService } from './contextualAppraisalService.js';
 import { InMemoryEmotionalRepertoireRepository, EmotionalRepertoireEngine } from './emotionalRepertoireEngine.js';
 import { InMemoryEmotionalRegulationRepository, EmotionalRegulationEngine } from './emotionalRegulationEngine.js';
+import { InMemoryHomeostasisRepository, HomeostasisEngine } from './homeostasisEngine.js';
 import {
   ISimulationRepository,
   IMetacognitionRepository,
@@ -144,6 +145,7 @@ import {
   IEmotionalAppraisalRepository,
   IEmotionalRepertoireRepository,
   IEmotionalRegulationRepository,
+  IHomeostasisRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
@@ -151,6 +153,9 @@ import {
   IndividualEmotionalTendencies,
   CopingStrategyType,
   SetbackCategory,
+  HomeostaticNeedCategory,
+  ResourceAvailabilityMetrics,
+  ResourceBottleneck,
 } from '@arletex/contracts';
 
 export class ApeService {
@@ -194,6 +199,7 @@ export class ApeService {
   public readonly contextualAppraisalService: ContextualAppraisalService;
   public readonly emotionalRepertoireEngine: EmotionalRepertoireEngine;
   public readonly emotionalRegulationEngine: EmotionalRegulationEngine;
+  public readonly homeostasisEngine: HomeostasisEngine;
 
   constructor(
     repo: IApeRepository,
@@ -224,6 +230,7 @@ export class ApeService {
     appraisalRepo?: IEmotionalAppraisalRepository,
     repertoireRepo?: IEmotionalRepertoireRepository,
     regulationRepo?: IEmotionalRegulationRepository,
+    homeostasisRepo?: IHomeostasisRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -333,6 +340,9 @@ export class ApeService {
 
     const regRepo = regulationRepo || new InMemoryEmotionalRegulationRepository();
     this.emotionalRegulationEngine = new EmotionalRegulationEngine(regRepo, logger);
+
+    const hRepo = homeostasisRepo || new InMemoryHomeostasisRepository();
+    this.homeostasisEngine = new HomeostasisEngine(hRepo, logger);
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -2047,6 +2057,47 @@ export class ApeService {
 
   public getRegulationAttempts(setbackId?: string, limit?: number) {
     return this.emotionalRegulationEngine.getRegulationAttempts(setbackId, limit);
+  }
+
+  // ==========================================
+  // Milestone 28 — Needs, Drives and Homeostasis
+  // ==========================================
+
+  public evaluateHomeostaticNeeds(resourceMetrics?: ResourceAvailabilityMetrics) {
+    return this.homeostasisEngine.evaluateNeeds(resourceMetrics);
+  }
+
+  public getPrioritizedNeeds() {
+    return this.homeostasisEngine.prioritizeCompetingNeeds();
+  }
+
+  public generateHomeostaticDrives() {
+    return this.homeostasisEngine.generateDrives();
+  }
+
+  public getActiveHomeostaticDrives(limit?: number) {
+    return this.homeostasisEngine.getActiveDrives(limit);
+  }
+
+  public predictResourceDepletion(
+    burnRatePerMinute: number,
+    availableCapacity: number,
+    bottleneck?: ResourceBottleneck,
+  ) {
+    return this.homeostasisEngine.predictResourceDepletion(burnRatePerMinute, availableCapacity, bottleneck);
+  }
+
+  public satisfyHomeostaticNeed(
+    category: HomeostaticNeedCategory,
+    actionTaken: string,
+    reliefAmount: number,
+    freedBytes?: number,
+  ) {
+    return this.homeostasisEngine.satisfyNeed(category, actionTaken, reliefAmount, freedBytes);
+  }
+
+  public listHomeostaticResolutions(limit?: number) {
+    return this.homeostasisEngine.listResolutions(limit);
   }
 }
 

@@ -106,6 +106,10 @@ import {
   SetbackIncident,
   RegulationAttempt,
   EmotionalStabilityMetrics,
+  HomeostaticNeedDefinition,
+  HomeostaticNeedCategory,
+  DriveState,
+  HomeostaticActionResolution,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -535,6 +539,16 @@ export interface IEmotionalRegulationRepository {
   getRegulationAttempts(setbackId?: string, limit?: number): RegulationAttempt[];
   getStabilityMetrics(): EmotionalStabilityMetrics;
   saveStabilityMetrics(metrics: EmotionalStabilityMetrics): void;
+}
+
+export interface IHomeostasisRepository {
+  saveNeed(need: HomeostaticNeedDefinition): void;
+  getNeedByCategory(category: HomeostaticNeedCategory): HomeostaticNeedDefinition | null;
+  listNeeds(): HomeostaticNeedDefinition[];
+  saveDrive(drive: DriveState): void;
+  getActiveDrives(limit?: number): DriveState[];
+  recordResolution(resolution: HomeostaticActionResolution): void;
+  listResolutions(limit?: number): HomeostaticActionResolution[];
 }
 
 

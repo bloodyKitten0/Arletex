@@ -35,5 +35,6 @@ export * from './repositories/autonomousAgencyRepository.js';
 export * from './repositories/emotionalAppraisalRepository.js';
 export * from './repositories/emotionalRepertoireRepository.js';
 export * from './repositories/emotionalRegulationRepository.js';
+export * from './repositories/needsHomeostasisRepository.js';
 
 

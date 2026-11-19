@@ -98,6 +98,7 @@ import {
   SqliteEmotionalAppraisalRepository,
   SqliteEmotionalRepertoireRepository,
   SqliteEmotionalRegulationRepository,
+  SqliteNeedsHomeostasisRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -232,6 +233,7 @@ export class ArletexBackendServer {
   public readonly emotionalAppraisalRepo: SqliteEmotionalAppraisalRepository;
   public readonly emotionalRepertoireRepo: SqliteEmotionalRepertoireRepository;
   public readonly emotionalRegulationRepo: SqliteEmotionalRegulationRepository;
+  public readonly homeostasisRepo: SqliteNeedsHomeostasisRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -291,6 +293,7 @@ export class ArletexBackendServer {
     this.emotionalAppraisalRepo = new SqliteEmotionalAppraisalRepository(db);
     this.emotionalRepertoireRepo = new SqliteEmotionalRepertoireRepository(db);
     this.emotionalRegulationRepo = new SqliteEmotionalRegulationRepository(db);
+    this.homeostasisRepo = new SqliteNeedsHomeostasisRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -320,6 +323,7 @@ export class ArletexBackendServer {
       this.emotionalAppraisalRepo,
       this.emotionalRepertoireRepo,
       this.emotionalRegulationRepo,
+      this.homeostasisRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -5183,6 +5187,59 @@ Rules:
         const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
         const attempts = this.apeService.getRegulationAttempts(setbackId, limit);
         this.sendJson(res, 200, attempts);
+        return;
+      }
+
+      // ==========================================
+      // Needs, Drives and Homeostasis Routes (Milestone 28)
+      // ==========================================
+      if (url.pathname === '/api/ape/homeostasis/needs' && method === 'GET') {
+        const needs = this.apeService.getPrioritizedNeeds();
+        this.sendJson(res, 200, { success: true, needs });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/homeostasis/evaluate' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const needs = this.apeService.evaluateHomeostaticNeeds(body.resourceMetrics);
+        this.sendJson(res, 200, { success: true, needs });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/homeostasis/drives' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 20;
+        const drives = this.apeService.getActiveHomeostaticDrives(limit);
+        this.sendJson(res, 200, { success: true, drives });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/homeostasis/predict' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const prediction = this.apeService.predictResourceDepletion(
+          body.burnRatePerMinute,
+          body.availableCapacity,
+          body.bottleneck,
+        );
+        this.sendJson(res, 200, { success: true, prediction });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/homeostasis/satisfy' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const resolution = this.apeService.satisfyHomeostaticNeed(
+          body.category,
+          body.actionTaken,
+          body.reliefAmount,
+          body.freedBytes,
+        );
+        this.sendJson(res, 200, { success: true, resolution });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/homeostasis/resolutions' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const resolutions = this.apeService.listHomeostaticResolutions(limit);
+        this.sendJson(res, 200, resolutions);
         return;
       }
 
