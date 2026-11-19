@@ -3323,4 +3323,57 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('durable_idempotency_lifecycle_and_in_flight_recovery', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 63,
+    name: '063_three_tier_knowledge_and_lora_specialization',
+    up: `
+      -- Tier B: External Semantic Knowledge Documents
+      CREATE TABLE IF NOT EXISTS external_knowledge_documents (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        domain TEXT NOT NULL,
+        source_uri TEXT NOT NULL,
+        author TEXT,
+        reliability_score REAL NOT NULL DEFAULT 0.8,
+        metadata_json TEXT NOT NULL DEFAULT '{}',
+        created_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_ext_knowledge_domain ON external_knowledge_documents (domain);
+
+      -- Tier B: External Semantic Knowledge Chunks
+      CREATE TABLE IF NOT EXISTS external_knowledge_chunks (
+        id TEXT PRIMARY KEY,
+        document_id TEXT NOT NULL REFERENCES external_knowledge_documents(id) ON DELETE CASCADE,
+        chunk_index INTEGER NOT NULL,
+        content TEXT NOT NULL,
+        content_hash TEXT NOT NULL,
+        embedding_json TEXT,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_ext_chunks_doc_id ON external_knowledge_chunks (document_id);
+      CREATE INDEX IF NOT EXISTS idx_ext_chunks_content_hash ON external_knowledge_chunks (content_hash);
+
+      -- Tier C: LoRA Adapters & Parametric Specialization Lifecycle
+      CREATE TABLE IF NOT EXISTS lora_adapters (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        domain TEXT NOT NULL,
+        base_model_id TEXT NOT NULL,
+        status TEXT NOT NULL,
+        config_json TEXT NOT NULL,
+        evaluation_json TEXT,
+        weights_path TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_lora_adapters_domain ON lora_adapters (domain);
+      CREATE INDEX IF NOT EXISTS idx_lora_adapters_status ON lora_adapters (status);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('three_tier_knowledge_and_lora_specialization', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

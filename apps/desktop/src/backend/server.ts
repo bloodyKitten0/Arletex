@@ -35,6 +35,7 @@ import {
 } from '@arletex/contracts';
 import {
   ActionPermissionController,
+  AdapterLifecycleManager,
   ApeService,
   AutobiographicalMemoryService,
   ClosedLoopAgencyService,
@@ -45,6 +46,7 @@ import {
   IBrowserProvider,
   ILogger,
   IntentTaskManager,
+  KnowledgeBaseService,
   MemoryExperienceSync,
   PlanningInterface,
   PlaywrightBrowserProvider,
@@ -126,6 +128,7 @@ import {
   SqliteEthicalBoundariesSecurityRepository,
   SqliteLongitudinalEvaluationRepository,
   SqliteFunctionalConsciousnessRepository,
+  SqliteKnowledgeRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -288,6 +291,9 @@ export class ArletexBackendServer {
   public readonly securityRepo: SqliteEthicalBoundariesSecurityRepository;
   public readonly evaluationRepo: SqliteLongitudinalEvaluationRepository;
   public readonly consciousnessRepo: SqliteFunctionalConsciousnessRepository;
+  public readonly knowledgeRepo: SqliteKnowledgeRepository;
+  public readonly knowledgeBaseService: KnowledgeBaseService;
+  public readonly adapterLifecycleManager: AdapterLifecycleManager;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -369,6 +375,9 @@ export class ArletexBackendServer {
     this.securityRepo = new SqliteEthicalBoundariesSecurityRepository(db);
     this.evaluationRepo = new SqliteLongitudinalEvaluationRepository(db);
     this.consciousnessRepo = new SqliteFunctionalConsciousnessRepository(db);
+    this.knowledgeRepo = new SqliteKnowledgeRepository(db);
+    this.knowledgeBaseService = new KnowledgeBaseService({ repo: this.knowledgeRepo, logger });
+    this.adapterLifecycleManager = new AdapterLifecycleManager(this.knowledgeRepo, logger);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -516,6 +525,14 @@ export class ArletexBackendServer {
 
   public getEmailProvider(): EmailProvider {
     return this.emailProvider;
+  }
+
+  public getKnowledgeBaseService(): KnowledgeBaseService {
+    return this.knowledgeBaseService;
+  }
+
+  public getAdapterLifecycleManager(): AdapterLifecycleManager {
+    return this.adapterLifecycleManager;
   }
 
   public async submitAgencyObjective(
