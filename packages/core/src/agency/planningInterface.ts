@@ -36,13 +36,15 @@ export class PlanningInterface {
       /(?:find|watch|show).*(?:video|tutorial|explanation)/i.test(lower) ||
       lower.includes('youtube');
 
-    // 1. Desktop File Opening (e.g. "try to open a file called tenor.gif", "open tenor.gif", "show image.png")
+    // 1. Desktop File Opening (e.g. "open tenor (5).gif", "open tensor (5)", "show image.png")
     const fileOpenMatch =
-      task.objective.match(/(?:try\s+to\s+)?(?:open|launch|view|show|display|bring\s+up)\s+(?:a\s+)?file\s+(?:called\s+)?(["']?)([^"'\n]+)\1/i) ||
-      task.objective.match(/(?:try\s+to\s+)?(?:open|view|show|display)\s+(["']?)([^"'\s]+\.[a-zA-Z0-9]{2,5})\1/i);
+      task.objective.match(/(?:try\s+to\s+)?(?:open|launch|view|show|display|bring\s+up)\s+(?:a\s+)?file\s+(?:called\s+)?(["']?)([^"'\n]+?)\1$/i) ||
+      task.objective.match(/(?:try\s+to\s+)?(?:open|view|show|display|bring\s+up)\s+(["']?)([^"'\n]+?\.[a-zA-Z0-9]{1,5})\1/i) ||
+      task.objective.match(/(?:try\s+to\s+)?(?:open|view|show|display|bring\s+up)\s+(["']?)(.*(?:\(\d+\)|tenor|tensor).*?)\1$/i);
 
     if (fileOpenMatch) {
-      const targetFile = fileOpenMatch[2]!.trim();
+      const rawTarget = fileOpenMatch[2]!.trim();
+      const targetFile = rawTarget.replace(/\s+(?:for\s+me|please|now|right\s+now)$/i, '').trim();
       assumptions.push(`File "${targetFile}" exists in user filesystem.`);
       const fileActionId = crypto.randomUUID();
       const filePayload = { filePath: targetFile, fileName: targetFile };
@@ -65,6 +67,48 @@ export class PlanningInterface {
           createdAt: timestamp,
         } as any,
         expectedOutcome: `File "${targetFile}" opened successfully.`,
+        status: 'pending',
+        retryCount: 0,
+        maxRetries: 1,
+        error: null,
+      });
+    } else if (
+      /(?:open|check|show|view|access)\s+(?:it\s+on\s+)?(?:her|your|my|arle(?:'s)?\s+)?(?:email|gmail|inbox)/i.test(lower) ||
+      /(?:open|launch)\s+.*(?:on\s+(?:her|your)\s+email)/i.test(lower) ||
+      /(?:open|launch|go\s+to)\s+(?:gmail|google\s+mail)/i.test(lower)
+    ) {
+      // 2. Arle Dedicated Browser Profile (Chrome Profile 7 - arletex.email@gmail.com)
+      let targetUrl = 'https://mail.google.com';
+      if (lower.includes('spotify')) {
+        targetUrl = 'https://open.spotify.com';
+      }
+
+      assumptions.push('Google Chrome is installed with Profile 7 (arletex.email@gmail.com).');
+      const browserActionId = crypto.randomUUID();
+      const browserPayload = {
+        url: targetUrl,
+        profile: 'Profile 7',
+        email: 'arletex.email@gmail.com',
+      };
+
+      steps.push({
+        id: crypto.randomUUID(),
+        index: 0,
+        description: `Open Google Chrome Profile 7 (arletex.email@gmail.com) at ${targetUrl}`,
+        action: {
+          id: browserActionId,
+          taskId: task.id,
+          stepIndex: 0,
+          type: 'desktop_open_browser',
+          payload: browserPayload,
+          parameters: browserPayload,
+          rationale: `Open ${targetUrl} in Arle's dedicated Chrome profile (arletex.email@gmail.com).`,
+          expectedOutcome: `Google Chrome Profile 7 loaded to ${targetUrl}.`,
+          riskLevel: 'low',
+          requiresExplicitApproval: false,
+          createdAt: timestamp,
+        } as any,
+        expectedOutcome: `Chrome Profile 7 open at ${targetUrl}.`,
         status: 'pending',
         retryCount: 0,
         maxRetries: 1,

@@ -1661,7 +1661,15 @@ export class ArletexBackendServer {
         );
 
       const isAppOrFileOpenIntent =
+        /(?:try\s+to\s+)?(?:open|launch|start|run|display|show|bring\s+up|view)\s+(?:a\s+)?(?:file\s+(?:called\s+)?)?["']?([^"'\n]+?\.[a-zA-Z0-9]{1,5})["']?/i.test(lowerUser) ||
+        /(?:try\s+to\s+)?(?:open|launch|start|run|display|show|bring\s+up|view)\s+(?:a\s+)?file\s+(?:called\s+)?["']?([^"'\n]+?)["']?$/i.test(lowerUser) ||
+        /(?:open|launch|start|run|play|view|show|display)\s+.*(?:tenor|tensor|\(\d+\)|\.gif|\.png|\.jpg|\.mp4|\.txt)/i.test(lowerUser) ||
         /(?:try\s+to\s+)?(?:open|launch|start|run|display|show|bring\s+up)\s+(?:a\s+)?(?:file\s+(?:called\s+)?)?([a-zA-Z0-9_.\-/~]+)/i.test(lowerUser);
+
+      const isEmailBrowserIntent =
+        /(?:open|check|show|view|access)\s+(?:it\s+on\s+)?(?:her|your|my|arle(?:'s)?\s+)?(?:email|gmail|inbox)/i.test(lowerUser) ||
+        /(?:open|launch)\s+.*(?:on\s+(?:her|your)\s+email)/i.test(lowerUser) ||
+        /(?:open|launch|go\s+to)\s+(?:gmail|google\s+mail)/i.test(lowerUser);
 
       const isMediaPlaybackIntent =
         /(?:play|pause|resume|skip|stop|put\s+on|listen\s+to)\s+(?:music|song|track|spotify|youtube|sound|audio|video)/i.test(lowerUser) ||
@@ -1675,6 +1683,7 @@ export class ArletexBackendServer {
         !videoBase64 &&
         !videoPath &&
         (isAppOrFileOpenIntent ||
+         isEmailBrowserIntent ||
          isMediaPlaybackIntent ||
          isWebNavigationIntent ||
          /(?:open|watch|play|find|listen|put on|start).*(?:video|youtube|music|song|lofi|calming|soothing|relaxing|track)/i.test(lowerUser) ||

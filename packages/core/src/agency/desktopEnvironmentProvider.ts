@@ -236,26 +236,13 @@ export class DesktopEnvironmentProvider {
     } else {
       // Direct binary fallback
       if (appName.toLowerCase() === 'spotify') {
-        this.logger.info(`Spotify desktop app not found; launching Spotify Web player.`);
-        if (process.env['NODE_ENV'] === 'test') {
-          return {
-            success: true,
-            pid: 99999,
-            appName: 'Spotify (Web Player)',
-          };
-        }
-        try {
-          const webChild = spawn('xdg-open', ['https://open.spotify.com'], {
-            detached: true,
-            stdio: 'ignore',
-          });
-          webChild.unref();
-          return {
-            success: true,
-            pid: webChild.pid,
-            appName: 'Spotify (Web Player)',
-          };
-        } catch {}
+        this.logger.info(`Spotify desktop app not installed; launching Spotify Web player in Arle's Chrome Profile 7.`);
+        const browserRes = await this.openInArleBrowser('https://open.spotify.com');
+        return {
+          success: browserRes.success,
+          pid: browserRes.pid,
+          appName: 'Spotify (Web Player - Chrome Profile 7)',
+        };
       }
 
       this.logger.info(`Application "${appName}" not found in desktop manifests; attempting direct PATH launch.`);
@@ -286,7 +273,80 @@ export class DesktopEnvironmentProvider {
   }
 
   /**
+   * Opens a URL in Google Chrome using Arle's dedicated profile (Profile 7 - arletex.email@gmail.com).
+   * Falls back to native google-chrome or default browser if Flatpak is unavailable.
+   */
+  public async openInArleBrowser(
+    url: string,
+  ): Promise<{ success: boolean; pid?: number; message?: string }> {
+    const targetUrl = url || 'https://google.com';
+    this.logger.info(`Opening URL in Arle's Chrome Profile 7 (arletex.email@gmail.com): ${targetUrl}`);
+
+    if (process.env['NODE_ENV'] === 'test') {
+      return { success: true, pid: 99999, message: `Opened in Chrome Profile 7 (test mode): ${targetUrl}` };
+    }
+
+    const envVars = {
+      ...process.env,
+      DISPLAY: process.env.DISPLAY || ':0',
+      WAYLAND_DISPLAY: process.env.WAYLAND_DISPLAY || 'wayland-1',
+      XDG_RUNTIME_DIR: process.env.XDG_RUNTIME_DIR || `/run/user/${process.getuid ? process.getuid() : 1000}`,
+      XDG_SESSION_TYPE: 'wayland',
+    };
+
+    // 1. Primary: Flatpak Google Chrome with Profile 7 (arletex.email@gmail.com)
+    try {
+      const child = spawn(
+        'flatpak',
+        ['run', 'com.google.Chrome', '--profile-directory=Profile 7', targetUrl],
+        {
+          detached: true,
+          stdio: 'ignore',
+          env: envVars,
+        },
+      );
+      child.unref();
+      return {
+        success: true,
+        pid: child.pid,
+        message: `Opened in Google Chrome Profile 7 (arletex.email@gmail.com): ${targetUrl}`,
+      };
+    } catch (flatpakErr: any) {
+      this.logger.warn(`Flatpak Chrome launch failed: ${flatpakErr.message}; falling back to system binaries.`);
+    }
+
+    // 2. Secondary: System google-chrome with Profile 7
+    try {
+      const child = spawn(
+        'google-chrome',
+        ['--profile-directory=Profile 7', targetUrl],
+        {
+          detached: true,
+          stdio: 'ignore',
+          env: envVars,
+        },
+      );
+      child.unref();
+      return {
+        success: true,
+        pid: child.pid,
+        message: `Opened in google-chrome Profile 7: ${targetUrl}`,
+      };
+    } catch {}
+
+    // 3. Fallback: xdg-open
+    try {
+      const child = spawn('xdg-open', [targetUrl], { detached: true, stdio: 'ignore', env: envVars });
+      child.unref();
+      return { success: true, pid: child.pid, message: `Opened via default browser: ${targetUrl}` };
+    } catch (err: any) {
+      return { success: false, message: `Failed to open browser: ${err.message}` };
+    }
+  }
+
+  /**
    * Opens a file on the desktop using xdg-open after resolving path or candidate user directories.
+   * Gracefully handles filenames with spaces, parentheses (e.g. "tenor (5).gif"), missing extensions, and typos.
    */
   public async openFile(
     filePathOrName: string,
@@ -313,17 +373,74 @@ export class DesktopEnvironmentProvider {
 
       for (const dir of searchDirs) {
         if (!fs.existsSync(dir)) continue;
-        const candidate = path.join(dir, fileName);
-        if (fs.existsSync(candidate)) {
-          resolvedPath = candidate;
+
+        // Exact match
+        const exact = path.join(dir, fileName);
+        if (fs.existsSync(exact)) {
+          resolvedPath = exact;
           break;
         }
+
+        // Extension append match (e.g. "tenor (5)" -> "tenor (5).gif")
+        const commonExts = ['.gif', '.png', '.jpg', '.jpeg', '.webp', '.mp4', '.mkv', '.webm', '.pdf', '.txt', '.json', '.md'];
+        let extFound = false;
+        for (const ext of commonExts) {
+          const withExt = path.join(dir, fileName + ext);
+          if (fs.existsSync(withExt)) {
+            resolvedPath = withExt;
+            extFound = true;
+            break;
+          }
+        }
+        if (extFound) break;
+
+        // Fuzzy match for typos/spacing (e.g. "tensor (5)" -> "tenor (5).gif")
+        try {
+          const dirFiles = await fs.promises.readdir(dir);
+          const cleanSearch = fileName.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+          let bestFile: string | null = null;
+          let bestDist = Infinity;
+
+          for (const f of dirFiles) {
+            const baseF = path.basename(f, path.extname(f));
+            const cleanBase = baseF.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const cleanWithExt = f.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+            if (cleanBase === cleanSearch || cleanWithExt === cleanSearch) {
+              bestFile = f;
+              bestDist = 0;
+              break;
+            }
+
+            const distBase = this.levenshteinDistance(cleanSearch, cleanBase);
+            const distWithExt = this.levenshteinDistance(cleanSearch, cleanWithExt);
+            const dist = Math.min(distBase, distWithExt);
+
+            // Allow up to 2 typos / edits, or proportional for longer names
+            const maxAllowedDist = Math.max(2, Math.floor(cleanSearch.length * 0.35));
+            if (dist <= maxAllowedDist && dist < bestDist) {
+              // If there are digits in search, strongly prefer matching the same digits
+              const searchDigits = cleanSearch.replace(/[^0-9]/g, '');
+              const fileDigits = cleanBase.replace(/[^0-9]/g, '');
+              if (!searchDigits || searchDigits === fileDigits) {
+                bestDist = dist;
+                bestFile = f;
+              }
+            }
+          }
+
+          if (bestFile) {
+            resolvedPath = path.join(dir, bestFile);
+            break;
+          }
+        } catch {}
       }
 
       // If still not found, try recursive search in home directory using find with short timeout
       if (!resolvedPath) {
         try {
-          const { stdout } = await execFilePromise('find', [home, '-maxdepth', '4', '-name', fileName, '-type', 'f'], {
+          const { stdout } = await execFilePromise('find', [home, '-maxdepth', '4', '-name', `*${fileName}*`, '-type', 'f'], {
             timeout: 3000,
             encoding: 'utf-8',
           });
@@ -352,9 +469,17 @@ export class DesktopEnvironmentProvider {
 
     try {
       this.logger.info(`Opening file "${resolvedPath}" via xdg-open.`);
+      const envVars = {
+        ...process.env,
+        DISPLAY: process.env.DISPLAY || ':0',
+        WAYLAND_DISPLAY: process.env.WAYLAND_DISPLAY || 'wayland-1',
+        XDG_RUNTIME_DIR: process.env.XDG_RUNTIME_DIR || `/run/user/${process.getuid ? process.getuid() : 1000}`,
+      };
+
       const child = spawn('xdg-open', [resolvedPath], {
         detached: true,
         stdio: 'ignore',
+        env: envVars,
       });
       child.unref();
 
@@ -628,5 +753,26 @@ export class DesktopEnvironmentProvider {
 
   public async mprisStop(player?: string): Promise<boolean> {
     return this.executeMprisMethod('Stop', player);
+  }
+
+  private levenshteinDistance(a: string, b: string): number {
+    const matrix: number[][] = [];
+    for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+    for (let j = 0; j <= a.length; j++) matrix[0]![j] = j;
+
+    for (let i = 1; i <= b.length; i++) {
+      for (let j = 1; j <= a.length; j++) {
+        if (b.charAt(i - 1) === a.charAt(j - 1)) {
+          matrix[i]![j] = matrix[i - 1]![j - 1]!;
+        } else {
+          matrix[i]![j] = Math.min(
+            matrix[i - 1]![j - 1]! + 1,
+            matrix[i]![j - 1]! + 1,
+            matrix[i - 1]![j]! + 1,
+          );
+        }
+      }
+    }
+    return matrix[b.length]![a.length]!;
   }
 }

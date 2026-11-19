@@ -848,6 +848,51 @@ export class ClosedLoopAgencyService {
       };
     }
 
+    // 3d. Desktop Open Browser (Google Chrome Profile 7 - arletex.email@gmail.com)
+    if (action.type === 'desktop_open_browser') {
+      const url = String(params['url'] || 'https://google.com');
+      let res: { success: boolean; pid?: number; message?: string };
+      if (this.desktopProvider) {
+        res = await this.desktopProvider.openInArleBrowser(url);
+      } else {
+        try {
+          const envVars = {
+            ...process.env,
+            DISPLAY: process.env.DISPLAY || ':0',
+            WAYLAND_DISPLAY: process.env.WAYLAND_DISPLAY || 'wayland-1',
+            XDG_RUNTIME_DIR: process.env.XDG_RUNTIME_DIR || `/run/user/${process.getuid ? process.getuid() : 1000}`,
+          };
+          const child = spawn('flatpak', ['run', 'com.google.Chrome', '--profile-directory=Profile 7', url], {
+            detached: true,
+            stdio: 'ignore',
+            env: envVars,
+          });
+          child.unref();
+          res = { success: true, pid: child.pid, message: `Opened in Chrome Profile 7: ${url}` };
+        } catch {
+          res = { success: false, message: 'Could not launch Google Chrome' };
+        }
+      }
+
+      return {
+        id: crypto.randomUUID(),
+        taskId,
+        actionId: action.id,
+        source: 'process_table',
+        timestamp,
+        success: res.success,
+        confidence: res.success ? 1.0 : 0.0,
+        provenance: 'DesktopEnvironmentProvider.openInArleBrowser',
+        data: {
+          url,
+          profile: 'Profile 7',
+          email: 'arletex.email@gmail.com',
+          message: res.message,
+        },
+        error: res.success ? null : (res.message || 'Browser launch failed'),
+      };
+    }
+
     // 4. Screen Capture
     if (action.type === 'desktop_take_screenshot' || action.type === 'capture_screen') {
       if (!this.computerProvider) {

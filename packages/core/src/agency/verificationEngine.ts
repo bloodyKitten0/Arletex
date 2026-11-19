@@ -317,6 +317,30 @@ export class VerificationEngine {
       };
     }
 
+    // 3d. Desktop Open Browser Verification (Chrome Profile 7 - arletex.email@gmail.com)
+    if (action.type === 'desktop_open_browser') {
+      const url = String(action.payload?.url || 'https://google.com');
+      const profile = String(action.payload?.profile || 'Profile 7');
+      const email = String(action.payload?.email || 'arletex.email@gmail.com');
+      const success = Boolean(observation.success);
+
+      return {
+        actionId: action.id,
+        expectedOutcome: `Google Chrome Profile 7 (${email}) opened to ${url}`,
+        observedOutcome: success
+          ? `Google Chrome (${profile} - ${email}) opened at ${url}`
+          : `Failed to open Google Chrome (${profile}): ${observation.error || 'launch error'}`,
+        verified: success,
+        confidence: success ? 0.98 : 0.0,
+        status: success ? 'verified_successful' : 'failed',
+        failureReason: success ? null : (observation.error || 'Browser launch failed'),
+        isRecoverable: !success,
+        recommendedStrategy: success ? undefined : 'retry_with_backoff',
+        evidence: observation.data || {},
+        timestamp,
+      };
+    }
+
     // 4. Web Search Verification (Search issued != Research completed)
     if (action.type === 'web_search') {
       const candidatesCount = Number(
