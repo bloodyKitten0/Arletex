@@ -58,6 +58,8 @@ export class DesktopEnvironmentProvider {
   private appDirectories: string[];
   private discoveredAppsCache: DesktopApplicationEntry[] | null = null;
   private logger: ILogger;
+  private lastOpenedBrowserUrl: string | null = null;
+  private lastOpenedBrowserTime: number = 0;
 
   constructor(options: DesktopEnvironmentOptions = {}) {
     const home = os.homedir();
@@ -285,6 +287,18 @@ export class DesktopEnvironmentProvider {
     if (process.env['NODE_ENV'] === 'test') {
       return { success: true, pid: 99999, message: `Opened in Chrome Profile 7 (test mode): ${targetUrl}` };
     }
+
+    // Tab de-duplication: avoid re-opening the identical URL within 30 seconds
+    const now = Date.now();
+    if (this.lastOpenedBrowserUrl === targetUrl && now - this.lastOpenedBrowserTime < 30000) {
+      this.logger.info(`URL "${targetUrl}" was already opened in Chrome Profile 7 recently; skipping redundant tab spawn.`);
+      return {
+        success: true,
+        message: `Google Chrome Profile 7 is already open at: ${targetUrl}`,
+      };
+    }
+    this.lastOpenedBrowserUrl = targetUrl;
+    this.lastOpenedBrowserTime = now;
 
     const envVars = {
       ...process.env,

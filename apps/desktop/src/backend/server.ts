@@ -1672,8 +1672,8 @@ export class ArletexBackendServer {
         /(?:open|launch|go\s+to)\s+(?:gmail|google\s+mail)/i.test(lowerUser);
 
       const isAccountOrSignupIntent =
-        /(?:try\s+to\s+)?(?:sign\s*up|register|create\s+(?:an?\s+)?account|log\s*in|login)\s+(?:in|to|for|on)?\s*(?:spotify|gmail|google|discord|telegram)?/i.test(lowerUser) ||
-        /(?:sign\s*up|register|log\s*in|login).*using\s+(?:your|her|my|arle(?:'s)?\s+)?(?:email|account)/i.test(lowerUser);
+        /(?:try\s+to\s+)?(?:open|launch|go\s+to|bring\s+up)\s+.*(?:spotify|gmail)\s+(?:signup|sign\s*up|login|register)/i.test(lowerUser) ||
+        /(?:try\s+to\s+)?(?:sign\s*up|register|create\s+(?:an?\s+)?account)\s+(?:in|for|on)\s+(?:spotify|gmail)/i.test(lowerUser);
 
       const isMediaPlaybackIntent =
         /(?:play|pause|resume|skip|stop|put\s+on|listen\s+to)\s+(?:music|song|track|spotify|youtube|sound|audio|video)/i.test(lowerUser) ||
@@ -1711,8 +1711,24 @@ export class ArletexBackendServer {
 
           const execRes = await this.executeAgencyTask(task.id);
           if (execRes.allStepsSucceeded) {
-            const summary = execRes.verifications.map((v: any) => v.observedOutcome || v.expectedOutcome).join('; ');
-            ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Action completed successfully! Details: ${summary}. The requested file or application is physically active and visible on Proof's desktop right now. Ground your response in this concrete reality: speak naturally as an equal companion who has already carried this out. Do NOT say you 'will' do it or 'give me half a second' or 'is launching'—it is ALREADY open and completed on his screen right now.\n`;
+            const isBrowserStep = execRes.plan?.steps?.some((s: any) => s.action?.type === 'desktop_open_browser');
+            const browserAction = execRes.plan?.steps?.find((s: any) => s.action?.type === 'desktop_open_browser');
+            const targetUrl = browserAction?.action?.payload?.url || '';
+
+            if (isBrowserStep && (targetUrl.includes('signup') || targetUrl.includes('login') || targetUrl.includes('accounts.'))) {
+              ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Opened Google Chrome Profile 7 (arletex.email@gmail.com) displaying: ${targetUrl}.
+IMPORTANT GROUNDING & HONESTY DIRECTIVE:
+- You have ONLY loaded this webpage on Proof's screen.
+- You have NOT filled out any forms, have NOT entered passwords, have NOT chosen a username, and have NOT logged in yet.
+- The signup/login page is physically visible on Proof's desktop right now in front of him.
+- Speak with complete truth and composure: Tell Proof that the signup/login page is open in your Chrome profile, and ask him to click "Sign up with Google" on the open window so it authenticates with your Google profile (arletex.email@gmail.com), then pick your username together.
+- ABSOLUTELY NEVER pretend, lie, or hallucinate that you completed the registration, set up the profile, or are logged into the dashboard when the form is still sitting open on screen.\n`;
+            } else if (isBrowserStep) {
+              ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Loaded ${targetUrl} in Google Chrome Profile 7 (arletex.email@gmail.com) on Proof's desktop. The webpage is physically open and visible.\n`;
+            } else {
+              const summary = execRes.verifications.map((v: any) => v.observedOutcome || v.expectedOutcome).join('; ');
+              ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Action completed successfully! Details: ${summary}. The requested file or application is physically active and visible on Proof's desktop right now. Ground your response in this concrete reality: speak naturally as an equal companion who has already carried this out.\n`;
+            }
           } else {
             const failReason = execRes.task.error || execRes.failureReason || 'Action could not be verified';
             ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Action attempted for "${userMessageContent}", but encountered an issue: ${failReason}. State honestly and directly what happened. DO NOT pretend or hallucinate that the application or file is open.\n`;
