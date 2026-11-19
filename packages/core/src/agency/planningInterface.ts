@@ -30,14 +30,81 @@ export class PlanningInterface {
     const uncertainties: string[] = [];
     const alternativeApproaches: string[] = [];
 
-    // 1. Dynamic Video and Media Requests (Any topic, artist, tutorial, or genre)
     const isVideoRequest =
       /(?:calming|soothing|relaxing|peaceful|lofi|ambient|sleep)\s+(?:video|music|song|sounds|melody)/i.test(lower) ||
       /(?:open|play|watch|put on|start|find).*(?:video|youtube|music|song|track)/i.test(lower) ||
       /(?:find|watch|show).*(?:video|tutorial|explanation)/i.test(lower) ||
       lower.includes('youtube');
 
-    if (isVideoRequest) {
+    // 1. Desktop File Opening (e.g. "try to open a file called tenor.gif", "open tenor.gif", "show image.png")
+    const fileOpenMatch =
+      task.objective.match(/(?:try\s+to\s+)?(?:open|launch|view|show|display|bring\s+up)\s+(?:a\s+)?file\s+(?:called\s+)?(["']?)([^"'\n]+)\1/i) ||
+      task.objective.match(/(?:try\s+to\s+)?(?:open|view|show|display)\s+(["']?)([^"'\s]+\.[a-zA-Z0-9]{2,5})\1/i);
+
+    if (fileOpenMatch) {
+      const targetFile = fileOpenMatch[2]!.trim();
+      assumptions.push(`File "${targetFile}" exists in user filesystem.`);
+      const fileActionId = crypto.randomUUID();
+      const filePayload = { filePath: targetFile, fileName: targetFile };
+
+      steps.push({
+        id: crypto.randomUUID(),
+        index: 0,
+        description: `Locate and open file "${targetFile}" on desktop with default application`,
+        action: {
+          id: fileActionId,
+          taskId: task.id,
+          stepIndex: 0,
+          type: 'desktop_open_file',
+          payload: filePayload,
+          parameters: filePayload,
+          rationale: `Open requested file "${targetFile}" on desktop.`,
+          expectedOutcome: `File "${targetFile}" located and opened with default application.`,
+          riskLevel: 'low',
+          requiresExplicitApproval: false,
+          createdAt: timestamp,
+        } as any,
+        expectedOutcome: `File "${targetFile}" opened successfully.`,
+        status: 'pending',
+        retryCount: 0,
+        maxRetries: 1,
+        error: null,
+      });
+    } else if (/(?:pause|resume|skip|next\s+track|previous\s+track|stop\s+playing)\s*(?:music|song|track|spotify|media)?/i.test(lower)) {
+      // 2. Desktop MPRIS Media Control (Play/Pause, Next, Previous)
+      let command = 'PlayPause';
+      if (/pause/i.test(lower)) command = 'Pause';
+      else if (/resume|start\s+playing/i.test(lower)) command = 'Play';
+      else if (/next|skip/i.test(lower)) command = 'Next';
+      else if (/previous|back/i.test(lower)) command = 'Previous';
+      else if (/stop/i.test(lower)) command = 'Stop';
+
+      const mediaActionId = crypto.randomUUID();
+      const mediaPayload = { command };
+      steps.push({
+        id: crypto.randomUUID(),
+        index: 0,
+        description: `Send MPRIS media command: ${command}`,
+        action: {
+          id: mediaActionId,
+          taskId: task.id,
+          stepIndex: 0,
+          type: 'desktop_media_control',
+          payload: mediaPayload,
+          parameters: mediaPayload,
+          rationale: `Control media player via MPRIS D-Bus (${command}).`,
+          expectedOutcome: `Media playback command "${command}" executed.`,
+          riskLevel: 'low',
+          requiresExplicitApproval: false,
+          createdAt: timestamp,
+        } as any,
+        expectedOutcome: `Media playback updated (${command}).`,
+        status: 'pending',
+        retryCount: 0,
+        maxRetries: 1,
+        error: null,
+      });
+    } else if (isVideoRequest) {
       assumptions.push('YouTube and web video portals are publicly accessible.');
       assumptions.push('HTML5 video streams are supported.');
       uncertainties.push('Whether live candidate search results meet user criteria.');
@@ -121,28 +188,30 @@ export class PlanningInterface {
         maxRetries: 2,
         error: null,
       });
-    } else if (/(?:open|launch|start|play)\s+steam/i.test(lower)) {
-      assumptions.push('Steam client is installed on the host.');
-      const steamActionId = crypto.randomUUID();
-      const steamPayload = { app: 'steam' };
+    } else if (/(?:try\s+to\s+)?(?:open|launch|start|run|play)\s+(?:the\s+)?([a-zA-Z0-9_\-]+(?:\s+[a-zA-Z0-9_\-]+)?)(?:\s+app|\s+application)?$/i.test(lower)) {
+      const match = task.objective.match(/(?:try\s+to\s+)?(?:open|launch|start|run|play)\s+(?:the\s+)?([a-zA-Z0-9_\-]+(?:\s+[a-zA-Z0-9_\-]+)?)(?:\s+app|\s+application)?$/i);
+      const appName = match ? match[1]!.trim().toLowerCase() : 'application';
+      assumptions.push(`Application "${appName}" is installed on host or available.`);
+      const appActionId = crypto.randomUUID();
+      const appPayload = { app: appName, appName };
       steps.push({
         id: crypto.randomUUID(),
         index: 0,
-        description: 'Launch Steam client for Proof',
+        description: `Launch ${appName} on desktop for Proof`,
         action: {
-          id: steamActionId,
+          id: appActionId,
           taskId: task.id,
           stepIndex: 0,
           type: 'app_launch',
-          payload: steamPayload,
-          parameters: steamPayload,
-          rationale: 'Explicit user request to launch Steam.',
-          expectedOutcome: 'Steam client running on desktop.',
+          payload: appPayload,
+          parameters: appPayload,
+          rationale: `Explicit user request to launch "${appName}".`,
+          expectedOutcome: `Application "${appName}" running on desktop.`,
           riskLevel: 'low',
           requiresExplicitApproval: false,
           createdAt: timestamp,
         } as any,
-        expectedOutcome: 'Steam client active.',
+        expectedOutcome: `${appName} running on desktop.`,
         status: 'pending',
         retryCount: 0,
         maxRetries: 1,

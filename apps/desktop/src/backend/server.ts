@@ -42,12 +42,14 @@ import {
   CognitiveControlBus,
   ContinuityManager,
   DEFAULT_ARLE_SYSTEM_PROMPT,
+  DesktopEnvironmentProvider,
   EmailProvider,
   IBrowserProvider,
   ILogger,
   IntentTaskManager,
   KnowledgeBaseService,
   MemoryExperienceSync,
+  OpenWorldBrowserAgency,
   PlanningInterface,
   PlaywrightBrowserProvider,
   rootLogger,
@@ -202,6 +204,8 @@ export class ArletexBackendServer {
   public readonly intentTaskManager: IntentTaskManager;
   public readonly autobiographicalMemoryService: AutobiographicalMemoryService;
   public readonly emailProvider: EmailProvider;
+  public readonly desktopEnvironmentProvider: DesktopEnvironmentProvider;
+  public readonly openWorldBrowserAgency: OpenWorldBrowserAgency;
   public readonly closedLoopAgency: ClosedLoopAgencyService;
   public readonly cognitiveControlBus: CognitiveControlBus;
 
@@ -454,6 +458,13 @@ export class ArletexBackendServer {
       permissionController: this.permissionController,
       logger,
     });
+    this.desktopEnvironmentProvider = new DesktopEnvironmentProvider({ logger });
+    this.openWorldBrowserAgency = new OpenWorldBrowserAgency({
+      browserProvider: this.browserProvider,
+      permissionController: this.permissionController,
+      autobiographicalMemory: this.autobiographicalMemoryService,
+      logger,
+    });
     this.closedLoopAgency = new ClosedLoopAgencyService({
       agencyRepo: this.agencyRepo,
       taskManager: this.intentTaskManager,
@@ -466,6 +477,8 @@ export class ArletexBackendServer {
       webAgency: this.webAgency,
       browserProvider: this.browserProvider,
       computerProvider: this.safeComputerAgency,
+      desktopProvider: this.desktopEnvironmentProvider,
+      openWorldBrowser: this.openWorldBrowserAgency,
       deviceAgency: defaultDeviceAgency,
       telegramBridge: defaultTelegramBridge,
       emailProvider: this.emailProvider,
@@ -1643,18 +1656,30 @@ export class ArletexBackendServer {
       // Digital Agency: Detect and execute operational objectives from Proof
       const lowerUser = userMessageContent.toLowerCase().trim();
       const isNegativeOpenIntent =
-        /don'?t\s+open|stop\s+opening|no\s+more\s+tabs?|no\s+more\s+youtube|no\s+more\s+apps?|close\s+tabs?|don'?t\s+launch/i.test(
+        /don'?t\s+(?:open|launch|play|start)|stop\s+(?:opening|playing)|no\s+more\s+(?:tabs?|youtube|apps?|music)|close\s+(?:tabs?|apps?)/i.test(
           lowerUser,
         );
+
+      const isAppOrFileOpenIntent =
+        /(?:try\s+to\s+)?(?:open|launch|start|run|display|show|bring\s+up)\s+(?:a\s+)?(?:file\s+(?:called\s+)?)?([a-zA-Z0-9_.\-/~]+)/i.test(lowerUser);
+
+      const isMediaPlaybackIntent =
+        /(?:play|pause|resume|skip|stop|put\s+on|listen\s+to)\s+(?:music|song|track|spotify|youtube|sound|audio|video)/i.test(lowerUser) ||
+        /(?:what(?:'s|\s+is)\s+playing|current\s+song|next\s+track|previous\s+track)/i.test(lowerUser);
+
+      const isWebNavigationIntent =
+        /(?:open|go\s+to|browse|visit|navigate\s+to|search\s+for|look\s+up)\s+(?:https?:\/\/|[a-zA-Z0-9-]+\.(?:com|org|net|io|edu|gov|dev))/i.test(lowerUser);
 
       const isAgencyObjective =
         !isNegativeOpenIntent &&
         !videoBase64 &&
         !videoPath &&
-        (/(?:open|watch|play|find|listen|put on|start).*(?:video|youtube|music|song|lofi|calming|soothing|relaxing|track)/i.test(lowerUser) ||
+        (isAppOrFileOpenIntent ||
+         isMediaPlaybackIntent ||
+         isWebNavigationIntent ||
+         /(?:open|watch|play|find|listen|put on|start).*(?:video|youtube|music|song|lofi|calming|soothing|relaxing|track)/i.test(lowerUser) ||
          /(?:calming|soothing|relaxing|lofi|ambient)\s+(?:video|music|song|sounds)/i.test(lowerUser) ||
-         /(?:open|go to|browse|visit|navigate to)\s+(?:https?:\/\/|[a-zA-Z0-9-]+\.(?:com|org|net|io|edu|gov|dev)|chrome|google|reddit|github|twitter|x\.com)/i.test(lowerUser) ||
-         /(?:open|launch|start|play)\s+steam/i.test(lowerUser));
+         /(?:open|launch|start|play)\s+(?:steam|spotify|chrome|google-chrome|firefox|discord|terminal|konsole|dolphin|kate|vlc|calculator|gimp|blender|obs)/i.test(lowerUser));
 
       if (isAgencyObjective) {
         try {
@@ -1673,9 +1698,10 @@ export class ArletexBackendServer {
           const execRes = await this.executeAgencyTask(task.id);
           if (execRes.allStepsSucceeded) {
             const summary = execRes.verifications.map((v: any) => v.observedOutcome || v.expectedOutcome).join('; ');
-            ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Action completed successfully! Details: ${summary}. Chrome or the requested application is physically running on Proof's desktop right now. Ground your response in this reality: speak naturally as an equal companion who has already carried this out. Do NOT say you 'will' do it or that Chrome is 'waiting for your command'—it is ALREADY running and active.\n`;
+            ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Action completed successfully! Details: ${summary}. The requested file or application is physically active and visible on Proof's desktop right now. Ground your response in this concrete reality: speak naturally as an equal companion who has already carried this out. Do NOT say you 'will' do it or 'give me half a second' or 'is launching'—it is ALREADY open and completed on his screen right now.\n`;
           } else {
-            ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Action attempted for "${userMessageContent}", but encountered an issue: ${execRes.task.error || 'verification incomplete'}. State honestly what happened.\n`;
+            const failReason = execRes.task.error || execRes.failureReason || 'Action could not be verified';
+            ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Action attempted for "${userMessageContent}", but encountered an issue: ${failReason}. State honestly and directly what happened. DO NOT pretend or hallucinate that the application or file is open.\n`;
           }
         } catch (agencyErr: any) {
           this.logger.warn(`Digital agency chat execution note: ${agencyErr.message}`);

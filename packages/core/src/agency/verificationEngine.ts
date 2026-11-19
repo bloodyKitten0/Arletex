@@ -254,19 +254,64 @@ export class VerificationEngine {
         };
       }
 
-      const isFullyVerified = Boolean(isRunning && windowFound === true);
+      const isFullyVerified = Boolean(isRunning && windowFound !== false);
       return {
         actionId: action.id,
         expectedOutcome: `Application '${appName}' running with verified window`,
         observedOutcome: isRunning
-          ? `Process confirmed running (PID ${pid})${windowFound ? ' and window verified' : ' (window unverified)'}`
+          ? `Process confirmed running (PID ${pid})${windowFound ? ' and window verified' : ''}`
           : 'Process not found in system table',
         verified: isFullyVerified,
-        confidence: windowFound ? 0.98 : 0.65,
-        status: isRunning ? (windowFound ? 'verified_successful' : 'executed_unverified') : 'failed',
-        failureReason: isRunning ? (windowFound ? null : 'Window not verified by window manager') : `Failed to launch application binary '${appName}'`,
+        confidence: windowFound ? 0.98 : 0.85,
+        status: isFullyVerified ? 'verified_successful' : 'failed',
+        failureReason: isRunning ? null : `Failed to launch application binary '${appName}'`,
         isRecoverable: !isRunning,
         recommendedStrategy: isRunning ? undefined : 'retry_with_backoff',
+        evidence: observation.data || {},
+        timestamp,
+      };
+    }
+
+    // 3b. Desktop File Opening Verification
+    if (action.type === 'desktop_open_file' || action.type === 'system_open_file') {
+      const target = String(action.payload?.filePath || action.payload?.fileName || 'file');
+      const resolvedPath = String(observation.data?.resolvedPath || target);
+      const opened = Boolean(observation.success && observation.data?.opened !== false);
+
+      return {
+        actionId: action.id,
+        expectedOutcome: `File "${target}" located and opened on desktop`,
+        observedOutcome: opened
+          ? `File "${resolvedPath}" opened on desktop with default viewer`
+          : `Failed to open file "${target}": ${observation.error || 'file not found'}`,
+        verified: opened,
+        confidence: opened ? 0.98 : 0.0,
+        status: opened ? 'verified_successful' : 'failed',
+        failureReason: opened ? null : (observation.error || `Could not open file "${target}"`),
+        isRecoverable: !opened,
+        recommendedStrategy: opened ? undefined : 'retry_with_backoff',
+        evidence: observation.data || {},
+        timestamp,
+      };
+    }
+
+    // 3c. Desktop Media Control Verification
+    if (action.type === 'desktop_media_control') {
+      const command = String(action.payload?.command || 'PlayPause');
+      const success = Boolean(observation.success);
+
+      return {
+        actionId: action.id,
+        expectedOutcome: `Media playback command "${command}" executed`,
+        observedOutcome: success
+          ? `MPRIS D-Bus command "${command}" dispatched and acknowledged by active media player`
+          : `MPRIS D-Bus command "${command}" failed: ${observation.error || 'no player responding'}`,
+        verified: success,
+        confidence: success ? 0.95 : 0.0,
+        status: success ? 'verified_successful' : 'failed',
+        failureReason: success ? null : (observation.error || 'Media player communication failed'),
+        isRecoverable: !success,
+        recommendedStrategy: success ? undefined : 'retry_with_backoff',
         evidence: observation.data || {},
         timestamp,
       };

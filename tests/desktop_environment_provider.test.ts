@@ -119,4 +119,122 @@ NoDisplay=true
       expect(['Playing', 'Paused', 'Stopped']).toContain(status.playbackStatus);
     }
   });
+
+  it('6. Locates and resolves files across directories via openFile', async () => {
+    const testFile = path.join(tempDir, 'sample_test.gif');
+    await fs.promises.writeFile(testFile, 'GIF89a...');
+
+    // Exact path
+    const resExact = await provider.openFile(testFile);
+    expect(resExact.success).toBe(true);
+    expect(resExact.resolvedPath).toBe(testFile);
+
+    // Non-existent file returns success: false
+    const resMissing = await provider.openFile('non_existent_file_xyz_12345.gif');
+    expect(resMissing.success).toBe(false);
+  });
+
+  it('7. PlanningInterface formulates desktop_open_file plan for "try to open a file called tenor.gif"', async () => {
+    const { PlanningInterface } = await import('@arletex/core');
+    const mockRepo: any = { savePlan: () => {}, getPlanByTask: () => null, updateTask: () => {} };
+    const planner = new PlanningInterface(mockRepo);
+
+    const task: any = {
+      id: 'task-test-file-open',
+      objective: 'try to open a file called tenor.gif',
+      initiator: 'user',
+    };
+
+    const plan = await planner.formulatePlan(task);
+    expect(plan.steps.length).toBeGreaterThan(0);
+    expect(plan.steps[0]!.action.type).toBe('desktop_open_file');
+    expect(plan.steps[0]!.action.payload.fileName).toBe('tenor.gif');
+  });
+
+  it('8. PlanningInterface formulates app_launch plan for "try to open spotify"', async () => {
+    const { PlanningInterface } = await import('@arletex/core');
+    const mockRepo: any = { savePlan: () => {}, getPlanByTask: () => null, updateTask: () => {} };
+    const planner = new PlanningInterface(mockRepo);
+
+    const task: any = {
+      id: 'task-test-spotify-open',
+      objective: 'try to open spotify',
+      initiator: 'user',
+    };
+
+    const plan = await planner.formulatePlan(task);
+    expect(plan.steps.length).toBeGreaterThan(0);
+    expect(plan.steps[0]!.action.type).toBe('app_launch');
+    expect(plan.steps[0]!.action.payload.appName).toBe('spotify');
+  });
+
+  it('9. PlanningInterface formulates desktop_media_control plan for "pause music"', async () => {
+    const { PlanningInterface } = await import('@arletex/core');
+    const mockRepo: any = { savePlan: () => {}, getPlanByTask: () => null, updateTask: () => {} };
+    const planner = new PlanningInterface(mockRepo);
+
+    const task: any = {
+      id: 'task-test-media-pause',
+      objective: 'pause music',
+      initiator: 'user',
+    };
+
+    const plan = await planner.formulatePlan(task);
+    expect(plan.steps.length).toBeGreaterThan(0);
+    expect(plan.steps[0]!.action.type).toBe('desktop_media_control');
+    expect(plan.steps[0]!.action.payload.command).toBe('Pause');
+  });
+
+  it('10. ClosedLoopAgencyService executes and verifies real desktop file opening end-to-end', async () => {
+    const {
+      ClosedLoopAgencyService,
+      IntentTaskManager,
+      PlanningInterface,
+      ActionPermissionController,
+      VerificationEngine,
+    } = await import('@arletex/core');
+
+    const testFile = path.join(tempDir, 'sample_presentation.gif');
+    await fs.promises.writeFile(testFile, 'GIF89a sample content');
+
+    const plans = new Map<string, any>();
+    const tasks = new Map<string, any>();
+    const mockAgencyRepo: any = {
+      savePlan: (p: any) => plans.set(p.taskId, p),
+      getPlanByTask: (tId: string) => plans.get(tId) || null,
+      createTask: (t: any) => { tasks.set(t.id, t); return t; },
+      saveTask: (t: any) => tasks.set(t.id, t),
+      getTask: (id: string) => tasks.get(id) || null,
+      updateTask: (id: string, updates: any) => {
+        const cur = tasks.get(id) || { id };
+        tasks.set(id, { ...cur, ...updates });
+      },
+      saveObservation: () => {},
+      saveVerification: () => {},
+      saveExperience: () => {},
+    };
+
+    const taskManager = new IntentTaskManager(mockAgencyRepo);
+    const planningInterface = new PlanningInterface(mockAgencyRepo);
+    const permissionController = new ActionPermissionController();
+    const verificationEngine = new VerificationEngine();
+
+    const agency = new ClosedLoopAgencyService({
+      agencyRepo: mockAgencyRepo,
+      taskManager,
+      planningInterface,
+      permissionController,
+      verificationEngine,
+      memorySync: { recordExperience: async () => ({}) } as any,
+      apeService: { processDigitalExperience: async () => ({}) } as any,
+      desktopProvider: provider,
+      logger: rootLogger,
+    });
+
+    const result = await agency.executeClosedLoop(`try to open a file called ${testFile}`, 'user');
+    expect(result.success).toBe(true);
+    expect(result.verifications.length).toBe(1);
+    expect(result.verifications[0]!.verified).toBe(true);
+    expect(result.verifications[0]!.observedOutcome).toContain('opened on desktop with default viewer');
+  });
 });

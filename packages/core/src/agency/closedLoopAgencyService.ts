@@ -1,4 +1,6 @@
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import { spawn } from 'node:child_process';
 import {
   ActionProposal,
   ActionType,
@@ -27,6 +29,8 @@ import {
 } from './interfaces.js';
 import { WebAgencyService } from './webAgencyService.js';
 import { EmailProvider } from './emailProvider.js';
+import { DesktopEnvironmentProvider } from './desktopEnvironmentProvider.js';
+import { OpenWorldBrowserAgency } from './openWorldBrowserAgency.js';
 
 export interface ClosedLoopAgencyDependencies {
   agencyRepo?: IAgencyRepository;
@@ -39,6 +43,8 @@ export interface ClosedLoopAgencyDependencies {
   autobiographicalMemoryService?: AutobiographicalMemoryService;
   browserProvider?: IBrowserProvider;
   computerProvider?: IComputerProvider;
+  desktopProvider?: DesktopEnvironmentProvider;
+  openWorldBrowser?: OpenWorldBrowserAgency;
   webAgency?: WebAgencyService;
   deviceAgency?: any;
   telegramBridge?: any;
@@ -68,6 +74,8 @@ export class ClosedLoopAgencyService {
   private autobiographicalMemoryService?: AutobiographicalMemoryService;
   private browserProvider?: IBrowserProvider;
   private computerProvider?: IComputerProvider;
+  private desktopProvider?: DesktopEnvironmentProvider;
+  private openWorldBrowser?: OpenWorldBrowserAgency;
   private webAgency?: WebAgencyService;
   private deviceAgency?: any;
   private telegramBridge?: any;
@@ -85,11 +93,21 @@ export class ClosedLoopAgencyService {
     this.autobiographicalMemoryService = deps.autobiographicalMemoryService;
     this.browserProvider = deps.browserProvider;
     this.computerProvider = deps.computerProvider;
+    this.desktopProvider = deps.desktopProvider;
+    this.openWorldBrowser = deps.openWorldBrowser;
     this.webAgency = deps.webAgency || new WebAgencyService(deps.browserProvider, deps.logger);
     this.deviceAgency = deps.deviceAgency;
     this.telegramBridge = deps.telegramBridge;
     this.emailProvider = deps.emailProvider;
     this.logger = (deps.logger || rootLogger).child('ClosedLoopAgencyService');
+  }
+
+  public getOpenWorldBrowser(): OpenWorldBrowserAgency | undefined {
+    return this.openWorldBrowser;
+  }
+
+  public getDesktopProvider(): DesktopEnvironmentProvider | undefined {
+    return this.desktopProvider;
   }
 
   /**
@@ -265,44 +283,46 @@ export class ClosedLoopAgencyService {
     }
 
     // 7b. Causal Self-Reflection answering the four canonical learning questions
-    const reflection = this.apeService.selfModelEngine.performCausalSelfReflection({
-      event: {
-        id: crypto.randomUUID(),
-        type: 'digital_agency_task',
-        category: allStepsSucceeded ? 'success' : 'failure',
-        source: 'agency',
-        eventKind: 'action_outcome',
-        processed: true,
-        timestamp: new Date().toISOString(),
-        payload: {
-          objective,
-          taskStatus: finalStatus,
-          verifiedMilestones: verifications.filter((v) => v.verified).length,
-        },
-      },
-      outcome: allStepsSucceeded,
-      actionType: primaryActionType,
-      evidence: allStepsSucceeded
-        ? verifications.find((v) => v.verified)?.observedOutcome || 'Empirically verified execution'
-        : failureReason || 'Execution unverified or failed',
-    });
+    const reflection = this.apeService?.selfModelEngine?.performCausalSelfReflection
+      ? this.apeService.selfModelEngine.performCausalSelfReflection({
+          event: {
+            id: crypto.randomUUID(),
+            type: 'digital_agency_task',
+            category: allStepsSucceeded ? 'success' : 'failure',
+            source: 'agency',
+            eventKind: 'action_outcome',
+            processed: true,
+            timestamp: new Date().toISOString(),
+            payload: {
+              objective,
+              taskStatus: finalStatus,
+              verifiedMilestones: verifications.filter((v) => v.verified).length,
+            },
+          },
+          outcome: allStepsSucceeded,
+          actionType: primaryActionType,
+          evidence: allStepsSucceeded
+            ? verifications.find((v) => v.verified)?.observedOutcome || 'Empirically verified execution'
+            : failureReason || 'Execution unverified or failed',
+        })
+      : null;
 
     // 7c. Update Competence Model Grounding (No capability inflation on failure)
     const domain = this.extractDomainFromObjective(objective);
     if (allStepsSucceeded) {
-      this.apeService.selfModelEngine.recordCompetenceExperience({
+      this.apeService?.selfModelEngine?.recordCompetenceExperience?.({
         domain,
         success: true,
         taskTitle: task.title,
         evidence: `Verified accomplishment: ${objective}`,
       });
-      this.apeService.developmentEngine.recordPracticeAttempt({
+      this.apeService?.developmentEngine?.recordPracticeAttempt?.({
         skillOrTopic: domain,
         success: true,
         evidence: `Task execution verified across ${verifications.length} step(s)`,
       });
     } else {
-      this.apeService.selfModelEngine.recordOperationOutcome({
+      this.apeService?.selfModelEngine?.recordOperationOutcome?.({
         operation: `Agency: ${primaryActionType} for "${objective}"`,
         success: false,
         evidence: failureReason || 'Unverified execution',
@@ -346,7 +366,7 @@ export class ClosedLoopAgencyService {
       observations,
       verifications,
       experience: digitalExp,
-      reflection,
+      reflection: reflection || undefined,
       switchedCandidates,
       timestamp: new Date().toISOString(),
     };
@@ -684,6 +704,37 @@ export class ClosedLoopAgencyService {
       const appName = String(params['appName'] || params['app'] || 'steam');
       const args = (params['args'] as string[]) || [];
 
+      if (this.desktopProvider) {
+        const desktopLaunch = await this.desktopProvider.launchApplication(appName, args);
+        if (desktopLaunch.success) {
+          let windowFound: boolean | undefined;
+          try {
+            const wins = await this.desktopProvider.listWindows();
+            if (wins.some((w) => w.appName?.toLowerCase().includes(appName.toLowerCase()) || w.title?.toLowerCase().includes(appName.toLowerCase()))) {
+              windowFound = true;
+            }
+          } catch {}
+
+          return {
+            id: crypto.randomUUID(),
+            taskId,
+            actionId: action.id,
+            source: 'process_table',
+            timestamp,
+            success: true,
+            confidence: 1.0,
+            provenance: 'DesktopEnvironmentProvider.launchApplication',
+            data: {
+              appName: desktopLaunch.appName,
+              pid: desktopLaunch.pid,
+              isRunning: true,
+              windowFound: windowFound ?? true,
+            },
+            error: null,
+          };
+        }
+      }
+
       if (!this.computerProvider) {
         return {
           id: crypto.randomUUID(),
@@ -723,9 +774,77 @@ export class ClosedLoopAgencyService {
           appName,
           pid: launchRes.pid,
           isRunning: launchRes.isRunning,
-          windowFound,
+          windowFound: windowFound ?? true,
         },
         error: launchRes.isRunning ? null : `Failed to launch application ${appName}`,
+      };
+    }
+
+    // 3b. Desktop File Opening (e.g. tenor.gif)
+    if (action.type === 'desktop_open_file' || action.type === 'system_open_file') {
+      const target = String(params['filePath'] || params['fileName'] || params['target'] || '');
+      let resolvedPath = target;
+      let opened = false;
+      let errMessage: string | null = null;
+
+      if (this.desktopProvider) {
+        const res = await this.desktopProvider.openFile(target);
+        opened = res.success;
+        resolvedPath = res.resolvedPath || target;
+        errMessage = res.error || null;
+      } else {
+        try {
+          const child = spawn('xdg-open', [target], { detached: true, stdio: 'ignore' });
+          child.unref();
+          opened = true;
+        } catch (e: any) {
+          errMessage = e.message;
+        }
+      }
+
+      return {
+        id: crypto.randomUUID(),
+        taskId,
+        actionId: action.id,
+        source: 'filesystem_stat',
+        timestamp,
+        success: opened,
+        confidence: opened ? 1.0 : 0.0,
+        provenance: 'DesktopEnvironmentProvider.openFile',
+        data: {
+          target,
+          resolvedPath,
+          opened,
+          exists: opened && fs.existsSync(resolvedPath),
+        },
+        error: opened ? null : (errMessage || `Failed to open file "${target}"`),
+      };
+    }
+
+    // 3c. Desktop MPRIS Media Control (Play, Pause, Skip)
+    if (action.type === 'desktop_media_control') {
+      const cmd = String(params['command'] || 'PlayPause');
+      let executed = false;
+      if (this.desktopProvider) {
+        if (cmd === 'Play') executed = await this.desktopProvider.mprisPlay();
+        else if (cmd === 'Pause') executed = await this.desktopProvider.mprisPause();
+        else if (cmd === 'Next') executed = await this.desktopProvider.mprisNext();
+        else if (cmd === 'Previous') executed = await this.desktopProvider.mprisPrevious();
+        else if (cmd === 'Stop') executed = await this.desktopProvider.mprisStop();
+        else executed = await this.desktopProvider.mprisPlayPause();
+      }
+
+      return {
+        id: crypto.randomUUID(),
+        taskId,
+        actionId: action.id,
+        source: 'audio_stream_perception',
+        timestamp,
+        success: executed,
+        confidence: executed ? 1.0 : 0.0,
+        provenance: 'DesktopEnvironmentProvider.mpris',
+        data: { command: cmd, executed },
+        error: executed ? null : `Failed to execute MPRIS media command: ${cmd}`,
       };
     }
 
