@@ -107,6 +107,7 @@ export class OllamaAdapter implements IInferenceProvider {
 
   public async streamChat(options: ChatStreamOptions): Promise<string> {
     const { conversationId, requestId, messages, configOverride, signal, onChunk } = options;
+    const safeOnChunk = typeof onChunk === 'function' ? onChunk : () => {};
     const effectiveConfig = { ...this.config, ...configOverride };
     const endpoint = `${effectiveConfig.serverUrl}/api/chat`;
 
@@ -160,7 +161,7 @@ export class OllamaAdapter implements IInferenceProvider {
     } catch (err: any) {
       if (err.name === 'AbortError' || signal?.aborted) {
         this.logger.info(`[Ollama] Inference request ${requestId} cancelled by caller.`);
-        onChunk({
+        safeOnChunk({
           requestId,
           conversationId,
           delta: '',
@@ -223,7 +224,7 @@ export class OllamaAdapter implements IInferenceProvider {
               const loopCheck = findRepetitionLoop(fullContent);
               if (loopCheck.isLoop) {
                 fullContent = loopCheck.cleanText;
-                onChunk({
+                safeOnChunk({
                   requestId,
                   conversationId,
                   delta: '',
@@ -236,7 +237,7 @@ export class OllamaAdapter implements IInferenceProvider {
                 return fullContent;
               }
 
-              onChunk({
+              safeOnChunk({
                 requestId,
                 conversationId,
                 delta,
@@ -248,7 +249,7 @@ export class OllamaAdapter implements IInferenceProvider {
             }
 
             if (parsed.done) {
-              onChunk({
+              safeOnChunk({
                 requestId,
                 conversationId,
                 delta: '',
@@ -265,7 +266,7 @@ export class OllamaAdapter implements IInferenceProvider {
         }
       }
 
-      onChunk({
+      safeOnChunk({
         requestId,
         conversationId,
         delta: '',
@@ -278,7 +279,7 @@ export class OllamaAdapter implements IInferenceProvider {
       return fullContent;
     } catch (err: any) {
       if (err.name === 'AbortError' || signal?.aborted) {
-        onChunk({
+        safeOnChunk({
           requestId,
           conversationId,
           delta: '',

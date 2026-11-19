@@ -119,6 +119,7 @@ export class LlamaServerAdapter implements IInferenceProvider {
 
   public async streamChat(options: ChatStreamOptions): Promise<string> {
     const { conversationId, requestId, messages, configOverride, signal, onChunk } = options;
+    const safeOnChunk = typeof onChunk === 'function' ? onChunk : () => {};
     const effectiveConfig = { ...this.config, ...configOverride };
     const endpoint = `${effectiveConfig.serverUrl}/v1/chat/completions`;
 
@@ -181,7 +182,7 @@ export class LlamaServerAdapter implements IInferenceProvider {
     } catch (err: any) {
       if (err.name === 'AbortError' || signal?.aborted) {
         this.logger.info(`[Llama] Inference request ${requestId} was cancelled by user.`);
-        onChunk({
+        safeOnChunk({
           requestId,
           conversationId,
           delta: '',
@@ -210,7 +211,7 @@ export class LlamaServerAdapter implements IInferenceProvider {
       }
       this.logger.error(`[Llama] llama-server responded with HTTP ${response.status}`, errBody);
       const errMsg = `llama-server error (${response.status}): ${errBody}`;
-      onChunk({
+      safeOnChunk({
         requestId,
         conversationId,
         delta: '',
@@ -237,7 +238,7 @@ export class LlamaServerAdapter implements IInferenceProvider {
       if (!isDoneEmitted) {
         isDoneEmitted = true;
         const text = fullContent || fullReasoning;
-        onChunk({
+        safeOnChunk({
           requestId,
           conversationId,
           delta: '',
@@ -295,7 +296,7 @@ export class LlamaServerAdapter implements IInferenceProvider {
           }
 
           if (delta || reasoningDelta) {
-            onChunk({
+            safeOnChunk({
               requestId,
               conversationId,
               delta,
@@ -330,7 +331,7 @@ export class LlamaServerAdapter implements IInferenceProvider {
         void reader.cancel().catch(() => {});
         if (!isDoneEmitted) {
           isDoneEmitted = true;
-          onChunk({
+          safeOnChunk({
             requestId,
             conversationId,
             delta: '',
@@ -346,7 +347,7 @@ export class LlamaServerAdapter implements IInferenceProvider {
       this.logger.error('[Llama] Error while reading stream chunks', err);
       if (!isDoneEmitted) {
         isDoneEmitted = true;
-        onChunk({
+        safeOnChunk({
           requestId,
           conversationId,
           delta: '',

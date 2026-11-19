@@ -134,6 +134,7 @@ export class OpenAICompatibleAdapter implements IInferenceProvider {
 
   public async streamChat(options: ChatStreamOptions): Promise<string> {
     const { conversationId, requestId, messages, configOverride, signal, onChunk } = options;
+    const safeOnChunk = typeof onChunk === 'function' ? onChunk : () => {};
     const effectiveConfig = { ...this.config, ...configOverride };
     const endpoint = `${effectiveConfig.serverUrl}/v1/chat/completions`;
 
@@ -168,7 +169,7 @@ export class OpenAICompatibleAdapter implements IInferenceProvider {
     } catch (err: any) {
       if (err.name === 'AbortError' || signal?.aborted) {
         this.logger.info(`[${this.name}] Request ${requestId} was cancelled.`);
-        onChunk({
+        safeOnChunk({
           requestId,
           conversationId,
           delta: '',
@@ -204,7 +205,7 @@ export class OpenAICompatibleAdapter implements IInferenceProvider {
         onEvent: (event: EventSourceMessage) => {
           if (event.data === '[DONE]') {
             streamDone = true;
-            onChunk({
+            safeOnChunk({
               requestId,
               conversationId,
               delta: '',
@@ -228,7 +229,7 @@ export class OpenAICompatibleAdapter implements IInferenceProvider {
               if (loop.isLoop) {
                 fullContent = loop.cleanText;
                 streamDone = true;
-                onChunk({
+                safeOnChunk({
                   requestId,
                   conversationId,
                   delta: '',
@@ -241,7 +242,7 @@ export class OpenAICompatibleAdapter implements IInferenceProvider {
                 return;
               }
 
-              onChunk({
+              safeOnChunk({
                 requestId,
                 conversationId,
                 delta,
@@ -254,7 +255,7 @@ export class OpenAICompatibleAdapter implements IInferenceProvider {
 
             if (finishReason && !streamDone) {
               streamDone = true;
-              onChunk({
+              safeOnChunk({
                 requestId,
                 conversationId,
                 delta: '',
@@ -277,7 +278,7 @@ export class OpenAICompatibleAdapter implements IInferenceProvider {
           while (true) {
             if (signal?.aborted) {
               await reader.cancel().catch(() => {});
-              onChunk({
+              safeOnChunk({
                 requestId,
                 conversationId,
                 delta: '',
@@ -293,7 +294,7 @@ export class OpenAICompatibleAdapter implements IInferenceProvider {
             const { done, value } = await reader.read();
             if (done) {
               if (!streamDone) {
-                onChunk({
+                safeOnChunk({
                   requestId,
                   conversationId,
                   delta: '',

@@ -15,7 +15,7 @@ export interface ChatStreamOptions {
   messages: Array<{ role: 'system' | 'user' | 'assistant'; content: ChatMessageContent }>;
   configOverride?: Partial<InferenceConfig>;
   signal?: AbortSignal;
-  onChunk: (chunk: StreamChunk) => void;
+  onChunk?: (chunk: StreamChunk) => void;
 }
 
 export interface IInferenceProvider {

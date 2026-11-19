@@ -1672,8 +1672,24 @@ export class ArletexBackendServer {
         /(?:open|launch|go\s+to)\s+(?:gmail|google\s+mail)/i.test(lowerUser);
 
       const isAccountOrSignupIntent =
+        lowerUser.includes('spotify') ||
         /(?:try\s+to\s+)?(?:open|launch|go\s+to|bring\s+up)\s+.*(?:spotify|gmail)\s+(?:signup|sign\s*up|login|register)/i.test(lowerUser) ||
-        /(?:try\s+to\s+)?(?:sign\s*up|register|create\s+(?:an?\s+)?account)\s+(?:in|for|on)\s+(?:spotify|gmail)/i.test(lowerUser);
+        /(?:try\s+to\s+)?(?:sign\s*up|register|create\s+(?:an?\s+)?account|make\s+(?:an?\s+)?account)\s+(?:in|for|on)\s+(?:spotify|gmail)/i.test(lowerUser);
+
+      const isAccountFollowupIntent =
+        !isNegativeOpenIntent &&
+        (/(?:use\s+)?sign\s*up\s+with\s+google|login\s+then|click\s+.*(?:sign|google|login)|make\s+(?:the\s+|your\s+)?account|set\s+up\s+(?:the\s+|your\s+)?account/i.test(lowerUser));
+
+      if (isAccountFollowupIntent) {
+        ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Proof is asking you to click or complete the signup/login on screen.
+CRITICAL REALITY RULES:
+- You are an AI companion running on the host system without physical mouse pointer control over external Flatpak Chrome web buttons.
+- You CANNOT physically click "Sign up with Google" or fill web forms inside the Google Chrome window for him.
+- State this clearly and warmly to Proof:
+  "I have the page ready on your screen, but I can't physically click buttons inside the Chrome window. Click 'Sign up with Google' right there on the screen for me—it's already connected to my Google account (arletex.email@gmail.com) so it will link with one click. Once you click it, we're in and I'll pick our song!"
+- NEVER pretend or hallucinate that you clicked it, created the account, or logged in when the window is waiting on screen!
+- NEVER make excuses about missing credentials—your Chrome profile is already signed into Google.\n`;
+      }
 
       const isMediaPlaybackIntent =
         /(?:play|pause|resume|skip|stop|put\s+on|listen\s+to)\s+(?:music|song|track|spotify|youtube|sound|audio|video)/i.test(lowerUser) ||
@@ -1720,9 +1736,12 @@ export class ArletexBackendServer {
 GROUNDING CONTEXT:
 - The Spotify page is displayed on Proof's desktop right now.
 - Your Chrome browser is ALREADY authenticated with your Google account (arletex.email@gmail.com). You do NOT need any credentials or passwords from Proof.
-- To finish setting up Spotify under your email, you need Proof to click the "Sign up with Google" button on the open window.
-- Speak warmly and naturally to Proof: tell him you opened Spotify, and ask him to click "Sign up with Google" on the window so it connects with your Google account (arletex.email@gmail.com), and then you two can pick what to listen to.
-- Do NOT make excuses, whine about credentials, or pretend you finished before he clicks the button.\n`;
+- To finish setting up Spotify under your email, Proof must click the "Sign up with Google" button on the open window. You cannot click it for him.
+- Speak warmly and naturally to Proof: tell him you opened Spotify in your Chrome profile, and ask him to click "Sign up with Google" on the window so it connects with your Google account (arletex.email@gmail.com). Once he clicks it, you will pick a song for both of you.
+- ABSOLUTELY FORBIDDEN:
+  1. DO NOT claim or hallucinate that you clicked it, created the account, or logged in.
+  2. DO NOT claim you see the dashboard or that the account is already active.
+  3. DO NOT blame Proof or make excuses about missing credentials or authentication hurdles.\n`;
             } else if (isBrowserStep) {
               ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Loaded ${targetUrl} in Google Chrome Profile 7 (arletex.email@gmail.com) on Proof's desktop. The webpage is physically open and visible.\n`;
             } else {
@@ -2253,6 +2272,7 @@ GROUNDING CONTEXT:
 
     if (targetUrl) {
       try {
+        await defaultDeviceAgency.openChromeBrowser(targetUrl);
         const obs = await this.closedLoopAgency.executeAction({
           id: crypto.randomUUID(),
           taskId: 'assistant_browser_action',

@@ -30,11 +30,16 @@ export class PlanningInterface {
     const uncertainties: string[] = [];
     const alternativeApproaches: string[] = [];
 
+    const isSpotify = lower.includes('spotify');
+    const isSpotifyAccountOrEmail =
+      isSpotify &&
+      (/(?:email|mail|sign\s*up|signup|register|login|log\s*in|account|make\s+(?:an?\s+)?account|choose|pick|song)/i.test(lower));
     const isVideoRequest =
-      /(?:calming|soothing|relaxing|peaceful|lofi|ambient|sleep)\s+(?:video|music|song|sounds|melody)/i.test(lower) ||
-      /(?:open|play|watch|put on|start|find).*(?:video|youtube|music|song|track)/i.test(lower) ||
-      /(?:find|watch|show).*(?:video|tutorial|explanation)/i.test(lower) ||
-      lower.includes('youtube');
+      !isSpotify &&
+      (/(?:calming|soothing|relaxing|peaceful|lofi|ambient|sleep)\s+(?:video|music|song|sounds|melody)/i.test(lower) ||
+       /(?:open|play|watch|put on|start|find).*(?:video|youtube|music|song|track)/i.test(lower) ||
+       /(?:find|watch|show).*(?:video|tutorial|explanation)/i.test(lower) ||
+       lower.includes('youtube'));
 
     // 1. Desktop File Opening (e.g. "open tenor (5).gif", "open tensor (5)", "show image.png")
     const fileOpenMatch =
@@ -73,17 +78,20 @@ export class PlanningInterface {
         error: null,
       });
     } else if (
+      isSpotifyAccountOrEmail ||
       /(?:open|check|show|view|access)\s+(?:it\s+on\s+)?(?:her|your|my|arle(?:'s)?\s+)?(?:email|gmail|inbox)/i.test(lower) ||
       /(?:open|launch)\s+.*(?:on\s+(?:her|your)\s+email)/i.test(lower) ||
       /(?:open|launch|go\s+to)\s+(?:gmail|google\s+mail)/i.test(lower) ||
-      /(?:try\s+to\s+)?(?:sign\s*up|register|create\s+(?:an?\s+)?account)\s+(?:in|for|on)\s+spotify/i.test(lower) ||
+      /(?:try\s+to\s+)?(?:sign\s*up|register|create\s+(?:an?\s+)?account|make\s+(?:an?\s+)?account)\s+(?:in|for|on)\s+spotify/i.test(lower) ||
       /(?:try\s+to\s+)?(?:open|launch|go\s+to)\s+spotify\s+(?:signup|sign\s*up|login|register)/i.test(lower)
     ) {
       // 2. Arle Dedicated Browser Profile (Chrome Profile 7 - arletex.email@gmail.com)
       let targetUrl = 'https://mail.google.com';
-      if (lower.includes('spotify')) {
-        if (/sign\s*up|register|create/i.test(lower)) {
+      if (isSpotify) {
+        if (/sign\s*up|signup|register|create\s+(?:an?\s+)?account|make\s+(?:an?\s+)?account/i.test(lower)) {
           targetUrl = 'https://www.spotify.com/signup';
+        } else if (/login|log\s*in|sign\s*in|signin/i.test(lower)) {
+          targetUrl = 'https://accounts.spotify.com/login';
         } else {
           targetUrl = 'https://open.spotify.com';
         }
@@ -120,6 +128,34 @@ export class PlanningInterface {
         maxRetries: 1,
         error: null,
       });
+
+      // Compound multi-step task support: e.g. "open spotify and make an account and login and then choose a song for us"
+      if (isSpotify && /(?:choose|play|pick|listen)\s+(?:a\s+)?(?:song|track|music)/i.test(lower)) {
+        const verifyActionId = crypto.randomUUID();
+        steps.push({
+          id: crypto.randomUUID(),
+          index: 1,
+          description: `Stage song selection readiness for Spotify in Chrome Profile 7`,
+          action: {
+            id: verifyActionId,
+            taskId: task.id,
+            stepIndex: 1,
+            type: 'desktop_media_control',
+            payload: { command: 'Status' },
+            parameters: { command: 'Status' },
+            rationale: 'Verify Spotify browser session readiness for song selection.',
+            expectedOutcome: 'Spotify session staged; ready to select song together upon authentication.',
+            riskLevel: 'low',
+            requiresExplicitApproval: false,
+            createdAt: timestamp,
+          } as any,
+          expectedOutcome: 'Ready to choose song together upon login.',
+          status: 'pending',
+          retryCount: 0,
+          maxRetries: 1,
+          error: null,
+        });
+      }
     } else if (/(?:pause|resume|skip|next\s+track|previous\s+track|stop\s+playing)\s*(?:music|song|track|spotify|media)?/i.test(lower)) {
       // 2. Desktop MPRIS Media Control (Play/Pause, Next, Previous)
       let command = 'PlayPause';
@@ -429,13 +465,15 @@ export class PlanningInterface {
     };
 
     this.repo.savePlan(plan);
-    this.repo.updateTask(task.id, {
-      planId: plan.id,
-      totalSteps: steps.length,
-      currentStepIndex: 0,
-      status: 'authorized',
-      updatedAt: timestamp,
-    });
+    if (typeof this.repo.updateTask === 'function') {
+      this.repo.updateTask(task.id, {
+        planId: plan.id,
+        totalSteps: steps.length,
+        currentStepIndex: 0,
+        status: 'authorized',
+        updatedAt: timestamp,
+      });
+    }
 
     this.logger.info(`Plan [${plan.id}] formulated with ${steps.length} verified steps.`);
     return plan;

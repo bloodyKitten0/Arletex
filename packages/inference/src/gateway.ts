@@ -228,7 +228,7 @@ export class InferenceGateway implements IInferenceProvider {
         this.logger.warn(`Primary provider (${primary.name}) unavailable. Triggering fallback to ${fallback.name}...`, err);
 
         // Notify client about fallback transition before streaming from fallback
-        options.onChunk({
+        options.onChunk?.({
           requestId: options.requestId,
           conversationId: options.conversationId,
           delta: '',

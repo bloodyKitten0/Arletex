@@ -320,4 +320,27 @@ NoDisplay=true
     expect(res.success).toBe(true);
     expect(res.message).toContain('Chrome Profile 7');
   });
+
+  it('14. Formulates compound multi-step plan for Spotify without YouTube hijacking', async () => {
+    const { PlanningInterface } = await import('@arletex/core');
+    const mockRepo: any = { savePlan: () => {}, updateTask: () => {} };
+    const planner = new PlanningInterface(mockRepo);
+
+    const taskCompound: any = {
+      id: 'task-spotify-compound',
+      objective: 'open spotify and make an account and login and then choose a song for us',
+      initiator: 'user',
+    };
+
+    const plan = await planner.formulatePlan(taskCompound);
+    expect(plan.steps.length).toBe(2);
+    // Step 0: Open Spotify signup in Chrome Profile 7
+    expect(plan.steps[0]!.action.type).toBe('desktop_open_browser');
+    expect(plan.steps[0]!.action.payload.url).toBe('https://www.spotify.com/signup');
+    expect(plan.steps[0]!.action.payload.profile).toBe('Profile 7');
+    expect(plan.steps[0]!.action.payload.email).toBe('arletex.email@gmail.com');
+    // Step 1: Ready to choose song / media control
+    expect(plan.steps[1]!.action.type).toBe('desktop_media_control');
+    expect(plan.steps[1]!.action.payload.command).toBe('Status');
+  });
 });

@@ -284,7 +284,7 @@ export class DesktopEnvironmentProvider {
     const targetUrl = url || 'https://google.com';
     this.logger.info(`Opening URL in Arle's Chrome Profile 7 (arletex.email@gmail.com): ${targetUrl}`);
 
-    if (process.env['NODE_ENV'] === 'test') {
+    if (process.env['NODE_ENV'] === 'test' || process.env['VITEST']) {
       return { success: true, pid: 99999, message: `Opened in Chrome Profile 7 (test mode): ${targetUrl}` };
     }
 
@@ -473,7 +473,7 @@ export class DesktopEnvironmentProvider {
       };
     }
 
-    if (process.env['NODE_ENV'] === 'test') {
+    if (process.env['NODE_ENV'] === 'test' || process.env['VITEST']) {
       this.logger.info(`Test environment detected: file "${resolvedPath}" verified without spawning GUI popup.`);
       return {
         success: true,

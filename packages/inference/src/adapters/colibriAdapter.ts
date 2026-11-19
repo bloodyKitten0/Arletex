@@ -114,6 +114,7 @@ export class ColibriAdapter implements IInferenceProvider {
 
   public async streamChat(options: ChatStreamOptions): Promise<string> {
     const { conversationId, requestId, messages, configOverride, signal, onChunk } = options;
+    const safeOnChunk = typeof onChunk === 'function' ? onChunk : () => {};
     const effectiveConfig = { ...this.config, ...configOverride };
     const endpoint = `${effectiveConfig.serverUrl}/v1/chat/completions`;
 
@@ -170,7 +171,7 @@ export class ColibriAdapter implements IInferenceProvider {
     } catch (err: any) {
       if (err.name === 'AbortError' || signal?.aborted) {
         this.logger.info(`[Colibri] Inference request ${requestId} was cancelled by caller.`);
-        onChunk({
+        safeOnChunk({
           requestId,
           conversationId,
           delta: '',
@@ -189,7 +190,7 @@ export class ColibriAdapter implements IInferenceProvider {
       const errBody = await response.text().catch(() => 'Unknown error');
       this.logger.error(`[Colibri] Server responded with HTTP ${response.status}`, errBody);
       const errMsg = `Colibri server error (${response.status}): ${errBody}`;
-      onChunk({
+      safeOnChunk({
         requestId,
         conversationId,
         delta: '',
@@ -216,7 +217,7 @@ export class ColibriAdapter implements IInferenceProvider {
       if (!isDoneEmitted) {
         isDoneEmitted = true;
         const text = fullContent || fullReasoning;
-        onChunk({
+        safeOnChunk({
           requestId,
           conversationId,
           delta: '',
@@ -254,7 +255,7 @@ export class ColibriAdapter implements IInferenceProvider {
           }
 
           if (delta || reasoningDelta) {
-            onChunk({
+            safeOnChunk({
               requestId,
               conversationId,
               delta,
@@ -288,7 +289,7 @@ export class ColibriAdapter implements IInferenceProvider {
         this.logger.info(`[Colibri] Stream reading aborted for request ${requestId}`);
         if (!isDoneEmitted) {
           isDoneEmitted = true;
-          onChunk({
+          safeOnChunk({
             requestId,
             conversationId,
             delta: '',
@@ -304,7 +305,7 @@ export class ColibriAdapter implements IInferenceProvider {
       this.logger.error('[Colibri] Error while reading stream chunks', err);
       if (!isDoneEmitted) {
         isDoneEmitted = true;
-        onChunk({
+        safeOnChunk({
           requestId,
           conversationId,
           delta: '',
