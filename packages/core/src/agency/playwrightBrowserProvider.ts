@@ -432,6 +432,78 @@ export class PlaywrightBrowserProvider implements IBrowserProvider {
     await page.fill(selector, text);
   }
 
+  public async takeScreenshot(): Promise<{ imageBase64: string; width: number; height: number }> {
+    const page = await this.ensurePage();
+    const buffer = await page.screenshot({ type: 'png' });
+    const viewport = page.viewportSize() || { width: 1280, height: 720 };
+    return {
+      imageBase64: buffer.toString('base64'),
+      width: viewport.width,
+      height: viewport.height,
+    };
+  }
+
+  public async extractInteractiveElements(): Promise<Array<{
+    selector: string;
+    role: string;
+    text: string;
+    ariaLabel?: string;
+    tagName: string;
+  }>> {
+    const page = await this.ensurePage();
+    return page.evaluate(() => {
+      const doc = (globalThis as any).document;
+      if (!doc) return [];
+      const elements = doc.querySelectorAll('button, a, input, [role="button"], [role="link"], [role="searchbox"], video, audio');
+      const results: any[] = [];
+      for (const el of Array.from(elements).slice(0, 50)) {
+        const text = (el as any).innerText || (el as any).value || '';
+        const ariaLabel = (el as any).getAttribute('aria-label') || undefined;
+        const role = (el as any).getAttribute('role') || (el as any).tagName?.toLowerCase();
+        const id = (el as any).id ? `#${(el as any).id}` : '';
+        const testId = (el as any).getAttribute('data-testid') ? `[data-testid="${(el as any).getAttribute('data-testid')}"]` : '';
+        results.push({
+          selector: testId || id || (el as any).tagName?.toLowerCase(),
+          role,
+          text: String(text).slice(0, 100).trim(),
+          ariaLabel,
+          tagName: (el as any).tagName?.toLowerCase(),
+        });
+      }
+      return results;
+    });
+  }
+
+  public async dismissDialogsAndModals(): Promise<boolean> {
+    const page = await this.ensurePage();
+    try {
+      return await page.evaluate(() => {
+        const doc = (globalThis as any).document;
+        if (!doc) return false;
+        const buttons = Array.from(doc.querySelectorAll('button, [role="button"]')) as any[];
+        for (const btn of buttons) {
+          const txt = String(btn.innerText || btn.getAttribute('aria-label') || '').toLowerCase().trim();
+          if (
+            txt === 'accept' ||
+            txt === 'agree' ||
+            txt === 'accept all' ||
+            txt === 'i agree' ||
+            txt === 'close' ||
+            txt === 'dismiss' ||
+            txt === 'got it' ||
+            txt === 'reject non-essential'
+          ) {
+            btn.click();
+            return true;
+          }
+        }
+        return false;
+      });
+    } catch {
+      return false;
+    }
+  }
+
   public async close(): Promise<void> {
     if (this.browser) {
       await this.browser.close().catch(() => {});

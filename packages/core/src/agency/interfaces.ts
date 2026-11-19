@@ -9,6 +9,8 @@ export interface PageObservation {
   url: string;
   title: string;
   hasVideoElement: boolean;
+  hasAudioElement?: boolean;
+  hasMediaElement?: boolean;
   isPlaying: boolean;
   videoDuration?: number;
   videoCurrentTime?: number;
@@ -20,6 +22,7 @@ export interface PageObservation {
   links: Array<{ text: string; href: string }>;
   statusCode?: number;
   playbackError?: string;
+  interactiveElementsCount?: number;
 }
 
 export interface VideoCandidate {
@@ -56,6 +59,15 @@ export interface IBrowserProvider {
   click(selector: string): Promise<void>;
   typeText(selector: string, text: string): Promise<void>;
   close(): Promise<void>;
+  takeScreenshot?(): Promise<{ imageBase64: string; width: number; height: number }>;
+  extractInteractiveElements?(): Promise<Array<{
+    selector: string;
+    role: string;
+    text: string;
+    ariaLabel?: string;
+    tagName: string;
+  }>>;
+  dismissDialogsAndModals?(): Promise<boolean>;
 }
 
 export interface IComputerProvider {
