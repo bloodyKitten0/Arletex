@@ -52,14 +52,35 @@ Models are replaceable cognitive instruments; Arle herself is the persistent ind
   - Deterministic permission controller, structured audit logging, and automated application interaction (Google Chrome, Steam, Telegram, Terminal).
 
 - **Autobiographical Memory & SQLite Persistence:**
-  - Local SQLite persistence via `better-sqlite3` with Write-Ahead Logging (WAL) and **60 idempotent migrations**.
+  - Local SQLite persistence via `better-sqlite3` with Write-Ahead Logging (WAL) and **63 idempotent migrations**.
   - Hybrid retrieval combining vector semantic search (`EmbeddingGemma 300M`), high-importance memory indexing, and cross-session quote recall.
+  - Durable cognitive idempotency lifecycle (`cognitive_idempotency_records`) guaranteeing crash-resilient execution and in-flight stimulus recovery.
 
-- **Telegram Companion Bridge:**
-  - Bidirectional mobile companion gateway allowing Proof ([bloodyKitten0](https://github.com/bloodyKitten0)) to interact with Arle on the go with persistent emotional state and voice notes.
+- **Open-World Browser Agency:**
+  - Generalized 8-phase browser agency loop (Understand -> Discover -> Navigate -> Perceive -> Interact -> Adapt -> Verify -> Remember) running unconstrained across open web standards without brittle hardcoded selector lists.
+  - Strict security boundaries with private IP / SSRF filtering, prompt injection containment, and adversarial verification.
 
-- **Comprehensive Automated Test Suite:**
-  - **81 test suites with 837+ automated tests passing (100% green)** across contracts, core, database, inference, agency, psychology engines, and end-to-end integration.
+- **Desktop Embodiment & Application Control:**
+  - Universal FreeDesktop `.desktop` discovery, clean CLI argument sanitization, and spatial window management.
+  - Native Linux session D-Bus MPRIS introspection and playback control (`org.mpris.MediaPlayer2.*`) controlling Spotify, Chromium, Firefox, VLC, and local media players.
+
+- **Digital Identity & External Communication (`arletex.email@gmail.com`):**
+  - First-class digital presence with dedicated inbound/outbound email capabilities.
+  - Inbound RFC 822 stream parsing and untrusted stimulus ingestion into `CognitiveControlBus`.
+  - Fail-closed outbound SMTP gated by allowlists and cryptographic approval token nonces.
+
+- **Multi-Engine Inference & Hardware Portability:**
+  - Pluggable `InferenceProviderRegistry` supporting `colibri`, `llama.cpp`, `ollama`, `openai_compatible`, and `vllm`.
+  - Automatic `HardwareProfileDetector` tuning GPU offload layers and engine selection for AMD Ryzen Z1 Extreme / Radeon 780M (ROG Ally X), NVIDIA CUDA, and generic Linux.
+  - Runtime hot-swapping and fallback cascade with zero cognitive state loss.
+
+- **Three-Tier Knowledge Acquisition & Autonomous LoRA Specialization:**
+  - Local vector RAG with paragraph/sentence chunking, SHA-256 chunk deduplication, and source credibility weighting.
+  - Contradiction detection engine resolving competing claims via empirical evidence weighting.
+  - Autonomous LoRA specialization engine: identifies domain capability gaps (e.g., advanced scientific/medical knowledge), curates instruction-response datasets, generates training manifests, and automatically rolls back on detected general benchmark regression.
+
+- **Longitudinal Master Acceptance Suite:**
+  - **89 test suites with 905 automated tests passing (100% green)** across contracts, core, database, inference, agency, psychology engines, and master end-to-end acceptance scenarios.
 
 ---
 
@@ -104,16 +125,16 @@ Models are replaceable cognitive instruments; Arle herself is the persistent ind
 │
 ├── packages/
 │   ├── contracts/                   # Shared DTOs, Zod schemas, IPC channel constants
-│   ├── core/                        # Config loader, Structured Logger, EventBus, Errors, APE Engines
-│   ├── database/                    # SQLite WAL connection, 60 migrations, typed repositories
-│   └── inference/                   # Local llama-server client, SSE parser, reasoning tokens
+│   ├── core/                        # Config loader, Structured Logger, EventBus, Errors, APE Engines, Agency & Knowledge
+│   ├── database/                    # SQLite WAL connection, 63 migrations, typed repositories
+│   └── inference/                   # Multi-engine registry (Colibri, llama.cpp, Ollama, OpenAI-compatible, vLLM) & hardware profiling
 │
 ├── scripts/
 │   ├── run-arletex.sh               # Master all-in-one launcher (Inference + Specialists + App)
 │   ├── start-llama-server.sh        # Starts llama-server with Vulkan on Radeon 780M
 │   └── stop-llama.sh                # Gracefully stops local inference and frees memory
 │
-├── tests/                           # 81 automated test suites (837+ tests, 100% passing)
+├── tests/                           # 89 automated test suites (905 tests, 100% passing)
 ├── drafts/                          # Foundational specifications and architecture drafts
 └── docs/
     ├── ARCHITECTURE.md              # Subsystem architecture & process boundaries
@@ -134,9 +155,10 @@ Models are replaceable cognitive instruments; Arle herself is the persistent ind
          │ (Supervises via ChildProcess fork)
          ▼
 [ Node.js Backend Service (Port 39281) ]
-         ├──► [ SQLite Database (~/.arletex/arletex.sqlite) ]
+         ├──► [ SQLite Database (~/.arletex/arletex.sqlite) ] (63 Migrations, RAG, LoRA)
          ├──► [ C++ Reflex Engine (Hardware Screen Grab & Input) ]
-         ├──► [ llama-server Vulkan (Port 8080) ] ──► Qwen3.5-9B-Heretic + mmproj
+         ├──► [ Digital Agency Providers ] (Open-World Playwright, Desktop/MPRIS, Email)
+         ├──► [ Multi-Engine Inference Registry ] ──► llama.cpp / Colibri / Ollama / vLLM
          └──► [ Python Specialists (Port 39282) ] ──► Whisper, Kokoro, EmbeddingGemma
 ```
 
@@ -240,9 +262,13 @@ Configuration options can be customized via environment variables:
 | Variable | Description | Default |
 |---|---|---|
 | `ARLETEX_DATA_DIR` | Directory for database, media, and local storage | `~/.arletex` |
+| `ARLETEX_INFERENCE_PROVIDER` | Inference provider (`llama.cpp`, `colibri`, `ollama`, `openai_compatible`, `vllm`) | `llama.cpp` |
 | `LLAMA_SERVER_URL` | Local inference endpoint | `http://127.0.0.1:8080` |
 | `LLAMA_MODEL_ID` | Active central model identifier | `Qwen3.5-9B-Heretic-Q4_K_M` |
 | `SPECIALIST_SERVER_URL` | Microservices endpoint (Whisper, Kokoro, EmbeddingGemma) | `http://127.0.0.1:39282` |
+| `ARLETEX_EMAIL_ADDRESS` | Arle's dedicated email address | `arletex.email@gmail.com` |
+| `ARLETEX_EMAIL_IMAP_HOST` | IMAP server for inbound email perception | `imap.gmail.com` |
+| `ARLETEX_EMAIL_SMTP_HOST` | SMTP server for authenticated outbound dispatch | `smtp.gmail.com` |
 | `PYTHON_BIN` | Custom Python executable path | `python3` (or `.venv/bin/python3`) |
 | `ARLETEX_LOG_LEVEL` | Console log verbosity (`debug`, `info`, `warn`, `error`) | `info` |
 | `ARLETEX_PORT` | Internal backend service port | `39281` |
