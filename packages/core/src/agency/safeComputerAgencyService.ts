@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { ILogger, rootLogger } from '../logger.js';
 import { IComputerProvider } from './interfaces.js';
@@ -54,9 +55,30 @@ export class SafeComputerAgencyService implements IComputerProvider {
    * Validates against the supported applications allowlist and detects immediate process startup failure.
    */
   public async launchApp(appName: string, args: string[] = []): Promise<{ pid: number; isRunning: boolean }> {
+    const auth = this.permissionController.authorize({
+      id: crypto.randomUUID(),
+      taskId: crypto.randomUUID(),
+      stepIndex: 0,
+      type: 'app_launch',
+      payload: { appName, application: appName, args },
+      rationale: `SafeComputerAgencyService launchApp: ${appName}`,
+      expectedOutcome: 'Launch application safely',
+      riskLevel: 'medium',
+      requiresExplicitApproval: false,
+      createdAt: new Date().toISOString(),
+    });
+
     if (!SUPPORTED_APPLICATIONS.has(appName)) {
       const err = new Error(
         `Unsupported application: "${appName}". Only authorized applications in the supported allowlist may be launched: [${Array.from(SUPPORTED_APPLICATIONS).join(', ')}]`,
+      );
+      this.logger.error(err.message);
+      throw err;
+    }
+
+    if (!auth.allowed) {
+      const err = new Error(
+        `Authorization denied for launchApp("${appName}"): ${auth.denialReason || 'Blocked by security policy'}`,
       );
       this.logger.error(err.message);
       throw err;
@@ -255,9 +277,30 @@ export class SafeComputerAgencyService implements IComputerProvider {
   }
 
   /**
-   * Safely reads a file with size limits.
+   * Safely reads a file with size limits. Gated through ActionPermissionController.
    */
   public async readFile(filePath: string): Promise<string> {
+    const auth = this.permissionController.authorize({
+      id: crypto.randomUUID(),
+      taskId: crypto.randomUUID(),
+      stepIndex: 0,
+      type: 'system_read_file',
+      payload: { filePath, path: filePath },
+      rationale: 'SafeComputerAgencyService readFile',
+      expectedOutcome: 'Read file contents safely',
+      riskLevel: 'low',
+      requiresExplicitApproval: false,
+      createdAt: new Date().toISOString(),
+    });
+
+    if (!auth.allowed) {
+      const err = new Error(
+        `Authorization denied for readFile("${filePath}"): ${auth.denialReason || 'Blocked by security policy'}`,
+      );
+      this.logger.error(err.message);
+      throw err;
+    }
+
     const resolved = path.resolve(filePath);
     if (!fs.existsSync(resolved)) {
       throw new Error(`File not found: ${resolved}`);
@@ -270,13 +313,34 @@ export class SafeComputerAgencyService implements IComputerProvider {
   }
 
   /**
-   * Safely writes a file, checking overwrite permissions.
+   * Safely writes a file, checking overwrite permissions. Gated through ActionPermissionController.
    */
   public async writeFile(
     filePath: string,
     content: string,
     overwrite = false,
   ): Promise<{ success: boolean; sizeBytes: number }> {
+    const auth = this.permissionController.authorize({
+      id: crypto.randomUUID(),
+      taskId: crypto.randomUUID(),
+      stepIndex: 0,
+      type: 'system_write_file',
+      payload: { filePath, path: filePath, content, overwrite },
+      rationale: 'SafeComputerAgencyService writeFile',
+      expectedOutcome: 'Write file contents safely',
+      riskLevel: 'medium',
+      requiresExplicitApproval: false,
+      createdAt: new Date().toISOString(),
+    });
+
+    if (!auth.allowed) {
+      const err = new Error(
+        `Authorization denied for writeFile("${filePath}"): ${auth.denialReason || 'Blocked by security policy'}`,
+      );
+      this.logger.error(err.message);
+      throw err;
+    }
+
     const resolved = path.resolve(filePath);
     if (fs.existsSync(resolved) && !overwrite) {
       throw new Error(`File already exists and overwrite=false: ${resolved}`);
@@ -291,9 +355,30 @@ export class SafeComputerAgencyService implements IComputerProvider {
   }
 
   /**
-   * Safely lists files in directory.
+   * Safely lists files in directory. Gated through ActionPermissionController.
    */
   public async listFiles(dirPath: string): Promise<string[]> {
+    const auth = this.permissionController.authorize({
+      id: crypto.randomUUID(),
+      taskId: crypto.randomUUID(),
+      stepIndex: 0,
+      type: 'system_list_directory',
+      payload: { dirPath, path: dirPath },
+      rationale: 'SafeComputerAgencyService listFiles',
+      expectedOutcome: 'List directory entries safely',
+      riskLevel: 'low',
+      requiresExplicitApproval: false,
+      createdAt: new Date().toISOString(),
+    });
+
+    if (!auth.allowed) {
+      const err = new Error(
+        `Authorization denied for listFiles("${dirPath}"): ${auth.denialReason || 'Blocked by security policy'}`,
+      );
+      this.logger.error(err.message);
+      throw err;
+    }
+
     const resolved = path.resolve(dirPath);
     if (!fs.existsSync(resolved)) {
       throw new Error(`Directory not found: ${resolved}`);
@@ -302,12 +387,33 @@ export class SafeComputerAgencyService implements IComputerProvider {
   }
 
   /**
-   * Safely executes an argument-based command without shell string interpolation.
+   * Safely executes an argument-based command without shell string interpolation. Gated through ActionPermissionController.
    */
   public async executeCommand(
     command: string,
     args: string[] = [],
   ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
+    const auth = this.permissionController.authorize({
+      id: crypto.randomUUID(),
+      taskId: crypto.randomUUID(),
+      stepIndex: 0,
+      type: 'execute_command',
+      payload: { command, executable: command, args },
+      rationale: `SafeComputerAgencyService executeCommand: ${command}`,
+      expectedOutcome: 'Execute command safely',
+      riskLevel: 'high',
+      requiresExplicitApproval: false,
+      createdAt: new Date().toISOString(),
+    });
+
+    if (!auth.allowed) {
+      const err = new Error(
+        `Authorization denied for executeCommand("${command}"): ${auth.denialReason || 'Blocked by security policy'}`,
+      );
+      this.logger.error(err.message);
+      throw err;
+    }
+
     return new Promise((resolve) => {
       const child = spawn(command, args, {
         env: {

@@ -185,13 +185,13 @@ export class RelationshipEngine {
         const lowerApology = apologyText.toLowerCase();
         // Match specific conflict mentioned in apology
         let targeted = unresolved.filter((c) => {
-          const words = c.issue.toLowerCase().split(/\s+/).filter((w) => w.length > 4);
+          const words = c.issue.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
           return words.some((w) => lowerApology.includes(w));
         });
 
-        // Fallback: If no specific keywords match, resolve only the single most recent incident
-        if (targeted.length === 0) {
-          targeted = [unresolved[unresolved.length - 1]!];
+        // If only a single conflict is pending, a general apology addresses it; if multiple exist, only resolve explicitly addressed conflicts
+        if (targeted.length === 0 && unresolved.length === 1) {
+          targeted = [unresolved[0]!];
         }
 
         for (const c of targeted) {
@@ -267,13 +267,13 @@ export class RelationshipEngine {
     const unresolved = state.conflictHistory.filter((c) => !c.resolved);
     const lowerApology = apologyDetails.toLowerCase();
     let targeted = unresolved.filter((c) => {
-      const words = c.issue.toLowerCase().split(/\s+/).filter((w) => w.length > 4);
+      const words = c.issue.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
       return words.some((w) => lowerApology.includes(w));
     });
 
-    if (targeted.length === 0 && unresolved.length > 0) {
-      // Fallback: Resolve the most recent incident directly addressed by the apology
-      targeted = [unresolved[unresolved.length - 1]!];
+    // If only a single conflict is pending, a general apology addresses it; if multiple exist, only resolve explicitly addressed conflicts
+    if (targeted.length === 0 && unresolved.length === 1) {
+      targeted = [unresolved[0]!];
     }
 
     for (const c of targeted) {

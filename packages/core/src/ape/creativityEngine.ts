@@ -195,10 +195,10 @@ export class CreativityEngine {
       content: newContent,
       refinementNotes: revisionNotes,
       evaluation: {
-        novelty: Math.min(0.99, latestVersion.evaluation.novelty + 0.05),
-        coherence: Math.min(0.99, latestVersion.evaluation.coherence + 0.05),
-        emotionalResonance: Math.min(0.99, latestVersion.evaluation.emotionalResonance + 0.06),
-        overallQuality: Math.min(0.99, latestVersion.evaluation.overallQuality + 0.05),
+        novelty: Number(newEval.novelty.toFixed(3)),
+        coherence: Number(newEval.coherence.toFixed(3)),
+        emotionalResonance: Number(newEval.emotionalResonance.toFixed(3)),
+        overallQuality: Number(newEval.overallQuality.toFixed(3)),
       },
       createdAt: now,
     };

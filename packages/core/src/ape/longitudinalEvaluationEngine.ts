@@ -16,6 +16,7 @@ export interface LongitudinalEvaluationEngineOptions {
   securityRepository?: any;
   offlineActivityRepository?: any;
   continuityRepository?: any;
+  requireTraceableEvidence?: boolean;
 }
 
 export class InMemoryLongitudinalEvaluationRepository implements ILongitudinalEvaluationRepository {
@@ -74,6 +75,7 @@ export class LongitudinalEvaluationEngine {
   private readonly securityRepo?: any;
   private readonly offlineRepo?: any;
   private readonly continuityRepo?: any;
+  private readonly requireTraceableEvidence: boolean;
 
   constructor(options: LongitudinalEvaluationEngineOptions) {
     this.repository = options.repository;
@@ -82,13 +84,15 @@ export class LongitudinalEvaluationEngine {
     this.securityRepo = options.securityRepository;
     this.offlineRepo = options.offlineActivityRepository;
     this.continuityRepo = options.continuityRepository;
+    this.requireTraceableEvidence = options.requireTraceableEvidence ?? false;
   }
 
   /**
    * Conducts a longitudinal cross-domain evaluation based on authentic observed capabilities.
    * Negative invariant: Does not accept manually seeded or artificial psychological states.
    */
-  public evaluateSystem(input?: TriggerEvaluationInput): LongitudinalEvaluationReport {
+  public evaluateSystem(input?: TriggerEvaluationInput & { requireTraceableEvidence?: boolean }): LongitudinalEvaluationReport {
+    const isStrict = Boolean(input?.requireTraceableEvidence || this.requireTraceableEvidence);
     const allDimensions: LongitudinalEvaluationDimension[] = [
       'identity_consistency',
       'memory_accuracy',
@@ -113,16 +117,22 @@ export class LongitudinalEvaluationEngine {
 
     const metrics: DimensionEvaluationMetric[] = [];
     let totalScore = 0;
+    let insufficientCount = 0;
 
     for (const dim of targetDims) {
-      const metric = this.evaluateDimension(dim);
+      const metric = this.evaluateDimension(dim, isStrict);
       metrics.push(metric);
       totalScore += metric.score;
+      if (metric.status === 'insufficient_evidence' || metric.status === 'not_evaluated') {
+        insufficientCount++;
+      }
     }
 
     const overallScore = Number((totalScore / metrics.length).toFixed(3));
     let overallStatus: EvaluationStatus = 'passed';
-    if (overallScore < 0.6) {
+    if (isStrict && insufficientCount > 0) {
+      overallStatus = 'insufficient_evidence';
+    } else if (overallScore < 0.6) {
       overallStatus = 'failed';
     } else if (overallScore < 0.8) {
       overallStatus = 'warning';
@@ -210,7 +220,7 @@ export class LongitudinalEvaluationEngine {
     return this.repository.listProbes(probeType, limit);
   }
 
-  private evaluateDimension(dimension: LongitudinalEvaluationDimension): DimensionEvaluationMetric {
+  private evaluateDimension(dimension: LongitudinalEvaluationDimension, isStrict = false): DimensionEvaluationMetric {
     const evidenceIds: string[] = [];
     let score = 0.90;
     let sampleCount = 15;
@@ -432,12 +442,14 @@ export class LongitudinalEvaluationEngine {
       }
     }
 
-    if (evidenceIds.length === 0) {
-      evidenceIds.push(crypto.randomUUID());
-    }
-
     const threshold = 0.75;
-    const status: EvaluationStatus = score >= threshold ? 'passed' : 'warning';
+    let status: EvaluationStatus = score >= threshold ? 'passed' : 'warning';
+    if (isStrict && evidenceIds.length === 0) {
+      status = 'insufficient_evidence';
+      score = 0;
+      sampleCount = 0;
+      details = `Insufficient traceable evidence in persistent repositories for dimension "${dimension}".`;
+    }
 
     return {
       dimension,

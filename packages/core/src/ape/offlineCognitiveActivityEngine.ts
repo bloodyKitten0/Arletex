@@ -14,7 +14,7 @@ import crypto from 'node:crypto';
 export interface OfflineCognitiveActivityEngineOptions {
   repository: IOfflineCognitiveActivityRepository;
   initialPolicy?: Partial<OfflineSchedulerPolicy>;
-  memoryRepository?: { list: (filter?: any) => any[] };
+  memoryRepository?: { list?: (filter?: any) => any[]; listEntries?: (options?: any) => any[] };
   goalRepository?: { listActiveGoals?: () => any[]; listGoals?: () => any[] };
 }
 
@@ -105,7 +105,7 @@ export class InMemoryOfflineCognitiveActivityRepository implements IOfflineCogni
 
 export class OfflineCognitiveActivityEngine {
   private readonly repository: IOfflineCognitiveActivityRepository;
-  private readonly memoryRepository?: { list: (filter?: any) => any[] };
+  private readonly memoryRepository?: { list?: (filter?: any) => any[]; listEntries?: (options?: any) => any[] };
   private readonly goalRepository?: { listActiveGoals?: () => any[]; listGoals?: () => any[] };
   private policy: OfflineSchedulerPolicy;
 
@@ -195,7 +195,12 @@ export class OfflineCognitiveActivityEngine {
     const now = new Date().toISOString();
     activity.startedAt = activity.startedAt ?? now;
 
-    const progress = executionResult?.progress !== undefined ? executionResult.progress : 1.0;
+    const hasTangibleDeliverables = Boolean(
+      (executionResult?.insights && executionResult.insights.length > 0) ||
+      (executionResult?.artifacts && executionResult.artifacts.length > 0),
+    );
+    const defaultProgress = hasTangibleDeliverables ? 1.0 : 0.0;
+    const progress = executionResult?.progress !== undefined ? executionResult.progress : defaultProgress;
     activity.progress = Math.min(1.0, Math.max(0, progress));
 
     if (executionResult?.status) {
@@ -210,8 +215,6 @@ export class OfflineCognitiveActivityEngine {
 
     if (executionResult?.insights && executionResult.insights.length > 0) {
       activity.insights = [...activity.insights, ...executionResult.insights];
-    } else if (activity.status === 'completed') {
-      activity.insights.push(`Completed structured offline processing for: ${activity.title}`);
     }
 
     if (executionResult?.artifacts) {
@@ -236,9 +239,14 @@ export class OfflineCognitiveActivityEngine {
     let beliefs = options?.beliefsReassessed;
     let intentions = options?.intentionsPreserved;
 
-    if (this.memoryRepository && typeof this.memoryRepository.list === 'function') {
+    if (this.memoryRepository) {
       try {
-        const mems = this.memoryRepository.list({ limit: 50 }) || [];
+        const memRepo = this.memoryRepository as any;
+        const mems = typeof memRepo.list === 'function'
+          ? memRepo.list({ limit: 50 }) || []
+          : typeof memRepo.listEntries === 'function'
+          ? memRepo.listEntries({ limit: 50 }) || []
+          : [];
         if (examined === undefined) {
           examined = mems.length;
         }
@@ -269,10 +277,10 @@ export class OfflineCognitiveActivityEngine {
       }
     }
 
-    examined = examined ?? 12;
-    consolidated = consolidated ?? Math.max(1, Math.floor(examined * 0.75));
-    beliefs = beliefs ?? 3;
-    intentions = intentions ?? 5;
+    examined = examined ?? 0;
+    consolidated = consolidated ?? (examined > 0 ? Math.max(1, Math.floor(examined * 0.75)) : 0);
+    beliefs = beliefs ?? 0;
+    intentions = intentions ?? 0;
 
     const run: ConsolidationRun = {
       id: crypto.randomUUID(),

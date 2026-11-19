@@ -41,10 +41,12 @@ import {
   CognitiveControlBus,
   ContinuityManager,
   DEFAULT_ARLE_SYSTEM_PROMPT,
+  IBrowserProvider,
   ILogger,
   IntentTaskManager,
   MemoryExperienceSync,
   PlanningInterface,
+  PlaywrightBrowserProvider,
   rootLogger,
   SafeComputerAgencyService,
   VerificationEngine,
@@ -188,6 +190,7 @@ export class ArletexBackendServer {
   public readonly permissionController: ActionPermissionController;
   public readonly safeComputerAgency: SafeComputerAgencyService;
   public readonly webAgency: WebAgencyService;
+  public readonly browserProvider: IBrowserProvider;
   public readonly verificationEngine: VerificationEngine;
   public readonly planningInterface: PlanningInterface;
   public readonly memorySync: MemoryExperienceSync;
@@ -432,7 +435,8 @@ export class ArletexBackendServer {
     this.permissionController.setEthicalBoundariesEngine(this.apeService.ethicalBoundariesSecurityEngine);
     this.apeService.ethicalBoundariesSecurityEngine.setActionPermissionController(this.permissionController);
 
-    // Instantiate Autobiographical Memory Service and Closed-Loop Agency
+    // Instantiate Autobiographical Memory Service and Closed-Loop Agency with real providers
+    this.browserProvider = new PlaywrightBrowserProvider(true, logger);
     this.autobiographicalMemoryService = new AutobiographicalMemoryService(this.memoryRepo, logger);
     this.closedLoopAgency = new ClosedLoopAgencyService({
       agencyRepo: this.agencyRepo,
@@ -444,6 +448,8 @@ export class ArletexBackendServer {
       apeService: this.apeService,
       autobiographicalMemoryService: this.autobiographicalMemoryService,
       webAgency: this.webAgency,
+      browserProvider: this.browserProvider,
+      computerProvider: this.safeComputerAgency,
       logger,
     });
 
@@ -521,226 +527,18 @@ export class ArletexBackendServer {
     const plan = this.agencyRepo.getPlanByTask(taskId);
     if (!plan) throw new Error(`Plan for task ${taskId} not found`);
 
-    this.intentTaskManager.transitionTask(taskId, 'running');
-    const observations: any[] = [];
-    const verifications: any[] = [];
-    let allStepsSucceeded = true;
+    this.logger.info(`Executing agency task ${taskId} through canonical ClosedLoopAgencyService`);
+    const loopRes = await this.closedLoopAgency.executeClosedLoop(task.objective, task.initiator, { taskId });
 
-    for (let i = 0; i < plan.steps.length; i++) {
-      const step = plan.steps[i]!;
-      const action = step.action;
-
-      // 1. Authorization check against ActionPermissionController
-      const auth = this.permissionController.authorize(action);
-      if (!auth.allowed) {
-        this.logger.error(`Action ${action.id} denied: ${auth.denialReason}`);
-        const ver = {
-          actionId: action.id,
-          expectedOutcome: action.expectedOutcome,
-          observedOutcome: `Action denied by policy: ${auth.denialReason}`,
-          verified: false,
-          confidence: 1.0,
-          status: 'failed' as const,
-          failureReason: auth.denialReason || 'Unauthorized action proposal',
-          isRecoverable: false,
-          evidence: { denialReason: auth.denialReason },
-          timestamp: new Date().toISOString(),
-        };
-        this.agencyRepo.saveVerification(ver);
-        verifications.push(ver);
-        allStepsSucceeded = false;
-        break;
-      }
-
-      // 2. Execution layer
-      let obs: any = null;
-      const params = (action.payload || (action as any).parameters || {}) as Record<string, any>;
-      try {
-        if (action.type === 'web_select_video' || action.type === 'web_navigate' || action.type === 'navigate_browser') {
-          let targetUrl = (params['targetUrl'] || params['url']) as string;
-          let videoTitle = (params['videoTitle'] || params['title']) as string;
-
-          // If targetUrl is not yet bound, dynamically select the best candidate from Step 0 results
-          if (!targetUrl) {
-            const previousSearchObs = observations.find(
-              (o) => o.source === 'browser_page' && o.data?.candidates && o.data.candidates.length > 0,
-            );
-            if (previousSearchObs && previousSearchObs.data.candidates.length > 0) {
-              const candidates = previousSearchObs.data.candidates;
-              const decision = this.webAgency.evaluateAndSelectBestVideo(candidates, task.objective);
-              if (decision.selectedCandidate) {
-                targetUrl = decision.selectedCandidate.url;
-                videoTitle = decision.selectedCandidate.title;
-                this.logger.info(`Live candidate selection: "${videoTitle}" -> ${targetUrl}`);
-              } else {
-                this.logger.warn(`Candidate selection found no qualifying candidates: ${decision.rationale}`);
-              }
-            }
-          }
-
-          if (!targetUrl) {
-            targetUrl = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(task.objective);
-          }
-
-          // Physically launch Chrome Flatpak on Proof's desktop so he can see and hear it
-          await defaultDeviceAgency.openChromeBrowser(targetUrl);
-
-          // Use WebAgency (Playwright) to verify DOM elements and playback
-          let pageObs: any;
-          try {
-            pageObs = await this.webAgency.navigateToVideo(targetUrl);
-          } catch (navErr: any) {
-            this.logger.warn(`Playwright observation note: ${navErr.message}`);
-            pageObs = {
-              url: targetUrl,
-              title: videoTitle || 'Navigation Failed',
-              hasVideoElement: false,
-              isPlaying: false,
-              playbackError: navErr.message,
-            };
-          }
-
-          const hasVid = Boolean(pageObs?.hasVideoElement);
-          const isPlay = Boolean(pageObs?.isPlaying);
-
-          obs = {
-            id: crypto.randomUUID(),
-            taskId,
-            actionId: action.id,
-            source: 'browser_page',
-            timestamp: new Date().toISOString(),
-            success: hasVid && isPlay,
-            confidence: hasVid ? 0.95 : 0.0,
-            provenance: 'WebAgencyService.navigateToVideo + DeviceAgency.openChromeBrowser',
-            data: {
-              url: pageObs?.url || targetUrl,
-              currentUrl: pageObs?.url || targetUrl,
-              title: pageObs?.title || videoTitle || 'Loaded Webpage',
-              pageTitle: pageObs?.title || videoTitle || 'Loaded Webpage',
-              hasVideoElement: hasVid,
-              isPlaying: isPlay,
-            },
-            error: pageObs?.playbackError || (!hasVid ? 'No HTML5 video element discovered on target page' : null),
-          };
-        } else if (action.type === 'app_launch') {
-          const app = String(params['app'] || params['appName'] || 'steam');
-          let appRes: { success: boolean; message: string };
-          if (app.toLowerCase().includes('steam')) {
-            appRes = await defaultDeviceAgency.launchSteam(params['steamAppId'] as string);
-          } else if (app.toLowerCase().includes('chrome')) {
-            appRes = await defaultDeviceAgency.openChromeBrowser(params['url'] as string);
-          } else {
-            appRes = { success: false, message: `Unsupported application launch target: ${app}` };
-          }
-          obs = {
-            id: crypto.randomUUID(),
-            taskId,
-            actionId: action.id,
-            source: 'system_probe',
-            timestamp: new Date().toISOString(),
-            success: appRes.success,
-            confidence: 1.0,
-            provenance: 'DeviceAgencyService.app_launch',
-            data: { app, isRunning: appRes.success, message: appRes.message },
-            error: appRes.success ? null : appRes.message,
-          };
-        } else if (action.type === 'web_search') {
-          const query = (params['query'] || params['topicQuery'] || task.objective) as string;
-          const candidates = await this.webAgency.searchVideos(query);
-          obs = {
-            id: crypto.randomUUID(),
-            taskId,
-            actionId: action.id,
-            source: 'browser_page',
-            timestamp: new Date().toISOString(),
-            success: candidates.length > 0,
-            confidence: 0.95,
-            provenance: 'WebAgencyService.searchVideos',
-            data: { candidatesCount: candidates.length, candidates },
-            error: null,
-          };
-        } else if (action.type === 'execute_command') {
-          const command = params['command'] as string;
-          const args = (params['args'] as string[]) || [];
-          const cmdRes = await this.safeComputerAgency.executeCommand(command, args);
-          obs = {
-            id: crypto.randomUUID(),
-            taskId,
-            actionId: action.id,
-            source: 'system_probe',
-            timestamp: new Date().toISOString(),
-            success: cmdRes.exitCode === 0,
-            confidence: 1.0,
-            provenance: 'SafeComputerAgencyService.executeCommand',
-            data: { exitCode: cmdRes.exitCode, stdout: cmdRes.stdout, stderr: cmdRes.stderr },
-            error: cmdRes.exitCode !== 0 ? cmdRes.stderr : null,
-          };
-        } else if (action.type === 'capture_screen' || action.type === 'desktop_take_screenshot') {
-          const capture = await defaultDeviceAgency.captureScreen();
-          obs = {
-            id: crypto.randomUUID(),
-            taskId,
-            actionId: action.id,
-            source: 'screen_ocr',
-            timestamp: new Date().toISOString(),
-            success: !!capture.imageBase64,
-            confidence: 1.0,
-            provenance: 'DeviceAgencyService.captureScreen',
-            data: { width: capture.width, height: capture.height },
-            error: null,
-          };
-        }
-      } catch (execErr: any) {
-        obs = {
-          id: crypto.randomUUID(),
-          taskId,
-          actionId: action.id,
-          source: 'system_probe',
-          timestamp: new Date().toISOString(),
-          success: false,
-          confidence: 1.0,
-          provenance: 'ExecutionError',
-          data: {},
-          error: execErr.message || String(execErr),
-        };
-      }
-
-      if (obs) {
-        this.agencyRepo.saveObservation(obs);
-        observations.push(obs);
-      }
-
-      // 3. Verification Engine comparison
-      const ver = this.verificationEngine.verify(action, obs);
-      this.agencyRepo.saveVerification(ver);
-      verifications.push(ver);
-
-      if (!ver.verified) {
-        allStepsSucceeded = false;
-        this.intentTaskManager.handleFailure(taskId, ver.failureReason || 'Verification failed');
-        break;
-      }
-
-      this.intentTaskManager.advanceStep(taskId);
-    }
-
-    const finalStatus = allStepsSucceeded ? 'completed' : 'failed';
-    const finalTask = this.intentTaskManager.transitionTask(taskId, finalStatus);
-
-    // 4. Memory Experience Sync
-    try {
-      await this.memorySync.distillExperience(finalTask, plan, observations, verifications);
-    } catch (memErr: any) {
-      this.logger.warn(`Experience sync note: ${memErr.message}`);
-    }
-
+    const updatedTask = this.intentTaskManager.getTask(loopRes.taskId) || task;
     return {
-      task: finalTask,
-      plan,
-      observations,
-      verifications,
-      allStepsSucceeded,
-      success: allStepsSucceeded,
+      task: updatedTask,
+      plan: loopRes.plan || plan,
+      observations: loopRes.observations,
+      verifications: loopRes.verifications,
+      allStepsSucceeded: loopRes.success,
+      success: loopRes.success,
+      failureReason: loopRes.success ? undefined : 'Execution or verification failed in closed loop',
     };
   }
 
@@ -757,6 +555,12 @@ export class ArletexBackendServer {
   }
 
   public async start(desiredPort = 0): Promise<number> {
+    if (!this.authToken && (process.env['NODE_ENV'] !== 'test' || process.env['ARLETEX_ENFORCE_AUTH'] === '1')) {
+      throw new Error(
+        'Fatal Security Exception: ARLETEX_AUTH_TOKEN must be specified to start backend server fail-closed.',
+      );
+    }
+
     // Initialize persistent individual continuity lifecycle BEFORE accepting requests,
     // ensuring integrity verification and crash recovery complete prior to traffic.
     try {
@@ -2699,17 +2503,19 @@ Rules:
     const url = new URL(req.url || '/', `http://127.0.0.1:${this.port}`);
     const method = req.method?.toUpperCase();
 
-    // Restrict CORS: only allow local origins, forbid wildcards
+    // Restrict CORS: only allow local origins, forbid wildcards and drive-by web origins
     const origin = req.headers.origin;
     if (origin) {
-      if (
+      const isLocalOrigin =
         origin.startsWith('http://127.0.0.1:') ||
         origin.startsWith('http://localhost:') ||
         origin.startsWith('app://') ||
-        origin.startsWith('file://')
-      ) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
+        origin.startsWith('file://');
+      if (!isLocalOrigin) {
+        this.sendJson(res, 403, { error: 'Forbidden: untrusted cross-origin request rejected' });
+        return;
       }
+      res.setHeader('Access-Control-Allow-Origin', origin);
     } else {
       res.setHeader('Access-Control-Allow-Origin', `http://127.0.0.1:${this.port}`);
     }
@@ -2723,11 +2529,16 @@ Rules:
     }
 
     try {
-      // Loopback Security / Token check for API routes
-      if (this.authToken && url.pathname.startsWith('/api/')) {
-        const authHeader = req.headers['x-arletex-auth'];
-        if (authHeader !== this.authToken) {
-          this.sendJson(res, 401, { error: 'Unauthorized: missing or invalid x-arletex-auth token' });
+      // Loopback Security / Token check for API routes (fail-closed)
+      if (url.pathname.startsWith('/api/')) {
+        if (this.authToken) {
+          const authHeader = req.headers['x-arletex-auth'];
+          if (authHeader !== this.authToken) {
+            this.sendJson(res, 401, { error: 'Unauthorized: missing or invalid x-arletex-auth token' });
+            return;
+          }
+        } else if (process.env['NODE_ENV'] !== 'test' || process.env['ARLETEX_ENFORCE_AUTH'] === '1') {
+          this.sendJson(res, 401, { error: 'Unauthorized: backend auth token required' });
           return;
         }
       }
@@ -3313,7 +3124,11 @@ Rules:
           return;
         }
         const sent = await (this.telegramBridge || defaultTelegramBridge).sendMessage(targetChatId, body.text);
-        this.sendJson(res, 200, { success: sent });
+        if (!sent) {
+          this.sendJson(res, 403, { success: false, error: 'Telegram destination not authorized or failed delivery' });
+          return;
+        }
+        this.sendJson(res, 200, { success: true });
         return;
       }
 

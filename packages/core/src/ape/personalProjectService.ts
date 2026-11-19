@@ -110,12 +110,16 @@ export class PersonalProjectService {
       throw new Error(`Personal project with id ${projectId} not found`);
     }
 
+    if (!evidence || typeof evidence !== 'string' || evidence.trim().length < 5) {
+      throw new Error(`Milestone progress requires substantive empirical evidence (at least 5 characters). Received: "${evidence}"`);
+    }
+
     const milestones = project.milestones.map((m) => {
       if (m.id === milestoneId) {
         return {
           ...m,
           completed: true,
-          evidence,
+          evidence: evidence.trim(),
           completedAt: new Date().toISOString(),
         };
       }
@@ -123,7 +127,7 @@ export class PersonalProjectService {
     });
 
     const completedCount = milestones.filter((m) => m.completed).length;
-    const progress = milestones.length > 0 ? Number((completedCount / milestones.length).toFixed(3)) : 1.0;
+    const progress = milestones.length > 0 ? Number((completedCount / milestones.length).toFixed(3)) : 0.0;
     const status: ApeProjectStatus = progress >= 1.0 ? 'completed' : project.status;
 
     const updated = this.repo.updatePersonalProject({
@@ -150,17 +154,24 @@ export class PersonalProjectService {
       throw new Error(`Personal project with id ${projectId} not found`);
     }
 
+    if (!deliverable.title || !deliverable.contentOrPath || deliverable.title.trim().length < 3) {
+      throw new Error('Deliverable requires a valid non-empty title and content or path.');
+    }
+
     const newDeliverable: ApeProjectDeliverable = {
       id: crypto.randomUUID(),
-      title: deliverable.title,
+      title: deliverable.title.trim(),
       type: deliverable.type,
-      contentOrPath: deliverable.contentOrPath,
+      contentOrPath: deliverable.contentOrPath.trim(),
       verifiedAt: new Date().toISOString(),
     };
 
     const deliverables = [...project.deliverables, newDeliverable];
-    // Deliverables contribute to tangible outcome progress
-    const progress = Math.min(1.0, Number((project.progress + 0.25).toFixed(3)));
+    // Calculate progress grounded in completed milestones and deliverables
+    const completedMilestones = project.milestones.filter((m) => m.completed).length;
+    const milestoneRatio = project.milestones.length > 0 ? completedMilestones / project.milestones.length : 0.0;
+    const deliverableContribution = Math.min(0.3, deliverables.length * 0.15);
+    const progress = Math.min(1.0, Number((milestoneRatio * 0.7 + deliverableContribution).toFixed(3)));
     const status: ApeProjectStatus = progress >= 1.0 ? 'completed' : project.status;
 
     const updated = this.repo.updatePersonalProject({
@@ -224,6 +235,11 @@ export class PersonalProjectService {
     const project = this.repo.getPersonalProjectById(projectId);
     if (!project) {
       throw new Error(`Personal project with id ${projectId} not found`);
+    }
+
+    if (project.milestones.length > 0 && project.milestones.some((m) => !m.completed)) {
+      const remaining = project.milestones.filter((m) => !m.completed).map((m) => m.title).join(', ');
+      throw new Error(`Cannot complete project "${project.title}": incomplete milestones remain: [${remaining}]`);
     }
 
     const updated = this.repo.updatePersonalProject({

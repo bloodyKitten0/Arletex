@@ -26,6 +26,7 @@ export interface GlobalCognitiveEngineOptions {
   predictiveEngine?: PredictiveCognitionEngine;
   simulationEngine?: SimulationEngine;
   metacognitionEngine?: MetacognitionEngine;
+  memoryRepository?: any;
   logger?: ILogger;
 }
 
@@ -83,6 +84,7 @@ export class GlobalCognitiveIntegrationEngine {
   private readonly predictiveEngine?: PredictiveCognitionEngine;
   private readonly simulationEngine?: SimulationEngine;
   private readonly metacognitionEngine?: MetacognitionEngine;
+  private readonly memoryRepo?: any;
 
   constructor(options: GlobalCognitiveEngineOptions) {
     this.repo = options.repository;
@@ -95,6 +97,7 @@ export class GlobalCognitiveIntegrationEngine {
     this.predictiveEngine = options.predictiveEngine;
     this.simulationEngine = options.simulationEngine;
     this.metacognitionEngine = options.metacognitionEngine;
+    this.memoryRepo = options.memoryRepository;
   }
 
   // ==========================================
@@ -287,7 +290,7 @@ export class GlobalCognitiveIntegrationEngine {
     const activeContradictionCount = contradictions.length;
 
     const currentFocus = this.attentionEngine?.getActiveFocus();
-    const focusTopic = currentFocus?.title || 'Master Autonomous Roadmap Execution';
+    const focusTopic = currentFocus?.title || (this.attentionEngine ? 'Focal Task Execution' : 'Master Autonomous Roadmap Execution');
     const salienceScore = currentFocus?.allocatedFocusPercent ?? 0.95;
 
     const motState = this.motivationalEngine?.getState();
@@ -296,7 +299,7 @@ export class GlobalCognitiveIntegrationEngine {
       title: p.title || p.id,
       priority: p.priority ?? 0.8,
     }));
-    if (activeGoals.length === 0) {
+    if (activeGoals.length === 0 && !this.motivationalEngine) {
       activeGoals.push({
         id: 'goal_milestones_completion',
         title: 'Implement and verify remaining cognitive milestones sequentially',
@@ -307,6 +310,14 @@ export class GlobalCognitiveIntegrationEngine {
     const selfModel = this.selfModelEngine?.getState();
     const activeAssessments = this.metacognitionEngine?.listAssessments({ limit: 1 }) || [];
     const calibratedConfidence = activeAssessments[0]?.calibratedConfidence ?? 0.94;
+
+    const workingMemoryActiveCount = this.memoryRepo
+      ? (typeof this.memoryRepo.count === 'function'
+          ? this.memoryRepo.count()
+          : typeof this.memoryRepo.list === 'function'
+          ? this.memoryRepo.list().length
+          : 0)
+      : (motState ? 0 : 7);
 
     const snapshot: GlobalCognitiveSnapshot = {
       snapshotId: crypto.randomUUID(),
@@ -325,7 +336,7 @@ export class GlobalCognitiveIntegrationEngine {
         trustScore,
         intimacyScore,
       },
-      workingMemoryActiveCount: 7,
+      workingMemoryActiveCount,
       metacognitiveStatus: {
         calibratedConfidence,
         activeContradictionCount,

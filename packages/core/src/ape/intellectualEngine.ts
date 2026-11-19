@@ -112,6 +112,14 @@ export class IntellectualEngine {
       `comparative review ${q.domain}`,
     ];
 
+    // Derive hypothesis-specific search queries
+    if (q.competingHypotheses && q.competingHypotheses.length > 0) {
+      for (const h of q.competingHypotheses) {
+        searchQueries.push(`${q.domain} "${h.statement}" evidence`);
+        searchQueries.push(`counter-evidence "${h.statement}" ${q.domain}`);
+      }
+    }
+
     return {
       questionId,
       searchQueries,
@@ -138,12 +146,11 @@ export class IntellectualEngine {
       throw new Error(`Intellectual question with id ${questionId} not found`);
     }
 
-    // Critical evaluation safeguard: snippet-only secondary sources receive lower reliability
+    // Critical evaluation safeguard: snippet-only secondary sources receive capped reliability;
+    // primary/empirical sources are bounded honestly by actual attributes without arbitrary score inflation.
     const effectiveReliability = source.sourceType === 'snippet'
       ? Math.min(source.reliabilityScore, 0.4)
-      : source.sourceType === 'primary' || source.sourceType === 'empirical'
-      ? Math.max(source.reliabilityScore, 0.85)
-      : source.reliabilityScore;
+      : Math.max(0.1, Math.min(1.0, source.reliabilityScore));
 
     const hypotheses = q.competingHypotheses.map((h, idx) => {
       const relatedFindings = findings.filter((f) => f.hypothesisIndex === idx);

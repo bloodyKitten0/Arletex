@@ -641,6 +641,14 @@ export class TelegramBridgeService {
       return false;
     }
 
+    // Fail-closed outbound restriction (P0.3): Restrict outbound messages to allowlisted chats only
+    if (!this.isChatAuthorized(chatId)) {
+      this.logger.error(
+        `Outbound Telegram denied fail-closed: Chat ID "${chatId}" is not in the configured allowlist.`
+      );
+      return false;
+    }
+
     try {
       const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`;
       const res = await fetch(url, {

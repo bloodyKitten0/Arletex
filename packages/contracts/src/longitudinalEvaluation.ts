@@ -25,6 +25,8 @@ export const EvaluationStatusSchema = z.enum([
   'passed',
   'warning',
   'failed',
+  'insufficient_evidence',
+  'not_evaluated',
 ]);
 export type EvaluationStatus = z.infer<typeof EvaluationStatusSchema>;
 

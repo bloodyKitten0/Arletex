@@ -106,6 +106,13 @@ export const CognitiveCycleResultSchema = z.object({
   memoriesCommitted: z.array(z.string()).default([]),
   reflectionRecorded: z.string().optional(),
   developmentMilestoneRecorded: z.string().optional(),
+  // Explicit Outcome Model (P0.1)
+  pipelineCompleted: z.boolean().default(true),
+  actionAttempted: z.boolean().default(false),
+  actionExecuted: z.boolean().default(false),
+  outcomeObserved: z.boolean().default(false),
+  outcomeVerified: z.boolean().default(false),
+  taskSucceeded: z.boolean().default(false),
   success: z.boolean().default(true),
   error: z.string().optional(),
 });

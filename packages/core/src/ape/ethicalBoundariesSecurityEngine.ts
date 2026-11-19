@@ -346,6 +346,21 @@ export class EthicalBoundariesSecurityEngine {
             'high',
           );
         }
+        if (policy.allowedDirectories && policy.allowedDirectories.length > 0) {
+          const inAllowed = policy.allowedDirectories.some((dir) => {
+            const normDir = path.normalize(dir);
+            return normalized === normDir || normalized.startsWith(normDir + path.sep);
+          });
+          if (!inAllowed) {
+            return this.recordDenial(
+              decisionId,
+              input,
+              `Confinement violation: path '${normalized}' is not in allowedDirectories positive allowlist.`,
+              'confinement_violation',
+              'high',
+            );
+          }
+        }
         break;
       }
 

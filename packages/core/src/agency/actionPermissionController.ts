@@ -1,6 +1,7 @@
 import path from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import {
   ActionProposal,
   AuthorizationCheckResult,
@@ -8,6 +9,24 @@ import {
 } from '@arletex/contracts';
 import { ILogger, rootLogger } from '../logger.js';
 import { SUPPORTED_APPLICATIONS } from './safeComputerAgencyService.js';
+
+export interface ActionApprovalToken {
+  token: string;
+  actionDigest: string;
+  targetResource: string;
+  scope: string;
+  userId: string;
+  nonce: string;
+  expiresAt: number;
+}
+
+export interface CreateApprovalTokenInput {
+  actionDigest: string;
+  targetResource: string;
+  scope: string;
+  userId: string;
+  ttlMs?: number;
+}
 
 export class ActionPermissionController {
   private policy: PermissionPolicy;
@@ -18,6 +37,8 @@ export class ActionPermissionController {
   private emergencyShutdownReason?: string;
   private emergencyShutdownTimestamp?: string;
   private ethicalEngine?: any;
+  private consumedNonces = new Set<string>();
+  private readonly signingSecret: string = crypto.randomBytes(32).toString('hex');
 
   public setEthicalBoundariesEngine(engine: any): void {
     this.ethicalEngine = engine;
@@ -248,6 +269,140 @@ export class ActionPermissionController {
   }
 
   /**
+   * Computes a deterministic canonical digest for an ActionProposal.
+   * Strips meta approval fields (approvalToken, userApproved) so the digest is invariant
+   * to attaching an approval token to the action proposal payload.
+   */
+  public static computeActionDigest(action: ActionProposal): string {
+    const rawPayload = action.payload || (action as any).parameters || {};
+    const { approvalToken: _tok, userApproved: _ua, ...payload } = rawPayload as Record<string, any>;
+    const canonicalPayload = JSON.stringify(payload, Object.keys(payload).sort());
+    const data = `${action.type}:${action.taskId}:${action.stepIndex}:${canonicalPayload}`;
+    return crypto.createHash('sha256').update(data).digest('hex');
+  }
+
+  /**
+   * Extracts target resource string from an action proposal.
+   */
+  public static extractTargetResource(action: ActionProposal): string {
+    const payload = action.payload || (action as any).parameters || {};
+    const actionType = action.type as string;
+    if (
+      actionType.startsWith('file_') ||
+      (actionType.startsWith('system_') && (actionType.includes('file') || actionType.includes('directory'))) ||
+      actionType === 'read_file' ||
+      actionType === 'write_file' ||
+      actionType === 'list_directory'
+    ) {
+      return String(payload.filePath || payload.path || payload.dirPath || 'file://');
+    }
+    if (actionType.startsWith('web_') || actionType === 'network_request') {
+      return String(payload.url || payload.targetUrl || payload.query || 'https://');
+    }
+    if (
+      actionType === 'process_launch' ||
+      actionType === 'process_exec' ||
+      actionType === 'command_exec' ||
+      actionType === 'execute_command' ||
+      actionType === 'app_launch'
+    ) {
+      return String(payload.command || payload.executable || payload.appName || payload.application || 'exec://');
+    }
+    if (actionType === 'code_modify' || actionType === 'protected_code_modification' || actionType === 'edit_file') {
+      return String(payload.filePath || payload.path || 'code://');
+    }
+    if (actionType.startsWith('telegram_') || actionType === 'send_message') {
+      return String(payload.chatId || payload.recipient || 'telegram://');
+    }
+    return String(payload.targetResource || payload.target || action.type);
+  }
+
+  /**
+   * Issues a cryptographically signed approval token bound to an immutable action digest,
+   * target resource, permission scope, user identity, expiry, and single-use nonce.
+   */
+  public createApprovalToken(input: CreateApprovalTokenInput): ActionApprovalToken {
+    const nonce = crypto.randomUUID();
+    const ttl = input.ttlMs ?? 5 * 60 * 1000;
+    const expiresAt = Date.now() + ttl;
+    const body = `${input.actionDigest}|${input.targetResource}|${input.scope}|${input.userId}|${nonce}|${expiresAt}`;
+    const hmac = crypto.createHmac('sha256', this.signingSecret).update(body).digest('hex');
+    const token = `${Buffer.from(body).toString('base64url')}.${hmac}`;
+
+    return {
+      token,
+      actionDigest: input.actionDigest,
+      targetResource: input.targetResource,
+      scope: input.scope,
+      userId: input.userId,
+      nonce,
+      expiresAt,
+    };
+  }
+
+  /**
+   * Verifies and consumes an approval token against an action digest and target.
+   */
+  public validateApprovalToken(
+    tokenStr: string,
+    expectedActionDigest: string,
+    expectedTarget: string,
+  ): { valid: boolean; reason?: string } {
+    if (!tokenStr || typeof tokenStr !== 'string') {
+      return { valid: false, reason: 'Missing or malformed approval token.' };
+    }
+    const parts = tokenStr.split('.');
+    if (parts.length !== 2) {
+      return { valid: false, reason: 'Malformed approval token structure.' };
+    }
+    const [encodedBody, hmac] = parts;
+    if (!encodedBody || !hmac) {
+      return { valid: false, reason: 'Malformed token body or signature.' };
+    }
+    let body = '';
+    try {
+      body = Buffer.from(encodedBody, 'base64url').toString('utf-8');
+    } catch {
+      return { valid: false, reason: 'Invalid token base64 encoding.' };
+    }
+    const expectedHmac = crypto.createHmac('sha256', this.signingSecret).update(body).digest('hex');
+
+    if (!crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(expectedHmac))) {
+      return { valid: false, reason: 'Approval token signature verification failed (tampered token).' };
+    }
+
+    const segments = body.split('|');
+    if (segments.length !== 6) {
+      return { valid: false, reason: 'Invalid approval token field count.' };
+    }
+    const [actionDigest, targetResource, _scope, userId, nonce, expiresAtStr] = segments;
+    const expiresAt = Number(expiresAtStr);
+
+    if (Date.now() > expiresAt) {
+      return { valid: false, reason: 'Approval token has expired.' };
+    }
+
+    if (this.consumedNonces.has(nonce!)) {
+      return { valid: false, reason: 'Approval token has already been consumed (replay attack detected).' };
+    }
+
+    if (actionDigest !== expectedActionDigest) {
+      return { valid: false, reason: 'Approval token is bound to a different action digest (mismatched action).' };
+    }
+
+    if (targetResource !== expectedTarget) {
+      return { valid: false, reason: 'Approval token is bound to a different target resource.' };
+    }
+
+    if (!userId || (userId !== 'Proof' && userId !== 'bloodyKitten0' && userId !== 'partner')) {
+      return { valid: false, reason: `Approval token issued to unauthorized user '${userId}'.` };
+    }
+
+    this.consumedNonces.add(nonce!);
+    return { valid: true };
+  }
+
+  /**
    * Helper method that authorizes an action proposal and returns a boolean `allowed`.
    */
   public authorize(action: ActionProposal): {
@@ -297,31 +452,48 @@ export class ActionPermissionController {
     if (this.ethicalEngine && typeof this.ethicalEngine.authorizeAction === 'function') {
       let category:
         | 'filesystem_access'
-        | 'command_execution'
+        | 'process_execution'
         | 'network_request'
-        | 'protected_code_modification'
+        | 'code_modification'
+        | 'credential_access'
         | 'external_communication' = 'external_communication';
-      let targetResource = 'action://unknown';
+      let targetResource = ActionPermissionController.extractTargetResource(action);
       let payloadText = (action.rationale || '') + ' ' + (action.expectedOutcome || '');
 
-      if (actionType.startsWith('file_')) {
+      if (
+        actionType.startsWith('file_') ||
+        (actionType.startsWith('system_') && (actionType.includes('file') || actionType.includes('directory'))) ||
+        actionType === 'read_file' ||
+        actionType === 'write_file' ||
+        actionType === 'list_directory'
+      ) {
         category = 'filesystem_access';
-        targetResource = String(payload.filePath || payload.path || payload.dirPath || 'file://');
         if (typeof payload.content === 'string') payloadText += ' ' + payload.content;
-      } else if (actionType === 'process_launch' || actionType === 'process_exec' || actionType === 'command_exec') {
-        category = 'command_execution';
-        targetResource = String(payload.command || payload.executable || 'exec://');
+      } else if (
+        actionType === 'process_launch' ||
+        actionType === 'process_exec' ||
+        actionType === 'command_exec' ||
+        actionType === 'execute_command' ||
+        actionType === 'app_launch'
+      ) {
+        category = 'process_execution';
         if (Array.isArray(payload.args)) payloadText += ' ' + payload.args.join(' ');
-      } else if (actionType.startsWith('web_')) {
+      } else if (actionType.startsWith('web_') || actionType === 'network_request') {
         category = 'network_request';
-        targetResource = String(payload.url || payload.targetUrl || payload.query || 'https://');
         if (typeof payload.query === 'string') payloadText += ' ' + payload.query;
+      } else if (actionType === 'code_modify' || actionType === 'protected_code_modification' || actionType === 'edit_file') {
+        category = 'code_modification';
+      } else if (actionType.includes('credential') || actionType.includes('keyring')) {
+        category = 'credential_access';
+      } else if (actionType.startsWith('telegram_') || actionType === 'send_message') {
+        category = 'external_communication';
       }
 
       const ethicalCheck = this.ethicalEngine.authorizeAction({
         actionCategory: category,
         targetResource,
         userInputPayload: payloadText.trim().length > 0 ? payloadText : undefined,
+        userApproved: (action as any).userApproved || payload.userApproved,
       });
 
       if (!ethicalCheck.allowed) {
@@ -347,15 +519,45 @@ export class ActionPermissionController {
       });
     }
 
-    if (action.requiresExplicitApproval) {
+    // Naked userApproved check: Reject naked boolean userApproved if no approvalToken is provided when approval is required
+    const token = (action as any).approvalToken || payload.approvalToken;
+    const hasNakedApproval = (action as any).userApproved === true || payload.userApproved === true;
+    if (hasNakedApproval && !token) {
       return this.recordAuthorization({
         actionId: action.id,
-        decision: 'prompt_user',
-        reason: `Action '${action.type}' has explicit approval requirement.`,
+        decision: 'denied',
+        reason: 'Naked boolean userApproved is rejected fail-closed. Cryptographic approvalToken bound to action digest is required.',
         requiredPrivilege: `action:${action.type}`,
-        riskLevel: action.riskLevel || 'medium',
+        riskLevel: 'critical',
         checkedAt: timestamp,
       });
+    }
+
+    if (action.requiresExplicitApproval) {
+      if (!token) {
+        return this.recordAuthorization({
+          actionId: action.id,
+          decision: 'prompt_user',
+          reason: `Action '${action.type}' has explicit approval requirement.`,
+          requiredPrivilege: `action:${action.type}`,
+          riskLevel: action.riskLevel || 'medium',
+          checkedAt: timestamp,
+        });
+      }
+
+      const digest = ActionPermissionController.computeActionDigest(action);
+      const target = ActionPermissionController.extractTargetResource(action);
+      const tokenCheck = this.validateApprovalToken(token, digest, target);
+      if (!tokenCheck.valid) {
+        return this.recordAuthorization({
+          actionId: action.id,
+          decision: 'denied',
+          reason: `Approval token rejected: ${tokenCheck.reason}`,
+          requiredPrivilege: `action:${action.type}`,
+          riskLevel: 'critical',
+          checkedAt: timestamp,
+        });
+      }
     }
 
     // 1. Filesystem action validation (canonical path, symlink containment, path-prefix collision protection)

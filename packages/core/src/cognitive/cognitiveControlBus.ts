@@ -106,6 +106,12 @@ export class CognitiveControlBus {
         idempotencyKey,
         wasDeduplicated: false,
         stagesCompleted: [],
+        pipelineCompleted: false,
+        actionAttempted: false,
+        actionExecuted: false,
+        outcomeObserved: false,
+        outcomeVerified: false,
+        taskSucceeded: false,
         success: false,
         error: errMsg,
         memoriesCommitted: [],
@@ -136,6 +142,12 @@ export class CognitiveControlBus {
         idempotencyKey,
         wasDeduplicated: false,
         stagesCompleted,
+        pipelineCompleted: false,
+        actionAttempted: false,
+        actionExecuted: false,
+        outcomeObserved: false,
+        outcomeVerified: false,
+        taskSucceeded: false,
         success: false,
         error: errMsg,
         memoriesCommitted: [],
@@ -237,37 +249,56 @@ export class CognitiveControlBus {
       stagesCompleted.push('permission_assessment');
       let isAuthorized = true;
       let permissionReason = 'No special permission required for internal decision';
-      const proposal = this.buildActionProposal(decision);
+      const proposal = this.buildActionProposal(decision, event);
 
-      if (decision.permissionRequired && this.permissionController && proposal) {
-        const check = this.permissionController.evaluate(proposal);
-        isAuthorized = check.decision === 'granted';
-        permissionReason = check.reason;
-        if (!isAuthorized) {
-          this.logger.warn(`Decision ${decision.id} denied by permission controller: ${permissionReason}`);
+      if (decision.permissionRequired) {
+        if (!this.permissionController) {
+          isAuthorized = false;
+          permissionReason = 'Permission controller not configured; action denied fail-closed';
+          this.logger.warn(`Decision ${decision.id} denied: no permission controller configured`);
+        } else if (!proposal) {
+          isAuthorized = false;
+          permissionReason = 'Action proposal missing for permission evaluation; denied fail-closed';
+          this.logger.warn(`Decision ${decision.id} denied: missing action proposal`);
+        } else {
+          const check = this.permissionController.evaluate(proposal);
+          isAuthorized = check.decision === 'granted';
+          permissionReason = check.reason;
+          if (!isAuthorized) {
+            this.logger.warn(`Decision ${decision.id} denied by permission controller: ${permissionReason}`);
+          }
         }
       }
 
       // Stage 11: Action Execution
       stagesCompleted.push('action_execution');
       let actionOutcomeSuccess = isAuthorized;
+      let actionExecuted = false;
+      let outcomeObserved = false;
+      let outcomeVerified = false;
       let verifiedFact: string | undefined;
 
       if (!isAuthorized) {
         actionOutcomeSuccess = false;
-      } else if (this.closedLoopAgency && (decision.actionType === 'execute_agency_task' || decision.actionType === 'research')) {
+      } else if (proposal && this.closedLoopAgency && (decision.actionType === 'execute_agency_task' || decision.actionType === 'research')) {
+        actionExecuted = true;
         const agencyObjective = (event.payload?.objective as string) || (event.payload?.topic as string) || decision.chosenAlternativeReason;
         const loopRes = await this.closedLoopAgency.executeClosedLoop(agencyObjective, 'arle', {
           eventId: event.id,
           decisionId: decision.id,
         });
         actionOutcomeSuccess = loopRes.success;
+        outcomeObserved = loopRes.observations.length > 0;
         if (loopRes.verifications.length > 0) {
           const lastVer = loopRes.verifications[loopRes.verifications.length - 1];
-          if (lastVer) {
+          if (lastVer && lastVer.verified) {
             verifiedFact = lastVer.observedOutcome;
+            outcomeVerified = true;
           }
         }
+      } else if (!proposal) {
+        actionExecuted = true;
+        actionOutcomeSuccess = true;
       }
 
       // Stage 12: Outcome Verification (Empirical Evidence Verification - No Synthetic Observations)
@@ -275,29 +306,39 @@ export class CognitiveControlBus {
       if (proposal) {
         if (!isAuthorized) {
           actionOutcomeSuccess = false;
+          outcomeVerified = false;
           verifiedFact = undefined;
-        } else if (!verifiedFact) {
+        } else if (!outcomeVerified || !verifiedFact) {
           // An external agency or research action proposal requires empirical verification
-          // If no empirical observation was produced, verification fails closed
+          // If no empirical observation verified the outcome, verification fails closed
           actionOutcomeSuccess = false;
+          outcomeVerified = false;
           verifiedFact = undefined;
           this.logger.warn(
             `Action proposal ${proposal.id} for decision ${decision.id} completed without empirical observation; verification failed closed.`,
           );
         }
-      } else if (isAuthorized && !verifiedFact) {
-        // Internal cognitive or expressive action (speak, reflect, rest)
-        verifiedFact = decision.chosenAlternativeReason;
       }
+      // Note: If no external action proposal (internal cognitive/expressive action), verifiedFact remains undefined!
 
       // Stage 13: Memory Integration (Truthful Epistemic Provenance)
       stagesCompleted.push('memory_integration');
       const memContent = this.formatMemoryContent(event, decision, actionOutcomeSuccess, verifiedFact);
 
       if (this.autobiographicalMemoryService) {
-        const autoProvenance: MemoryProvenance = actionOutcomeSuccess
-          ? (verifiedFact ? 'verified_fact' : 'interaction')
-          : 'inferred_interpretation';
+        let autoProvenance: MemoryProvenance;
+        if (proposal) {
+          autoProvenance = outcomeVerified && actionOutcomeSuccess
+            ? 'verified_fact'
+            : (actionExecuted ? 'digital_agency' : 'inferred_interpretation');
+        } else if (event.source === 'user' || event.source === 'telegram') {
+          autoProvenance = 'user_statement';
+        } else if (decision.actionType === 'speak') {
+          autoProvenance = 'interaction';
+        } else {
+          autoProvenance = 'autobiographical_experience';
+        }
+
         const mem = this.autobiographicalMemoryService.recordExperience({
           type: 'autobiographical',
           content: memContent,
@@ -311,18 +352,35 @@ export class CognitiveControlBus {
             decisionId: decision.id,
             actionOutcomeSuccess,
             permissionReason,
+            pipelineCompleted: true,
+            actionAttempted: Boolean(proposal),
+            actionExecuted,
+            outcomeObserved,
+            outcomeVerified,
+            taskSucceeded: proposal ? actionOutcomeSuccess : true,
           },
         });
         if (mem && mem.id) {
           memoriesCommitted.push(mem.id);
         }
       } else if (this.memorySink) {
+        let sinkProvenance: MemoryProvenance;
+        if (proposal) {
+          sinkProvenance = outcomeVerified && actionOutcomeSuccess ? 'verified_fact' : 'raw_observation';
+        } else if (actionOutcomeSuccess) {
+          sinkProvenance = 'verified_fact';
+        } else if (event.source === 'user' || event.source === 'telegram') {
+          sinkProvenance = 'user_statement';
+        } else {
+          sinkProvenance = 'raw_observation';
+        }
+
         const mem = await this.memorySink.create?.({
           type: 'episodic',
           content: memContent,
           importance: appraisal.dimensions.personalSignificance || 0.6,
           confidence: actionOutcomeSuccess ? 0.95 : 0.8,
-          provenance: actionOutcomeSuccess ? 'verified_fact' : 'raw_observation',
+          provenance: sinkProvenance,
           tags: ['cognitive_bus', event.type, decision.actionType, actionOutcomeSuccess ? 'success' : 'failure'],
           metadata: {
             eventId: event.id,
@@ -380,6 +438,7 @@ export class CognitiveControlBus {
       event.processedStages = [...stagesCompleted];
 
       const currentAffectiveState = this.apeService.getState();
+      const taskSucceeded = proposal ? actionOutcomeSuccess : true;
       const result: CognitiveCycleResult = {
         eventId: event.id,
         idempotencyKey,
@@ -392,6 +451,13 @@ export class CognitiveControlBus {
         memoriesCommitted,
         reflectionRecorded: reflectionText,
         developmentMilestoneRecorded: milestoneId,
+        // Explicit Outcome Model (P0.1)
+        pipelineCompleted: true,
+        actionAttempted: Boolean(proposal),
+        actionExecuted,
+        outcomeObserved,
+        outcomeVerified,
+        taskSucceeded,
         success: true,
       };
 
@@ -417,6 +483,12 @@ export class CognitiveControlBus {
         idempotencyKey,
         wasDeduplicated: false,
         stagesCompleted,
+        pipelineCompleted: false,
+        actionAttempted: false,
+        actionExecuted: false,
+        outcomeObserved: false,
+        outcomeVerified: false,
+        taskSucceeded: false,
         success: false,
         error: err.message,
         memoriesCommitted,
@@ -510,6 +582,26 @@ export class CognitiveControlBus {
 
     const rejectedAlternatives: Array<{ actionType: string; reason: string }> = [];
 
+    // Explicit agency action proposal takes precedence
+    if (event.payload?.actionProposal) {
+      const prop = event.payload.actionProposal as ActionProposal;
+      rejectedAlternatives.push({ actionType: 'speak', reason: 'Explicit agency action requested; prioritization over plain conversational response' });
+      rejectedAlternatives.push({ actionType: 'rest', reason: 'Active agency task must be processed and authorized' });
+      return CognitiveDecisionSchema.parse({
+        id,
+        eventId: event.id,
+        actionType: 'execute_agency_task',
+        target: prop.type,
+        chosenAlternativeReason: `Execute proposed agency task: ${prop.type}`,
+        rejectedAlternatives,
+        confidence: 0.95,
+        riskAssessment: (prop.riskLevel === 'critical' || prop.riskLevel === 'high') ? 'high' : 'moderate',
+        permissionRequired: true,
+        resourceEstimate: { cpu: 'medium', gpu: false, timeoutMs: 15000 },
+        timestamp,
+      });
+    }
+
     // Conversational stimulus requires speech
     if (event.type === 'user_message' || event.type === 'telegram_message') {
       rejectedAlternatives.push({ actionType: 'rest', reason: 'User communicated directly; active social engagement required' });
@@ -592,7 +684,10 @@ export class CognitiveControlBus {
     });
   }
 
-  private buildActionProposal(decision: CognitiveDecision): ActionProposal | null {
+  private buildActionProposal(decision: CognitiveDecision, event?: CognitiveEvent): ActionProposal | null {
+    if (event?.payload?.actionProposal) {
+      return event.payload.actionProposal as ActionProposal;
+    }
     if (decision.actionType !== 'execute_agency_task' && decision.actionType !== 'research') {
       return null;
     }

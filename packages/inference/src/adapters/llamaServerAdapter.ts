@@ -100,7 +100,7 @@ export class LlamaServerAdapter implements IInferenceProvider {
         provider: 'llama.cpp',
         url: this.config.serverUrl,
         latencyMs,
-        modelLoaded: modelLoaded || this.config.defaultModelId,
+        modelLoaded,
         error: null,
         isFallback: false,
       };
@@ -365,30 +365,42 @@ export class LlamaServerAdapter implements IInferenceProvider {
 
   private pruneMessagesForContext(messages: any[]): any[] | null {
     if (!messages || messages.length === 0) return null;
-    const systemMsg = messages.find((m) => m.role === 'system');
-    const userMsgs = messages.filter((m) => m.role === 'user');
-    const lastUserMsg = userMsgs[userMsgs.length - 1];
-    if (!lastUserMsg) return null;
 
-    let prunedUserContent = lastUserMsg.content;
-    if (Array.isArray(lastUserMsg.content)) {
-      const textParts = lastUserMsg.content.filter((p: any) => p.type === 'text');
-      const imageParts = lastUserMsg.content.filter((p: any) => p.type === 'image_url');
-      // Keep only at most 1 representative image/frame to sharply drop tokens
-      prunedUserContent = [...textParts, ...imageParts.slice(0, 1)];
-    }
+    const systemMsg = messages.find((m) => m.role === 'system');
+    const nonSystem = messages.filter((m) => m.role !== 'system');
+    if (nonSystem.length === 0) return messages;
+
+    // Prune excessive images from older messages, preserving at most 1 representative frame in recent history
+    let imagePreserved = false;
+    const sanitizedNonSystem = nonSystem.map((msg, idx) => {
+      const isLatest = idx >= nonSystem.length - 2;
+      if (Array.isArray(msg.content)) {
+        const textParts = msg.content.filter((p: any) => p.type === 'text');
+        const imageParts = msg.content.filter((p: any) => p.type === 'image_url');
+        if (isLatest && !imagePreserved && imageParts.length > 0) {
+          imagePreserved = true;
+          return { ...msg, content: [...textParts, imageParts[0]] };
+        }
+        return { ...msg, content: textParts };
+      }
+      return msg;
+    });
+
+    // Priority-based compaction: preserve recent dialogue turns rather than dropping intervening history
+    const maxRecentTurns = 10;
+    const recentHistory = sanitizedNonSystem.slice(-maxRecentTurns);
 
     let prunedSystemContent = systemMsg?.content;
-    if (typeof prunedSystemContent === 'string' && prunedSystemContent.length > 3500) {
-      prunedSystemContent = prunedSystemContent.slice(0, 3500) + '\n[Context trimmed for token budget]';
+    if (typeof prunedSystemContent === 'string' && prunedSystemContent.length > 6000) {
+      prunedSystemContent = prunedSystemContent.slice(0, 6000) + '\n[Context trimmed for token budget while preserving core identity]';
     }
 
-    const pruned: any[] = [];
+    const compacted: any[] = [];
     if (prunedSystemContent) {
-      pruned.push({ role: 'system', content: prunedSystemContent });
+      compacted.push({ role: 'system', content: prunedSystemContent });
     }
-    pruned.push({ role: 'user', content: prunedUserContent });
+    compacted.push(...recentHistory);
 
-    return pruned;
+    return compacted;
   }
 }

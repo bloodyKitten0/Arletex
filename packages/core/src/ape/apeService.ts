@@ -547,6 +547,7 @@ export class ApeService {
       predictiveEngine: this.predictiveEngine,
       simulationEngine: this.simulationEngine,
       metacognitionEngine: this.metacognitionEngine,
+      memoryRepository: msRepo,
       logger,
     });
 
@@ -630,7 +631,11 @@ export class ApeService {
     this.playHumourAestheticsEngine.initializeDefaultPreferences();
 
     const offRepo = offlineCognitiveRepo || new InMemoryOfflineCognitiveActivityRepository();
-    this.offlineCognitiveEngine = new OfflineCognitiveActivityEngine({ repository: offRepo });
+    this.offlineCognitiveEngine = new OfflineCognitiveActivityEngine({
+      repository: offRepo,
+      memoryRepository: msRepo,
+      goalRepository: goalRepo,
+    });
 
     const secRepo = securityRepo || new InMemoryEthicalBoundariesSecurityRepository();
     this.securityEngine = new EthicalBoundariesSecurityEngine({ repository: secRepo });
@@ -856,7 +861,13 @@ export class ApeService {
           masterState: this.getMasterState(),
         };
       } catch (err: any) {
-        this.logger.error(`CognitiveControlBus dispatch failed for event ${event.id}; falling back to direct cycle:`, err);
+        this.logger.error(`CognitiveControlBus dispatch failed for event ${event.id}:`, err);
+        this.repo.saveEventProcessingStatus(event.id, 'failed', err.message);
+        return {
+          processed: false,
+          state: this.getState(),
+          masterState: this.getMasterState(),
+        };
       }
     }
 

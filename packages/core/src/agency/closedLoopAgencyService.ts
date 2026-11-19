@@ -3,6 +3,7 @@ import {
   ActionProposal,
   ActionType,
   AgencyObservation,
+  AgencyPlan,
   AgencyTask,
   ClosedLoopCycleResult,
   DigitalExperience,
@@ -22,19 +23,18 @@ import {
   IAgencyRepository,
   IBrowserProvider,
   IComputerProvider,
-  PageObservation,
   VideoCandidate,
 } from './interfaces.js';
 import { WebAgencyService } from './webAgencyService.js';
 
 export interface ClosedLoopAgencyDependencies {
-  agencyRepo: IAgencyRepository;
-  taskManager: IntentTaskManager;
-  planningInterface: PlanningInterface;
-  permissionController: ActionPermissionController;
-  verificationEngine: VerificationEngine;
-  memorySync: MemoryExperienceSync;
-  apeService: ApeService;
+  agencyRepo?: IAgencyRepository;
+  taskManager?: IntentTaskManager;
+  planningInterface?: PlanningInterface;
+  permissionController?: ActionPermissionController;
+  verificationEngine?: VerificationEngine;
+  memorySync?: MemoryExperienceSync;
+  apeService?: ApeService;
   autobiographicalMemoryService?: AutobiographicalMemoryService;
   browserProvider?: IBrowserProvider;
   computerProvider?: IComputerProvider;
@@ -68,13 +68,13 @@ export class ClosedLoopAgencyService {
   private logger: ILogger;
 
   constructor(deps: ClosedLoopAgencyDependencies) {
-    this.agencyRepo = deps.agencyRepo;
-    this.taskManager = deps.taskManager;
-    this.planningInterface = deps.planningInterface;
-    this.permissionController = deps.permissionController;
-    this.verificationEngine = deps.verificationEngine;
-    this.memorySync = deps.memorySync;
-    this.apeService = deps.apeService;
+    this.agencyRepo = deps.agencyRepo!;
+    this.taskManager = deps.taskManager!;
+    this.planningInterface = deps.planningInterface!;
+    this.permissionController = deps.permissionController || new ActionPermissionController(undefined, deps.logger);
+    this.verificationEngine = deps.verificationEngine || new VerificationEngine(deps.logger);
+    this.memorySync = deps.memorySync!;
+    this.apeService = deps.apeService!;
     this.autobiographicalMemoryService = deps.autobiographicalMemoryService;
     this.browserProvider = deps.browserProvider;
     this.computerProvider = deps.computerProvider;
@@ -153,6 +153,12 @@ export class ClosedLoopAgencyService {
     let switchedCandidates = false;
     let failureReason: string | null = null;
     let primaryActionType: ActionType = 'web_search';
+
+    if (plan.steps.length === 0) {
+      allStepsSucceeded = false;
+      failureReason = 'Plan formulated with zero steps; cannot execute empty plan';
+      this.logger.warn(`Plan for task ${task.id} has 0 steps; failing closed.`);
+    }
 
     // ==========================================
     // Phase 4: AUTHORIZE & Phase 5: EXECUTE & Phase 6: VERIFY
@@ -337,15 +343,191 @@ export class ClosedLoopAgencyService {
   }
 
   /**
+   * Executes a pre-formulated plan through the closed-loop verification pipeline.
+   */
+  public async executePlan(
+    plan: AgencyPlan,
+    task?: AgencyTask,
+  ): Promise<ClosedLoopCycleResult & { allStepsSucceeded: boolean; failureReason: string | null }> {
+    const cycleId = crypto.randomUUID();
+    const actualTask: AgencyTask = task || (this.taskManager && plan.taskId ? this.taskManager.getTask(plan.taskId) : null) || {
+      id: plan.taskId || crypto.randomUUID(),
+      title: plan.objective,
+      objective: plan.objective,
+      constraints: [],
+      completionCriteria: [],
+      initiator: 'user',
+      status: 'authorized',
+      priority: 'normal',
+      currentStepIndex: 0,
+      totalSteps: plan.steps?.length || 0,
+      retryCount: 0,
+      maxRetries: 3,
+      error: null,
+      metadata: {},
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const observations: AgencyObservation[] = [];
+    const verifications: VerificationResult[] = [];
+    let allStepsSucceeded = true;
+    let switchedCandidates = false;
+    let failureReason: string | null = null;
+
+    if (!plan.steps || plan.steps.length === 0) {
+      allStepsSucceeded = false;
+      failureReason = 'Plan formulated with zero steps; cannot execute empty plan';
+      this.logger.warn(`Plan for task ${actualTask.id} has 0 steps; failing closed.`);
+      if (this.taskManager && actualTask.id) {
+        try {
+          this.taskManager.handleFailure(actualTask.id, failureReason);
+        } catch {}
+      }
+      return {
+        id: cycleId,
+        taskId: actualTask.id,
+        objective: plan.objective,
+        stage: 'failed_outcome',
+        success: false,
+        allStepsSucceeded: false,
+        failureReason,
+        plan,
+        observations: [],
+        verifications: [],
+        switchedCandidates: false,
+        timestamp: new Date().toISOString(),
+      };
+    }
+
+    if (this.agencyRepo) {
+      try { this.agencyRepo.savePlan(plan); } catch {}
+    }
+    if (this.taskManager) {
+      try { this.taskManager.transitionTask(actualTask.id, 'running'); } catch {}
+    }
+
+    for (let i = 0; i < plan.steps.length; i++) {
+      const step: PlanStep = plan.steps[i]!;
+      const action = step.action;
+
+      // AUTHORIZE
+      const auth = this.permissionController.authorize(action);
+      if (!auth.allowed) {
+        this.logger.warn(`Action ${action.id} (${action.type}) denied by permission controller: ${auth.denialReason}`);
+        const ver: VerificationResult = {
+          actionId: action.id,
+          expectedOutcome: action.expectedOutcome,
+          observedOutcome: `Action denied by policy: ${auth.denialReason}`,
+          verified: false,
+          confidence: 1.0,
+          status: 'failed',
+          failureReason: auth.denialReason || 'Unauthorized action proposal',
+          isRecoverable: false,
+          evidence: { denialReason: auth.denialReason },
+          timestamp: new Date().toISOString(),
+        };
+        if (this.agencyRepo) {
+          try { this.agencyRepo.saveVerification(ver); } catch {}
+        }
+        verifications.push(ver);
+        allStepsSucceeded = false;
+        failureReason = auth.denialReason || 'Unauthorized action';
+        break;
+      }
+
+      // EXECUTE
+      let obs: AgencyObservation;
+      try {
+        obs = await this.executeAction(action, actualTask, observations);
+      } catch (execErr: any) {
+        obs = {
+          id: crypto.randomUUID(),
+          taskId: actualTask.id,
+          actionId: action.id,
+          source: 'process_table',
+          timestamp: new Date().toISOString(),
+          success: false,
+          confidence: 1.0,
+          provenance: 'ClosedLoopAgencyService:execution_exception',
+          data: {},
+          error: execErr.message || String(execErr),
+        };
+      }
+
+      if (this.agencyRepo) {
+        try { this.agencyRepo.saveObservation(obs); } catch {}
+      }
+      observations.push(obs);
+
+      // VERIFY
+      let ver = this.verificationEngine.verify(action, obs);
+
+      if (!ver.verified && ver.isRecoverable && ver.recommendedStrategy === 'switch_candidate') {
+        const recovered = await this.attemptCandidateRecovery(action, actualTask, observations, ver);
+        if (recovered) {
+          obs = recovered.observation;
+          ver = recovered.verification;
+          switchedCandidates = true;
+          if (this.agencyRepo) {
+            try { this.agencyRepo.saveObservation(obs); } catch {}
+          }
+          observations.push(obs);
+        }
+      }
+
+      if (this.agencyRepo) {
+        try { this.agencyRepo.saveVerification(ver); } catch {}
+      }
+      verifications.push(ver);
+
+      if (!ver.verified) {
+        allStepsSucceeded = false;
+        failureReason = ver.failureReason || 'Action failed verification';
+        if (this.taskManager) {
+          try { this.taskManager.handleFailure(actualTask.id, failureReason); } catch {}
+        }
+        break;
+      }
+
+      if (this.taskManager) {
+        try { this.taskManager.advanceStep(actualTask.id); } catch {}
+      }
+    }
+
+    const finalStatus = allStepsSucceeded ? 'completed' : 'failed';
+    if (this.taskManager) {
+      try { this.taskManager.transitionTask(actualTask.id, finalStatus, failureReason); } catch {}
+    }
+
+    return {
+      id: cycleId,
+      taskId: actualTask.id,
+      objective: plan.objective,
+      stage: allStepsSucceeded ? 'verified_outcome' : 'failed_outcome',
+      success: allStepsSucceeded,
+      allStepsSucceeded,
+      failureReason,
+      plan,
+      observations,
+      verifications,
+      switchedCandidates,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  /**
    * Action Execution Dispatcher across Web, Computer, and Desktop providers.
    */
-  private async executeAction(
+  public async executeAction(
     action: ActionProposal,
-    task: AgencyTask,
-    previousObservations: AgencyObservation[],
+    task?: AgencyTask,
+    previousObservations: AgencyObservation[] = [],
   ): Promise<AgencyObservation> {
     const params = (action.payload || (action as any).parameters || {}) as Record<string, any>;
     const timestamp = new Date().toISOString();
+    const taskId = task?.id || action.taskId || 'task_default';
+    const taskObjective = task?.objective || action.rationale || '';
 
     // 1. Web Video Selection & Navigation
     if (action.type === 'web_select_video' || action.type === 'web_navigate' || action.type === 'navigate_browser') {
@@ -359,7 +541,7 @@ export class ClosedLoopAgencyService {
         );
         if (searchObs && searchObs.data.candidates.length > 0) {
           if (this.webAgency) {
-            const decision = this.webAgency.evaluateVideoCandidates(task.objective, searchObs.data.candidates);
+            const decision = this.webAgency.evaluateVideoCandidates(taskObjective, searchObs.data.candidates);
             if (decision.selectedCandidate) {
               targetUrl = decision.selectedCandidate.url;
               videoTitle = decision.selectedCandidate.title;
@@ -372,37 +554,36 @@ export class ClosedLoopAgencyService {
       }
 
       if (!targetUrl) {
-        targetUrl = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(task.objective);
+        targetUrl = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(taskObjective);
       }
 
       action.payload = action.payload || {};
       action.payload.targetUrl = targetUrl;
       action.payload.videoTitle = videoTitle;
 
-      let pageObs: PageObservation;
-      if (this.browserProvider) {
-        pageObs = await this.browserProvider.navigate(targetUrl);
-      } else {
-        pageObs = {
-          url: targetUrl,
-          title: videoTitle || 'Mock Web Video Page',
-          hasVideoElement: true,
-          isPlaying: true,
-          playbackProgressing: true,
-          playbackState: 'playing',
-          textSnippet: 'Video playing cleanly',
-          headings: ['Transformer Attention Explained'],
-          links: [],
+      if (!this.browserProvider) {
+        return {
+          id: crypto.randomUUID(),
+          taskId,
+          actionId: action.id,
+          source: 'browser_video_element',
+          timestamp,
+          success: false,
+          confidence: 0.0,
+          provenance: 'WebAgencyService.navigateToVideo',
+          data: { targetUrl },
+          error: 'No browserProvider available for web navigation',
         };
       }
 
+      const pageObs = await this.browserProvider.navigate(targetUrl);
       const hasVid = Boolean(pageObs.hasVideoElement);
       const isPlay = Boolean(pageObs.isPlaying);
       const isProg = Boolean(pageObs.playbackProgressing ?? isPlay);
 
       return {
         id: crypto.randomUUID(),
-        taskId: task.id,
+        taskId,
         actionId: action.id,
         source: 'browser_video_element',
         timestamp,
@@ -427,18 +608,31 @@ export class ClosedLoopAgencyService {
 
     // 2. Web Video Search
     if (action.type === 'web_search') {
-      const query = (params['query'] || params['topicQuery'] || task.objective) as string;
+      const query = (params['query'] || params['topicQuery'] || taskObjective) as string;
       let candidates: VideoCandidate[] = [];
 
       if (this.webAgency) {
         candidates = await this.webAgency.searchVideos(query);
       } else if (this.browserProvider) {
         candidates = await this.browserProvider.searchVideos(query);
+      } else {
+        return {
+          id: crypto.randomUUID(),
+          taskId,
+          actionId: action.id,
+          source: 'browser_metadata',
+          timestamp,
+          success: false,
+          confidence: 0.0,
+          provenance: 'WebAgencyService.searchVideos',
+          data: { query, candidates: [] },
+          error: 'No webAgency or browserProvider available for web search',
+        };
       }
 
       return {
         id: crypto.randomUUID(),
-        taskId: task.id,
+        taskId,
         actionId: action.id,
         source: 'browser_metadata',
         timestamp,
@@ -459,19 +653,31 @@ export class ClosedLoopAgencyService {
       const appName = String(params['appName'] || params['app'] || 'steam');
       const args = (params['args'] as string[]) || [];
 
-      let launchRes = { pid: 1234, isRunning: true };
-      if (this.computerProvider) {
-        launchRes = await this.computerProvider.launchApp(appName, args);
+      if (!this.computerProvider) {
+        return {
+          id: crypto.randomUUID(),
+          taskId,
+          actionId: action.id,
+          source: 'process_table',
+          timestamp,
+          success: false,
+          confidence: 0.0,
+          provenance: 'ComputerProvider.launchApp',
+          data: { appName, isRunning: false },
+          error: `No computerProvider available to launch application '${appName}'`,
+        };
       }
+
+      const launchRes = await this.computerProvider.launchApp(appName, args);
 
       return {
         id: crypto.randomUUID(),
-        taskId: task.id,
+        taskId,
         actionId: action.id,
         source: 'process_table',
         timestamp,
         success: launchRes.isRunning,
-        confidence: 1.0,
+        confidence: launchRes.isRunning ? 1.0 : 0.0,
         provenance: 'ComputerProvider.launchApp',
         data: {
           appName,
@@ -484,40 +690,53 @@ export class ClosedLoopAgencyService {
 
     // 4. Screen Capture
     if (action.type === 'desktop_take_screenshot' || action.type === 'capture_screen') {
-      let cap = { imageBase64: 'fake-data', width: 1920, height: 1080 };
-      if (this.computerProvider) {
-        cap = await this.computerProvider.captureScreen();
+      if (!this.computerProvider) {
+        return {
+          id: crypto.randomUUID(),
+          taskId,
+          actionId: action.id,
+          source: 'screen_frame_vision',
+          timestamp,
+          success: false,
+          confidence: 0.0,
+          provenance: 'ComputerProvider.captureScreen',
+          data: {},
+          error: 'No computerProvider available for screen capture',
+        };
       }
+
+      const cap = await this.computerProvider.captureScreen();
+      const hasValidImage = Boolean(cap.imageBase64 && cap.imageBase64 !== 'fake-data');
 
       return {
         id: crypto.randomUUID(),
-        taskId: task.id,
+        taskId,
         actionId: action.id,
         source: 'screen_frame_vision',
         timestamp,
-        success: Boolean(cap.imageBase64),
-        confidence: 1.0,
+        success: hasValidImage,
+        confidence: hasValidImage ? 1.0 : 0.0,
         provenance: 'ComputerProvider.captureScreen',
         data: {
           width: cap.width,
           height: cap.height,
         },
-        error: null,
+        error: hasValidImage ? null : 'Screen capture produced empty image',
       };
     }
 
-    // Default Fallback
+    // Default Fallback: Unsupported action types fail closed
     return {
       id: crypto.randomUUID(),
-      taskId: task.id,
+      taskId,
       actionId: action.id,
       source: 'process_table',
       timestamp,
-      success: true,
-      confidence: 0.8,
-      provenance: 'ClosedLoopAgency:default_heuristic',
+      success: false,
+      confidence: 0.0,
+      provenance: 'ClosedLoopAgency:unsupported_action',
       data: { actionType: action.type },
-      error: null,
+      error: `Unsupported agency action type: ${action.type}`,
     };
   }
 

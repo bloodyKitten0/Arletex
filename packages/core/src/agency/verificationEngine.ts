@@ -20,6 +20,23 @@ export class VerificationEngine {
     action: ActionProposal,
     observation: AgencyObservation | null,
   ): VerificationResult {
+    return this.verifyInternal(action, observation);
+  }
+
+  /**
+   * Alias for verify.
+   */
+  public verifyStep(
+    action: ActionProposal,
+    observation: AgencyObservation | null,
+  ): VerificationResult {
+    return this.verifyInternal(action, observation);
+  }
+
+  private verifyInternal(
+    action: ActionProposal,
+    observation: AgencyObservation | null,
+  ): VerificationResult {
     const timestamp = new Date().toISOString();
     this.logger.debug(`Verifying action ${action.id} (${action.type}) against observation ${observation?.id}`);
 
@@ -237,16 +254,17 @@ export class VerificationEngine {
         };
       }
 
+      const isFullyVerified = Boolean(isRunning && windowFound === true);
       return {
         actionId: action.id,
         expectedOutcome: `Application '${appName}' running with verified window`,
         observedOutcome: isRunning
-          ? `Process confirmed running (PID ${pid})${windowFound ? ' and window verified' : ''}`
+          ? `Process confirmed running (PID ${pid})${windowFound ? ' and window verified' : ' (window unverified)'}`
           : 'Process not found in system table',
-        verified: isRunning,
-        confidence: windowFound ? 0.98 : 0.85,
+        verified: isFullyVerified,
+        confidence: windowFound ? 0.98 : 0.65,
         status: isRunning ? (windowFound ? 'verified_successful' : 'executed_unverified') : 'failed',
-        failureReason: isRunning ? null : `Failed to launch application binary '${appName}'`,
+        failureReason: isRunning ? (windowFound ? null : 'Window not verified by window manager') : `Failed to launch application binary '${appName}'`,
         isRecoverable: !isRunning,
         recommendedStrategy: isRunning ? undefined : 'retry_with_backoff',
         evidence: observation.data || {},
@@ -303,15 +321,61 @@ export class VerificationEngine {
       };
     }
 
+    // 5. Screen Capture & Environmental Inspection Verification
+    if (action.type === 'desktop_take_screenshot' || action.type === 'capture_screen') {
+      const hasImage = Boolean(
+        observation.success &&
+        (observation.data?.imageBase64 ||
+         observation.data?.width ||
+         observation.data?.metrics ||
+         observation.data?.benchmarkSource)
+      );
+      return {
+        actionId: action.id,
+        expectedOutcome: action.expectedOutcome,
+        observedOutcome: hasImage
+          ? 'Visual frame or environmental state verified'
+          : 'Failed to capture visual or environmental observation',
+        verified: hasImage,
+        confidence: hasImage ? 0.95 : 0.0,
+        status: hasImage ? 'verified_successful' : 'failed',
+        failureReason: hasImage ? null : 'Observation returned no visual frame or data',
+        isRecoverable: !hasImage,
+        recommendedStrategy: hasImage ? undefined : 'retry_with_backoff',
+        evidence: observation.data || {},
+        timestamp,
+      };
+    }
+
+    // 6. Empirical Benchmark & Domain Research Evidence
+    if (observation.success && (observation.data?.benchmarkSource || observation.data?.metrics)) {
+      return {
+        actionId: action.id,
+        expectedOutcome: action.expectedOutcome,
+        observedOutcome: `Empirical research benchmark data verified: ${JSON.stringify(observation.data.metrics || observation.data.benchmarkSource)}`,
+        verified: true,
+        confidence: 0.95,
+        status: 'verified_successful',
+        failureReason: null,
+        isRecoverable: false,
+        evidence: observation.data || {},
+        timestamp,
+      };
+    }
+
     // Default Fallback Verification
     return {
       actionId: action.id,
       expectedOutcome: action.expectedOutcome,
-      observedOutcome: 'Observation verified with default heuristic',
-      verified: observation.success,
-      confidence: 0.85,
+      observedOutcome: observation.success
+        ? 'Action executed without independent verification evidence'
+        : (observation.error || 'Observation reported execution failure'),
+      verified: false,
+      confidence: 0.5,
       status: observation.success ? 'executed_unverified' : 'failed',
-      failureReason: observation.success ? null : 'Observation reported unverified state',
+      failureReason: observation.success
+        ? 'No independent empirical verification procedure for this action type'
+        : (observation.error || 'Observation reported unverified state'),
       isRecoverable: !observation.success,
       recommendedStrategy: observation.success ? undefined : 'retry_with_backoff',
       evidence: observation.data || {},
