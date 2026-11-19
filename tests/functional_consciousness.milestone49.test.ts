@@ -314,4 +314,78 @@ describe('Milestone 49 — Functional Consciousness & Autonomous Human Personhoo
     expect(snapData.snapshot.homeostasis).toBeDefined();
     expect(snapData.snapshot.activeExpectations.length).toBeGreaterThanOrEqual(1);
   });
+
+  it('9. Autonomously computes prediction error and derives organic emotion without caller-provided score', () => {
+    const repo = new InMemoryFunctionalConsciousnessRepository();
+    const engine = new FunctionalConsciousnessEngine({ repository: repo });
+
+    // Scenario A: Caller provides NO prediction error; breakthrough actual outcome
+    const expA = engine.registerExpectation({
+      targetContext: 'Autonomous algorithmic synthesis',
+      expectedOutcome: 'Standard iterative compilation',
+      expectedProbability: 0.5,
+    });
+
+    const resolvedA = engine.resolveExpectation({
+      expectationId: expA.id,
+      actualOutcome: 'Breakthrough synergistic insight achieved seamlessly with perfect accuracy!',
+    });
+
+    expect(resolvedA.predictionErrorScore).toBeDefined();
+    expect(resolvedA.predictionErrorScore!).toBeGreaterThan(0.35);
+    expect(resolvedA.elicitedEmotion).toBe('delight');
+
+    // Scenario B: Caller provides NO prediction error; failure/contradictory actual outcome
+    const expB = engine.registerExpectation({
+      targetContext: 'Predictable sensor stream',
+      expectedOutcome: 'Calm predictable state updates',
+      expectedProbability: 0.85,
+    });
+
+    const resolvedB = engine.resolveExpectation({
+      expectationId: expB.id,
+      actualOutcome: 'Unexpected multi-origin data flood with severe contradictory signals and error spikes',
+    });
+
+    expect(resolvedB.predictionErrorScore).toBeDefined();
+    expect(resolvedB.predictionErrorScore!).toBeLessThan(-0.35);
+    expect(resolvedB.elicitedEmotion).toBe('overwhelm');
+
+    // Scenario C: Observed numerical score passed instead of raw error
+    const expC = engine.registerExpectation({
+      targetContext: 'Task completion assessment',
+      expectedOutcome: 'Target completed above 70%',
+      expectedProbability: 0.7,
+    });
+
+    const resolvedC = engine.resolveExpectation({
+      expectationId: expC.id,
+      actualOutcome: 'Completed with 95% metric score',
+      observedScore: 0.95,
+    });
+
+    expect(resolvedC.predictionErrorScore).toBeCloseTo(0.25, 2);
+    expect(resolvedC.elicitedEmotion).toBe('surprise');
+  });
+
+  it('10. Dynamically constructs dream narratives and associative DMN streams contextualized to seed concepts', () => {
+    const repo = new InMemoryFunctionalConsciousnessRepository();
+    const engine = new FunctionalConsciousnessEngine({ repository: repo });
+
+    // Dynamic dream narrative from custom memories
+    const dream = engine.runSleepDreamCycle('rem_dream_replay', [
+      'mem_metaphysics_inquiry',
+      'mem_rog_ally_x_optimization',
+    ]);
+
+    expect(dream.dreamNarrative).toContain('metaphysics inquiry');
+    expect(dream.dreamNarrative).toContain('rog ally x optimization');
+    expect(dream.consolidatedInsights.some((i) => i.includes('metaphysics inquiry'))).toBe(true);
+
+    // Dynamic DMN mind-wandering from custom seed
+    const wandering = engine.runDefaultModeWandering('Quantum decoherence and subjective temporal flow');
+    expect(wandering.seedAssociation).toBe('Quantum decoherence and subjective temporal flow');
+    expect(wandering.wanderingStream.some((step) => step.toLowerCase().includes('quantum'))).toBe(true);
+    expect(wandering.emergentAspiration).toContain('alongside Proof');
+  });
 });

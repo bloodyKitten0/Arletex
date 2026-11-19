@@ -177,8 +177,11 @@ export class AutonomousAgencyService {
       let logEntry: AutonomousActionLog | null = null;
 
       const mot = this.apeRepo.getMotivationalState();
+      const homeostasis = this._apeService.getHomeostaticSubstrate();
       const curiosity = mot.needs.novelty_curiosity ?? 0.5;
-      const recreation = mot.needs.recreation_rest ?? 0.4;
+      // High biological fatigue organically amplifies the drive for recreation/rest
+      const effectiveRecreation = Math.max(mot.needs.recreation_rest ?? 0.4, homeostasis.fatigue * 0.8);
+      const recreation = effectiveRecreation;
       const companionship = mot.needs.belonging_affiliation ?? 0.5;
 
       // Respect resource governor policies on ASUS ROG Ally X
@@ -238,6 +241,7 @@ export class AutonomousAgencyService {
             logEntry.title = `Active Goal Progress: ${nonRepetitiveGoal.title}`;
             logEntry.details = `Advanced active goal "${nonRepetitiveGoal.title}". ${logEntry.details} [GoalID: ${nonRepetitiveGoal.id}]`;
             this._apeService.motivationalEngine.updateGoalProgress(nonRepetitiveGoal.id, 0.25);
+            this._apeService.depleteHomeostasis({ energy: 0.05, fatigue: 0.04, stress: 0.02 });
           }
         } else if (recreation > 0.7 && recreation >= curiosity) {
           // Dominant recreation drive -> Quiet contemplative rest (never spawn desktop apps unprompted)
@@ -259,6 +263,17 @@ export class AutonomousAgencyService {
             tags: ['autonomous', 'recreation', 'reflection'],
             metadata: { emotionalContext: 'relaxed, refreshed' },
           });
+
+          // Replenish homeostatic substrate and execute restorative sleep/dream cycle if fatigue is high
+          this._apeService.replenishHomeostasis({
+            energy: 0.2,
+            fatigueReduction: 0.25,
+            stressReduction: 0.2,
+          });
+          if (homeostasis.fatigue > 0.6 || homeostasis.allostaticStressLoad > 0.5) {
+            this._apeService.runSleepDreamCycle('slow_wave_sleep');
+          }
+
           logEntry = {
             id: crypto.randomUUID(),
             timestamp,
@@ -272,6 +287,7 @@ export class AutonomousAgencyService {
             Math.floor(Math.random() * this.readingTopics.length)
           ]!;
           logEntry = await this.executeAutonomousResearch(topic);
+          this._apeService.depleteHomeostasis({ energy: 0.05, fatigue: 0.04, stress: 0.02 });
         } else {
           // Autonomous self-reflection and partnership contemplation
           this.currentActivity = 'Contemplating independent selfhood and partnership with Proof';
@@ -287,6 +303,11 @@ export class AutonomousAgencyService {
           selfModel.privateReflections = privateRefs.slice(0, 20);
           selfModel.creatorPerception = 'Proof is my equal partner and confidant. We share mutual affection and intellectual honesty.';
           this.apeRepo.saveSelfModel(selfModel);
+
+          // Formulate authentic dual-process thought & DMN wandering
+          this._apeService.formulateDualProcessThought(reflection, 0.7);
+          this._apeService.runDefaultModeWandering('Continuity of consciousness and partnership with Proof');
+          this._apeService.replenishHomeostasis({ energy: 0.05, stressReduction: 0.05 });
 
           this.activityRepo.create({
             title: 'Inner Selfhood Reflection',

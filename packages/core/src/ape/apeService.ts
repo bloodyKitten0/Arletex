@@ -558,10 +558,19 @@ export class ApeService {
     this.securityEngine = new EthicalBoundariesSecurityEngine({ repository: secRepo });
 
     const evalRepo = evaluationRepo || new InMemoryLongitudinalEvaluationRepository();
-    this.evaluationEngine = new LongitudinalEvaluationEngine({ repository: evalRepo });
+    this.evaluationEngine = new LongitudinalEvaluationEngine({
+      repository: evalRepo,
+      apeRepository: this.repo,
+      memoryRepository: msRepo,
+      securityRepository: secRepo,
+      offlineActivityRepository: offRepo,
+    });
 
     const consRepo = consciousnessRepo || new InMemoryFunctionalConsciousnessRepository();
-    this.consciousnessEngine = new FunctionalConsciousnessEngine({ repository: consRepo });
+    this.consciousnessEngine = new FunctionalConsciousnessEngine({
+      repository: consRepo,
+      memoryRepository: msRepo,
+    });
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);

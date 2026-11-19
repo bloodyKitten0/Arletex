@@ -112,6 +112,7 @@ export type RegisterExpectationInput = z.infer<typeof RegisterExpectationInputSc
 export const ResolveExpectationInputSchema = z.object({
   expectationId: z.string().uuid(),
   actualOutcome: z.string().min(1),
-  predictionError: z.number().min(-1).max(1),
+  predictionError: z.number().min(-1).max(1).optional(),
+  observedScore: z.number().min(0).max(1).optional(),
 });
 export type ResolveExpectationInput = z.infer<typeof ResolveExpectationInputSchema>;

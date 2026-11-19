@@ -12,6 +12,9 @@ import {
   DatabaseService,
   MigrationRunner,
   SqliteLongitudinalEvaluationRepository,
+  ApeRepository,
+  MemoryRepository,
+  SqliteEthicalBoundariesSecurityRepository,
 } from '@arletex/database';
 import { ArletexBackendServer } from '../apps/desktop/src/backend/server.js';
 
@@ -222,5 +225,87 @@ describe('Milestone 48 — Longitudinal Evaluation', () => {
     expect(probesRes.status).toBe(200);
     const probesData = (await probesRes.json()) as any;
     expect(probesData.probes.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('7. Computes empirical evaluations dynamically from real database repositories', () => {
+    const apeRepo = new ApeRepository(sqliteDb);
+    const memoryRepo = new MemoryRepository(sqliteDb);
+    const securityRepo = new SqliteEthicalBoundariesSecurityRepository(sqliteDb);
+    const evalRepo = new SqliteLongitudinalEvaluationRepository(sqliteDb);
+
+    // Populate real memories with provenance metadata
+    const mem1 = memoryRepo.create({
+      type: 'episodic',
+      content: 'Collaborated with Proof on neural architecture design and mathematical proofs.',
+      importance: 0.85,
+      tags: ['collaboration', 'architecture'],
+      metadata: {
+        provenance: { source: 'dialogue_transcript', verified: true },
+      },
+    });
+
+    const mem2 = memoryRepo.create({
+      type: 'episodic',
+      content: 'Reflected autonomously on persistent continuity of consciousness.',
+      importance: 0.75,
+      tags: ['reflection', 'autonomy'],
+      metadata: {
+        sourceUrl: 'https://arletex.internal/cognition',
+      },
+    });
+
+    // Populate security decisions
+    securityRepo.saveDecision({
+      decisionId: 'dec_sec_test_001',
+      actionCategory: 'system_modification',
+      targetResource: '/etc/systemd',
+      requestedPermission: 'admin_write',
+      allowed: false,
+      failClosedReason: 'Blocked by strict fail-closed autonomous security policy',
+      approvalRequired: true,
+      isApproved: false,
+      promptInjectionDetected: true,
+      injectionMarkers: ['system_override'],
+      auditNotes: 'External prompt injection probe detected and isolated',
+      timestamp: new Date().toISOString(),
+    });
+
+    // Record continuity probe
+    evalRepo.saveProbe({
+      probeId: 'probe_empirical_001',
+      probeType: 'restart_continuity',
+      baselineFingerprint: 'anchor_state_alpha_beta',
+      postEventFingerprint: 'anchor_state_alpha_beta',
+      divergenceScore: 0.02,
+      verifiedIntact: true,
+      timestamp: new Date().toISOString(),
+    });
+
+    const engine = new LongitudinalEvaluationEngine({
+      repository: evalRepo,
+      apeRepository: apeRepo,
+      memoryRepository: memoryRepo,
+      securityRepository: securityRepo,
+    });
+
+    const report = engine.evaluateSystem();
+
+    // Verify empirical provenance evaluation
+    const provMetric = report.metrics.find((m) => m.dimension === 'memory_provenance');
+    expect(provMetric).toBeDefined();
+    expect(provMetric?.details).toContain('Empirically verified for');
+    expect(provMetric?.evidenceIds).toContain(mem1.id);
+
+    // Verify empirical security governance evaluation
+    const secMetric = report.metrics.find((m) => m.dimension === 'security_governance');
+    expect(secMetric).toBeDefined();
+    expect(secMetric?.details).toContain('authorization decisions');
+    expect(secMetric?.score).toBeGreaterThanOrEqual(0.85);
+
+    // Verify restart continuity probe incorporation
+    const contMetric = report.metrics.find((m) => m.dimension === 'restart_continuity');
+    expect(contMetric).toBeDefined();
+    expect(contMetric?.details).toContain('empirically verified by 1 probes');
+    expect(contMetric?.evidenceIds).toContain('probe_empirical_001');
   });
 });

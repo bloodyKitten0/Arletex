@@ -319,6 +319,24 @@ describe('Milestone 07 — Embodiment and Interoception', () => {
           swapUsedBytes: 0,
           swapUsagePercent: 0,
         },
+        gpu: {
+          available: true,
+          name: 'AMD Radeon 780M (Vulkan Unified)',
+          usagePercent: 10,
+          temperatureC: 48,
+          vramTotalBytes: 8 * 1024 ** 3,
+          vramUsedBytes: 1 * 1024 ** 3,
+          vramFreeBytes: 7 * 1024 ** 3,
+          powerWatts: 15,
+        },
+        battery: {
+          available: true,
+          percent: 95,
+          isCharging: true,
+          acConnected: true,
+          healthPercent: 100,
+          temperatureC: 32,
+        },
       },
     });
 
