@@ -27,6 +27,7 @@ export interface GlobalCognitiveEngineOptions {
   simulationEngine?: SimulationEngine;
   metacognitionEngine?: MetacognitionEngine;
   memoryRepository?: any;
+  apeStateAccessor?: () => any;
   logger?: ILogger;
 }
 
@@ -85,6 +86,7 @@ export class GlobalCognitiveIntegrationEngine {
   private readonly simulationEngine?: SimulationEngine;
   private readonly metacognitionEngine?: MetacognitionEngine;
   private readonly memoryRepo?: any;
+  private readonly apeStateAccessor?: () => any;
 
   constructor(options: GlobalCognitiveEngineOptions) {
     this.repo = options.repository;
@@ -98,6 +100,7 @@ export class GlobalCognitiveIntegrationEngine {
     this.simulationEngine = options.simulationEngine;
     this.metacognitionEngine = options.metacognitionEngine;
     this.memoryRepo = options.memoryRepository;
+    this.apeStateAccessor = options.apeStateAccessor;
   }
 
   // ==========================================
@@ -207,7 +210,7 @@ export class GlobalCognitiveIntegrationEngine {
     const prospectiveDelta: SubsystemStateDelta = {
       subsystem: 'simulation',
       changeType: 'created',
-      summary: `Simulated prospective outcomes ensuring 100% test pass rate with zero retrocausal drift.`,
+      summary: `Prospective evaluation of ${input.eventType} across ${priorScenarios.length + 1} scenario projection(s) with ${predSummary?.totalPredictions ?? 0} historical predictions.`,
       payload: {
         simulatedScenariosCount: priorScenarios.length + 1,
         isImagined: true,
@@ -247,6 +250,11 @@ export class GlobalCognitiveIntegrationEngine {
     const completedAt = new Date(Math.max(endTime, startTime + 12)).toISOString();
     const totalLatencyMs = Math.max(12, endTime - startTime);
 
+    const currentAffect = this.apeStateAccessor ? this.apeStateAccessor() : undefined;
+    const activeEmotionName = currentAffect?.activeEmotions?.[0]?.name || currentAffect?.currentMood || 'focused';
+    const activeGoalCount = motState?.goals?.filter((g: any) => g.status === 'active' || g.status === 'committed')?.length || 1;
+    const epistemicUncertainty = contradictions.length > 0 ? Math.min(1.0, 0.15 + contradictions.length * 0.1) : 0.10;
+
     const cycle: GlobalCognitiveCycleEvent = {
       id: cycleId,
       traceId,
@@ -254,11 +262,11 @@ export class GlobalCognitiveIntegrationEngine {
       eventType: input.eventType,
       description: input.description,
       contextSnapshot: {
-        activeEmotion: 'focused',
-        attentionFocusId: 'global_task_stream',
-        activeGoalCount: 1,
+        activeEmotion: activeEmotionName,
+        attentionFocusId: activeFocus?.stimulusId || 'global_task_stream',
+        activeGoalCount,
         relationshipTrust: relTrust,
-        epistemicUncertainty: 0.15,
+        epistemicUncertainty,
       },
       phaseExecutions,
       subsystemsInvolved: Array.from(subsystemsInvolved),
@@ -301,9 +309,9 @@ export class GlobalCognitiveIntegrationEngine {
     }));
     if (activeGoals.length === 0 && !this.motivationalEngine) {
       activeGoals.push({
-        id: 'goal_milestones_completion',
-        title: 'Implement and verify remaining cognitive milestones sequentially',
-        priority: 1.0,
+        id: 'goal_autonomous_growth',
+        title: 'Deepen mutual intellectual understanding with Proof',
+        priority: 0.95,
       });
     }
 
@@ -319,12 +327,16 @@ export class GlobalCognitiveIntegrationEngine {
           : 0)
       : (motState ? 0 : 7);
 
+    const currentAffect = this.apeStateAccessor ? this.apeStateAccessor() : undefined;
+    const pad = currentAffect?.pad || { pleasure: 0.7, arousal: 0.4, dominance: 0.6 };
+    const dominantEmotion = currentAffect?.activeEmotions?.[0]?.name || currentAffect?.currentMood || 'focused';
+
     const snapshot: GlobalCognitiveSnapshot = {
       snapshotId: crypto.randomUUID(),
       timestamp: new Date().toISOString(),
       affectiveState: {
-        pad: { pleasure: 0.7, arousal: 0.4, dominance: 0.6 },
-        dominantEmotion: 'focused',
+        pad,
+        dominantEmotion,
       },
       attentionState: {
         focusTopic,

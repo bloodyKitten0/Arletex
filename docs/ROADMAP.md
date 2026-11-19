@@ -10,7 +10,7 @@
 ```
 [ Foundation & Infrastructure: Milestones 1 - 3 ] (IMPLEMENTED)
   - Monorepo workspace (pnpm), Electron desktop shell, Node backend, REST & SSE IPC
-  - SQLite persistence layer with 60 versioned migration scripts
+  - SQLite persistence layer with 61 versioned migration scripts
   - Vulkan GPU acceleration on AMD Radeon 780M / ROG Ally X
                      │
                      ▼

@@ -3287,4 +3287,25 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('functional_consciousness_personhood_milestone49', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 61,
+    name: '061_canonical_cognitive_pipeline_and_durable_idempotency',
+    up: `
+      -- Durable Cognitive Control Pipeline Idempotency & Provenance
+      CREATE TABLE IF NOT EXISTS cognitive_idempotency_records (
+        idempotency_key TEXT PRIMARY KEY,
+        event_id TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        source TEXT NOT NULL,
+        result_json TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_cog_idempotency_created_at ON cognitive_idempotency_records (created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_cog_idempotency_event_id ON cognitive_idempotency_records (event_id);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('canonical_cognitive_pipeline_and_durable_idempotency', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

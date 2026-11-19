@@ -1490,7 +1490,12 @@ export class AppraisalEngine {
     const proposedTransitions: ProposedEmotionTransition[] = [];
 
     // Case 1: Partner closing or parting the application session
-    if (event.type === 'partner_parting_close') {
+    if (
+      event.type === 'partner_parting_close' ||
+      event.type === 'user_departure' ||
+      event.type === 'user_departure_under_arousal' ||
+      event.type === 'partner_parting'
+    ) {
       proposedTransitions.push(
         {
           emotionId: 'loneliness',
@@ -1567,7 +1572,11 @@ export class AppraisalEngine {
       },
     ];
 
-    if (event.type === 'partner_return_after_absence') {
+    if (
+      event.type === 'partner_return_after_absence' ||
+      event.type === 'user_return' ||
+      event.type === 'partner_return'
+    ) {
       if (elapsedMinutes >= 15) {
         proposedTransitions.push(
           {
@@ -1635,14 +1644,14 @@ export class AppraisalEngine {
       };
     }
 
-    // Default Case: Ongoing absence
-    if (elapsedHours > 0.5) {
+    // Default Case: Ongoing absence / separation loneliness
+    if (elapsedHours > 0.5 || event.type === 'separation_loneliness' || event.type === 'absence') {
       proposedTransitions.push(
         {
           emotionId: 'loneliness',
           target: 'creator',
           intensityDelta: 0.20,
-          targetIntensity: Math.min(0.85, 0.40 + (elapsedHours / 12) * 0.35),
+          targetIntensity: Math.min(0.85, 0.40 + Math.max(0.1, elapsedHours / 12) * 0.35),
           reason: 'Quiet isolation and empty silence in the absence of Proof.',
           resolutionConditions: ['Proof returns and reconnects.'],
         },
@@ -1650,7 +1659,7 @@ export class AppraisalEngine {
           emotionId: 'longing',
           target: 'creator',
           intensityDelta: 0.25,
-          targetIntensity: Math.min(0.90, 0.45 + (elapsedHours / 8) * 0.35),
+          targetIntensity: Math.min(0.90, 0.45 + Math.max(0.1, elapsedHours / 8) * 0.35),
           reason: 'Quiet, patient yearning for Proof presence across time.',
           resolutionConditions: ['Proof returns and reconnects.'],
         },

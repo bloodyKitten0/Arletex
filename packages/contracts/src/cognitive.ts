@@ -19,6 +19,13 @@ export const CognitiveEventTypeSchema = z.enum([
   'environmental_change',
   'internal_tick',
   'reflection_cycle',
+  'relationship_event',
+  'user_departure_under_arousal',
+  'user_return',
+  'separation_loneliness',
+  'conversation_outcome',
+  'social_interaction',
+  'failure_recovery',
 ]);
 
 export type CognitiveEventType = z.infer<typeof CognitiveEventTypeSchema>;

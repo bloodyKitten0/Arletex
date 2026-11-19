@@ -35,7 +35,7 @@ Arletex/
 │   │   ├── src/cognitive/           # 16-stage canonical CognitiveControlBus
 │   │   ├── src/memory/              # AutobiographicalMemoryService with provenance and consolidation
 │   │   └── src/persona.ts           # Arle foundational persona prompt (egalitarian partnership)
-│   ├── database/                    # SQLite persistence with 60 versioned migrations
+│   ├── database/                    # SQLite persistence with 61 versioned migrations (including durable idempotency)
 │   └── inference/                   # InferenceGateway and LlamaServerAdapter (Vulkan/llama.cpp)
 ├── native/                          # Native C++ reflex engine for Wayland/X11 desktop interaction
 └── scripts/                         # Bootstrap, lifecycle, inference startup, and testing scripts

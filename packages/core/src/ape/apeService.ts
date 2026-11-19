@@ -368,6 +368,13 @@ export class ApeService {
       'environmental_change',
       'internal_tick',
       'reflection_cycle',
+      'relationship_event',
+      'user_departure_under_arousal',
+      'user_return',
+      'separation_loneliness',
+      'conversation_outcome',
+      'social_interaction',
+      'failure_recovery',
     ]);
     if (directTypes.has(apeType)) return apeType;
 
@@ -378,11 +385,29 @@ export class ApeService {
     if (lower.includes('telegram')) {
       return 'telegram_message';
     }
+    if (lower.includes('departure') || lower.includes('leave') || lower.includes('goodbye')) {
+      return 'user_departure_under_arousal';
+    }
+    if (lower.includes('return') || lower.includes('back')) {
+      return 'user_return';
+    }
+    if (lower.includes('separation') || lower.includes('loneliness')) {
+      return 'separation_loneliness';
+    }
+    if (lower.includes('relationship') || lower.includes('partner') || lower.includes('attachment') || lower.includes('intimacy')) {
+      return 'relationship_event';
+    }
+    if (lower.includes('social')) {
+      return 'social_interaction';
+    }
     if (lower.includes('perception') || lower.includes('visual') || lower.includes('audio') || lower.includes('screen')) {
       return 'media_perceived';
     }
     if (lower.includes('milestone') || lower.includes('goal_completed')) {
       return 'project_milestone';
+    }
+    if (lower.includes('goal_failed') || lower.includes('failure_recovery') || lower.includes('recovery')) {
+      return 'failure_recovery';
     }
     if (lower.includes('goal')) {
       return 'goal_progress';
@@ -548,6 +573,7 @@ export class ApeService {
       simulationEngine: this.simulationEngine,
       metacognitionEngine: this.metacognitionEngine,
       memoryRepository: msRepo,
+      apeStateAccessor: () => this.getState(),
       logger,
     });
 

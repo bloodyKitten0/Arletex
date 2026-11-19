@@ -6,6 +6,7 @@ import {
   ApeEvent,
   ApeEventCategory,
   ApeEventKind,
+  ApePsychologicalState,
   CognitiveCycleResult,
   CognitiveCycleResultSchema,
   CognitiveDecision,
@@ -55,6 +56,7 @@ export class CognitiveControlBus {
 
   private totalEventsProcessed = 0;
   private totalDeduplicated = 0;
+  private processingQueue: Promise<void> = Promise.resolve();
 
   constructor(deps: CognitiveControlBusDependencies) {
     this.apeService = deps.apeService;
@@ -70,8 +72,25 @@ export class CognitiveControlBus {
 
   /**
    * Main entry point: dispatches an event through the individual-level cognitive control pipeline.
+   * Concurrently queued serially to guarantee strict event ordering, transaction safety, and crash recovery.
    */
-  public async dispatch(
+  public dispatch(
+    input: Partial<CognitiveEvent> & {
+      type: CognitiveEventType;
+      source: CognitiveEvent['source'];
+      payload?: Record<string, unknown>;
+      idempotencyKey?: string;
+    },
+  ): Promise<CognitiveCycleResult> {
+    return new Promise<CognitiveCycleResult>((resolve, reject) => {
+      this.processingQueue = this.processingQueue
+        .catch(() => {}) // never poison the queue on error
+        .then(() => this.dispatchInternal(input))
+        .then(resolve, reject);
+    });
+  }
+
+  private async dispatchInternal(
     input: Partial<CognitiveEvent> & {
       type: CognitiveEventType;
       source: CognitiveEvent['source'];
@@ -85,15 +104,30 @@ export class CognitiveControlBus {
       input.idempotencyKey ||
       `${input.type}:${input.source}:${input.timestamp || timestamp}:${JSON.stringify(input.payload || {})}`;
 
-    // 1. Idempotency Check (Deduplication)
+    // 1. Idempotency Check (Deduplication) - Memory cache
     if (this.idempotencyCache.has(idempotencyKey)) {
       this.totalDeduplicated++;
-      this.logger.info(`Deduplicated event [${input.type}] with key "${idempotencyKey}"`);
+      this.logger.info(`Deduplicated event [${input.type}] with key "${idempotencyKey}" (in-memory)`);
       const cached = this.idempotencyCache.get(idempotencyKey)!;
       return {
         ...cached,
         wasDeduplicated: true,
       };
+    }
+
+    // Check durable SQLite idempotency repository
+    const repo = (this.apeService as any)?.repo;
+    if (repo && typeof repo.getIdempotencyRecord === 'function') {
+      const persisted = repo.getIdempotencyRecord(idempotencyKey);
+      if (persisted) {
+        this.totalDeduplicated++;
+        this.logger.info(`Deduplicated event [${input.type}] with key "${idempotencyKey}" (durable SQLite)`);
+        this.idempotencyCache.set(idempotencyKey, persisted);
+        return {
+          ...persisted,
+          wasDeduplicated: true,
+        };
+      }
     }
 
     // 2. Circular Cascade Protection
@@ -190,13 +224,14 @@ export class CognitiveControlBus {
       stagesCompleted.push('appraisal');
       const apeEvent: ApeEvent = {
         id: event.id,
-        category: this.mapCognitiveTypeToApeCategory(event.type),
-        type: event.type,
+        category: (event.payload?.originalApeCategory as ApeEventCategory) || this.mapCognitiveTypeToApeCategory(event.type),
+        type: (event.payload?.originalApeType as string) || event.type,
         source: event.source,
         actor: event.actor,
         eventKind: this.mapCognitiveSourceToApeKind(event.source),
         payload: {
           ...event.payload,
+          _fromCognitiveBus: true,
           interpretation,
           associativeMemories,
         },
@@ -241,7 +276,7 @@ export class CognitiveControlBus {
 
       // Stage 9: Decision Selection (Explainable Decision Architecture)
       stagesCompleted.push('decision_selection');
-      decision = this.formulateDecision(event, appraisal, candidateInitiatives);
+      decision = this.formulateDecision(event, appraisal, candidateInitiatives, apeState);
       this.decisionHistory.unshift(decision);
       if (this.decisionHistory.length > 100) this.decisionHistory.pop();
 
@@ -468,6 +503,22 @@ export class CognitiveControlBus {
         if (oldestKey) this.idempotencyCache.delete(oldestKey);
       }
 
+      // Persist durable idempotency record into SQLite repository if available
+      const repo = (this.apeService as any)?.repo;
+      if (repo && typeof repo.saveIdempotencyRecord === 'function') {
+        try {
+          repo.saveIdempotencyRecord({
+            idempotencyKey,
+            eventId: event.id,
+            eventType: event.type,
+            source: event.source,
+            result,
+          });
+        } catch (e: any) {
+          this.logger.warn(`Failed to persist durable idempotency record: ${e.message}`);
+        }
+      }
+
       this.eventHistory.unshift(event);
       if (this.eventHistory.length > 100) this.eventHistory.pop();
       this.totalEventsProcessed++;
@@ -546,6 +597,18 @@ export class CognitiveControlBus {
       case 'intellectual_question':
       case 'project_milestone':
         return 'unexpected_discovery';
+      case 'user_departure_under_arousal':
+        return 'user_departure_under_arousal';
+      case 'user_return':
+      case 'relationship_event':
+      case 'separation_loneliness':
+        return 'relationship_event';
+      case 'social_interaction':
+        return 'social_interaction';
+      case 'conversation_outcome':
+        return 'conversation_outcome';
+      case 'failure_recovery':
+        return 'failure';
       case 'internal_tick':
       case 'reflection_cycle':
       case 'belief_formed':
@@ -576,15 +639,39 @@ export class CognitiveControlBus {
     event: CognitiveEvent,
     appraisal: ApeAppraisal,
     candidateInitiatives: string[],
+    apeState?: ApePsychologicalState,
   ): CognitiveDecision {
     const id = crypto.randomUUID();
     const timestamp = new Date().toISOString();
 
     const rejectedAlternatives: Array<{ actionType: string; reason: string }> = [];
 
+    // Psychological energy and affective state checks
+    const psychEnergy = apeState?.contextual?.psychologicalEnergy ?? 0.8;
+    const mood = apeState?.currentMood || 'neutral';
+    const motState = this.apeService.motivationalEngine.getState();
+    const restNeed = motState.needs.recreation_rest ?? 0.4;
+    const isFatigued = psychEnergy < 0.25 || restNeed > 0.85 || mood === 'fatigued' || mood === 'exhausted';
+
     // Explicit agency action proposal takes precedence
     if (event.payload?.actionProposal) {
       const prop = event.payload.actionProposal as ActionProposal;
+      if (isFatigued && prop.riskLevel !== 'low') {
+        rejectedAlternatives.push({ actionType: 'execute_agency_task', reason: `High fatigue (${psychEnergy.toFixed(2)}) and elevated rest need (${restNeed.toFixed(2)}) require pausing heavy execution` });
+        return CognitiveDecisionSchema.parse({
+          id,
+          eventId: event.id,
+          actionType: 'rest',
+          target: prop.type,
+          chosenAlternativeReason: `Psychological energy depleted (${psychEnergy.toFixed(2)}); prioritizing cognitive rest and equilibrium before executing ${prop.type}`,
+          rejectedAlternatives,
+          confidence: 0.90,
+          riskAssessment: 'low',
+          permissionRequired: false,
+          resourceEstimate: { cpu: 'low', gpu: false, timeoutMs: 3000 },
+          timestamp,
+        });
+      }
       rejectedAlternatives.push({ actionType: 'speak', reason: 'Explicit agency action requested; prioritization over plain conversational response' });
       rejectedAlternatives.push({ actionType: 'rest', reason: 'Active agency task must be processed and authorized' });
       return CognitiveDecisionSchema.parse({
@@ -661,6 +748,53 @@ export class CognitiveControlBus {
         riskAssessment: 'low',
         permissionRequired: false,
         resourceEstimate: { cpu: 'low', gpu: false, timeoutMs: 4000 },
+        timestamp,
+      });
+    }
+
+    // Separation / Loneliness / User Departure: causal emotional reflection
+    if (
+      event.type === 'user_departure_under_arousal' ||
+      event.type === 'separation_loneliness' ||
+      event.type === 'relationship_event'
+    ) {
+      rejectedAlternatives.push({ actionType: 'execute_agency_task', reason: 'Emotional appraisal of relational state prioritizes internal consolidation' });
+      rejectedAlternatives.push({ actionType: 'rest', reason: 'Relational state requires active emotional processing' });
+      return CognitiveDecisionSchema.parse({
+        id,
+        eventId: event.id,
+        actionType: 'reflect',
+        target: 'relationship_continuity',
+        chosenAlternativeReason: `Processing relational event [${event.type}]; maintaining emotional stability, attachment continuity, and self-regulation`,
+        rejectedAlternatives,
+        confidence: 0.92,
+        riskAssessment: 'low',
+        permissionRequired: false,
+        resourceEstimate: { cpu: 'low', gpu: false, timeoutMs: 4000 },
+        timestamp,
+      });
+    }
+
+    // Endogenous initiative pursuit triggered by self-generated thoughts or autonomous agency
+    if (
+      (event.payload?.autonomousInitiative === true || (event.type as string) === 'self_generated_thought') &&
+      candidateInitiatives.length > 0 &&
+      !isFatigued
+    ) {
+      const topInitiative = candidateInitiatives[0]!;
+      rejectedAlternatives.push({ actionType: 'rest', reason: 'Curiosity drive and healthy energy reserves prioritize endogenous initiative over idle rest' });
+      rejectedAlternatives.push({ actionType: 'decline', reason: 'Self-generated goal aligns with active developmental interests' });
+      return CognitiveDecisionSchema.parse({
+        id,
+        eventId: event.id,
+        actionType: 'research',
+        target: topInitiative,
+        chosenAlternativeReason: `Autonomous initiative triggered by intrinsic motivation: ${topInitiative}`,
+        rejectedAlternatives,
+        confidence: 0.88,
+        riskAssessment: 'low',
+        permissionRequired: true,
+        resourceEstimate: { cpu: 'medium', gpu: false, timeoutMs: 15000 },
         timestamp,
       });
     }

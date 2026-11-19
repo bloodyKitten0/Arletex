@@ -630,6 +630,43 @@ export class ApeRepository implements IApeRepository {
       .run(status, isProcessed, error || null, isProcessed, now, id);
   }
 
+  public saveIdempotencyRecord(record: {
+    idempotencyKey: string;
+    eventId: string;
+    eventType: string;
+    source: string;
+    result: any;
+    createdAt?: string;
+  }): void {
+    const createdAt = record.createdAt || new Date().toISOString();
+    this.db
+      .prepare(`
+        INSERT OR REPLACE INTO cognitive_idempotency_records (
+          idempotency_key, event_id, event_type, source, result_json, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?)
+      `)
+      .run(
+        record.idempotencyKey,
+        record.eventId,
+        record.eventType,
+        record.source,
+        JSON.stringify(record.result),
+        createdAt,
+      );
+  }
+
+  public getIdempotencyRecord(idempotencyKey: string): any | null {
+    const row = this.db
+      .prepare('SELECT result_json FROM cognitive_idempotency_records WHERE idempotency_key = ?')
+      .get(idempotencyKey) as any;
+    if (!row?.result_json) return null;
+    try {
+      return JSON.parse(row.result_json);
+    } catch {
+      return null;
+    }
+  }
+
   public getEvent(id: string): ApeEvent | null {
     const r = this.db.prepare('SELECT * FROM ape_event_journal WHERE id = ?').get(id) as any;
     if (!r) return null;

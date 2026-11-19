@@ -261,6 +261,17 @@ export interface IApeRepository {
   listIntellectualQuestions(filter?: { status?: string; domain?: string }): IntellectualQuestion[];
   updateIntellectualQuestion(q: Partial<IntellectualQuestion> & { id: string }): IntellectualQuestion;
   deleteIntellectualQuestion(id: string): boolean;
+
+  // Durable Idempotency (P0.3)
+  saveIdempotencyRecord?(record: {
+    idempotencyKey: string;
+    eventId: string;
+    eventType: string;
+    source: string;
+    result: any;
+    createdAt?: string;
+  }): void;
+  getIdempotencyRecord?(idempotencyKey: string): any | null;
 }
 
 export interface IApeInferenceGateway {
