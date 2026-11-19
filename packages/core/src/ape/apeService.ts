@@ -137,6 +137,7 @@ import { InMemoryIntrinsicMotivationRepository, IntrinsicMotivationEngine } from
 import { InMemoryCuriosityExplorationRepository, CuriosityExplorationEngine } from './curiosityExplorationEngine.js';
 import { InMemoryRewardLearningRepository, RewardLearningEngine, EvaluateOutcomeParams } from './rewardLearningEngine.js';
 import { InMemoryHabitsAndRoutinesRepository, HabitsAndRoutinesEngine, FormHabitParams, ModifyHabitParams } from './habitsAndRoutinesEngine.js';
+import { InMemoryTemperamentPersonalityRepository, TemperamentPersonalityEngine } from './temperamentPersonalityEngine.js';
 import {
   ISimulationRepository,
   IMetacognitionRepository,
@@ -154,6 +155,7 @@ import {
   ICuriosityExplorationRepository,
   IRewardLearningRepository,
   IHabitsAndRoutinesRepository,
+  ITemperamentPersonalityRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
@@ -168,6 +170,8 @@ import {
   MotivationSource,
   InvestigationStep,
   RewardDimension,
+  SituationType,
+  CorePersonalityTraits,
 } from '@arletex/contracts';
 
 export class ApeService {
@@ -216,6 +220,7 @@ export class ApeService {
   public readonly curiosityEngine: CuriosityExplorationEngine;
   public readonly rewardLearningEngine: RewardLearningEngine;
   public readonly habitsEngine: HabitsAndRoutinesEngine;
+  public readonly temperamentEngine: TemperamentPersonalityEngine;
 
   constructor(
     repo: IApeRepository,
@@ -251,6 +256,7 @@ export class ApeService {
     curiosityRepo?: ICuriosityExplorationRepository,
     rewardLearningRepo?: IRewardLearningRepository,
     habitsRepo?: IHabitsAndRoutinesRepository,
+    temperamentRepo?: ITemperamentPersonalityRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -375,6 +381,9 @@ export class ApeService {
 
     const hbtRepo = habitsRepo || new InMemoryHabitsAndRoutinesRepository();
     this.habitsEngine = new HabitsAndRoutinesEngine(hbtRepo, logger);
+
+    const tempRepo = temperamentRepo || new InMemoryTemperamentPersonalityRepository();
+    this.temperamentEngine = new TemperamentPersonalityEngine(tempRepo, logger);
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -2323,6 +2332,38 @@ export class ApeService {
 
   public getLatestNoveltyRoutineBalance() {
     return this.habitsEngine.getLatestBalance();
+  }
+
+  public getTemperamentProfile() {
+    return this.temperamentEngine.getProfile();
+  }
+
+  public expressPersonalityInSituation(
+    situationType: SituationType,
+    contextDescription: string,
+    customDeltas?: Partial<Record<keyof CorePersonalityTraits, number>>,
+  ) {
+    return this.temperamentEngine.expressPersonalityInSituation(
+      situationType,
+      contextDescription,
+      customDeltas,
+    );
+  }
+
+  public evolveTraitGradually(
+    traitKey: keyof CorePersonalityTraits,
+    delta: number,
+    driftReason: string,
+  ) {
+    return this.temperamentEngine.evolveTraitGradually(traitKey, delta, driftReason);
+  }
+
+  public listSituationalExpressions(situationType?: string, limit?: number) {
+    return this.temperamentEngine.listSituationalExpressions(situationType, limit);
+  }
+
+  public listPersonalityEvolutionRecords(traitKey?: string, limit?: number) {
+    return this.temperamentEngine.listEvolutionRecords(traitKey, limit);
   }
 }
 

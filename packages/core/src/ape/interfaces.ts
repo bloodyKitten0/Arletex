@@ -126,6 +126,9 @@ import {
   HabitRecord,
   HabitExecutionLog,
   NoveltyRoutineBalance,
+  TemperamentProfile,
+  SituationalPersonalityExpression,
+  PersonalityEvolutionRecord,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -618,6 +621,16 @@ export interface IHabitsAndRoutinesRepository {
   saveBalance(balance: NoveltyRoutineBalance): void;
   getLatestBalance(): NoveltyRoutineBalance | null;
 }
+
+export interface ITemperamentPersonalityRepository {
+  saveProfile(profile: TemperamentProfile): void;
+  getProfile(id?: string): TemperamentProfile | null;
+  saveSituationalExpression(expression: SituationalPersonalityExpression): void;
+  listSituationalExpressions(situationType?: string, limit?: number): SituationalPersonalityExpression[];
+  saveEvolutionRecord(record: PersonalityEvolutionRecord): void;
+  listEvolutionRecords(traitKey?: string, limit?: number): PersonalityEvolutionRecord[];
+}
+
 
 
 

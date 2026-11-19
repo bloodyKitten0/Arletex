@@ -40,6 +40,8 @@ export * from './repositories/intrinsicMotivationRepository.js';
 export * from './repositories/curiosityExplorationRepository.js';
 export * from './repositories/rewardLearningRepository.js';
 export * from './repositories/habitsAndRoutinesRepository.js';
+export * from './repositories/temperamentPersonalityRepository.js';
+
 
 
 

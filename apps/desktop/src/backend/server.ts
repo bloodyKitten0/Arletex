@@ -103,6 +103,7 @@ import {
   SqliteCuriosityExplorationRepository,
   SqliteRewardLearningRepository,
   SqliteHabitsAndRoutinesRepository,
+  SqliteTemperamentPersonalityRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -242,6 +243,7 @@ export class ArletexBackendServer {
   public readonly curiosityRepo: SqliteCuriosityExplorationRepository;
   public readonly rewardLearningRepo: SqliteRewardLearningRepository;
   public readonly habitsRepo: SqliteHabitsAndRoutinesRepository;
+  public readonly temperamentRepo: SqliteTemperamentPersonalityRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -306,6 +308,7 @@ export class ArletexBackendServer {
     this.curiosityRepo = new SqliteCuriosityExplorationRepository(db);
     this.rewardLearningRepo = new SqliteRewardLearningRepository(db);
     this.habitsRepo = new SqliteHabitsAndRoutinesRepository(db);
+    this.temperamentRepo = new SqliteTemperamentPersonalityRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -340,6 +343,7 @@ export class ArletexBackendServer {
       this.curiosityRepo,
       this.rewardLearningRepo,
       this.habitsRepo,
+      this.temperamentRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -5617,6 +5621,53 @@ Rules:
       if (url.pathname === '/api/ape/habits/balance' && method === 'GET') {
         const balance = this.apeService.getLatestNoveltyRoutineBalance();
         this.sendJson(res, 200, { success: true, balance });
+        return;
+      }
+
+      // ==========================================
+      // Temperament and Personality Routes (Milestone 33)
+      // ==========================================
+      if (url.pathname === '/api/ape/temperament/profile' && method === 'GET') {
+        const profile = this.apeService.getTemperamentProfile();
+        this.sendJson(res, 200, { success: true, profile });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/temperament/express' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const expression = this.apeService.expressPersonalityInSituation(
+          body.situationType,
+          body.contextDescription,
+          body.customDeltas,
+        );
+        this.sendJson(res, 200, { success: true, expression });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/temperament/expressions' && method === 'GET') {
+        const situationType = url.searchParams.get('situationType') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const expressions = this.apeService.listSituationalExpressions(situationType, limit);
+        this.sendJson(res, 200, { success: true, expressions });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/temperament/evolve-trait' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const record = this.apeService.evolveTraitGradually(
+          body.traitKey,
+          body.delta,
+          body.driftReason,
+        );
+        this.sendJson(res, 200, { success: true, record });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/temperament/evolution-records' && method === 'GET') {
+        const traitKey = url.searchParams.get('traitKey') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const records = this.apeService.listPersonalityEvolutionRecords(traitKey, limit);
+        this.sendJson(res, 200, { success: true, records });
         return;
       }
 

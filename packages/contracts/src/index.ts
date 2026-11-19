@@ -787,6 +787,12 @@ export * from './rewardLearning.js';
 // ==========================================
 export * from './habitsAndRoutines.js';
 
+// ==========================================
+// Temperament and Personality Contracts (Milestone 33)
+// ==========================================
+export * from './temperamentAndPersonality.js';
+
+
 
 
 

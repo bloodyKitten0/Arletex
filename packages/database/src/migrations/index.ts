@@ -2268,4 +2268,50 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('habits_and_routines_milestone32', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 44,
+    name: '044_temperament_and_personality_milestone33',
+    up: `
+      -- Enduring Temperament and Personality Profile
+      CREATE TABLE IF NOT EXISTS temperament_profiles (
+        id TEXT PRIMARY KEY,
+        core_traits_json TEXT NOT NULL,
+        emotional_tendencies_json TEXT NOT NULL,
+        communication_preferences_json TEXT NOT NULL,
+        social_tendencies_json TEXT NOT NULL,
+        last_calibrated_at TEXT NOT NULL
+      );
+
+      -- Situational Personality Expressions
+      CREATE TABLE IF NOT EXISTS situational_personality_expressions (
+        id TEXT PRIMARY KEY,
+        situation_type TEXT NOT NULL,
+        context_description TEXT NOT NULL,
+        expressed_traits_json TEXT NOT NULL,
+        baseline_traits_json TEXT NOT NULL,
+        trait_deltas_json TEXT NOT NULL,
+        behavioural_consistency_score REAL NOT NULL,
+        expressed_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_sit_personality_type ON situational_personality_expressions (situation_type);
+      CREATE INDEX IF NOT EXISTS idx_sit_personality_time ON situational_personality_expressions (expressed_at DESC);
+
+      -- Personality Evolution Records (Gradual bounded drift tracking)
+      CREATE TABLE IF NOT EXISTS personality_evolution_records (
+        id TEXT PRIMARY KEY,
+        trait_key TEXT NOT NULL,
+        previous_score REAL NOT NULL,
+        updated_score REAL NOT NULL,
+        drift_delta REAL NOT NULL,
+        drift_reason TEXT NOT NULL,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_pers_evol_trait ON personality_evolution_records (trait_key);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('temperament_and_personality_milestone33', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];
