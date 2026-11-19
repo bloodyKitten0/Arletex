@@ -114,6 +114,7 @@ import {
   SqliteRelationshipsAttachmentRepository,
   SqliteSocialLearningCultureRepository,
   SqliteExpressiveIdentityRepository,
+  SqliteCreativityRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -264,6 +265,7 @@ export class ArletexBackendServer {
   public readonly relationshipsAttachmentRepo: SqliteRelationshipsAttachmentRepository;
   public readonly socialLearningCultureRepo: SqliteSocialLearningCultureRepository;
   public readonly expressiveIdentityRepo: SqliteExpressiveIdentityRepository;
+  public readonly creativityRepo: SqliteCreativityRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -339,6 +341,7 @@ export class ArletexBackendServer {
     this.relationshipsAttachmentRepo = new SqliteRelationshipsAttachmentRepository(db);
     this.socialLearningCultureRepo = new SqliteSocialLearningCultureRepository(db);
     this.expressiveIdentityRepo = new SqliteExpressiveIdentityRepository(db);
+    this.creativityRepo = new SqliteCreativityRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -384,6 +387,7 @@ export class ArletexBackendServer {
       this.relationshipsAttachmentRepo,
       this.socialLearningCultureRepo,
       this.expressiveIdentityRepo,
+      this.creativityRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -6405,6 +6409,83 @@ Rules:
           body.contextTopic,
         );
         this.sendJson(res, 200, { success: true, ...guidance });
+        return;
+      }
+
+      // ==========================================
+      // Creativity & Innovation Routes (Milestone 44)
+      // ==========================================
+      if (url.pathname === '/api/ape/creativity/generate-idea' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.domain) {
+          this.sendJson(res, 400, { error: 'domain is required' });
+          return;
+        }
+        const idea = await this.apeService.generateCreativeIdea(body);
+        this.sendJson(res, 200, { success: true, idea });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/creativity/ideas' && method === 'GET') {
+        const domain = (url.searchParams.get('domain') as any) || undefined;
+        const status = url.searchParams.get('status') || undefined;
+        const ideas = this.apeService.listCreativeIdeas(domain, status);
+        this.sendJson(res, 200, { success: true, ideas });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/creativity/create-project' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.title || !body.domain || !body.objective || !body.initialContent) {
+          this.sendJson(res, 400, { error: 'title, domain, objective, and initialContent are required' });
+          return;
+        }
+        const project = await this.apeService.createCreativeProject(body);
+        this.sendJson(res, 200, { success: true, project });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/creativity/refine-artifact' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.projectId || !body.revisionNotes) {
+          this.sendJson(res, 400, { error: 'projectId and revisionNotes are required' });
+          return;
+        }
+        const result = await this.apeService.refineCreativeArtifact(
+          body.projectId,
+          body.revisionNotes,
+          body.refinedContent,
+        );
+        this.sendJson(res, 200, { success: true, ...result });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/creativity/evaluate-artifact' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.content || !body.domain) {
+          this.sendJson(res, 400, { error: 'content and domain are required' });
+          return;
+        }
+        const evaluation = this.apeService.evaluateCreativeArtifactQuality(body.content, body.domain);
+        this.sendJson(res, 200, { success: true, evaluation });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/creativity/deepen-interest' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.domain || !body.topic || !body.observation) {
+          this.sendJson(res, 400, { error: 'domain, topic, and observation are required' });
+          return;
+        }
+        const interest = await this.apeService.deepenCreativeInterest(body.domain, body.topic, body.observation);
+        this.sendJson(res, 200, { success: true, interest });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/creativity/interests' && method === 'GET') {
+        const domain = (url.searchParams.get('domain') as any) || undefined;
+        const interests = this.apeService.listCreativeInterests(domain);
+        this.sendJson(res, 200, { success: true, interests });
         return;
       }
 

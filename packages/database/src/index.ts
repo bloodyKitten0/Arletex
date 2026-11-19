@@ -51,6 +51,8 @@ export * from './repositories/socialCommunicationRepository.js';
 export * from './repositories/relationshipsAttachmentRepository.js';
 export * from './repositories/socialLearningCultureRepository.js';
 export * from './repositories/expressiveIdentityRepository.js';
+export * from './repositories/creativityRepository.js';
+
 
 
 

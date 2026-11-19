@@ -189,6 +189,10 @@ import {
   ExpressiveIdentityEngine,
 } from './expressiveIdentityEngine.js';
 import {
+  InMemoryCreativityRepository,
+  CreativityEngine,
+} from './creativityEngine.js';
+import {
   ISimulationRepository,
   IMetacognitionRepository,
   IGlobalCognitiveRepository,
@@ -216,6 +220,7 @@ import {
   IRelationshipsAttachmentRepository,
   ISocialLearningCultureRepository,
   IExpressiveIdentityRepository,
+  ICreativityRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
@@ -298,6 +303,7 @@ export class ApeService {
   public readonly relationshipsAttachmentEngine: RelationshipsAttachmentEngine;
   public readonly socialLearningCultureEngine: SocialLearningCultureEngine;
   public readonly expressiveIdentityEngine: ExpressiveIdentityEngine;
+  public readonly creativityEngine: CreativityEngine;
 
   constructor(
     repo: IApeRepository,
@@ -344,6 +350,7 @@ export class ApeService {
     relationshipsAttachmentRepo?: IRelationshipsAttachmentRepository,
     socialLearningCultureRepo?: ISocialLearningCultureRepository,
     expressiveIdentityRepo?: IExpressiveIdentityRepository,
+    creativityRepo?: ICreativityRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -501,6 +508,9 @@ export class ApeService {
 
     const eiRepo = expressiveIdentityRepo || new InMemoryExpressiveIdentityRepository();
     this.expressiveIdentityEngine = new ExpressiveIdentityEngine({ repository: eiRepo });
+
+    const crtRepo = creativityRepo || new InMemoryCreativityRepository();
+    this.creativityEngine = new CreativityEngine({ repository: crtRepo });
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -2888,6 +2898,48 @@ export class ApeService {
       arleCounterthesis,
       contextTopic,
     );
+  }
+
+  public generateCreativeIdea(params: {
+    domain: any;
+    seedConcepts?: string[];
+    motivationPrompt?: string;
+  }) {
+    return this.creativityEngine.generateOriginalIdea(params);
+  }
+
+  public createCreativeProject(params: {
+    ideaId?: string;
+    title: string;
+    domain: any;
+    objective: string;
+    initialContent: string;
+  }) {
+    return this.creativityEngine.createIndependentProject(params);
+  }
+
+  public refineCreativeArtifact(projectId: string, revisionNotes: string, refinedContent?: string) {
+    return this.creativityEngine.refineArtifact(projectId, revisionNotes, refinedContent);
+  }
+
+  public evaluateCreativeArtifactQuality(content: string, domain: any) {
+    return this.creativityEngine.evaluateArtifactQuality(content, domain);
+  }
+
+  public deepenCreativeInterest(domain: any, topic: string, observation: string) {
+    return this.creativityEngine.deepenCreativeInterest(domain, topic, observation);
+  }
+
+  public listCreativeIdeas(domain?: any, status?: string) {
+    return (this.creativityEngine as any).repository?.listIdeas(domain, status) ?? [];
+  }
+
+  public listCreativeProjects(domain?: any) {
+    return (this.creativityEngine as any).repository?.listProjects(domain) ?? [];
+  }
+
+  public listCreativeInterests(domain?: any) {
+    return (this.creativityEngine as any).repository?.listInterests(domain) ?? [];
   }
 }
 

@@ -2926,4 +2926,57 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('stable_expressive_identity_milestone43', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 55,
+    name: '055_creativity_and_innovation_milestone44',
+    up: `
+      -- Creative Ideas (Spontaneous & concept-combined idea sparks)
+      CREATE TABLE IF NOT EXISTS creative_ideas (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        domain TEXT NOT NULL,
+        core_premise TEXT NOT NULL,
+        combined_concepts TEXT NOT NULL,
+        originality_score REAL NOT NULL,
+        feasibility_score REAL NOT NULL,
+        aesthetic_potential REAL NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_creative_ideas_domain ON creative_ideas (domain);
+      CREATE INDEX IF NOT EXISTS idx_creative_ideas_status ON creative_ideas (status);
+
+      -- Independent Creative Projects (Iterative multi-version creative artifacts)
+      CREATE TABLE IF NOT EXISTS independent_creative_projects (
+        id TEXT PRIMARY KEY,
+        idea_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        domain TEXT NOT NULL,
+        objective TEXT NOT NULL,
+        versions TEXT NOT NULL,
+        current_version INTEGER NOT NULL,
+        self_evaluation_notes TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_creative_proj_domain ON independent_creative_projects (domain);
+
+      -- Creative Interests (Deepened curiosity threads and exploration logs)
+      CREATE TABLE IF NOT EXISTS creative_interests (
+        id TEXT PRIMARY KEY,
+        domain TEXT NOT NULL,
+        interest_topic TEXT NOT NULL,
+        curiosity_depth REAL NOT NULL,
+        exploration_log TEXT NOT NULL,
+        last_explored_at TEXT NOT NULL
+      );
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('creativity_and_innovation_milestone44', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

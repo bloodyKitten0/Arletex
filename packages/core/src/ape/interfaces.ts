@@ -171,6 +171,10 @@ import {
   ModelLinguisticAdaptation,
   ExpressiveUtteranceEvaluation,
   StorytellingFragment,
+  CreativeIdea,
+  IndependentCreativeProject,
+  CreativeInterest,
+  CreativeDomain,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -794,6 +798,19 @@ export interface IExpressiveIdentityRepository {
   saveStoryFragment(fragment: StorytellingFragment): void;
   listStoryFragments(limit?: number): StorytellingFragment[];
 }
+
+export interface ICreativityRepository {
+  saveIdea(idea: CreativeIdea): void;
+  getIdea(id: string): CreativeIdea | null;
+  listIdeas(domain?: CreativeDomain, status?: string): CreativeIdea[];
+  saveProject(project: IndependentCreativeProject): void;
+  getProject(id: string): IndependentCreativeProject | null;
+  listProjects(domain?: CreativeDomain): IndependentCreativeProject[];
+  saveInterest(interest: CreativeInterest): void;
+  getInterest(id: string): CreativeInterest | null;
+  listInterests(domain?: CreativeDomain): CreativeInterest[];
+}
+
 
 
 

@@ -842,6 +842,12 @@ export * from './socialLearningAndCulture.js';
 // ==========================================
 export * from './stableExpressiveIdentity.js';
 
+// ==========================================
+// Creativity & Innovation Contracts (Milestone 44)
+// ==========================================
+export * from './creativityAndInnovation.js';
+
+
 
 
 
