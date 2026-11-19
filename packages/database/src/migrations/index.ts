@@ -1793,4 +1793,26 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('autonomous_agency_milestone24', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 36,
+    name: '036_emotional_appraisal_milestone25',
+    up: `
+      -- Contextual Emotional Appraisals & Interpretation Comparisons
+      CREATE TABLE IF NOT EXISTS appraisal_comparisons (
+        id TEXT PRIMARY KEY,
+        event_id TEXT NOT NULL,
+        event_content TEXT NOT NULL,
+        interpretations_json TEXT NOT NULL DEFAULT '[]',
+        divergence_score REAL NOT NULL DEFAULT 0.0,
+        divergence_explanation TEXT NOT NULL,
+        evaluated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_appraisal_comparisons_event ON appraisal_comparisons (event_id);
+      CREATE INDEX IF NOT EXISTS idx_appraisal_comparisons_time ON appraisal_comparisons (evaluated_at DESC);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('emotional_appraisal_milestone25', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

@@ -98,6 +98,7 @@ import {
   AutonomousActivityRecord,
   AutonomousActivityStatus,
   AutonomousActivityType,
+  AppraisalInterpretationComparison,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -499,6 +500,13 @@ export interface IAutonomousActivityRepository {
     limit?: number;
   }): AutonomousActivityRecord[];
   deleteActivity(id: string): void;
+}
+
+export interface IEmotionalAppraisalRepository {
+  saveComparison(comparison: AppraisalInterpretationComparison): void;
+  getComparisonById(id: string): AppraisalInterpretationComparison | null;
+  listComparisons(limit?: number): AppraisalInterpretationComparison[];
+  deleteComparison(id: string): void;
 }
 
 

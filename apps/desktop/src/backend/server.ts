@@ -95,6 +95,7 @@ import {
   SqlitePersistentPlanningRepository,
   SqliteDeliberationRepository,
   SqliteAutonomousAgencyRepository,
+  SqliteEmotionalAppraisalRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -226,6 +227,7 @@ export class ArletexBackendServer {
   public readonly planningRepo: SqlitePersistentPlanningRepository;
   public readonly deliberationRepo: SqliteDeliberationRepository;
   public readonly autonomousAgencyRepo: SqliteAutonomousAgencyRepository;
+  public readonly emotionalAppraisalRepo: SqliteEmotionalAppraisalRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -282,6 +284,7 @@ export class ArletexBackendServer {
     this.planningRepo = new SqlitePersistentPlanningRepository(db);
     this.deliberationRepo = new SqliteDeliberationRepository(db);
     this.autonomousAgencyRepo = new SqliteAutonomousAgencyRepository(db);
+    this.emotionalAppraisalRepo = new SqliteEmotionalAppraisalRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -308,6 +311,7 @@ export class ArletexBackendServer {
       this.planningRepo,
       this.deliberationRepo,
       this.autonomousAgencyRepo,
+      this.emotionalAppraisalRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -4997,6 +5001,30 @@ Rules:
         const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 100;
         const activities = this.apeService.autonomousAgencyEngine.listActivities({ status, type, goalId, limit });
         this.sendJson(res, 200, activities);
+        return;
+      }
+
+      // ==========================================
+      // Emotional Appraisal Routes (Milestone 25)
+      // ==========================================
+      if (url.pathname === '/api/ape/appraisal/evaluate-frame' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const appraisal = this.apeService.evaluateContextualInterpretation(body.event, body.frame);
+        this.sendJson(res, 200, { success: true, appraisal });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/appraisal/compare-frames' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const comparison = this.apeService.compareEventInterpretations(body.event, body.frames);
+        this.sendJson(res, 200, { success: true, comparison });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/appraisal/comparisons' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const comparisons = this.apeService.contextualAppraisalService.listComparisons(limit);
+        this.sendJson(res, 200, comparisons);
         return;
       }
 

@@ -129,6 +129,7 @@ import { InMemorySelfGeneratedGoalRepository, SelfGeneratedGoalEngine } from './
 import { InMemoryPersistentPlanningRepository, PersistentPlanningEngine } from './persistentPlanningEngine.js';
 import { InMemoryDeliberationRepository, DeliberationEngine } from './deliberationEngine.js';
 import { InMemoryAutonomousActivityRepository, AutonomousAgencyEngine } from './autonomousAgencyEngine.js';
+import { InMemoryEmotionalAppraisalRepository, ContextualAppraisalService } from './contextualAppraisalService.js';
 import {
   ISimulationRepository,
   IMetacognitionRepository,
@@ -138,6 +139,7 @@ import {
   IPersistentPlanningRepository,
   IDeliberationRepository,
   IAutonomousActivityRepository,
+  IEmotionalAppraisalRepository,
 } from './interfaces.js';
 
 export class ApeService {
@@ -178,6 +180,7 @@ export class ApeService {
   public readonly planningEngine: PersistentPlanningEngine;
   public readonly deliberationEngine: DeliberationEngine;
   public readonly autonomousAgencyEngine: AutonomousAgencyEngine;
+  public readonly contextualAppraisalService: ContextualAppraisalService;
 
   constructor(
     repo: IApeRepository,
@@ -205,6 +208,7 @@ export class ApeService {
     planningRepo?: IPersistentPlanningRepository,
     deliberationRepo?: IDeliberationRepository,
     autonomousAgencyRepo?: IAutonomousActivityRepository,
+    appraisalRepo?: IEmotionalAppraisalRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -305,6 +309,9 @@ export class ApeService {
 
     const aaRepo = autonomousAgencyRepo || new InMemoryAutonomousActivityRepository();
     this.autonomousAgencyEngine = new AutonomousAgencyEngine({ repository: aaRepo, logger });
+
+    const eAppRepo = appraisalRepo || new InMemoryEmotionalAppraisalRepository();
+    this.contextualAppraisalService = new ContextualAppraisalService({ repository: eAppRepo, logger });
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -1869,6 +1876,34 @@ export class ApeService {
 
   public runAutonomousGoalCycle(goal: Parameters<AutonomousAgencyEngine['runAutonomousGoalCycle']>[0]) {
     return this.autonomousAgencyEngine.runAutonomousGoalCycle(goal);
+  }
+
+  // ==========================================
+  // Milestone 25 — Emotional Appraisal
+  // ==========================================
+
+  public evaluateContextualInterpretation(
+    event: Parameters<ContextualAppraisalService['evaluateInterpretation']>[0],
+    frame: Parameters<ContextualAppraisalService['evaluateInterpretation']>[1],
+  ) {
+    return this.contextualAppraisalService.evaluateInterpretation(
+      event,
+      frame,
+      this.repo.getAffectiveState(),
+      this.repo.getRelationshipConfig(),
+    );
+  }
+
+  public compareEventInterpretations(
+    event: Parameters<ContextualAppraisalService['compareInterpretations']>[0],
+    frames: Parameters<ContextualAppraisalService['compareInterpretations']>[1],
+  ) {
+    return this.contextualAppraisalService.compareInterpretations(
+      event,
+      frames,
+      this.repo.getAffectiveState(),
+      this.repo.getRelationshipConfig(),
+    );
   }
 }
 

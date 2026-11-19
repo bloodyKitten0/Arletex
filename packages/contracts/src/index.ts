@@ -747,5 +747,10 @@ export * from './deliberationAndConflict.js';
 // ==========================================
 export * from './autonomousAgency.js';
 
+// ==========================================
+// Emotional Appraisal Contracts (Milestone 25)
+// ==========================================
+export * from './emotionalAppraisal.js';
+
 
 
