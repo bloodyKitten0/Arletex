@@ -114,6 +114,11 @@ import {
   MotivationOrientation,
   InternalizationRecord,
   MotivationReassessmentResult,
+  NoveltyDetectionRecord,
+  KnowledgeGapRecord,
+  ExploratoryQuestion,
+  IndependentInvestigationRecord,
+  DiscoveredInterest,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -567,6 +572,20 @@ export interface IIntrinsicMotivationRepository {
   getInternalizations(activityId?: string, limit?: number): InternalizationRecord[];
   saveReassessment(record: MotivationReassessmentResult): void;
   getReassessments(activityId?: string, limit?: number): MotivationReassessmentResult[];
+}
+
+export interface ICuriosityExplorationRepository {
+  saveNovelty(record: NoveltyDetectionRecord): void;
+  listNoveltyDetections(limit?: number): NoveltyDetectionRecord[];
+  saveKnowledgeGap(gap: KnowledgeGapRecord): void;
+  listKnowledgeGaps(domain?: string, limit?: number): KnowledgeGapRecord[];
+  saveQuestion(question: ExploratoryQuestion): void;
+  listQuestions(knowledgeGapId?: string, limit?: number): ExploratoryQuestion[];
+  saveInvestigation(investigation: IndependentInvestigationRecord): void;
+  listInvestigations(domain?: string, limit?: number): IndependentInvestigationRecord[];
+  saveInterest(interest: DiscoveredInterest): void;
+  getInterestById(id: string): DiscoveredInterest | null;
+  listInterests(limit?: number): DiscoveredInterest[];
 }
 
 

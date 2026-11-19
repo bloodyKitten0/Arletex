@@ -772,5 +772,10 @@ export * from './needsAndHomeostasis.js';
 // ==========================================
 export * from './intrinsicMotivation.js';
 
+// ==========================================
+// Curiosity and Exploration Contracts (Milestone 30)
+// ==========================================
+export * from './curiosityAndExploration.js';
+
 
 

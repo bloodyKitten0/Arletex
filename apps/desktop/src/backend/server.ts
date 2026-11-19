@@ -100,6 +100,7 @@ import {
   SqliteEmotionalRegulationRepository,
   SqliteNeedsHomeostasisRepository,
   SqliteIntrinsicMotivationRepository,
+  SqliteCuriosityExplorationRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -236,6 +237,7 @@ export class ArletexBackendServer {
   public readonly emotionalRegulationRepo: SqliteEmotionalRegulationRepository;
   public readonly homeostasisRepo: SqliteNeedsHomeostasisRepository;
   public readonly intrinsicMotivationRepo: SqliteIntrinsicMotivationRepository;
+  public readonly curiosityRepo: SqliteCuriosityExplorationRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -297,6 +299,7 @@ export class ArletexBackendServer {
     this.emotionalRegulationRepo = new SqliteEmotionalRegulationRepository(db);
     this.homeostasisRepo = new SqliteNeedsHomeostasisRepository(db);
     this.intrinsicMotivationRepo = new SqliteIntrinsicMotivationRepository(db);
+    this.curiosityRepo = new SqliteCuriosityExplorationRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -328,6 +331,7 @@ export class ArletexBackendServer {
       this.emotionalRegulationRepo,
       this.homeostasisRepo,
       this.intrinsicMotivationRepo,
+      this.curiosityRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -5325,6 +5329,112 @@ Rules:
         const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
         const reassessments = this.apeService.getMotivationReassessments(activityId, limit);
         this.sendJson(res, 200, reassessments);
+        return;
+      }
+
+      // ==========================================
+      // Curiosity and Exploration Routes (Milestone 30)
+      // ==========================================
+      if (url.pathname === '/api/ape/curiosity/interests' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const interests = this.apeService.listDiscoveredInterests(limit);
+        this.sendJson(res, 200, { success: true, interests });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/curiosity/develop-interest' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const interest = this.apeService.developDiscoveredInterest(
+          body.domain,
+          body.topic,
+          body.discoveredRationale,
+          body.initialFindings || [],
+        );
+        this.sendJson(res, 200, { success: true, interest });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/curiosity/evolve-interest' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const interest = this.apeService.evolveInterestMaturity(body.interestId, body.newFinding);
+        this.sendJson(res, 200, { success: true, interest });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/curiosity/gaps' && method === 'GET') {
+        const domain = url.searchParams.get('domain') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const gaps = this.apeService.listKnowledgeGaps(domain, limit);
+        this.sendJson(res, 200, { success: true, gaps });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/curiosity/identify-gap' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const gap = this.apeService.identifyKnowledgeGap(
+          body.domain,
+          body.topic,
+          body.gapDescription,
+          body.epistemicUncertainty ?? 0.75,
+        );
+        this.sendJson(res, 200, { success: true, gap });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/curiosity/questions' && method === 'GET') {
+        const knowledgeGapId = url.searchParams.get('knowledgeGapId') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const questions = this.apeService.listExploratoryQuestions(knowledgeGapId, limit);
+        this.sendJson(res, 200, { success: true, questions });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/curiosity/formulate-question' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const question = this.apeService.formulateExploratoryQuestion(
+          body.knowledgeGapId,
+          body.question,
+          body.hypotheses || [],
+        );
+        this.sendJson(res, 200, { success: true, question });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/curiosity/investigations' && method === 'GET') {
+        const domain = url.searchParams.get('domain') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const investigations = this.apeService.listInvestigations(domain, limit);
+        this.sendJson(res, 200, { success: true, investigations });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/curiosity/investigate' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const investigation = this.apeService.conductIndependentInvestigation(
+          body.questionId,
+          body.investigationTitle,
+          body.stepsExecuted || [],
+          body.synthesisSummary,
+        );
+        this.sendJson(res, 200, { success: true, investigation });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/curiosity/novelty' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const records = this.apeService.listNoveltyDetections(limit);
+        this.sendJson(res, 200, { success: true, records });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/curiosity/detect-novelty' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const record = this.apeService.detectNovelty(
+          body.stimulus,
+          body.detectedDomain,
+          body.familiarityBaseline ?? 0.25,
+        );
+        this.sendJson(res, 200, { success: true, record });
         return;
       }
 

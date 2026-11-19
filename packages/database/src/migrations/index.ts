@@ -2051,4 +2051,88 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('intrinsic_motivation_milestone29', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 41,
+    name: '041_curiosity_exploration_milestone30',
+    up: `
+      -- Novelty Detections
+      CREATE TABLE IF NOT EXISTS novelty_detections (
+        id TEXT PRIMARY KEY,
+        stimulus TEXT NOT NULL,
+        detected_domain TEXT NOT NULL,
+        novelty_score REAL NOT NULL,
+        familiarity_baseline REAL NOT NULL,
+        is_novel INTEGER NOT NULL,
+        detected_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_novelty_time ON novelty_detections (detected_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_novelty_domain ON novelty_detections (detected_domain);
+
+      -- Knowledge Gaps
+      CREATE TABLE IF NOT EXISTS knowledge_gaps (
+        id TEXT PRIMARY KEY,
+        domain TEXT NOT NULL,
+        topic TEXT NOT NULL,
+        gap_description TEXT NOT NULL,
+        epistemic_uncertainty REAL NOT NULL,
+        importance_score REAL NOT NULL,
+        identified_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_knowledge_gaps_domain ON knowledge_gaps (domain);
+      CREATE INDEX IF NOT EXISTS idx_knowledge_gaps_uncertainty ON knowledge_gaps (epistemic_uncertainty DESC);
+
+      -- Exploratory Inquiry Questions
+      CREATE TABLE IF NOT EXISTS exploratory_questions (
+        id TEXT PRIMARY KEY,
+        knowledge_gap_id TEXT NOT NULL,
+        domain TEXT NOT NULL,
+        question TEXT NOT NULL,
+        hypotheses_json TEXT NOT NULL DEFAULT '[]',
+        formulated_at TEXT NOT NULL,
+        FOREIGN KEY (knowledge_gap_id) REFERENCES knowledge_gaps(id) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_exploratory_questions_gap ON exploratory_questions (knowledge_gap_id);
+
+      -- Independent Autonomous Investigations
+      CREATE TABLE IF NOT EXISTS independent_investigations (
+        id TEXT PRIMARY KEY,
+        question_id TEXT NOT NULL,
+        domain TEXT NOT NULL,
+        investigation_title TEXT NOT NULL,
+        steps_json TEXT NOT NULL DEFAULT '[]',
+        synthesis_summary TEXT NOT NULL,
+        is_autonomous INTEGER NOT NULL,
+        initiated_by TEXT NOT NULL,
+        status TEXT NOT NULL,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_investigations_domain ON independent_investigations (domain);
+      CREATE INDEX IF NOT EXISTS idx_investigations_time ON independent_investigations (timestamp DESC);
+
+      -- Discovered Interests (Independently encountered, not user assigned)
+      CREATE TABLE IF NOT EXISTS discovered_interests (
+        id TEXT PRIMARY KEY,
+        domain TEXT NOT NULL,
+        topic TEXT NOT NULL,
+        maturity TEXT NOT NULL,
+        curiosity_intensity REAL NOT NULL,
+        investigation_count INTEGER NOT NULL,
+        is_user_assigned INTEGER NOT NULL,
+        discovered_rationale TEXT NOT NULL,
+        key_findings_json TEXT NOT NULL DEFAULT '[]',
+        first_discovered_at TEXT NOT NULL,
+        last_explored_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_discovered_interests_domain ON discovered_interests (domain);
+      CREATE INDEX IF NOT EXISTS idx_discovered_interests_intensity ON discovered_interests (curiosity_intensity DESC);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('curiosity_exploration_milestone30', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

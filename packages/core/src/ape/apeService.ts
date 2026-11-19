@@ -134,6 +134,7 @@ import { InMemoryEmotionalRepertoireRepository, EmotionalRepertoireEngine } from
 import { InMemoryEmotionalRegulationRepository, EmotionalRegulationEngine } from './emotionalRegulationEngine.js';
 import { InMemoryHomeostasisRepository, HomeostasisEngine } from './homeostasisEngine.js';
 import { InMemoryIntrinsicMotivationRepository, IntrinsicMotivationEngine } from './intrinsicMotivationEngine.js';
+import { InMemoryCuriosityExplorationRepository, CuriosityExplorationEngine } from './curiosityExplorationEngine.js';
 import {
   ISimulationRepository,
   IMetacognitionRepository,
@@ -148,6 +149,7 @@ import {
   IEmotionalRegulationRepository,
   IHomeostasisRepository,
   IIntrinsicMotivationRepository,
+  ICuriosityExplorationRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
@@ -160,6 +162,7 @@ import {
   ResourceBottleneck,
   MotivationOrientation,
   MotivationSource,
+  InvestigationStep,
 } from '@arletex/contracts';
 
 export class ApeService {
@@ -205,6 +208,7 @@ export class ApeService {
   public readonly emotionalRegulationEngine: EmotionalRegulationEngine;
   public readonly homeostasisEngine: HomeostasisEngine;
   public readonly intrinsicMotivationEngine: IntrinsicMotivationEngine;
+  public readonly curiosityEngine: CuriosityExplorationEngine;
 
   constructor(
     repo: IApeRepository,
@@ -237,6 +241,7 @@ export class ApeService {
     regulationRepo?: IEmotionalRegulationRepository,
     homeostasisRepo?: IHomeostasisRepository,
     intrinsicMotivationRepo?: IIntrinsicMotivationRepository,
+    curiosityRepo?: ICuriosityExplorationRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -352,6 +357,9 @@ export class ApeService {
 
     const mRepo = intrinsicMotivationRepo || new InMemoryIntrinsicMotivationRepository();
     this.intrinsicMotivationEngine = new IntrinsicMotivationEngine(mRepo, logger);
+
+    const curRepo = curiosityRepo || new InMemoryCuriosityExplorationRepository();
+    this.curiosityEngine = new CuriosityExplorationEngine(curRepo, logger);
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -2161,6 +2169,55 @@ export class ApeService {
 
   public getMotivationReassessments(activityId?: string, limit?: number) {
     return this.intrinsicMotivationEngine.getReassessments(activityId, limit);
+  }
+
+  public detectNovelty(stimulus: string, detectedDomain: string, familiarityBaseline?: number) {
+    return this.curiosityEngine.detectNovelty(stimulus, detectedDomain, familiarityBaseline);
+  }
+
+  public identifyKnowledgeGap(domain: string, topic: string, gapDescription: string, epistemicUncertainty?: number) {
+    return this.curiosityEngine.identifyKnowledgeGap(domain, topic, gapDescription, epistemicUncertainty);
+  }
+
+  public formulateExploratoryQuestion(knowledgeGapId: string, question: string, hypotheses?: string[]) {
+    return this.curiosityEngine.formulateQuestion(knowledgeGapId, question, hypotheses);
+  }
+
+  public conductIndependentInvestigation(
+    questionId: string,
+    investigationTitle: string,
+    stepsExecuted: InvestigationStep[],
+    synthesisSummary: string,
+  ) {
+    return this.curiosityEngine.conductIndependentInvestigation(questionId, investigationTitle, stepsExecuted, synthesisSummary);
+  }
+
+  public developDiscoveredInterest(domain: string, topic: string, discoveredRationale: string, initialFindings?: string[]) {
+    return this.curiosityEngine.developInterest(domain, topic, discoveredRationale, initialFindings);
+  }
+
+  public evolveInterestMaturity(interestId: string, newFinding: string) {
+    return this.curiosityEngine.evolveInterestMaturity(interestId, newFinding);
+  }
+
+  public listDiscoveredInterests(limit?: number) {
+    return this.curiosityEngine.listInterests(limit);
+  }
+
+  public listKnowledgeGaps(domain?: string, limit?: number) {
+    return this.curiosityEngine.listKnowledgeGaps(domain, limit);
+  }
+
+  public listExploratoryQuestions(knowledgeGapId?: string, limit?: number) {
+    return this.curiosityEngine.listQuestions(knowledgeGapId, limit);
+  }
+
+  public listInvestigations(domain?: string, limit?: number) {
+    return this.curiosityEngine.listInvestigations(domain, limit);
+  }
+
+  public listNoveltyDetections(limit?: number) {
+    return this.curiosityEngine.listNoveltyDetections(limit);
   }
 }
 
