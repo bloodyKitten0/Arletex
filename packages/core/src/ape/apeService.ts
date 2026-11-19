@@ -197,6 +197,10 @@ import {
   PlayHumourAestheticsEngine,
 } from './playHumourAestheticsEngine.js';
 import {
+  InMemoryOfflineCognitiveActivityRepository,
+  OfflineCognitiveActivityEngine,
+} from './offlineCognitiveActivityEngine.js';
+import {
   ISimulationRepository,
   IMetacognitionRepository,
   IGlobalCognitiveRepository,
@@ -226,6 +230,7 @@ import {
   IExpressiveIdentityRepository,
   ICreativityRepository,
   IPlayHumourAestheticsRepository,
+  IOfflineCognitiveActivityRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
@@ -310,6 +315,7 @@ export class ApeService {
   public readonly expressiveIdentityEngine: ExpressiveIdentityEngine;
   public readonly creativityEngine: CreativityEngine;
   public readonly playHumourAestheticsEngine: PlayHumourAestheticsEngine;
+  public readonly offlineCognitiveEngine: OfflineCognitiveActivityEngine;
 
   constructor(
     repo: IApeRepository,
@@ -358,6 +364,7 @@ export class ApeService {
     expressiveIdentityRepo?: IExpressiveIdentityRepository,
     creativityRepo?: ICreativityRepository,
     playHumourAestheticsRepo?: IPlayHumourAestheticsRepository,
+    offlineCognitiveRepo?: IOfflineCognitiveActivityRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -522,6 +529,9 @@ export class ApeService {
     const phaRepo = playHumourAestheticsRepo || new InMemoryPlayHumourAestheticsRepository();
     this.playHumourAestheticsEngine = new PlayHumourAestheticsEngine({ repository: phaRepo });
     this.playHumourAestheticsEngine.initializeDefaultPreferences();
+
+    const offRepo = offlineCognitiveRepo || new InMemoryOfflineCognitiveActivityRepository();
+    this.offlineCognitiveEngine = new OfflineCognitiveActivityEngine({ repository: offRepo });
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -2997,6 +3007,67 @@ export class ApeService {
 
   public evaluateAestheticWork(category: any, title: string, attributes: any) {
     return this.playHumourAestheticsEngine.evaluateAestheticWork(category, title, attributes);
+  }
+
+  // ==========================================
+  // Milestone 46: Offline Cognitive Activity & Consolidation
+  // ==========================================
+  public scheduleOfflineActivity(input: any) {
+    return this.offlineCognitiveEngine.scheduleActivity(input);
+  }
+
+  public executeOfflineActivity(id: string, executionResult?: { insights: string[]; artifacts?: string[] }) {
+    return this.offlineCognitiveEngine.executeActivity(id, executionResult);
+  }
+
+  public listOfflineActivities(filter?: { activityType?: any; status?: string; limit?: number }) {
+    return this.offlineCognitiveEngine.listActivities(filter);
+  }
+
+  public runOfflineConsolidation(options?: {
+    memoriesExamined?: number;
+    beliefsReassessed?: number;
+    intentionsPreserved?: number;
+  }) {
+    return this.offlineCognitiveEngine.runConsolidationCycle(options);
+  }
+
+  public listOfflineConsolidationRuns(limit?: number) {
+    return this.offlineCognitiveEngine.listConsolidationRuns(limit);
+  }
+
+  public scanOfflineUnfinishedWork(candidates?: any[]) {
+    return this.offlineCognitiveEngine.scanUnfinishedWork(candidates);
+  }
+
+  public listOfflineUnfinishedWork(status?: string) {
+    return this.offlineCognitiveEngine.listUnfinishedWork(status);
+  }
+
+  public proposeOfflineProactiveNotification(
+    topic: string,
+    message: string,
+    reasoning: string,
+    urgency?: any,
+    immediate?: boolean,
+  ) {
+    return this.offlineCognitiveEngine.generateProactiveProposal(topic, message, reasoning, urgency, immediate);
+  }
+
+  public listOfflineProactiveProposals(delivered?: boolean) {
+    return this.offlineCognitiveEngine.listProactiveProposals(delivered);
+  }
+
+  public runAutonomousOfflineCycle(context?: any) {
+    return this.offlineCognitiveEngine.runAutonomousOfflineCycle(context);
+  }
+
+  public getOfflineSchedulerPolicy() {
+    return this.offlineCognitiveEngine.getPolicy();
+  }
+
+  public updateOfflineSchedulerPolicy(patch: any) {
+    return this.offlineCognitiveEngine.updatePolicy(patch);
   }
 }
 

@@ -53,6 +53,7 @@ export * from './repositories/socialLearningCultureRepository.js';
 export * from './repositories/expressiveIdentityRepository.js';
 export * from './repositories/creativityRepository.js';
 export * from './repositories/playHumourAestheticsRepository.js';
+export * from './repositories/offlineCognitiveActivityRepository.js';
 
 
 

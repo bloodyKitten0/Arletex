@@ -3041,4 +3041,80 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('play_humour_aesthetics_milestone45', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 57,
+    name: '057_offline_cognitive_activity_milestone46',
+    up: `
+      -- Offline Activities (Background reflection, independent research, question review, project monitoring)
+      CREATE TABLE IF NOT EXISTS offline_activities (
+        id TEXT PRIMARY KEY,
+        activity_type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        rationale TEXT NOT NULL,
+        source_goal_id TEXT,
+        source_project_id TEXT,
+        source_question_id TEXT,
+        cpu_tokens_estimated INTEGER NOT NULL DEFAULT 100,
+        memory_intensity TEXT NOT NULL DEFAULT 'low',
+        status TEXT NOT NULL DEFAULT 'pending',
+        is_simulation INTEGER NOT NULL DEFAULT 0,
+        simulation_context TEXT,
+        progress REAL NOT NULL DEFAULT 0,
+        insights TEXT NOT NULL DEFAULT '[]',
+        resulting_artifacts TEXT NOT NULL DEFAULT '[]',
+        scheduled_at TEXT NOT NULL,
+        started_at TEXT,
+        completed_at TEXT,
+        metadata TEXT NOT NULL DEFAULT '{}'
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_offline_act_type ON offline_activities (activity_type);
+      CREATE INDEX IF NOT EXISTS idx_offline_act_status ON offline_activities (status);
+      CREATE INDEX IF NOT EXISTS idx_offline_act_time ON offline_activities (scheduled_at DESC);
+
+      -- Memory & Belief Consolidation Runs
+      CREATE TABLE IF NOT EXISTS consolidation_runs (
+        id TEXT PRIMARY KEY,
+        run_type TEXT NOT NULL,
+        memories_examined INTEGER NOT NULL DEFAULT 0,
+        memories_consolidated INTEGER NOT NULL DEFAULT 0,
+        beliefs_reassessed INTEGER NOT NULL DEFAULT 0,
+        intentions_preserved INTEGER NOT NULL DEFAULT 0,
+        summary TEXT NOT NULL,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_consolidation_time ON consolidation_runs (timestamp DESC);
+
+      -- Unfinished Work Recovery Items
+      CREATE TABLE IF NOT EXISTS unfinished_work_items (
+        id TEXT PRIMARY KEY,
+        work_type TEXT NOT NULL,
+        reference_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        last_active_at TEXT NOT NULL,
+        recovery_state TEXT NOT NULL DEFAULT 'detected',
+        recovery_plan TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_unfinished_work_state ON unfinished_work_items (recovery_state);
+
+      -- Proactive Notification Proposals
+      CREATE TABLE IF NOT EXISTS proactive_proposals (
+        id TEXT PRIMARY KEY,
+        urgency TEXT NOT NULL DEFAULT 'medium',
+        topic TEXT NOT NULL,
+        message TEXT NOT NULL,
+        reasoning TEXT NOT NULL,
+        should_deliver_immediately INTEGER NOT NULL DEFAULT 0,
+        delivered INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_proactive_prop_delivered ON proactive_proposals (delivered);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('offline_cognitive_activity_milestone46', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

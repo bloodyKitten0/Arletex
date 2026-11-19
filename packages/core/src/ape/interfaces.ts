@@ -180,6 +180,11 @@ import {
   IntellectualPlaySession,
   HumorDevelopmentRecord,
   AestheticCategory,
+  OfflineActivityRecord,
+  OfflineActivityType,
+  ConsolidationRun,
+  UnfinishedWorkItem,
+  ProactiveNotificationProposal,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -827,6 +832,23 @@ export interface IPlayHumourAestheticsRepository {
   saveHumorRecord(record: HumorDevelopmentRecord): void;
   listHumorRecords(limit?: number): HumorDevelopmentRecord[];
 }
+
+export interface IOfflineCognitiveActivityRepository {
+  saveActivity(activity: OfflineActivityRecord): void;
+  getActivity(id: string): OfflineActivityRecord | null;
+  listActivities(filter?: {
+    activityType?: OfflineActivityType;
+    status?: string;
+    limit?: number;
+  }): OfflineActivityRecord[];
+  saveConsolidationRun(run: ConsolidationRun): void;
+  listConsolidationRuns(limit?: number): ConsolidationRun[];
+  saveUnfinishedWorkItem(item: UnfinishedWorkItem): void;
+  listUnfinishedWorkItems(status?: string): UnfinishedWorkItem[];
+  saveProactiveProposal(proposal: ProactiveNotificationProposal): void;
+  listProactiveProposals(delivered?: boolean): ProactiveNotificationProposal[];
+}
+
 
 
 

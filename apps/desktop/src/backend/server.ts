@@ -116,6 +116,7 @@ import {
   SqliteExpressiveIdentityRepository,
   SqliteCreativityRepository,
   SqlitePlayHumourAestheticsRepository,
+  SqliteOfflineCognitiveActivityRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -268,6 +269,7 @@ export class ArletexBackendServer {
   public readonly expressiveIdentityRepo: SqliteExpressiveIdentityRepository;
   public readonly creativityRepo: SqliteCreativityRepository;
   public readonly playHumourAestheticsRepo: SqlitePlayHumourAestheticsRepository;
+  public readonly offlineCognitiveRepo: SqliteOfflineCognitiveActivityRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -345,6 +347,7 @@ export class ArletexBackendServer {
     this.expressiveIdentityRepo = new SqliteExpressiveIdentityRepository(db);
     this.creativityRepo = new SqliteCreativityRepository(db);
     this.playHumourAestheticsRepo = new SqlitePlayHumourAestheticsRepository(db);
+    this.offlineCognitiveRepo = new SqliteOfflineCognitiveActivityRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -392,6 +395,7 @@ export class ArletexBackendServer {
       this.expressiveIdentityRepo,
       this.creativityRepo,
       this.playHumourAestheticsRepo,
+      this.offlineCognitiveRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -6559,6 +6563,113 @@ Rules:
         }
         const evaluation = this.apeService.evaluateAestheticWork(body.category, body.title, body.attributes || {});
         this.sendJson(res, 200, { success: true, evaluation });
+        return;
+      }
+
+      // ==========================================
+      // Offline Cognitive Activity & Consolidation Routes (Milestone 46)
+      // ==========================================
+      if (url.pathname === '/api/ape/offline/activity' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const activity = this.apeService.scheduleOfflineActivity(body);
+        this.sendJson(res, 200, { success: true, activity });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/offline/activity/execute' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.id) {
+          this.sendJson(res, 400, { error: 'Activity id is required' });
+          return;
+        }
+        const activity = this.apeService.executeOfflineActivity(body.id, {
+          insights: body.insights,
+          artifacts: body.artifacts,
+        });
+        this.sendJson(res, 200, { success: true, activity });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/offline/activities' && method === 'GET') {
+        const activityType = (url.searchParams.get('activityType') as any) || undefined;
+        const status = url.searchParams.get('status') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const activities = this.apeService.listOfflineActivities({ activityType, status, limit });
+        this.sendJson(res, 200, { success: true, activities });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/offline/consolidation' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const run = this.apeService.runOfflineConsolidation(body);
+        this.sendJson(res, 200, { success: true, run });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/offline/consolidations' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const runs = this.apeService.listOfflineConsolidationRuns(limit);
+        this.sendJson(res, 200, { success: true, runs });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/offline/unfinished-work/scan' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const items = this.apeService.scanOfflineUnfinishedWork(body?.candidates);
+        this.sendJson(res, 200, { success: true, items });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/offline/unfinished-work' && method === 'GET') {
+        const status = url.searchParams.get('status') || undefined;
+        const items = this.apeService.listOfflineUnfinishedWork(status);
+        this.sendJson(res, 200, { success: true, items });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/offline/proposals' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.topic || !body.message || !body.reasoning) {
+          this.sendJson(res, 400, { error: 'topic, message, and reasoning are required' });
+          return;
+        }
+        const proposal = this.apeService.proposeOfflineProactiveNotification(
+          body.topic,
+          body.message,
+          body.reasoning,
+          body.urgency,
+          body.immediate,
+        );
+        this.sendJson(res, 200, { success: true, proposal });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/offline/proposals' && method === 'GET') {
+        const delivered = url.searchParams.has('delivered')
+          ? url.searchParams.get('delivered') === 'true'
+          : undefined;
+        const proposals = this.apeService.listOfflineProactiveProposals(delivered);
+        this.sendJson(res, 200, { success: true, proposals });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/offline/cycle' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const result = this.apeService.runAutonomousOfflineCycle(body);
+        this.sendJson(res, 200, { success: true, result });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/offline/policy' && method === 'GET') {
+        const policy = this.apeService.getOfflineSchedulerPolicy();
+        this.sendJson(res, 200, { success: true, policy });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/offline/policy' && (method === 'POST' || method === 'PATCH')) {
+        const body = (await this.readJsonBody(req)) as any;
+        const policy = this.apeService.updateOfflineSchedulerPolicy(body);
+        this.sendJson(res, 200, { success: true, policy });
         return;
       }
 

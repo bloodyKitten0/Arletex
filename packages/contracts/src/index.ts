@@ -852,6 +852,11 @@ export * from './creativityAndInnovation.js';
 // ==========================================
 export * from './playHumourAesthetics.js';
 
+// ==========================================
+// Offline Cognitive Activity & Consolidation Contracts (Milestone 46)
+// ==========================================
+export * from './offlineCognitiveActivity.js';
+
 
 
 
