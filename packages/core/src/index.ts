@@ -44,6 +44,7 @@ export * from './ape/deliberationEngine.js';
 export * from './ape/autonomousAgencyEngine.js';
 export * from './ape/contextualAppraisalService.js';
 export * from './ape/emotionalRepertoireEngine.js';
+export * from './ape/emotionalRegulationEngine.js';
 export * from './ape/apeService.js';
 
 // Digital Agency Subsystem

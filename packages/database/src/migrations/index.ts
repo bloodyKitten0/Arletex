@@ -1882,4 +1882,59 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('emotional_repertoire_milestone26', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 38,
+    name: '038_emotional_regulation_milestone27',
+    up: `
+      -- Setback Incidents
+      CREATE TABLE IF NOT EXISTS setback_incidents (
+        id TEXT PRIMARY KEY,
+        category TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        description TEXT NOT NULL,
+        trigger_emotion TEXT NOT NULL,
+        raw_intensity REAL NOT NULL,
+        controllability_estimate REAL NOT NULL,
+        is_manageable INTEGER NOT NULL,
+        detected_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_setbacks_severity ON setback_incidents (severity);
+      CREATE INDEX IF NOT EXISTS idx_setbacks_time ON setback_incidents (detected_at DESC);
+
+      -- Regulation Attempts
+      CREATE TABLE IF NOT EXISTS regulation_attempts (
+        id TEXT PRIMARY KEY,
+        setback_id TEXT NOT NULL,
+        strategy TEXT NOT NULL,
+        pre_intensity REAL NOT NULL,
+        post_intensity REAL NOT NULL,
+        intensity_delta REAL NOT NULL,
+        reappraisal_narrative TEXT,
+        outcome_status TEXT NOT NULL,
+        failure_acknowledged INTEGER NOT NULL,
+        failure_explanation TEXT,
+        behavioral_adjustment TEXT NOT NULL,
+        executed_at TEXT NOT NULL,
+        FOREIGN KEY (setback_id) REFERENCES setback_incidents(id) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_regulation_setback ON regulation_attempts (setback_id);
+      CREATE INDEX IF NOT EXISTS idx_regulation_time ON regulation_attempts (executed_at DESC);
+
+      -- Emotional Stability Metrics
+      CREATE TABLE IF NOT EXISTS emotional_stability_metrics (
+        id TEXT PRIMARY KEY,
+        stability_index REAL NOT NULL,
+        volatility_score REAL NOT NULL,
+        mean_recovery_time_ms REAL NOT NULL,
+        active_escalation_risks INTEGER NOT NULL,
+        successful_regulation_rate REAL NOT NULL,
+        last_evaluated_at TEXT NOT NULL
+      );
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('emotional_regulation_milestone27', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

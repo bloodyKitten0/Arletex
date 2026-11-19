@@ -131,6 +131,7 @@ import { InMemoryDeliberationRepository, DeliberationEngine } from './deliberati
 import { InMemoryAutonomousActivityRepository, AutonomousAgencyEngine } from './autonomousAgencyEngine.js';
 import { InMemoryEmotionalAppraisalRepository, ContextualAppraisalService } from './contextualAppraisalService.js';
 import { InMemoryEmotionalRepertoireRepository, EmotionalRepertoireEngine } from './emotionalRepertoireEngine.js';
+import { InMemoryEmotionalRegulationRepository, EmotionalRegulationEngine } from './emotionalRegulationEngine.js';
 import {
   ISimulationRepository,
   IMetacognitionRepository,
@@ -142,11 +143,14 @@ import {
   IAutonomousActivityRepository,
   IEmotionalAppraisalRepository,
   IEmotionalRepertoireRepository,
+  IEmotionalRegulationRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
   EmotionalTransitionTrigger,
   IndividualEmotionalTendencies,
+  CopingStrategyType,
+  SetbackCategory,
 } from '@arletex/contracts';
 
 export class ApeService {
@@ -189,6 +193,7 @@ export class ApeService {
   public readonly autonomousAgencyEngine: AutonomousAgencyEngine;
   public readonly contextualAppraisalService: ContextualAppraisalService;
   public readonly emotionalRepertoireEngine: EmotionalRepertoireEngine;
+  public readonly emotionalRegulationEngine: EmotionalRegulationEngine;
 
   constructor(
     repo: IApeRepository,
@@ -218,6 +223,7 @@ export class ApeService {
     autonomousAgencyRepo?: IAutonomousActivityRepository,
     appraisalRepo?: IEmotionalAppraisalRepository,
     repertoireRepo?: IEmotionalRepertoireRepository,
+    regulationRepo?: IEmotionalRegulationRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -324,6 +330,9 @@ export class ApeService {
 
     const repRepo = repertoireRepo || new InMemoryEmotionalRepertoireRepository();
     this.emotionalRepertoireEngine = new EmotionalRepertoireEngine(repRepo, logger);
+
+    const regRepo = regulationRepo || new InMemoryEmotionalRegulationRepository();
+    this.emotionalRegulationEngine = new EmotionalRegulationEngine(regRepo, logger);
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -1980,6 +1989,64 @@ export class ApeService {
 
   public updateIndividualEmotionalTendencies(tendencies: Partial<IndividualEmotionalTendencies>) {
     return this.emotionalRepertoireEngine.updateTendencies(tendencies);
+  }
+
+  // ==========================================
+  // Milestone 27 — Emotional Regulation and Resilience
+  // ==========================================
+
+  public assessEmotionalEscalationRisk() {
+    const active = this.emotionalRepertoireEngine.getActiveState().activeEmotions;
+    const transitions = this.emotionalRepertoireEngine.getTransitions(10);
+    return this.emotionalRegulationEngine.assessEscalationRisk(active, transitions);
+  }
+
+  public registerSetback(
+    category: SetbackCategory,
+    description: string,
+    emotion: RepertoireEmotionKey,
+    rawIntensity: number,
+    controllability: number,
+  ) {
+    return this.emotionalRegulationEngine.registerSetback(
+      category,
+      description,
+      emotion,
+      rawIntensity,
+      controllability,
+    );
+  }
+
+  public regulateSetback(
+    setbackId: string,
+    strategy?: CopingStrategyType,
+    reappraisalNarrative?: string,
+  ) {
+    return this.emotionalRegulationEngine.regulateSetback(setbackId, strategy, reappraisalNarrative);
+  }
+
+  public reappraiseSetback(setbackId: string, reframingRationale: string) {
+    return this.emotionalRegulationEngine.reappraiseEvent(setbackId, reframingRationale);
+  }
+
+  public recoverFromRelationalConflict(
+    setbackId: string,
+    partnerFeedback: string,
+    dissonanceIntensity: number,
+  ) {
+    return this.emotionalRegulationEngine.manageConflictRecovery(setbackId, partnerFeedback, dissonanceIntensity);
+  }
+
+  public getEmotionalStabilityMetrics() {
+    return this.emotionalRegulationEngine.getStabilityMetrics();
+  }
+
+  public listSetbacks(limit?: number) {
+    return this.emotionalRegulationEngine.listSetbacks(limit);
+  }
+
+  public getRegulationAttempts(setbackId?: string, limit?: number) {
+    return this.emotionalRegulationEngine.getRegulationAttempts(setbackId, limit);
   }
 }
 

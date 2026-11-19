@@ -103,6 +103,9 @@ import {
   EmotionalTransitionRecord,
   MixedEmotionalBlend,
   IndividualEmotionalTendencies,
+  SetbackIncident,
+  RegulationAttempt,
+  EmotionalStabilityMetrics,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -522,6 +525,16 @@ export interface IEmotionalRepertoireRepository {
   getBlendHistory(limit?: number): MixedEmotionalBlend[];
   getIndividualTendencies(): IndividualEmotionalTendencies;
   saveIndividualTendencies(tendencies: IndividualEmotionalTendencies): void;
+}
+
+export interface IEmotionalRegulationRepository {
+  saveSetback(setback: SetbackIncident): void;
+  getSetbackById(id: string): SetbackIncident | null;
+  listSetbacks(limit?: number): SetbackIncident[];
+  saveRegulationAttempt(attempt: RegulationAttempt): void;
+  getRegulationAttempts(setbackId?: string, limit?: number): RegulationAttempt[];
+  getStabilityMetrics(): EmotionalStabilityMetrics;
+  saveStabilityMetrics(metrics: EmotionalStabilityMetrics): void;
 }
 
 

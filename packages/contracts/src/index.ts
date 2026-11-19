@@ -757,5 +757,10 @@ export * from './emotionalAppraisal.js';
 // ==========================================
 export * from './emotionalRepertoire.js';
 
+// ==========================================
+// Emotional Regulation and Resilience Contracts (Milestone 27)
+// ==========================================
+export * from './emotionalRegulation.js';
+
 
 

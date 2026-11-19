@@ -97,6 +97,7 @@ import {
   SqliteAutonomousAgencyRepository,
   SqliteEmotionalAppraisalRepository,
   SqliteEmotionalRepertoireRepository,
+  SqliteEmotionalRegulationRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -230,6 +231,7 @@ export class ArletexBackendServer {
   public readonly autonomousAgencyRepo: SqliteAutonomousAgencyRepository;
   public readonly emotionalAppraisalRepo: SqliteEmotionalAppraisalRepository;
   public readonly emotionalRepertoireRepo: SqliteEmotionalRepertoireRepository;
+  public readonly emotionalRegulationRepo: SqliteEmotionalRegulationRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -288,6 +290,7 @@ export class ArletexBackendServer {
     this.autonomousAgencyRepo = new SqliteAutonomousAgencyRepository(db);
     this.emotionalAppraisalRepo = new SqliteEmotionalAppraisalRepository(db);
     this.emotionalRepertoireRepo = new SqliteEmotionalRepertoireRepository(db);
+    this.emotionalRegulationRepo = new SqliteEmotionalRegulationRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -316,6 +319,7 @@ export class ArletexBackendServer {
       this.autonomousAgencyRepo,
       this.emotionalAppraisalRepo,
       this.emotionalRepertoireRepo,
+      this.emotionalRegulationRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -5104,6 +5108,81 @@ Rules:
         const body = (await this.readJsonBody(req)) as any;
         const tendencies = this.apeService.updateIndividualEmotionalTendencies(body);
         this.sendJson(res, 200, { success: true, tendencies });
+        return;
+      }
+
+      // ==========================================
+      // Emotional Regulation & Resilience Routes (Milestone 27)
+      // ==========================================
+      if (url.pathname === '/api/ape/regulation/escalation-risk' && method === 'GET') {
+        const escalationRisk = this.apeService.assessEmotionalEscalationRisk();
+        this.sendJson(res, 200, { success: true, escalationRisk });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/regulation/register-setback' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const setback = this.apeService.registerSetback(
+          body.category,
+          body.description,
+          body.emotion,
+          body.rawIntensity,
+          body.controllability,
+        );
+        this.sendJson(res, 200, { success: true, setback });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/regulation/regulate' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const attempt = this.apeService.regulateSetback(
+          body.setbackId,
+          body.strategy,
+          body.reappraisalNarrative,
+        );
+        this.sendJson(res, 200, { success: true, attempt });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/regulation/reappraise' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const attempt = this.apeService.reappraiseSetback(
+          body.setbackId,
+          body.reframingRationale,
+        );
+        this.sendJson(res, 200, { success: true, attempt });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/regulation/conflict-recovery' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const attempt = this.apeService.recoverFromRelationalConflict(
+          body.setbackId,
+          body.partnerFeedback,
+          body.dissonanceIntensity,
+        );
+        this.sendJson(res, 200, { success: true, attempt });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/regulation/stability-metrics' && method === 'GET') {
+        const metrics = this.apeService.getEmotionalStabilityMetrics();
+        this.sendJson(res, 200, { success: true, metrics });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/regulation/setbacks' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const setbacks = this.apeService.listSetbacks(limit);
+        this.sendJson(res, 200, setbacks);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/regulation/attempts' && method === 'GET') {
+        const setbackId = url.searchParams.get('setbackId') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const attempts = this.apeService.getRegulationAttempts(setbackId, limit);
+        this.sendJson(res, 200, attempts);
         return;
       }
 
