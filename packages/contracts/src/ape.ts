@@ -498,7 +498,7 @@ export const IntellectualQuestionSchema = z.object({
   underlyingAssumptions: z.array(z.string()).default([]),
   competingHypotheses: z.array(CompetingHypothesisSchema).default([]),
   priority: z.number().min(0.0).max(1.0).default(0.5),
-  status: z.enum(['open', 'investigating', 'resolved', 'dismissed']).default('open'),
+  status: z.enum(['open', 'investigating', 'resolved', 'dismissed', 'insufficient_evidence', 'unresolved']).default('open'),
   resolutionSummary: z.string().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),

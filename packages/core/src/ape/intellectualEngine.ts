@@ -234,13 +234,17 @@ export class IntellectualEngine {
       });
     }
 
+    const isInsufficient = params.confidence < 0.40 ||
+      /insufficient|inconclusive|uncertain|unknown/i.test(params.conclusionProposition);
+    const finalStatus = isInsufficient ? 'insufficient_evidence' : 'resolved';
+
     const updated = this.repo.updateIntellectualQuestion({
       id: questionId,
-      status: 'resolved',
+      status: finalStatus,
       resolutionSummary: params.conclusionProposition,
     });
 
-    this.logger.info(`Intellectual question resolved: "${q.question}" -> Belief formed in domain "${q.domain}"`);
+    this.logger.info(`Intellectual question ${finalStatus}: "${q.question}" -> Belief recorded in domain "${q.domain}"`);
     return { question: updated, beliefTopic: q.domain };
   }
 

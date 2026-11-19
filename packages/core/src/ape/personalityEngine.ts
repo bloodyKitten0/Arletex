@@ -265,6 +265,18 @@ export class PersonalityEngine {
     let belief = personality.beliefs.find((b) => b.topic.toLowerCase() === topic.toLowerCase());
 
     if (belief) {
+      if (belief.content !== content || Math.abs(belief.confidence - confidence) > 0.05) {
+        belief.revisionHistory = belief.revisionHistory || [];
+        belief.revisionHistory.unshift({
+          timestamp: now,
+          previousProposition: belief.content,
+          previousConfidence: belief.confidence,
+          reason: `Updated from ${origin} with ${evidence.length} evidence items`,
+        });
+        if (belief.revisionHistory.length > 50) {
+          belief.revisionHistory = belief.revisionHistory.slice(0, 50);
+        }
+      }
       belief.content = content;
       belief.confidence = Math.max(0.0, Math.min(1.0, confidence));
       belief.supportingEvidence = Array.from(new Set([...belief.supportingEvidence, ...evidence]));

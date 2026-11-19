@@ -309,16 +309,28 @@ export class OfflineCognitiveActivityEngine {
     }>,
   ): UnfinishedWorkItem[] {
     const results: UnfinishedWorkItem[] = [];
-    const itemsToProcess = candidates && candidates.length > 0
-      ? candidates
-      : [
-          {
-            workType: 'research' as const,
-            referenceId: 'res_arch_foundations',
-            title: 'Cognitive Architecture Integration Review',
-            lastActiveAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-          },
-        ];
+    let itemsToProcess = candidates && candidates.length > 0 ? candidates : [];
+
+    if (itemsToProcess.length === 0 && this.goalRepository) {
+      try {
+        const activeGoals =
+          typeof this.goalRepository.listActiveGoals === 'function'
+            ? this.goalRepository.listActiveGoals()
+            : typeof this.goalRepository.listGoals === 'function'
+            ? this.goalRepository.listGoals()
+            : [];
+        itemsToProcess = activeGoals
+          .filter((g: any) => g.status === 'active' || g.status === 'in_progress' || g.status === 'committed')
+          .map((g: any) => ({
+            workType: 'project' as const,
+            referenceId: g.id,
+            title: g.title,
+            lastActiveAt: g.updatedAt || g.createdAt || new Date().toISOString(),
+          }));
+      } catch {
+        itemsToProcess = [];
+      }
+    }
 
     for (const item of itemsToProcess) {
       const recoveryItem: UnfinishedWorkItem = {

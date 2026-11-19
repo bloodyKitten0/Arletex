@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain, protocol, net } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
+import os from 'node:os';
 import http from 'node:http';
 import crypto from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -44,18 +45,26 @@ let isAppQuitting = false;
 const activeStreamRequests = new Map<string, http.ClientRequest>();
 
 function findPythonVenv(): string {
+  if (process.env['ARLETEX_PYTHON']) {
+    return process.env['ARLETEX_PYTHON'];
+  }
   const venvPython = path.resolve(__dirname, '../../../../.venv/bin/python');
   if (fs.existsSync(venvPython)) return venvPython;
-  const projectRootPython = '/home/proof/Documents/A man\'s dream will never die/projects/Arletex/.venv/bin/python';
-  if (fs.existsSync(projectRootPython)) return projectRootPython;
+  const devVenv = path.resolve(__dirname, '../../.venv/bin/python');
+  if (fs.existsSync(devVenv)) return devVenv;
+  const homeVenv = path.join(os.homedir(), '.local/share/arletex/venv/bin/python');
+  if (fs.existsSync(homeVenv)) return homeVenv;
   return 'python3';
 }
 
 function getSpecialistsScriptPath(): string {
+  if (process.env['ARLETEX_SPECIALISTS_SCRIPT']) {
+    return process.env['ARLETEX_SPECIALISTS_SCRIPT'];
+  }
   const directPath = path.resolve(__dirname, '../py-services/specialists_server.py');
   if (fs.existsSync(directPath)) return directPath;
-  const projectPath = '/home/proof/Documents/A man\'s dream will never die/projects/Arletex/apps/desktop/py-services/specialists_server.py';
-  if (fs.existsSync(projectPath)) return projectPath;
+  const devPath = path.resolve(__dirname, '../../py-services/specialists_server.py');
+  if (fs.existsSync(devPath)) return devPath;
   return directPath;
 }
 
@@ -74,11 +83,12 @@ async function ensureSpecialistsService(): Promise<void> {
 
   try {
     const { spawn } = await import('node:child_process');
+    const specialistsDir = process.env['ARLETEX_SPECIALISTS_DIR'] || path.join(os.homedir(), 'models/arle-specialists');
     specialistsProcess = spawn(pythonBin, [scriptPath, String(specialistsPort)], {
       stdio: ['ignore', 'pipe', 'pipe'],
       env: {
         ...process.env,
-        ARLETEX_SPECIALISTS_DIR: process.env['ARLETEX_SPECIALISTS_DIR'] || '/home/proof/models/arle-specialists',
+        ARLETEX_SPECIALISTS_DIR: specialistsDir,
       },
     });
 

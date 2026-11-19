@@ -2240,26 +2240,32 @@ export class ArletexBackendServer {
         conv = this.conversationRepo.create({ title: 'Proof & Arle' });
       }
 
-      // 1. Capture live screen image
+      // 1. Capture live screen image (only if explicit user opt-in enabled)
       let screenBase64: string | null = null;
-      try {
-        const cap = await defaultDeviceAgency.captureScreen();
-        if (cap.imageBase64) {
-          screenBase64 = cap.imageBase64;
+      const isScreenEnabled = this.preferenceRepo.get('screen_observation_enabled', 'false') === 'true';
+      if (isScreenEnabled) {
+        try {
+          const cap = await defaultDeviceAgency.captureScreen();
+          if (cap.imageBase64) {
+            screenBase64 = cap.imageBase64;
+          }
+        } catch (err: any) {
+          this.logger.debug(`Proactive screen capture note: ${err.message}`);
         }
-      } catch (err: any) {
-        this.logger.debug(`Proactive screen capture note: ${err.message}`);
       }
 
-      // 2. Query active system audio/media + acoustic energy & feed sensory affect into APE
+      // 2. Query active system audio/media + acoustic energy (only if explicit user opt-in enabled)
       let liveHostMedia: { title?: string; artist?: string } | null = null;
       let liveAudioHearing: AudioListeningResult | null = null;
-      try {
-        liveHostMedia = await defaultAudioPerception.getMprisMediaMetadata();
-      } catch {}
-      try {
-        liveAudioHearing = await defaultAudioPerception.listenToDesktopAudio(2);
-      } catch {}
+      const isAudioEnabled = this.preferenceRepo.get('audio_observation_enabled', 'false') === 'true';
+      if (isAudioEnabled) {
+        try {
+          liveHostMedia = await defaultAudioPerception.getMprisMediaMetadata();
+        } catch {}
+        try {
+          liveAudioHearing = await defaultAudioPerception.listenToDesktopAudio(2);
+        } catch {}
+      }
 
       try {
         const visibleWindows = await this.screenReading.getVisibleWindows();
@@ -3148,7 +3154,14 @@ Rules:
       // ==========================================
       if (url.pathname === '/api/autonomy/status' && method === 'GET') {
         const status = this.autonomousAgency ? this.autonomousAgency.getStatus() : { isEnabled: false };
-        this.sendJson(res, 200, status);
+        const screenObservationEnabled = this.preferenceRepo.get('screen_observation_enabled', 'false') === 'true';
+        const audioObservationEnabled = this.preferenceRepo.get('audio_observation_enabled', 'false') === 'true';
+        this.sendJson(res, 200, {
+          ...status,
+          screenObservationEnabled,
+          audioObservationEnabled,
+          emergencyShutdownActive: this.permissionController.isEmergencyShutdown(),
+        });
         return;
       }
 

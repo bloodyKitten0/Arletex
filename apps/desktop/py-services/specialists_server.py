@@ -18,14 +18,15 @@ import re
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 
 # Paths to models
-BASE_MODELS_DIR = os.getenv("ARLETEX_SPECIALISTS_DIR", "/home/proof/models/arle-specialists")
+BASE_MODELS_DIR = os.getenv("ARLETEX_SPECIALISTS_DIR", os.path.expanduser("~/models/arle-specialists"))
 EMBEDDING_MODEL_DIR = os.path.join(BASE_MODELS_DIR, "embeddinggemma-300m")
 WHISPER_MODEL_DIR = os.path.join(BASE_MODELS_DIR, "whisper-small")
 KOKORO_MODEL_DIR = os.path.join(BASE_MODELS_DIR, "kokoro-82m")
 RVC_MODEL_DIR = os.path.join(BASE_MODELS_DIR, "rvc-arlecchino")
 RVC_MODEL_PATH = os.path.join(RVC_MODEL_DIR, "arlecchino_500e.pth")
 RVC_INDEX_PATH = os.path.join(RVC_MODEL_DIR, "arlecchino_500e.index")
-RMVPE_PATH = "/home/proof/rmvpe.pt" if os.path.exists("/home/proof/rmvpe.pt") else (
+default_rmvpe = os.path.expanduser("~/rmvpe.pt")
+RMVPE_PATH = default_rmvpe if os.path.exists(default_rmvpe) else (
     os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "rmvpe.pt")
 )
 
