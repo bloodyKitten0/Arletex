@@ -125,11 +125,13 @@ import { InMemorySimulationRepository, SimulationEngine } from './simulationEngi
 import { InMemoryMetacognitionRepository, MetacognitionEngine } from './metacognitionEngine.js';
 import { InMemoryGlobalCognitiveRepository, GlobalCognitiveIntegrationEngine } from './globalCognitiveEngine.js';
 import { InMemoryExecutiveRepository, ExecutiveEngine } from './executiveEngine.js';
+import { InMemorySelfGeneratedGoalRepository, SelfGeneratedGoalEngine } from './selfGeneratedGoalEngine.js';
 import {
   ISimulationRepository,
   IMetacognitionRepository,
   IGlobalCognitiveRepository,
   IExecutiveRepository,
+  ISelfGeneratedGoalRepository,
 } from './interfaces.js';
 
 export class ApeService {
@@ -166,6 +168,7 @@ export class ApeService {
   public readonly metacognitionEngine: MetacognitionEngine;
   public readonly globalCognitiveEngine: GlobalCognitiveIntegrationEngine;
   public readonly executiveEngine: ExecutiveEngine;
+  public readonly selfGeneratedGoalEngine: SelfGeneratedGoalEngine;
 
   constructor(
     repo: IApeRepository,
@@ -189,6 +192,7 @@ export class ApeService {
     metacognitionRepo?: IMetacognitionRepository,
     globalCognitiveRepo?: IGlobalCognitiveRepository,
     executiveRepo?: IExecutiveRepository,
+    selfGeneratedGoalRepo?: ISelfGeneratedGoalRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -277,6 +281,9 @@ export class ApeService {
 
     const execRepo = executiveRepo || new InMemoryExecutiveRepository();
     this.executiveEngine = new ExecutiveEngine({ repository: execRepo, logger });
+
+    const goalRepo = selfGeneratedGoalRepo || new InMemorySelfGeneratedGoalRepository();
+    this.selfGeneratedGoalEngine = new SelfGeneratedGoalEngine({ repository: goalRepo, logger });
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -1658,6 +1665,61 @@ export class ApeService {
 
   public selectOptimalResponse(candidates: Parameters<ExecutiveEngine['selectOptimalResponse']>[0]) {
     return this.executiveEngine.selectOptimalResponse(candidates);
+  }
+
+  // ==========================================
+  // Milestone 21 — Self-Generated Goals
+  // ==========================================
+
+  public generateGoalFromInterest(params: Parameters<SelfGeneratedGoalEngine['generateGoalFromInterest']>[0]) {
+    return this.selfGeneratedGoalEngine.generateGoalFromInterest(params);
+  }
+
+  public generateGoalFromCuriosity(params: Parameters<SelfGeneratedGoalEngine['generateGoalFromCuriosity']>[0]) {
+    return this.selfGeneratedGoalEngine.generateGoalFromCuriosity(params);
+  }
+
+  public generateGoalFromUnresolvedQuestion(params: Parameters<SelfGeneratedGoalEngine['generateGoalFromUnresolvedQuestion']>[0]) {
+    return this.selfGeneratedGoalEngine.generateGoalFromUnresolvedQuestion(params);
+  }
+
+  public generateGoalFromSelfImprovement(params: Parameters<SelfGeneratedGoalEngine['generateGoalFromSelfImprovement']>[0]) {
+    return this.selfGeneratedGoalEngine.generateGoalFromSelfImprovement(params);
+  }
+
+  public generateGoalFromProject(params: Parameters<SelfGeneratedGoalEngine['generateGoalFromProject']>[0]) {
+    return this.selfGeneratedGoalEngine.generateGoalFromProject(params);
+  }
+
+  public recognizeOpportunity(params: Parameters<SelfGeneratedGoalEngine['recognizeOpportunity']>[0]) {
+    return this.selfGeneratedGoalEngine.recognizeOpportunity(params);
+  }
+
+  public generateLongTermAmbition(params: Parameters<SelfGeneratedGoalEngine['generateLongTermAmbition']>[0]) {
+    return this.selfGeneratedGoalEngine.generateLongTermAmbition(params);
+  }
+
+  public prioritizeSelfGeneratedGoal(goalId: string, newPriority: number, reason: string) {
+    return this.selfGeneratedGoalEngine.prioritizeGoal(goalId, newPriority, reason);
+  }
+
+  public modifySelfGeneratedGoal(
+    goalId: string,
+    updates: Parameters<SelfGeneratedGoalEngine['modifyGoal']>[1],
+  ) {
+    return this.selfGeneratedGoalEngine.modifyGoal(goalId, updates);
+  }
+
+  public abandonSelfGeneratedGoal(goalId: string, reason: string) {
+    return this.selfGeneratedGoalEngine.abandonGoal(goalId, reason);
+  }
+
+  public completeSelfGeneratedGoal(goalId: string) {
+    return this.selfGeneratedGoalEngine.completeGoal(goalId);
+  }
+
+  public synthesizeAutonomousGoalsFromState(context: Parameters<SelfGeneratedGoalEngine['synthesizeAutonomousGoalsFromState']>[0]) {
+    return this.selfGeneratedGoalEngine.synthesizeAutonomousGoalsFromState(context);
   }
 }
 

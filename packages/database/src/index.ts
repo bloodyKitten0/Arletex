@@ -28,5 +28,6 @@ export * from './repositories/simulationRepository.js';
 export * from './repositories/metacognitionRepository.js';
 export * from './repositories/globalCognitiveRepository.js';
 export * from './repositories/executiveRepository.js';
+export * from './repositories/goalRepository.js';
 
 

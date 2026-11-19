@@ -86,6 +86,9 @@ import {
   TaskSwitchRecord,
   WorkingMemoryGatingDirective,
   ExecutiveControlState,
+  SelfGeneratedGoal,
+  SelfGeneratedGoalStatus,
+  GoalOriginType,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -446,6 +449,15 @@ export interface IExecutiveRepository {
 
   saveControlState(state: ExecutiveControlState): void;
   getControlState(): ExecutiveControlState | null;
+}
+
+export interface ISelfGeneratedGoalRepository {
+  saveGoal(goal: SelfGeneratedGoal): void;
+  getGoalById(id: string): SelfGeneratedGoal | null;
+  listGoals(filter?: { status?: SelfGeneratedGoalStatus; origin?: GoalOriginType; limit?: number }): SelfGeneratedGoal[];
+  deleteGoal(id: string): void;
+  recordTrigger(trigger: { id: string; triggerType: string; sourceEntityId?: string; generatedGoalId: string; rationale: string; createdAt: string }): void;
+  listTriggers(generatedGoalId?: string): Array<{ id: string; triggerType: string; sourceEntityId?: string; generatedGoalId: string; rationale: string; createdAt: string }>;
 }
 
 

@@ -91,6 +91,7 @@ import {
   SqliteMetacognitionRepository,
   SqliteGlobalCognitiveRepository,
   SqliteExecutiveRepository,
+  SqliteSelfGeneratedGoalRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -218,6 +219,7 @@ export class ArletexBackendServer {
 
   // Executive Functions Subsystem (Milestone 20)
   public readonly executiveRepo: SqliteExecutiveRepository;
+  public readonly goalRepo: SqliteSelfGeneratedGoalRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -270,6 +272,7 @@ export class ArletexBackendServer {
     this.metacognitionRepo = new SqliteMetacognitionRepository(db);
     this.globalCognitiveRepo = new SqliteGlobalCognitiveRepository(db);
     this.executiveRepo = new SqliteExecutiveRepository(db);
+    this.goalRepo = new SqliteSelfGeneratedGoalRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -292,6 +295,7 @@ export class ArletexBackendServer {
       this.metacognitionRepo,
       this.globalCognitiveRepo,
       this.executiveRepo,
+      this.goalRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -4690,6 +4694,92 @@ Rules:
         const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
         const switches = this.apeService.executiveEngine.listTaskSwitches(limit);
         this.sendJson(res, 200, switches);
+        return;
+      }
+
+      // ==========================================
+      // Self-Generated Goals Routes (Milestone 21)
+      // ==========================================
+      if (url.pathname === '/api/ape/goals/generate' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        let goal;
+        switch (body.origin) {
+          case 'interest':
+            goal = this.apeService.generateGoalFromInterest(body);
+            break;
+          case 'curiosity':
+            goal = this.apeService.generateGoalFromCuriosity(body);
+            break;
+          case 'unresolved_question':
+            goal = this.apeService.generateGoalFromUnresolvedQuestion(body);
+            break;
+          case 'self_improvement':
+            goal = this.apeService.generateGoalFromSelfImprovement(body);
+            break;
+          case 'project':
+            goal = this.apeService.generateGoalFromProject(body);
+            break;
+          case 'opportunity':
+            goal = this.apeService.recognizeOpportunity(body);
+            break;
+          case 'ambition':
+            goal = this.apeService.generateLongTermAmbition(body);
+            break;
+          default:
+            throw new Error(`Unsupported goal origin type: ${body.origin}`);
+        }
+        this.sendJson(res, 201, { success: true, goal });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/goals/synthesize' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const goals = this.apeService.synthesizeAutonomousGoalsFromState(body);
+        this.sendJson(res, 200, { success: true, goals });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/goals/prioritize' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const goal = this.apeService.prioritizeSelfGeneratedGoal(body.goalId, body.priority, body.reason);
+        this.sendJson(res, 200, { success: true, goal });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/goals/modify' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const goal = this.apeService.modifySelfGeneratedGoal(body.goalId, body.updates);
+        this.sendJson(res, 200, { success: true, goal });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/goals/abandon' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const goal = this.apeService.abandonSelfGeneratedGoal(body.goalId, body.reason);
+        this.sendJson(res, 200, { success: true, goal });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/goals/complete' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const goal = this.apeService.completeSelfGeneratedGoal(body.goalId);
+        this.sendJson(res, 200, { success: true, goal });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/goals' && method === 'GET') {
+        const status = url.searchParams.get('status') as any;
+        const origin = url.searchParams.get('origin') as any;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 100;
+        const goals = this.apeService.selfGeneratedGoalEngine.listGoals({ status, origin, limit });
+        this.sendJson(res, 200, goals);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/goals/triggers' && method === 'GET') {
+        const goalId = url.searchParams.get('goalId') || undefined;
+        const triggers = this.apeService.selfGeneratedGoalEngine.listTriggers(goalId);
+        this.sendJson(res, 200, triggers);
         return;
       }
 

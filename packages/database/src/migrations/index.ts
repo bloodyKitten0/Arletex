@@ -1643,4 +1643,47 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('executive_functions_milestone20', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 32,
+    name: '032_self_generated_goals_milestone21',
+    up: `
+      -- Self Generated Goals (Autonomous goals generated from interests, curiosity, questions, self-improvement, projects)
+      CREATE TABLE IF NOT EXISTS self_generated_goals (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        origin TEXT NOT NULL,
+        source_ref_id TEXT,
+        priority REAL NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active',
+        success_criteria_json TEXT NOT NULL DEFAULT '[]',
+        estimated_effort_hours REAL NOT NULL DEFAULT 1.0,
+        modifications_history_json TEXT NOT NULL DEFAULT '[]',
+        abandonment_reason TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        abandoned_at TEXT,
+        completed_at TEXT
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_self_generated_goals_status ON self_generated_goals (status);
+      CREATE INDEX IF NOT EXISTS idx_self_generated_goals_origin ON self_generated_goals (origin);
+      CREATE INDEX IF NOT EXISTS idx_self_generated_goals_priority ON self_generated_goals (priority DESC);
+
+      -- Goal Generation Triggers (Audit log of how internal state and experiences triggered autonomous goal creation)
+      CREATE TABLE IF NOT EXISTS goal_generation_triggers (
+        id TEXT PRIMARY KEY,
+        trigger_type TEXT NOT NULL,
+        source_entity_id TEXT,
+        generated_goal_id TEXT NOT NULL,
+        rationale TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_goal_generation_triggers_goal ON goal_generation_triggers (generated_goal_id);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('self_generated_goals_milestone21', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

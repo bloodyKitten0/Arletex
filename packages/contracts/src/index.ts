@@ -727,5 +727,10 @@ export * from './globalCognitiveIntegration.js';
 // ==========================================
 export * from './executiveFunctions.js';
 
+// ==========================================
+// Self-Generated Goals Contracts (Milestone 21)
+// ==========================================
+export * from './selfGeneratedGoals.js';
+
 
 
