@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-MODEL_PATH="${1:-/home/proof/models/qwen-heretic/Qwen3.5-9B-Heretic-Q4_K_M.gguf}"
+MODEL_PATH="${1:-${HOME}/models/qwen-heretic/Qwen3.5-9B-Heretic-Q4_K_M.gguf}"
 PORT="${2:-8080}"
 HOST="127.0.0.1"
 THREADS="8"
@@ -49,8 +49,9 @@ echo "=========================================================="
 
 MMPROJ_PATH="${MMPROJ_PATH:-}"
 if [ -z "$MMPROJ_PATH" ] && [[ "$MODEL_PATH" == *"9B"* ]]; then
-  if [ -f "/home/proof/models/qwen-heretic/Qwen3.5-9B-mmproj-BF16.gguf" ]; then
-    MMPROJ_PATH="/home/proof/models/qwen-heretic/Qwen3.5-9B-mmproj-BF16.gguf"
+  DEFAULT_MMPROJ="${HOME}/models/qwen-heretic/Qwen3.5-9B-mmproj-BF16.gguf"
+  if [ -f "$DEFAULT_MMPROJ" ]; then
+    MMPROJ_PATH="$DEFAULT_MMPROJ"
   fi
 fi
 

@@ -1,104 +1,63 @@
-# Repository Audit — Arletex (Milestone 2 Current Audit)
+# Repository Architecture Audit — Arletex
 
-> [!NOTE]
-> **SUPERSEDED STATUS:** The November 11, 2026 audit described the repository as an initial empty repository with zero commits. That assessment is completely obsolete. This document represents the current, evidence-based audit following the completion of Milestone 1 and Milestone 2.
-
-**Audit Date:** 14 November 2026  
-**Auditor:** Antigravity (Lead Software Engineer)  
-**Repository Root:** `/home/proof/Documents/A man's dream will never die/projects/Arletex/`  
-**Git Branch:** `master`  
-**Target Hardware:** ASUS ROG Ally X (AMD Ryzen Z1 Extreme, Radeon 780M RDNA3, 24GB Unified LPDDR5X, Linux/Bazzite Atomic OS)
+**Audit Date:** November 2026  
+**Audited Branch:** `main`  
+**Target Hardware:** ASUS ROG Ally X (AMD Ryzen Z1 Extreme, Radeon 780M RDNA3, 24GB Unified LPDDR5X, Linux/Bazzite)  
+**Status:** **Fully Integrated & Hardened Production Architecture.**
 
 ---
 
-## 1. Current Project Architecture & Monorepo Structure
+## 1. System Structure & Monorepo Overview
 
-Arletex is structured as a pnpm workspace monorepo with strict layer boundaries:
+The Arletex system is organized as a unified monorepo with explicit layer separation:
 
 ```
 Arletex/
 ├── apps/
-│   └── desktop/                     # Electron desktop shell & host application
-│       ├── py-services/             # Python ML microservices (EmbeddingGemma, Whisper, Kokoro)
-│       │   └── specialists_server.py # Lightweight JSON HTTP microservice (port 39282)
+│   └── desktop/                     # Electron desktop application & backend host
+│       ├── py-services/             # Python ML microservices (EmbeddingGemma, Whisper, Kokoro, RVC)
+│       │   └── specialists_server.py # Portable JSON HTTP microservice (port 39282)
 │       ├── src/
-│       │   ├── backend/             # Node.js local HTTP & SSE server (port 39281)
-│       │   │   ├── server.ts        # Hardened loopback REST & SSE endpoints with auth token
-│       │   │   ├── telemetryService.ts # Genuine hardware telemetry for ROG Ally X
-│       │   │   └── index.ts         # Backend service entry point
-│       │   ├── main/                # Electron main process
-│       │   │   └── index.ts         # Window lifecycle, process readiness handshake, IPC handlers
-│       │   ├── preload/             # Electron preload bridge
-│       │   │   └── index.ts         # contextBridge with typed ArletexApi
-│       │   └── renderer/            # React 18 + Vite frontend
-│       │       └── src/
-│       │           ├── components/
-│       │           │   ├── nav/NavSidebar.tsx       # 6-section navigation with collapsed mode
-│       │           │   ├── telemetry/TelemetryRail.tsx # Right live telemetry & service health rail
-│       │           │   ├── views/
-│       │           │   │   ├── MainView.tsx         # Presence, conversation, thoughts, voice toggle, mic, vision
-│       │           │   │   ├── MemoryView.tsx       # Autobiographical knowledge, search, edit, merge, soft delete
-│       │           │   │   ├── EmoView.tsx          # APE cockpit, PAD space, temperamental baselines
-│       │           │   │   ├── HistoryView.tsx      # Chronological archive, pinned sessions, search
-│       │           │   │   ├── ActivitiesView.tsx   # Pursuits (Arle-initiated vs User-assigned), progress
-│       │           │   │   └── EnvironmentView.tsx  # Sandboxing, permissions, network boundary
-│       │           │   ├── ChatView.tsx
-│       │           │   ├── MessageInput.tsx
-│       │           │   ├── Sidebar.tsx
-│       │           │   └── StatusBar.tsx
-│       │           ├── utils/mediaUtils.ts          # Base64/audio/blob helpers
-│       │           └── App.tsx                      # Top-level coordinator
+│       │   ├── backend/             # Node.js backend & composition root (port 39281)
+│       │   │   ├── server.ts        # Hardened REST/SSE server, mounts CognitiveControlBus & APE
+│       │   │   ├── deviceAgencyService.ts # Wayland/X11 desktop perception & action provider
+│       │   │   ├── telegramBridgeService.ts # Inbound & outbound allowlisted Telegram bridge
+│       │   │   └── telemetryService.ts # Real hardware telemetry probes for ROG Ally X
+│       │   ├── main/                # Electron main process (portable paths, IPC lifecycle)
+│       │   ├── preload/             # Electron preload contextBridge with typed API
+│       │   └── renderer/            # React 18 frontend (APE cockpit, telemetry, memory, chat)
 │       └── package.json
 ├── packages/
-│   ├── contracts/                   # Shared TypeScript definitions & Zod validation schemas
-│   │   ├── src/index.ts             # IPC channels, Memory, Activity, Telemetry, Voice, Vision schemas
-│   │   └── package.json
-│   ├── core/                        # Core utilities, logging, config, event bus
-│   │   ├── src/events.ts            # Hardened EventBus with async/sync rejection handling
-│   │   ├── src/persona.ts           # Arle foundational persona prompt
-│   │   └── package.json
-│   ├── database/                    # SQLite engine with better-sqlite3 & versioned migrations
-│   │   ├── src/migrations/
-│   │   │   └── index.ts             # 001_initial_schema, 002_memories_activities_and_pinning
-│   │   ├── src/repositories/
-│   │   │   ├── conversationRepository.ts # CRUD & pinning
-│   │   │   ├── messageRepository.ts      # Messages & cascading
-│   │   │   ├── memoryRepository.ts       # 6 memory types, 768-dim embeddings, hybrid ranking, corrections
-│   │   │   ├── activityRepository.ts     # Pursuit tracking, origin & status filtering
-│   │   │   └── preferenceRepository.ts   # Persistent app settings
-│   │   └── package.json
-│   └── inference/                   # Model adapters and inference gateway
-│       ├── src/
-│       │   ├── llamaServerAdapter.ts # Vulkan-accelerated llama-server client
-│       │   ├── colibriAdapter.ts     # Colibri HTTP streaming client
-│       │   └── gateway.ts            # Unified inference routing & stream multiplexing
-│       └── package.json
-├── docs/
-│   ├── UI_SPECIFICATION_v0.2.md     # Authoritative UI Spec v0.2
-│   └── architecture/                # Blueprints & roadmap
-├── scripts/
-│   ├── run-arletex.sh               # Unified launcher (starts Vulkan 8080, Specialists 39282, Electron)
-│   ├── start-llama-server.sh        # Starts llama-server with Vulkan on port 8080
-│   └── stop-llama.sh                # Cleanly terminates llama-server
-├── tests/
-│   └── backend.integration.test.ts  # End-to-end integration tests (37 tests passing)
-└── pnpm-workspace.yaml
+│   ├── contracts/                   # Shared TypeScript interfaces & Zod validation schemas
+│   ├── core/                        # Cognitive architecture, APE engines, and security controllers
+│   │   ├── src/agency/              # ActionPermissionController, ClosedLoopAgencyService, VerificationEngine
+│   │   ├── src/ape/                 # 49 APE engines (affective, intellectual, curiosity, continuity)
+│   │   ├── src/cognitive/           # 16-stage canonical CognitiveControlBus
+│   │   ├── src/memory/              # AutobiographicalMemoryService with provenance and consolidation
+│   │   └── src/persona.ts           # Arle foundational persona prompt (egalitarian partnership)
+│   ├── database/                    # SQLite persistence with 60 versioned migrations
+│   └── inference/                   # InferenceGateway and LlamaServerAdapter (Vulkan/llama.cpp)
+├── native/                          # Native C++ reflex engine for Wayland/X11 desktop interaction
+└── scripts/                         # Bootstrap, lifecycle, inference startup, and testing scripts
 ```
 
 ---
 
-## 2. Implemented Subsystems Assessment (Milestone 2 Verified)
+## 2. Hardening & Verification Status
 
-| Subsystem | Status | Verification Evidence |
-|---|---|---|
-| **Desktop Shell** | **Implemented** | Electron 34, preload bridge with typed IPC channels, window lifecycle. |
-| **UI Specification 0.2** | **Implemented** | 6 primary views (`Main`, `Memory`, `Emo`, `History`, `Activities`, `Environment`), right `TelemetryRail`, full-screen mode. |
-| **Anti-Fabrication Enforcement** | **Implemented** | Telemetry displays genuine ROG Ally X sensors; Emo section communicates APE development status truthfully. |
-| **Cognitive Inference Engine** | **Operational** | `llama-server` on port 8080 running `Qwen3.5-9B-Heretic-Q4_K_M.gguf` on AMD Radeon 780M (Vulkan). |
-| **Specialist ML Services** | **Operational** | `specialists_server.py` on port 39282 hosting EmbeddingGemma 300M, Whisper Small (STT), and Kokoro 82M (TTS). |
-| **Persistent Memory Architecture** | **Implemented** | SQLite database with 6 memory types, 768-dim vector embeddings, hybrid cosine similarity search, correction history tracking, and immediate soft deletion. |
-| **Activity Tracking** | **Implemented** | Full CRUD for pursuits, distinguishing `arle_initiated` from `user_assigned`, with status and progress tracking. |
-| **Voice & Speech** | **Implemented** | Speech-to-text via local Whisper Small; Speech-to-audio via Kokoro 82M with master UI toggle. |
-| **Visual Perception** | **Implemented** | File attachment in composer, image preview, base64 pipeline to backend vision inspection. |
-| **Security & Sandboxing** | **Implemented** | Loopback authentication via `x-arletex-auth`, non-root user sandbox, request body limits, model proposals treated as untrusted. |
-| **Automated Test Suite** | **Passing** | 37/37 unit and integration tests passing (`vitest run`). |
+### A. Universal Security Boundary
+- **Consolidation:** `ActionPermissionController` serves as the authoritative single authorization gate.
+- **Approval Tokens:** Cryptographic HMAC-SHA256 tokens bound to immutable action digests, nonces, and short-lived expiry.
+- **Fail-Closed:** Missing controllers, unknown actions, emergency shutdown, or unallowlisted resources fail closed.
+
+### B. Closed-Loop Agency & Empirical Verification
+- **Concrete Providers:** Real `PlaywrightBrowserProvider` and `SafeComputerAgencyService` wired in `server.ts`.
+- **Zero Fabrication:** Removed mock PIDs, synthetic screenshots, and fake page observations. All steps require genuine post-action evidence from `VerificationEngine`.
+
+### C. Canonical Cognitive Orchestration
+- **Pipeline:** 16-stage `CognitiveControlBus` handles perception, appraisal, deliberation, authorization, execution, verification, and learning.
+- **Fallback Elimination:** Removed silent fallback from bus errors to legacy cycles; bus failures are explicitly logged and tracked.
+
+### D. Psychological Integration & Equality
+- **Partner Equality:** Arle and Proof are strictly equal partners in all creative, intellectual, and personal domains.
+- **Longitudinal Grounding:** Replaced arbitrary score inflation with empirical evidence evaluation across memory, goals, and security audits.

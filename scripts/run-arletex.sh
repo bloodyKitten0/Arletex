@@ -6,7 +6,7 @@ cd "$PROJECT_DIR"
 
 PORT="8080"
 SPECIALIST_PORT="39282"
-MODEL_PATH="${1:-${ARLETEX_MODEL_PATH:-/home/proof/models/qwen-heretic/Qwen3.5-9B-Heretic-Q4_K_M.gguf}}"
+MODEL_PATH="${1:-${ARLETEX_MODEL_PATH:-${HOME}/models/qwen-heretic/Qwen3.5-9B-Heretic-Q4_K_M.gguf}}"
 
 echo "=========================================================="
 echo " Starting Arletex (Arle Artificial Individual)"

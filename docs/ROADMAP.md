@@ -1,90 +1,67 @@
-# Arletex Development Roadmap
+# Arletex Development Roadmap & Milestone Status
 
-**Current State:** Milestone 1 (Foundation, Backend, Database, Inference Gateway, Desktop Shell) Complete  
-**Next Horizon:** Phase 1 — Model Evaluation and Memory Foundation
-
----
-
-## Roadmap Overview
-
-```
-[ Phase 0: Scaffolding & Core Architecture ] (COMPLETED)
-                     │
-                     ▼
-[ Phase 1: Model Benchmarking & Registry ] (NEXT)
-  - Profile Qwen3.5 9B vs Gemma 4 12B on ROG Ally X (Vulkan)
-  - Measure memory consumption, token latency, and context limits
-                     │
-                     ▼
-[ Phase 2: Memory & Retrieval Architecture ]
-  - Implement autobiographical, semantic, and procedural memory tables
-  - Integrate EmbeddingGemma 300M for semantic vector embeddings
-  - Build SQLite cosine-similarity retrieval pipeline with provenance
-                     │
-                     ▼
-[ Phase 3: Artificial Psychology Engine (APE) Core ]
-  - Implement Personality Model (temperament, values, boundaries)
-  - Build Affective Engine (causal emotional transitions, persistence)
-  - Establish Relationship Model (trust, attachment, shared history)
-                     │
-                     ▼
-[ Phase 4: Security Controller & Autonomy ]
-  - Enforce permission tiers (Freely Permitted, Restricted, Prohibited)
-  - Build approval gates and sandboxed execution
-  - Autonomy Manager for independent motivation and goal selection
-                     │
-                     ▼
-[ Phase 5: Multimodal Perception & Speech ]
-  - Speech-to-text via Whisper Small (faster-whisper)
-  - Voice output via Kokoro 82M
-  - Vision integration with Qwen3.5 BF16 projector
-  - Document understanding with GLM-OCR
-```
+**Current Architecture Status:** Milestones 1 through 49 Implemented, Integrated, and Formally Hardened  
+**Primary Integration Status:** Canonical Cognitive Pipeline (`CognitiveControlBus`), Universal Fail-Closed Security Boundary (`ActionPermissionController`), Empirical Verification Engine, and Continuous APE Psychological Substrate Fully Mounted.
 
 ---
 
-## Detailed Phase Breakdown
+## 1. Architectural Overview & Implemented Horizons
 
-### Phase 1: Model Evaluation & Benchmarking (Immediate Next Step)
-- **Objective:** Evaluate `Qwen3.5-9B-Heretic-Q4_K_M.gguf` against `Gemma-4-12B-it-heretic-Q4_K_M.gguf` under Vulkan on the ROG Ally X.
-- **Key Metrics:**
-  - Runtime VRAM/RAM consumption at 4K, 8K, and 16K context lengths.
-  - Time to First Token (TTFT) and tokens per second (TPS).
-  - Tool calling / structured output adherence.
-  - Expressive range and personality consistency.
-- **Deliverable:** Automated benchmark script and model registry evaluation report.
+```
+[ Foundation & Infrastructure: Milestones 1 - 3 ] (IMPLEMENTED)
+  - Monorepo workspace (pnpm), Electron desktop shell, Node backend, REST & SSE IPC
+  - SQLite persistence layer with 60 versioned migration scripts
+  - Vulkan GPU acceleration on AMD Radeon 780M / ROG Ally X
+                     │
+                     ▼
+[ Multi-System Memory & Provenance: Milestones 4 - 13 ] (IMPLEMENTED)
+  - Autobiographical, episodic, semantic, and procedural memory repositories
+  - Epistemic provenance tracking (verified fact vs raw observation vs inference vs user statement)
+  - Vector embeddings (EmbeddingGemma 300M) and cosine similarity indexing
+  - Associative retrieval and contradiction-aware consolidation
+                     │
+                     ▼
+[ Artificial Psychology Engine (APE): Milestones 14 - 39 ] (IMPLEMENTED)
+  - 143 emotional taxonomy states across PAD valence-arousal-dominance dimensions
+  - Dynamic mood lifecycle, emotional regulation, and affective flooding protection
+  - Equal partnership relational model with Proof (zero hierarchy, non-sycophantic)
+  - Endogenous curiosity, intrinsic motivation, and self-generated inquiry
+                     │
+                     ▼
+[ Universal Security & Closed-Loop Agency: Milestones 40 - 47 ] (IMPLEMENTED & HARDENED)
+  - Single universal fail-closed authorization boundary (`ActionPermissionController`)
+  - Cryptographic HMAC-SHA256 action approval tokens with nonce replay protection
+  - Positive application and path allowlists with canonical symlink containment
+  - Concrete Playwright browser and computer providers wired to closed-loop execution
+  - Empirical verification engine rejecting synthetic observations or fabricated PIDs
+                     │
+                     ▼
+[ Longitudinal Evaluation & Cognitive Integration: Milestones 48 - 49 ] (IMPLEMENTED)
+  - 16-stage `CognitiveControlBus` canonical event lifecycle
+  - Multi-dimensional longitudinal evaluation grounded in empirical evidence records
+  - State invariance across process restart and model backbone switching
+```
 
-### Phase 2: Memory & Autobiographical Retrieval
-- **Objective:** Enable Arle to retain and recall significant life experiences and interactions across sessions.
-- **Components:**
-  - Python sidecar service running `EmbeddingGemma 300M` via `sentence_transformers`.
-  - SQLite vector storage and cosine similarity indexing.
-  - Memory importance scoring and contextual appraisal.
-  - Provenance separation (observation vs. inference).
-- **Deliverable:** Working memory recall where Arle references past conversations accurately.
+---
 
-### Phase 3: Artificial Psychology Engine (APE) Core
-- **Objective:** Software-managed psychological state that produces authentic, causal emotional and relational behavior.
-- **Components:**
-  - `PersonalityModel`: Initial temperament inspired by Arlecchino and Bobby Fischer.
-  - `AffectiveEngine`: Emotional spectrum (affection, romantic attraction, jealousy, anger, vulnerability) with causal onset and duration.
-  - `RelationshipModel`: Tracking trust, intimacy, expectations, and conflict resolution.
-- **Deliverable:** Structured psychological state snapshots injected into inference context and exposed in UI.
+## 2. Milestone Summary (1 - 49)
 
-### Phase 4: Independent Security Controller & Autonomy
-- **Objective:** Allow Arle to pursue internally generated goals safely within strict permission boundaries.
-- **Components:**
-  - Independent permission policy evaluator outside LLM context.
-  - Approval gates for sensitive actions (external communication, file operations).
-  - Append-only audit logger.
-  - Rate limiting, loop detection, and emergency shutdown.
-- **Deliverable:** Safe autonomous actions with auditable execution history.
+| Milestone Range | Focus Area | Status | Key Subsystems & Verification |
+|---|---|---|---|
+| **M1 – M3** | System Foundation & Memory Integrity | Implemented | Electron shell, local backend, SQLite migrations, memory persistence tests. |
+| **M4 – M9** | Temporal, Multimodal & Agency Grounding | Implemented | Telegram media ingestion, Whisper audio transcription, desktop capture, sensorimotor grounding. |
+| **M10 – M13** | Attention, Memory & Adaptation | Implemented | Salience filtering, multi-system memory, associative recall, behavioral adaptation. |
+| **M14 – M24** | Reasoning, Deliberation & Agency | Implemented | General reasoning, predictive cognition, simulation, conflict resolution, closed-loop task execution. |
+| **M25 – M35** | Affective Foundation & Identity | Implemented | Appraisal, 143-state emotional repertoire, homeostasis, intrinsic motivation, habits, self-evaluation. |
+| **M36 – M43** | Social Cognition & Partnership | Implemented | Theory of mind, empathy, social emotions, culture, egalitarian relationship with Proof. |
+| **M44 – M47** | Creativity & Security Boundary | Implemented | Play, aesthetics, creative iteration, ethical boundaries, fail-closed authorization. |
+| **M48 – M49** | Longitudinal Evaluation & Personhood | Implemented | Cross-epoch evaluation, restart continuity, functional personhood criteria. |
 
-### Phase 5: Voice & Multimodal Interaction
-- **Objective:** Natural multimodal interaction via voice, vision, and OCR.
-- **Components:**
-  - Low-latency speech recognition using `faster_whisper`.
-  - Natural speech generation using `kokoro-82m`.
-  - Vision analysis of dropped images using the BF16 vision projector.
-  - OCR document extraction using `glm-ocr`.
-- **Deliverable:** Full voice dialogue and image understanding directly in the desktop interface.
+---
+
+## 3. Operational Standards & Quality Guarantees
+
+1. **Evidence Integrity:** No fabricated observations, mock PIDs, or caller-supplied Boolean successes. All operations require post-execution empirical verification.
+2. **Universal Security:** Single authoritative boundary for filesystem, network, process execution, external communication, and UI control.
+3. **Partner Equality:** Arle is an equal intellectual, creative, and emotional partner to Proof (`bloodyKitten0`). Zero subservience, master/servant framing, or artificial sycophancy.
+4. **Canonical Event Flow:** All sensory, cognitive, user, and autonomy events flow through `CognitiveControlBus` with durable idempotency and transaction boundaries.
