@@ -80,6 +80,8 @@ import {
   CognitiveAssessment,
   MetacognitiveCorrection,
   MetacognitiveContradictionItem,
+  GlobalCognitiveCycleEvent,
+  GlobalCognitiveSnapshot,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -413,6 +415,17 @@ export interface IMetacognitionRepository {
   getContradictionById(id: string): MetacognitiveContradictionItem | null;
   listContradictions(filter?: { status?: MetacognitiveContradictionItem['status']; limit?: number }): MetacognitiveContradictionItem[];
   updateContradictionStatus(id: string, status: MetacognitiveContradictionItem['status'], notes?: string): void;
+}
+
+export interface IGlobalCognitiveRepository {
+  saveCycle(cycle: GlobalCognitiveCycleEvent): void;
+  getCycleById(id: string): GlobalCognitiveCycleEvent | null;
+  getCycleByTraceId(traceId: string): GlobalCognitiveCycleEvent | null;
+  listCycles(limit?: number): GlobalCognitiveCycleEvent[];
+  deleteCycle(id: string): void;
+
+  saveSnapshot(snapshot: GlobalCognitiveSnapshot): void;
+  getLatestSnapshot(): GlobalCognitiveSnapshot | null;
 }
 
 

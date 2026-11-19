@@ -717,5 +717,10 @@ export * from './simulation.js';
 // ==========================================
 export * from './metacognition.js';
 
+// ==========================================
+// Global Cognitive Integration Contracts (Milestone 19)
+// ==========================================
+export * from './globalCognitiveIntegration.js';
+
 
 

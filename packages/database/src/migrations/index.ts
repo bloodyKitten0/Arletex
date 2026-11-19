@@ -1545,4 +1545,40 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('metacognition_milestone18', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 30,
+    name: '030_global_cognitive_integration_milestone19',
+    up: `
+      -- Global Cognitive Cycles (Multi-system integrated cognitive event propagation cascades)
+      CREATE TABLE IF NOT EXISTS global_cognitive_cycles (
+        id TEXT PRIMARY KEY,
+        trace_id TEXT NOT NULL,
+        origin_subsystem TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        description TEXT NOT NULL,
+        context_snapshot_json TEXT NOT NULL DEFAULT '{}',
+        phase_executions_json TEXT NOT NULL DEFAULT '[]',
+        subsystems_involved_json TEXT NOT NULL DEFAULT '[]',
+        is_coherent INTEGER NOT NULL DEFAULT 1,
+        started_at TEXT NOT NULL,
+        completed_at TEXT NOT NULL,
+        total_latency_ms REAL NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_global_cognitive_cycles_trace ON global_cognitive_cycles (trace_id);
+      CREATE INDEX IF NOT EXISTS idx_global_cognitive_cycles_started ON global_cognitive_cycles (started_at);
+
+      -- Global Cognitive Snapshots (Unified cross-system cognitive state snapshots)
+      CREATE TABLE IF NOT EXISTS global_cognitive_snapshots (
+        snapshot_id TEXT PRIMARY KEY,
+        timestamp TEXT NOT NULL,
+        snapshot_data_json TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_global_cognitive_snapshots_time ON global_cognitive_snapshots (timestamp);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('global_cognitive_integration_milestone19', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

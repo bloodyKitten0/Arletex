@@ -123,7 +123,8 @@ import { InMemoryCausalRepository, CausalReasoningEngine } from './causalReasoni
 import { InMemoryPredictiveRepository, PredictiveCognitionEngine } from './predictiveCognitionEngine.js';
 import { InMemorySimulationRepository, SimulationEngine } from './simulationEngine.js';
 import { InMemoryMetacognitionRepository, MetacognitionEngine } from './metacognitionEngine.js';
-import { ISimulationRepository, IMetacognitionRepository } from './interfaces.js';
+import { InMemoryGlobalCognitiveRepository, GlobalCognitiveIntegrationEngine } from './globalCognitiveEngine.js';
+import { ISimulationRepository, IMetacognitionRepository, IGlobalCognitiveRepository } from './interfaces.js';
 
 export class ApeService {
   private readonly repo: IApeRepository;
@@ -157,6 +158,7 @@ export class ApeService {
   public readonly predictiveEngine: PredictiveCognitionEngine;
   public readonly simulationEngine: SimulationEngine;
   public readonly metacognitionEngine: MetacognitionEngine;
+  public readonly globalCognitiveEngine: GlobalCognitiveIntegrationEngine;
 
   constructor(
     repo: IApeRepository,
@@ -178,6 +180,7 @@ export class ApeService {
     predictiveRepo?: IPredictiveRepository,
     simulationRepo?: ISimulationRepository,
     metacognitionRepo?: IMetacognitionRepository,
+    globalCognitiveRepo?: IGlobalCognitiveRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -250,6 +253,19 @@ export class ApeService {
       logger,
     );
     this.perceptualAffect = new PerceptualAffectService();
+
+    const globalRepo = globalCognitiveRepo || new InMemoryGlobalCognitiveRepository();
+    this.globalCognitiveEngine = new GlobalCognitiveIntegrationEngine({
+      repository: globalRepo,
+      attentionEngine: this.attentionEngine,
+      motivationalEngine: this.motivationalEngine,
+      relationshipEngine: this.relationshipEngine,
+      selfModelEngine: this.selfModelEngine,
+      predictiveEngine: this.predictiveEngine,
+      simulationEngine: this.simulationEngine,
+      metacognitionEngine: this.metacognitionEngine,
+      logger,
+    });
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -1595,6 +1611,18 @@ export class ApeService {
 
   public decideInvestigation(assessmentId: string) {
     return this.metacognitionEngine.decideInvestigation(assessmentId);
+  }
+
+  // ==========================================
+  // Milestone 19 — Global Cognitive Integration
+  // ==========================================
+
+  public processGlobalCognitiveEvent(input: Parameters<GlobalCognitiveIntegrationEngine['processGlobalEvent']>[0]) {
+    return this.globalCognitiveEngine.processGlobalEvent(input);
+  }
+
+  public getUnifiedCognitiveSnapshot() {
+    return this.globalCognitiveEngine.generateUnifiedSnapshot();
   }
 }
 

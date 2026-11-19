@@ -89,6 +89,7 @@ import {
   SqlitePredictiveRepository,
   SqliteSimulationRepository,
   SqliteMetacognitionRepository,
+  SqliteGlobalCognitiveRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -211,6 +212,9 @@ export class ArletexBackendServer {
   // Metacognition Subsystem (Milestone 18)
   public readonly metacognitionRepo: SqliteMetacognitionRepository;
 
+  // Global Cognitive Integration Subsystem (Milestone 19)
+  public readonly globalCognitiveRepo: SqliteGlobalCognitiveRepository;
+
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
   private port = 0;
@@ -260,6 +264,7 @@ export class ArletexBackendServer {
     this.predictiveRepo = new SqlitePredictiveRepository(db);
     this.simulationRepo = new SqliteSimulationRepository(db);
     this.metacognitionRepo = new SqliteMetacognitionRepository(db);
+    this.globalCognitiveRepo = new SqliteGlobalCognitiveRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -280,6 +285,7 @@ export class ArletexBackendServer {
       this.predictiveRepo,
       this.simulationRepo,
       this.metacognitionRepo,
+      this.globalCognitiveRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -4586,6 +4592,40 @@ Rules:
         const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
         const contradictions = this.apeService.metacognitionEngine.listContradictions({ status, limit });
         this.sendJson(res, 200, contradictions);
+        return;
+      }
+
+      // ==========================================
+      // Global Cognitive Integration Routes (Milestone 19)
+      // ==========================================
+      if (url.pathname === '/api/ape/integration/cycle' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const cycle = await this.apeService.processGlobalCognitiveEvent(body);
+        this.sendJson(res, 201, { success: true, cycle });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/integration/snapshot' && method === 'GET') {
+        const snapshot = this.apeService.getUnifiedCognitiveSnapshot();
+        this.sendJson(res, 200, snapshot);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/integration/cycles' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const cycles = this.apeService.globalCognitiveEngine.listCycles(limit);
+        this.sendJson(res, 200, cycles);
+        return;
+      }
+
+      if (url.pathname.startsWith('/api/ape/integration/cycles/') && method === 'GET') {
+        const id = url.pathname.slice('/api/ape/integration/cycles/'.length);
+        const cycle = this.apeService.globalCognitiveEngine.getCycle(id);
+        if (!cycle) {
+          this.sendJson(res, 404, { error: 'Cycle not found' });
+          return;
+        }
+        this.sendJson(res, 200, cycle);
         return;
       }
 
