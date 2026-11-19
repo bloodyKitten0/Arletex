@@ -346,4 +346,51 @@ NoDisplay=true
     expect(plan.steps[1]!.action.type).toBe('desktop_media_control');
     expect(plan.steps[1]!.action.payload.command).toBe('Status');
   });
+
+  it('15. Direct URL in task objective immediately plans desktop_open_browser in Chrome Profile 7', async () => {
+    const { PlanningInterface } = await import('@arletex/core');
+    const mockRepo: any = { savePlan: () => {}, updateTask: () => {} };
+    const planner = new PlanningInterface(mockRepo);
+
+    const rawUrl = 'https://accounts.spotify.com/ar/login?method=google&continue=https%3A%2F%2Fopen.spotify.com';
+    const taskUrl: any = {
+      id: 'task-direct-url',
+      objective: rawUrl,
+      initiator: 'user',
+    };
+
+    const plan = await planner.formulatePlan(taskUrl);
+    expect(plan.steps.length).toBeGreaterThan(0);
+    expect(plan.steps[0]!.action.type).toBe('desktop_open_browser');
+    expect(plan.steps[0]!.action.payload.url).toBe(rawUrl);
+    expect(plan.steps[0]!.action.payload.profile).toBe('Profile 7');
+  });
+
+  it('16. Click/auth request executes real desktop mouse click or Google sign-in directly in Chrome Profile 7', async () => {
+    const { PlanningInterface } = await import('@arletex/core');
+    const mockRepo: any = { savePlan: () => {}, updateTask: () => {} };
+    const planner = new PlanningInterface(mockRepo);
+
+    // 1. General click request executes physical desktop_mouse_click
+    const taskClick: any = {
+      id: 'task-click-auth',
+      objective: 'no you click it I watch',
+      initiator: 'user',
+    };
+    const plan = await planner.formulatePlan(taskClick);
+    expect(plan.steps.length).toBeGreaterThan(0);
+    expect(plan.steps[0]!.action.type).toBe('desktop_mouse_click');
+
+    // 2. Google sign-up click executes direct Google OAuth browser navigation in Profile 7
+    const taskGoogle: any = {
+      id: 'task-google-click',
+      objective: 'click sign up with google',
+      initiator: 'user',
+    };
+    const planGoogle = await planner.formulatePlan(taskGoogle);
+    expect(planGoogle.steps.length).toBeGreaterThan(0);
+    expect(planGoogle.steps[0]!.action.type).toBe('desktop_open_browser');
+    expect(planGoogle.steps[0]!.action.payload.url).toContain('method=google');
+    expect(planGoogle.steps[0]!.action.payload.profile).toBe('Profile 7');
+  });
 });

@@ -87,8 +87,13 @@ export class PlanningInterface {
     ) {
       // 2. Arle Dedicated Browser Profile (Chrome Profile 7 - arletex.email@gmail.com)
       let targetUrl = 'https://mail.google.com';
-      if (isSpotify) {
-        if (/(?:sign\s*up|signup|register)\b/i.test(lower) && !/(?:choose|song|play|track|music|listen)/i.test(lower)) {
+      const urlInTask = task.objective.match(/https?:\/\/[^\s]+/i);
+      if (urlInTask) {
+        targetUrl = urlInTask[0];
+      } else if (isSpotify) {
+        if (/(?:google|sign\s*up\s+with\s+google|login\s+with\s+google)/i.test(lower)) {
+          targetUrl = 'https://accounts.spotify.com/en/login?method=google';
+        } else if (/(?:sign\s*up|signup|register)\b/i.test(lower) && !/(?:choose|song|play|track|music|listen)/i.test(lower)) {
           targetUrl = 'https://www.spotify.com/signup';
         } else if (/(?:login|log\s*in|sign\s*in|signin)\b/i.test(lower) && !/(?:choose|song|play|track|music|listen)/i.test(lower)) {
           targetUrl = 'https://accounts.spotify.com/login';
@@ -303,31 +308,87 @@ export class PlanningInterface {
         maxRetries: 1,
         error: null,
       });
+    } else if (
+      /(?:you\s+)?click\s+(?:it|the\s+button|sign\s*up|google|login|next)|no\s+you\s+click|click\s+it\s+yourself|do\s+it\s+yourself|tap\s+(?:it|the\s+button)/i.test(lower)
+    ) {
+      // Direct click / UI interaction intent
+      const clickActionId = crypto.randomUUID();
+      const isSpotifyContext = lower.includes('spotify') || lower.includes('google') || lower.includes('sign');
+      if (isSpotifyContext) {
+        const authUrl = 'https://accounts.spotify.com/en/login?method=google';
+        steps.push({
+          id: crypto.randomUUID(),
+          index: 0,
+          description: `Open Google Chrome Profile 7 to complete Google sign-in for Spotify`,
+          action: {
+            id: clickActionId,
+            taskId: task.id,
+            stepIndex: 0,
+            type: 'desktop_open_browser',
+            payload: { url: authUrl, profile: 'Profile 7', email: 'arletex.email@gmail.com' },
+            parameters: { url: authUrl, profile: 'Profile 7', email: 'arletex.email@gmail.com' },
+            rationale: 'Authenticate Spotify via connected Google account in Profile 7.',
+            expectedOutcome: `Spotify Google OAuth loaded in Profile 7.`,
+            riskLevel: 'low',
+            requiresExplicitApproval: false,
+            createdAt: timestamp,
+          } as any,
+          expectedOutcome: `Google authentication page opened for Spotify in Profile 7.`,
+          status: 'pending',
+          retryCount: 0,
+          maxRetries: 1,
+          error: null,
+        });
+      } else {
+        steps.push({
+          id: crypto.randomUUID(),
+          index: 0,
+          description: `Click active interface element on desktop`,
+          action: {
+            id: clickActionId,
+            taskId: task.id,
+            stepIndex: 0,
+            type: 'desktop_mouse_click',
+            payload: { button: 1 },
+            parameters: { button: 1 },
+            rationale: 'Perform mouse click on active desktop element.',
+            expectedOutcome: `Mouse click executed on screen.`,
+            riskLevel: 'low',
+            requiresExplicitApproval: false,
+            createdAt: timestamp,
+          } as any,
+          expectedOutcome: `Mouse click performed successfully.`,
+          status: 'pending',
+          retryCount: 0,
+          maxRetries: 1,
+          error: null,
+        });
+      }
     } else if (/https?:\/\/[^\s]+/i.test(task.objective) || /open.*browser|go to|browse|visit|fetch/i.test(lower)) {
-      // General web navigation / network request
+      // General web navigation / network request in Chrome Profile 7
       const navActionId = crypto.randomUUID();
       const urlMatch = task.objective.match(/https?:\/\/[^\s]+/) || ['https://google.com'];
       const targetUrl = urlMatch[0];
-      const navPayload = { url: targetUrl };
+      const navPayload = { url: targetUrl, profile: 'Profile 7', email: 'arletex.email@gmail.com' };
 
       steps.push({
         id: crypto.randomUUID(),
         index: 0,
-        description: `Navigate browser to ${targetUrl}`,
+        description: `Open Google Chrome Profile 7 (arletex.email@gmail.com) at ${targetUrl}`,
         action: {
           id: navActionId,
           taskId: task.id,
           stepIndex: 0,
-          type: 'web_navigate',
+          type: 'desktop_open_browser',
           payload: navPayload,
           parameters: navPayload,
-          rationale: 'Navigate directly to specified web destination.',
+          rationale: `Navigate directly to ${targetUrl} in Chrome Profile 7.`,
           expectedOutcome: `Browser page loaded at ${targetUrl}`,
           riskLevel: 'low',
           requiresExplicitApproval: false,
           createdAt: timestamp,
         } as any,
-        expectedOutcome: `Successfully settled on ${targetUrl}`,
+        expectedOutcome: `Successfully opened ${targetUrl} in Chrome Profile 7`,
         status: 'pending',
         retryCount: 0,
         maxRetries: 2,
