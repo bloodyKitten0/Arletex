@@ -1733,4 +1733,31 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('persistent_planning_milestone22', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 34,
+    name: '034_deliberation_and_conflict_milestone23',
+    up: `
+      -- Internal Conflicts & Deliberation (Representing competing desires, trade-offs, and ethical deliberations)
+      CREATE TABLE IF NOT EXISTS internal_conflicts (
+        id TEXT PRIMARY KEY,
+        context_description TEXT NOT NULL,
+        competing_desires_json TEXT NOT NULL DEFAULT '[]',
+        alternatives_json TEXT NOT NULL DEFAULT '[]',
+        status TEXT NOT NULL DEFAULT 'open',
+        indecision_strategy TEXT,
+        chosen_alternative_id TEXT,
+        decision_justification TEXT,
+        trade_off_analysis_json TEXT,
+        post_decision_reassessment_json TEXT,
+        created_at TEXT NOT NULL,
+        resolved_at TEXT
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_internal_conflicts_status ON internal_conflicts (status);
+      CREATE INDEX IF NOT EXISTS idx_internal_conflicts_created ON internal_conflicts (created_at DESC);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('deliberation_and_conflict_milestone23', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

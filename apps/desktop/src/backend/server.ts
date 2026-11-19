@@ -93,6 +93,7 @@ import {
   SqliteExecutiveRepository,
   SqliteSelfGeneratedGoalRepository,
   SqlitePersistentPlanningRepository,
+  SqliteDeliberationRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -222,6 +223,7 @@ export class ArletexBackendServer {
   public readonly executiveRepo: SqliteExecutiveRepository;
   public readonly goalRepo: SqliteSelfGeneratedGoalRepository;
   public readonly planningRepo: SqlitePersistentPlanningRepository;
+  public readonly deliberationRepo: SqliteDeliberationRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -276,6 +278,7 @@ export class ArletexBackendServer {
     this.executiveRepo = new SqliteExecutiveRepository(db);
     this.goalRepo = new SqliteSelfGeneratedGoalRepository(db);
     this.planningRepo = new SqlitePersistentPlanningRepository(db);
+    this.deliberationRepo = new SqliteDeliberationRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -300,6 +303,7 @@ export class ArletexBackendServer {
       this.executiveRepo,
       this.goalRepo,
       this.planningRepo,
+      this.deliberationRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -4874,6 +4878,38 @@ Rules:
         const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 100;
         const commitments = this.apeService.planningEngine.listCommitments({ stakeholder, status, limit });
         this.sendJson(res, 200, commitments);
+        return;
+      }
+
+      // ==========================================
+      // Deliberation and Internal Conflict Routes (Milestone 23)
+      // ==========================================
+      if (url.pathname === '/api/ape/deliberation/conflicts' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const conflict = this.apeService.createInternalConflict(body);
+        this.sendJson(res, 201, { success: true, conflict });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/deliberation/resolve' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const result = this.apeService.deliberateAndResolveConflict(body.conflictId, body.motivationalState);
+        this.sendJson(res, 200, { success: true, ...result });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/deliberation/reassess' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const conflict = this.apeService.recordPostDecisionReassessment(body.conflictId, body.reassessment);
+        this.sendJson(res, 200, { success: true, conflict });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/deliberation/conflicts' && method === 'GET') {
+        const status = url.searchParams.get('status') as any;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 100;
+        const conflicts = this.apeService.deliberationEngine.listConflicts({ status, limit });
+        this.sendJson(res, 200, conflicts);
         return;
       }
 

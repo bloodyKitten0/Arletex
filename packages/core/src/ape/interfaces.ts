@@ -93,6 +93,8 @@ import {
   MultiStagePlanStatus,
   LongTermCommitment,
   LongTermCommitmentStatus,
+  InternalConflictRecord,
+  InternalConflictStatus,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -475,6 +477,13 @@ export interface IPersistentPlanningRepository {
   getCommitmentById(id: string): LongTermCommitment | null;
   listCommitments(filter?: { stakeholder?: string; status?: LongTermCommitmentStatus; limit?: number }): LongTermCommitment[];
   deleteCommitment(id: string): void;
+}
+
+export interface IDeliberationRepository {
+  saveConflict(conflict: InternalConflictRecord): void;
+  getConflictById(id: string): InternalConflictRecord | null;
+  listConflicts(filter?: { status?: InternalConflictStatus; limit?: number }): InternalConflictRecord[];
+  deleteConflict(id: string): void;
 }
 
 

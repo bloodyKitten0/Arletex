@@ -127,6 +127,7 @@ import { InMemoryGlobalCognitiveRepository, GlobalCognitiveIntegrationEngine } f
 import { InMemoryExecutiveRepository, ExecutiveEngine } from './executiveEngine.js';
 import { InMemorySelfGeneratedGoalRepository, SelfGeneratedGoalEngine } from './selfGeneratedGoalEngine.js';
 import { InMemoryPersistentPlanningRepository, PersistentPlanningEngine } from './persistentPlanningEngine.js';
+import { InMemoryDeliberationRepository, DeliberationEngine } from './deliberationEngine.js';
 import {
   ISimulationRepository,
   IMetacognitionRepository,
@@ -134,6 +135,7 @@ import {
   IExecutiveRepository,
   ISelfGeneratedGoalRepository,
   IPersistentPlanningRepository,
+  IDeliberationRepository,
 } from './interfaces.js';
 
 export class ApeService {
@@ -172,6 +174,7 @@ export class ApeService {
   public readonly executiveEngine: ExecutiveEngine;
   public readonly selfGeneratedGoalEngine: SelfGeneratedGoalEngine;
   public readonly planningEngine: PersistentPlanningEngine;
+  public readonly deliberationEngine: DeliberationEngine;
 
   constructor(
     repo: IApeRepository,
@@ -197,6 +200,7 @@ export class ApeService {
     executiveRepo?: IExecutiveRepository,
     selfGeneratedGoalRepo?: ISelfGeneratedGoalRepository,
     planningRepo?: IPersistentPlanningRepository,
+    deliberationRepo?: IDeliberationRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -291,6 +295,9 @@ export class ApeService {
 
     const planRepo = planningRepo || new InMemoryPersistentPlanningRepository();
     this.planningEngine = new PersistentPlanningEngine({ repository: planRepo, logger });
+
+    const dRepo = deliberationRepo || new InMemoryDeliberationRepository();
+    this.deliberationEngine = new DeliberationEngine({ repository: dRepo, logger });
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -1789,6 +1796,28 @@ export class ApeService {
 
   public evaluatePlanProgress(planId: string) {
     return this.planningEngine.evaluatePlanProgress(planId);
+  }
+
+  // ==========================================
+  // Milestone 23 — Deliberation and Internal Conflict
+  // ==========================================
+
+  public createInternalConflict(params: Parameters<DeliberationEngine['createConflict']>[0]) {
+    return this.deliberationEngine.createConflict(params);
+  }
+
+  public deliberateAndResolveConflict(
+    conflictId: string,
+    motivationalState?: Parameters<DeliberationEngine['deliberateAndResolve']>[1],
+  ) {
+    return this.deliberationEngine.deliberateAndResolve(conflictId, motivationalState);
+  }
+
+  public recordPostDecisionReassessment(
+    conflictId: string,
+    reassessment: Parameters<DeliberationEngine['recordPostDecisionReassessment']>[1],
+  ) {
+    return this.deliberationEngine.recordPostDecisionReassessment(conflictId, reassessment);
   }
 }
 

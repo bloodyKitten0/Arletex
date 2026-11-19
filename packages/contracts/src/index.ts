@@ -737,5 +737,10 @@ export * from './selfGeneratedGoals.js';
 // ==========================================
 export * from './persistentPlanning.js';
 
+// ==========================================
+// Deliberation and Internal Conflict Contracts (Milestone 23)
+// ==========================================
+export * from './deliberationAndConflict.js';
+
 
 

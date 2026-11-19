@@ -30,5 +30,6 @@ export * from './repositories/globalCognitiveRepository.js';
 export * from './repositories/executiveRepository.js';
 export * from './repositories/goalRepository.js';
 export * from './repositories/persistentPlanningRepository.js';
+export * from './repositories/deliberationRepository.js';
 
 
