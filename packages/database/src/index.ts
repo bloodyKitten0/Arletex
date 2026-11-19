@@ -44,6 +44,7 @@ export * from './repositories/temperamentPersonalityRepository.js';
 export * from './repositories/valuesMoralRepository.js';
 export * from './repositories/selfEvaluationEfficacyRepository.js';
 export * from './repositories/longTermDevelopmentRepository.js';
+export * from './repositories/theoryOfMindRepository.js';
 
 
 

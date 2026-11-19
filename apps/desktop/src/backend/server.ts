@@ -107,6 +107,7 @@ import {
   SqliteValuesMoralRepository,
   SqliteSelfEvaluationEfficacyRepository,
   SqliteLongTermDevelopmentRepository,
+  SqliteTheoryOfMindRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -250,6 +251,7 @@ export class ArletexBackendServer {
   public readonly valuesMoralRepo: SqliteValuesMoralRepository;
   public readonly efficacyRepo: SqliteSelfEvaluationEfficacyRepository;
   public readonly longTermDevelopmentRepo: SqliteLongTermDevelopmentRepository;
+  public readonly tomRepo: SqliteTheoryOfMindRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -318,6 +320,7 @@ export class ArletexBackendServer {
     this.valuesMoralRepo = new SqliteValuesMoralRepository(db);
     this.efficacyRepo = new SqliteSelfEvaluationEfficacyRepository(db);
     this.longTermDevelopmentRepo = new SqliteLongTermDevelopmentRepository(db);
+    this.tomRepo = new SqliteTheoryOfMindRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -356,6 +359,7 @@ export class ArletexBackendServer {
       this.valuesMoralRepo,
       this.efficacyRepo,
       this.longTermDevelopmentRepo,
+      this.tomRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -5890,6 +5894,82 @@ Rules:
         this.sendJson(res, 200, { success: true, anchors });
         return;
       }
+
+      // ==========================================
+      // Milestone 37: Theory of Mind Routes
+      // ==========================================
+      if (url.pathname === '/api/ape/tom/agents' && method === 'GET') {
+        const agents = this.apeService.listAgentMentalModels();
+        this.sendJson(res, 200, { success: true, agents });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/tom/agent' && method === 'GET') {
+        const agentId = url.searchParams.get('agentId');
+        if (!agentId) {
+          this.sendJson(res, 400, { error: 'Query parameter "agentId" is required' });
+          return;
+        }
+        const agent = this.apeService.getAgentMentalModel(agentId);
+        if (!agent) {
+          this.sendJson(res, 404, { error: `Agent not found: ${agentId}` });
+          return;
+        }
+        this.sendJson(res, 200, { success: true, agent });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/tom/register-agent' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const agent = this.apeService.registerAgentMentalModel(body);
+        this.sendJson(res, 201, { success: true, agent });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/tom/infer-belief' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const belief = this.apeService.inferBelief(body);
+        this.sendJson(res, 201, { success: true, belief });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/tom/beliefs' && method === 'GET') {
+        const agentId = url.searchParams.get('agentId') || undefined;
+        const beliefs = this.apeService.listInferredBeliefs(agentId);
+        this.sendJson(res, 200, { success: true, beliefs });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/tom/infer-intention' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const intention = this.apeService.inferIntention(body);
+        this.sendJson(res, 201, { success: true, intention });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/tom/intentions' && method === 'GET') {
+        const agentId = url.searchParams.get('agentId') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const intentions = this.apeService.listInferredIntentions(agentId, limit);
+        this.sendJson(res, 200, { success: true, intentions });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/tom/predict-social-action' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const prediction = this.apeService.predictSocialAction(body);
+        this.sendJson(res, 201, { success: true, prediction });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/tom/social-predictions' && method === 'GET') {
+        const agentId = url.searchParams.get('agentId') || undefined;
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const predictions = this.apeService.listSocialPredictions(agentId, limit);
+        this.sendJson(res, 200, { success: true, predictions });
+        return;
+      }
+
 
 
 

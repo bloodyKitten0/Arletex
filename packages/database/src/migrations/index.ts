@@ -2485,4 +2485,66 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('long_term_development_milestone36', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 48,
+    name: '048_theory_of_mind_milestone37',
+    up: `
+      -- Agent Mental Models (Distinguishing others' knowledge states and perspective)
+      CREATE TABLE IF NOT EXISTS tom_agent_mental_models (
+        agent_id TEXT PRIMARY KEY,
+        agent_name TEXT NOT NULL,
+        relationship TEXT NOT NULL,
+        known_preferences_json TEXT NOT NULL DEFAULT '[]',
+        epistemic_access_json TEXT NOT NULL DEFAULT '[]',
+        last_interaction_at TEXT NOT NULL
+      );
+
+      -- Inferred Beliefs (Tracking knowledge differentiation and false belief recognition)
+      CREATE TABLE IF NOT EXISTS tom_inferred_beliefs (
+        id TEXT PRIMARY KEY,
+        agent_id TEXT NOT NULL,
+        topic TEXT NOT NULL,
+        agent_belief_content TEXT NOT NULL,
+        ground_truth_content TEXT NOT NULL,
+        is_false_belief INTEGER NOT NULL,
+        confidence REAL NOT NULL,
+        evidence_signals_json TEXT NOT NULL DEFAULT '[]',
+        inferred_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_tom_beliefs_agent ON tom_inferred_beliefs (agent_id);
+      CREATE INDEX IF NOT EXISTS idx_tom_beliefs_topic ON tom_inferred_beliefs (topic);
+
+      -- Inferred Intentions (Intention modeling with explicit uncertainty and alternatives)
+      CREATE TABLE IF NOT EXISTS tom_inferred_intentions (
+        id TEXT PRIMARY KEY,
+        agent_id TEXT NOT NULL,
+        observed_behavior TEXT NOT NULL,
+        primary_inferred_intention TEXT NOT NULL,
+        confidence REAL NOT NULL,
+        uncertainty_factors_json TEXT NOT NULL DEFAULT '[]',
+        alternative_hypotheses_json TEXT NOT NULL DEFAULT '[]',
+        inferred_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_tom_intentions_agent ON tom_inferred_intentions (agent_id);
+
+      -- Social Predictions (Predicting behavior from inferred beliefs and expectations)
+      CREATE TABLE IF NOT EXISTS tom_social_predictions (
+        id TEXT PRIMARY KEY,
+        agent_id TEXT NOT NULL,
+        context TEXT NOT NULL,
+        predicted_action TEXT NOT NULL,
+        predicted_likelihood REAL NOT NULL,
+        belief_basis TEXT NOT NULL,
+        expected_outcome TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_tom_preds_agent ON tom_social_predictions (agent_id);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('theory_of_mind_milestone37', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

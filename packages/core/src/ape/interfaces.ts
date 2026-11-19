@@ -142,6 +142,10 @@ import {
   DevelopmentHistoryEntry,
   IdentityAnchor,
   DevelopmentEpoch,
+  AgentMentalModel,
+  InferredBelief,
+  InferredIntention,
+  SocialPrediction,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -681,6 +685,20 @@ export interface ILongTermDevelopmentRepository {
   getCurrentEpoch(): DevelopmentEpoch | null;
   listEpochs(): DevelopmentEpoch[];
 }
+
+export interface ITheoryOfMindRepository {
+  saveAgentModel(model: AgentMentalModel): void;
+  getAgentModel(agentId: string): AgentMentalModel | null;
+  listAgentModels(): AgentMentalModel[];
+  saveBelief(belief: InferredBelief): void;
+  getBelief(agentId: string, topic: string): InferredBelief | null;
+  listBeliefs(agentId?: string): InferredBelief[];
+  saveIntention(intention: InferredIntention): void;
+  listIntentions(agentId?: string, limit?: number): InferredIntention[];
+  saveSocialPrediction(prediction: SocialPrediction): void;
+  listSocialPredictions(agentId?: string, limit?: number): SocialPrediction[];
+}
+
 
 
 

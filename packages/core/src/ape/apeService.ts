@@ -153,6 +153,13 @@ import {
   StartNewEpochParams,
 } from './longTermDevelopmentEngine.js';
 import {
+  InMemoryTheoryOfMindRepository,
+  TheoryOfMindEngine,
+  InferBeliefParams,
+  InferIntentionParams,
+  PredictSocialActionParams,
+} from './theoryOfMindEngine.js';
+import {
   ISimulationRepository,
   IMetacognitionRepository,
   IGlobalCognitiveRepository,
@@ -173,6 +180,7 @@ import {
   IValuesMoralRepository,
   ISelfEvaluationEfficacyRepository,
   ILongTermDevelopmentRepository,
+  ITheoryOfMindRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
@@ -192,6 +200,7 @@ import {
   MoralPrincipleCategory,
   SelfImprovementGoal,
   PsychologicalDimension,
+  AgentMentalModel,
 } from '@arletex/contracts';
 
 export class ApeService {
@@ -244,6 +253,7 @@ export class ApeService {
   public readonly moralEngine: ValuesMoralEngine;
   public readonly efficacyEngine: SelfEvaluationEfficacyEngine;
   public readonly longTermDevelopmentEngine: LongTermDevelopmentEngine;
+  public readonly theoryOfMindEngine: TheoryOfMindEngine;
 
   constructor(
     repo: IApeRepository,
@@ -283,6 +293,7 @@ export class ApeService {
     valuesMoralRepo?: IValuesMoralRepository,
     selfEvaluationEfficacyRepo?: ISelfEvaluationEfficacyRepository,
     longTermDevelopmentRepo?: ILongTermDevelopmentRepository,
+    theoryOfMindRepo?: ITheoryOfMindRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -419,6 +430,9 @@ export class ApeService {
 
     const ltdRepo = longTermDevelopmentRepo || new InMemoryLongTermDevelopmentRepository();
     this.longTermDevelopmentEngine = new LongTermDevelopmentEngine(ltdRepo, logger);
+
+    const tomRepo = theoryOfMindRepo || new InMemoryTheoryOfMindRepository();
+    this.theoryOfMindEngine = new TheoryOfMindEngine(tomRepo, logger);
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -2519,6 +2533,49 @@ export class ApeService {
 
   public listIdentityAnchors() {
     return this.longTermDevelopmentEngine.listIdentityAnchors();
+  }
+
+  // ==========================================
+  // Milestone 37: Theory of Mind
+  // ==========================================
+  public registerAgentMentalModel(model: AgentMentalModel) {
+    return this.theoryOfMindEngine.registerAgentModel(model);
+  }
+
+  public inferBelief(params: InferBeliefParams) {
+    return this.theoryOfMindEngine.inferBelief(params);
+  }
+
+  public inferIntention(params: InferIntentionParams) {
+    return this.theoryOfMindEngine.inferIntention(params);
+  }
+
+  public predictSocialAction(params: PredictSocialActionParams) {
+    return this.theoryOfMindEngine.predictSocialAction(params);
+  }
+
+  public getAgentMentalModel(agentId: string) {
+    return this.theoryOfMindEngine.getAgentModel(agentId);
+  }
+
+  public listAgentMentalModels() {
+    return this.theoryOfMindEngine.listAgentModels();
+  }
+
+  public getInferredBelief(agentId: string, topic: string) {
+    return this.theoryOfMindEngine.getInferredBelief(agentId, topic);
+  }
+
+  public listInferredBeliefs(agentId?: string) {
+    return this.theoryOfMindEngine.listInferredBeliefs(agentId);
+  }
+
+  public listInferredIntentions(agentId?: string, limit?: number) {
+    return this.theoryOfMindEngine.listInferredIntentions(agentId, limit);
+  }
+
+  public listSocialPredictions(agentId?: string, limit?: number) {
+    return this.theoryOfMindEngine.listSocialPredictions(agentId, limit);
   }
 }
 
