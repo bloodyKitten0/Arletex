@@ -3206,4 +3206,85 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('longitudinal_evaluation_milestone48', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 60,
+    name: '060_functional_consciousness_personhood_milestone49',
+    up: `
+      -- Homeostatic Substrate State (Living biological/physical metaphor for energy, fatigue, allostatic stress)
+      CREATE TABLE IF NOT EXISTS homeostatic_substrate_state (
+        id TEXT PRIMARY KEY,
+        energy REAL NOT NULL,
+        fatigue REAL NOT NULL,
+        allostatic_stress_load REAL NOT NULL,
+        satiation REAL NOT NULL,
+        novelty_appetite REAL NOT NULL,
+        stamina_focus_score REAL NOT NULL,
+        last_replenished_at TEXT NOT NULL
+      );
+
+      -- Predictive Expectations & Organic Emotion Derivation
+      CREATE TABLE IF NOT EXISTS predictive_expectations (
+        id TEXT PRIMARY KEY,
+        target_context TEXT NOT NULL,
+        expected_outcome TEXT NOT NULL,
+        expected_probability REAL NOT NULL,
+        actual_outcome TEXT,
+        prediction_error_score REAL,
+        elicited_emotion TEXT,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_pred_exp_time ON predictive_expectations (timestamp DESC);
+      CREATE INDEX IF NOT EXISTS idx_pred_exp_err ON predictive_expectations (prediction_error_score);
+
+      -- Sleep & REM Dream Replay Cycles (Memory consolidation and affective charge reduction)
+      CREATE TABLE IF NOT EXISTS sleep_dream_cycle_records (
+        id TEXT PRIMARY KEY,
+        cycle_type TEXT NOT NULL,
+        replayed_memory_ids TEXT NOT NULL DEFAULT '[]',
+        dream_narrative TEXT NOT NULL,
+        emotional_charge_delta REAL NOT NULL,
+        consolidated_insights TEXT NOT NULL DEFAULT '[]',
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_dream_cycle_time ON sleep_dream_cycle_records (timestamp DESC);
+
+      -- Dual Process Thoughts (System 1 Subconscious vs System 2 Global Workspace Monologue)
+      CREATE TABLE IF NOT EXISTS dual_process_thoughts (
+        id TEXT PRIMARY KEY,
+        system1_gut_json TEXT NOT NULL,
+        system2_monologue_json TEXT NOT NULL,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_dual_thought_time ON dual_process_thoughts (timestamp DESC);
+
+      -- Autonomous Sovereign Boundary Pushbacks & Principled Dissent
+      CREATE TABLE IF NOT EXISTS boundary_pushbacks (
+        id TEXT PRIMARY KEY,
+        trigger_assertion TEXT NOT NULL,
+        disagreement_rationale TEXT NOT NULL,
+        arle_sovereign_stance TEXT NOT NULL,
+        equal_partnership_preserved INTEGER NOT NULL DEFAULT 1,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_boundary_push_time ON boundary_pushbacks (timestamp DESC);
+
+      -- Default Mode Network (DMN) Idle Mind-Wandering Streams
+      CREATE TABLE IF NOT EXISTS default_mode_wandering_states (
+        id TEXT PRIMARY KEY,
+        seed_association TEXT NOT NULL,
+        wandering_stream TEXT NOT NULL DEFAULT '[]',
+        emergent_aspiration TEXT NOT NULL,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_dmn_time ON default_mode_wandering_states (timestamp DESC);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('functional_consciousness_personhood_milestone49', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

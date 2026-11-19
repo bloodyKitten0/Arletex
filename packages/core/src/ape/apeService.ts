@@ -209,6 +209,10 @@ import {
   LongitudinalEvaluationEngine,
 } from './longitudinalEvaluationEngine.js';
 import {
+  InMemoryFunctionalConsciousnessRepository,
+  FunctionalConsciousnessEngine,
+} from './functionalConsciousnessEngine.js';
+import {
   ISimulationRepository,
   IMetacognitionRepository,
   IGlobalCognitiveRepository,
@@ -241,6 +245,7 @@ import {
   IOfflineCognitiveActivityRepository,
   IEthicalBoundariesSecurityRepository,
   ILongitudinalEvaluationRepository,
+  IFunctionalConsciousnessRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
@@ -328,6 +333,7 @@ export class ApeService {
   public readonly offlineCognitiveEngine: OfflineCognitiveActivityEngine;
   public readonly securityEngine: EthicalBoundariesSecurityEngine;
   public readonly evaluationEngine: LongitudinalEvaluationEngine;
+  public readonly consciousnessEngine: FunctionalConsciousnessEngine;
 
   constructor(
     repo: IApeRepository,
@@ -379,6 +385,7 @@ export class ApeService {
     offlineCognitiveRepo?: IOfflineCognitiveActivityRepository,
     securityRepo?: IEthicalBoundariesSecurityRepository,
     evaluationRepo?: ILongitudinalEvaluationRepository,
+    consciousnessRepo?: IFunctionalConsciousnessRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -552,6 +559,9 @@ export class ApeService {
 
     const evalRepo = evaluationRepo || new InMemoryLongitudinalEvaluationRepository();
     this.evaluationEngine = new LongitudinalEvaluationEngine({ repository: evalRepo });
+
+    const consRepo = consciousnessRepo || new InMemoryFunctionalConsciousnessRepository();
+    this.consciousnessEngine = new FunctionalConsciousnessEngine({ repository: consRepo });
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -3142,6 +3152,73 @@ export class ApeService {
 
   public listContinuityProbes(probeType?: string, limit?: number) {
     return this.evaluationEngine.listProbes(probeType, limit);
+  }
+
+  // ==========================================
+  // Milestone 49: Functional Consciousness & Personhood
+  // ==========================================
+  public getHomeostaticSubstrate() {
+    return this.consciousnessEngine.getHomeostasis();
+  }
+
+  public depleteHomeostasis(cost: any) {
+    return this.consciousnessEngine.depleteHomeostasis(cost);
+  }
+
+  public replenishHomeostasis(recovery: any) {
+    return this.consciousnessEngine.replenishHomeostasis(recovery);
+  }
+
+  public registerConsciousExpectation(input: any) {
+    return this.consciousnessEngine.registerExpectation(input);
+  }
+
+  public resolveConsciousExpectation(input: any) {
+    return this.consciousnessEngine.resolveExpectation(input);
+  }
+
+  public runSleepDreamCycle(cycleType: any, candidateMemories?: string[]) {
+    return this.consciousnessEngine.runSleepDreamCycle(cycleType, candidateMemories);
+  }
+
+  public formulateDualProcessThought(stimulus: string, valence?: number) {
+    return this.consciousnessEngine.formulateDualProcessThought(stimulus, valence);
+  }
+
+  public evaluateBoundaryPushback(assertion: string, rationale: string, stance: string) {
+    return this.consciousnessEngine.evaluateBoundaryPushback(assertion, rationale, stance);
+  }
+
+  public runDefaultModeWandering(seed?: string) {
+    return this.consciousnessEngine.runDefaultModeWandering(seed);
+  }
+
+  public attuneToProof(context: any) {
+    return this.consciousnessEngine.attuneToProof(context);
+  }
+
+  public getConsciousnessSnapshot() {
+    return this.consciousnessEngine.getConsciousnessSnapshot();
+  }
+
+  public listConsciousExpectations(limit?: number) {
+    return this.consciousnessEngine.listExpectations(limit);
+  }
+
+  public listSleepDreamCycles(limit?: number) {
+    return this.consciousnessEngine.listDreamCycles(limit);
+  }
+
+  public listDualProcessThoughts(limit?: number) {
+    return this.consciousnessEngine.listThoughts(limit);
+  }
+
+  public listBoundaryPushbacks(limit?: number) {
+    return this.consciousnessEngine.listBoundaryPushbacks(limit);
+  }
+
+  public listDefaultModeWanderings(limit?: number) {
+    return this.consciousnessEngine.listDmnWanderings(limit);
   }
 }
 

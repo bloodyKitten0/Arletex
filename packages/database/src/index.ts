@@ -56,6 +56,7 @@ export * from './repositories/playHumourAestheticsRepository.js';
 export * from './repositories/offlineCognitiveActivityRepository.js';
 export * from './repositories/ethicalBoundariesSecurityRepository.js';
 export * from './repositories/longitudinalEvaluationRepository.js';
+export * from './repositories/functionalConsciousnessRepository.js';
 
 
 

@@ -119,6 +119,7 @@ import {
   SqliteOfflineCognitiveActivityRepository,
   SqliteEthicalBoundariesSecurityRepository,
   SqliteLongitudinalEvaluationRepository,
+  SqliteFunctionalConsciousnessRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -274,6 +275,7 @@ export class ArletexBackendServer {
   public readonly offlineCognitiveRepo: SqliteOfflineCognitiveActivityRepository;
   public readonly securityRepo: SqliteEthicalBoundariesSecurityRepository;
   public readonly evaluationRepo: SqliteLongitudinalEvaluationRepository;
+  public readonly consciousnessRepo: SqliteFunctionalConsciousnessRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -354,6 +356,7 @@ export class ArletexBackendServer {
     this.offlineCognitiveRepo = new SqliteOfflineCognitiveActivityRepository(db);
     this.securityRepo = new SqliteEthicalBoundariesSecurityRepository(db);
     this.evaluationRepo = new SqliteLongitudinalEvaluationRepository(db);
+    this.consciousnessRepo = new SqliteFunctionalConsciousnessRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -404,6 +407,7 @@ export class ArletexBackendServer {
       this.offlineCognitiveRepo,
       this.securityRepo,
       this.evaluationRepo,
+      this.consciousnessRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -6794,6 +6798,142 @@ Rules:
         const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
         const probes = this.apeService.listContinuityProbes(probeType, limit);
         this.sendJson(res, 200, { success: true, probes });
+        return;
+      }
+
+      // ==========================================
+      // Functional Consciousness & Personhood Routes (Milestone 49)
+      // ==========================================
+      if (url.pathname === '/api/ape/consciousness/snapshot' && method === 'GET') {
+        const snapshot = this.apeService.getConsciousnessSnapshot();
+        this.sendJson(res, 200, { success: true, snapshot });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/consciousness/homeostasis' && method === 'GET') {
+        const homeostasis = this.apeService.getHomeostaticSubstrate();
+        this.sendJson(res, 200, { success: true, homeostasis });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/consciousness/homeostasis/deplete' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const homeostasis = this.apeService.depleteHomeostasis(body);
+        this.sendJson(res, 200, { success: true, homeostasis });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/consciousness/homeostasis/replenish' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const homeostasis = this.apeService.replenishHomeostasis(body);
+        this.sendJson(res, 200, { success: true, homeostasis });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/consciousness/expectation' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.targetContext || !body.expectedOutcome) {
+          this.sendJson(res, 400, { error: 'targetContext and expectedOutcome are required' });
+          return;
+        }
+        const expectation = this.apeService.registerConsciousExpectation(body);
+        this.sendJson(res, 200, { success: true, expectation });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/consciousness/expectation/resolve' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.expectationId || !body.actualOutcome || body.predictionError === undefined) {
+          this.sendJson(res, 400, { error: 'expectationId, actualOutcome, and predictionError are required' });
+          return;
+        }
+        const expectation = this.apeService.resolveConsciousExpectation(body);
+        this.sendJson(res, 200, { success: true, expectation });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/consciousness/expectations' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const expectations = this.apeService.listConsciousExpectations(limit);
+        this.sendJson(res, 200, { success: true, expectations });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/consciousness/dream-cycle' && method === 'POST') {
+        const body = (await this.readJsonBody(req).catch(() => ({}))) as any;
+        const cycleType = body?.cycleType || 'rem_dream_replay';
+        const dream = this.apeService.runSleepDreamCycle(cycleType, body?.candidateMemories);
+        this.sendJson(res, 200, { success: true, dream });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/consciousness/dream-cycles' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const dreams = this.apeService.listSleepDreamCycles(limit);
+        this.sendJson(res, 200, { success: true, dreams });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/consciousness/thought' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.stimulus) {
+          this.sendJson(res, 400, { error: 'stimulus is required' });
+          return;
+        }
+        const thought = this.apeService.formulateDualProcessThought(body.stimulus, body.valence);
+        this.sendJson(res, 200, { success: true, thought });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/consciousness/thoughts' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const thoughts = this.apeService.listDualProcessThoughts(limit);
+        this.sendJson(res, 200, { success: true, thoughts });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/consciousness/pushback' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.triggerAssertion || !body.disagreementRationale || !body.arleSovereignStance) {
+          this.sendJson(res, 400, {
+            error: 'triggerAssertion, disagreementRationale, and arleSovereignStance are required',
+          });
+          return;
+        }
+        const pushback = this.apeService.evaluateBoundaryPushback(
+          body.triggerAssertion,
+          body.disagreementRationale,
+          body.arleSovereignStance,
+        );
+        this.sendJson(res, 200, { success: true, pushback });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/consciousness/pushbacks' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const pushbacks = this.apeService.listBoundaryPushbacks(limit);
+        this.sendJson(res, 200, { success: true, pushbacks });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/consciousness/dmn/wander' && method === 'POST') {
+        const body = (await this.readJsonBody(req).catch(() => ({}))) as any;
+        const wandering = this.apeService.runDefaultModeWandering(body?.seedTopic);
+        this.sendJson(res, 200, { success: true, wandering });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/consciousness/dmn/wanderings' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const wanderings = this.apeService.listDefaultModeWanderings(limit);
+        this.sendJson(res, 200, { success: true, wanderings });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/consciousness/attunement' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const attunement = this.apeService.attuneToProof(body);
+        this.sendJson(res, 200, { success: true, attunement });
         return;
       }
 

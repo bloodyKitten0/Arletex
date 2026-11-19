@@ -192,6 +192,12 @@ import {
   SecurityAuditEventType,
   LongitudinalEvaluationReport,
   ContinuityVerificationProbe,
+  HomeostaticSubstrateState,
+  PredictiveExpectation,
+  SleepDreamCycleRecord,
+  DualProcessThought,
+  AutonomousBoundaryPushback,
+  DefaultModeWanderingState,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -880,6 +886,23 @@ export interface ILongitudinalEvaluationRepository {
   saveProbe(probe: ContinuityVerificationProbe): void;
   listProbes(probeType?: string, limit?: number): ContinuityVerificationProbe[];
 }
+
+export interface IFunctionalConsciousnessRepository {
+  getHomeostasis(): HomeostaticSubstrateState | null;
+  saveHomeostasis(state: HomeostaticSubstrateState): void;
+  saveExpectation(expectation: PredictiveExpectation): void;
+  getExpectation(id: string): PredictiveExpectation | null;
+  listExpectations(limit?: number): PredictiveExpectation[];
+  saveDreamCycle(record: SleepDreamCycleRecord): void;
+  listDreamCycles(limit?: number): SleepDreamCycleRecord[];
+  saveThought(thought: DualProcessThought): void;
+  listThoughts(limit?: number): DualProcessThought[];
+  saveBoundaryPushback(pushback: AutonomousBoundaryPushback): void;
+  listBoundaryPushbacks(limit?: number): AutonomousBoundaryPushback[];
+  saveDmnWandering(state: DefaultModeWanderingState): void;
+  listDmnWanderings(limit?: number): DefaultModeWanderingState[];
+}
+
 
 
 

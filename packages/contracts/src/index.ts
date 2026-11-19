@@ -867,6 +867,12 @@ export * from './ethicalBoundariesSecurity.js';
 // ==========================================
 export * from './longitudinalEvaluation.js';
 
+// ==========================================
+// Functional Consciousness & Personhood Contracts (Milestone 49)
+// ==========================================
+export * from './functionalConsciousness.js';
+
+
 
 
 
