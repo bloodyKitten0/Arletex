@@ -130,6 +130,7 @@ import { InMemoryPersistentPlanningRepository, PersistentPlanningEngine } from '
 import { InMemoryDeliberationRepository, DeliberationEngine } from './deliberationEngine.js';
 import { InMemoryAutonomousActivityRepository, AutonomousAgencyEngine } from './autonomousAgencyEngine.js';
 import { InMemoryEmotionalAppraisalRepository, ContextualAppraisalService } from './contextualAppraisalService.js';
+import { InMemoryEmotionalRepertoireRepository, EmotionalRepertoireEngine } from './emotionalRepertoireEngine.js';
 import {
   ISimulationRepository,
   IMetacognitionRepository,
@@ -140,7 +141,13 @@ import {
   IDeliberationRepository,
   IAutonomousActivityRepository,
   IEmotionalAppraisalRepository,
+  IEmotionalRepertoireRepository,
 } from './interfaces.js';
+import {
+  RepertoireEmotionKey,
+  EmotionalTransitionTrigger,
+  IndividualEmotionalTendencies,
+} from '@arletex/contracts';
 
 export class ApeService {
   private readonly repo: IApeRepository;
@@ -181,6 +188,7 @@ export class ApeService {
   public readonly deliberationEngine: DeliberationEngine;
   public readonly autonomousAgencyEngine: AutonomousAgencyEngine;
   public readonly contextualAppraisalService: ContextualAppraisalService;
+  public readonly emotionalRepertoireEngine: EmotionalRepertoireEngine;
 
   constructor(
     repo: IApeRepository,
@@ -209,6 +217,7 @@ export class ApeService {
     deliberationRepo?: IDeliberationRepository,
     autonomousAgencyRepo?: IAutonomousActivityRepository,
     appraisalRepo?: IEmotionalAppraisalRepository,
+    repertoireRepo?: IEmotionalRepertoireRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -312,6 +321,9 @@ export class ApeService {
 
     const eAppRepo = appraisalRepo || new InMemoryEmotionalAppraisalRepository();
     this.contextualAppraisalService = new ContextualAppraisalService({ repository: eAppRepo, logger });
+
+    const repRepo = repertoireRepo || new InMemoryEmotionalRepertoireRepository();
+    this.emotionalRepertoireEngine = new EmotionalRepertoireEngine(repRepo, logger);
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -1904,6 +1916,70 @@ export class ApeService {
       this.repo.getAffectiveState(),
       this.repo.getRelationshipConfig(),
     );
+  }
+
+  // ==========================================
+  // Milestone 26 — Emotional Repertoire and Dynamics
+  // ==========================================
+
+  public getEmotionalRepertoireState() {
+    return this.emotionalRepertoireEngine.getActiveState();
+  }
+
+  public triggerRepertoireEmotion(
+    emotionKey: RepertoireEmotionKey,
+    intensity: number,
+    triggerType: EmotionalTransitionTrigger,
+    reason: string,
+    appraisalContext?: Record<string, unknown>,
+  ) {
+    return this.emotionalRepertoireEngine.triggerEmotion(
+      emotionKey,
+      intensity,
+      triggerType,
+      reason,
+      appraisalContext,
+    );
+  }
+
+  public blendRepertoireEmotions(
+    primaryEmotion: RepertoireEmotionKey,
+    primaryIntensity: number,
+    secondaryEmotion: RepertoireEmotionKey,
+    secondaryIntensity: number,
+    context?: Record<string, unknown>,
+  ) {
+    return this.emotionalRepertoireEngine.blendEmotions(
+      primaryEmotion,
+      primaryIntensity,
+      secondaryEmotion,
+      secondaryIntensity,
+      context,
+    );
+  }
+
+  public applyRepertoireDecay(elapsedMs: number) {
+    return this.emotionalRepertoireEngine.applyDecay(elapsedMs);
+  }
+
+  public getRepertoireCognitiveImpact() {
+    return this.emotionalRepertoireEngine.getCognitiveImpact();
+  }
+
+  public getRepertoireTransitions(limit?: number) {
+    return this.emotionalRepertoireEngine.getTransitions(limit);
+  }
+
+  public getRepertoireBlends(limit?: number) {
+    return this.emotionalRepertoireEngine.getBlendHistory(limit);
+  }
+
+  public getIndividualEmotionalTendencies() {
+    return this.emotionalRepertoireEngine.getTendencies();
+  }
+
+  public updateIndividualEmotionalTendencies(tendencies: Partial<IndividualEmotionalTendencies>) {
+    return this.emotionalRepertoireEngine.updateTendencies(tendencies);
   }
 }
 

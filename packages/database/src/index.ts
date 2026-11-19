@@ -33,5 +33,6 @@ export * from './repositories/persistentPlanningRepository.js';
 export * from './repositories/deliberationRepository.js';
 export * from './repositories/autonomousAgencyRepository.js';
 export * from './repositories/emotionalAppraisalRepository.js';
+export * from './repositories/emotionalRepertoireRepository.js';
 
 

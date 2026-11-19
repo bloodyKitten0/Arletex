@@ -96,6 +96,7 @@ import {
   SqliteDeliberationRepository,
   SqliteAutonomousAgencyRepository,
   SqliteEmotionalAppraisalRepository,
+  SqliteEmotionalRepertoireRepository,
 } from '@arletex/database';
 import { InferenceGateway } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -228,6 +229,7 @@ export class ArletexBackendServer {
   public readonly deliberationRepo: SqliteDeliberationRepository;
   public readonly autonomousAgencyRepo: SqliteAutonomousAgencyRepository;
   public readonly emotionalAppraisalRepo: SqliteEmotionalAppraisalRepository;
+  public readonly emotionalRepertoireRepo: SqliteEmotionalRepertoireRepository;
 
   private activeStreams = new Map<string, AbortController>();
   private activeTtsAbortControllers = new Set<AbortController>();
@@ -285,6 +287,7 @@ export class ArletexBackendServer {
     this.deliberationRepo = new SqliteDeliberationRepository(db);
     this.autonomousAgencyRepo = new SqliteAutonomousAgencyRepository(db);
     this.emotionalAppraisalRepo = new SqliteEmotionalAppraisalRepository(db);
+    this.emotionalRepertoireRepo = new SqliteEmotionalRepertoireRepository(db);
     this.apeService = new ApeService(
       this.apeRepo,
       this.inferenceGateway,
@@ -312,6 +315,7 @@ export class ArletexBackendServer {
       this.deliberationRepo,
       this.autonomousAgencyRepo,
       this.emotionalAppraisalRepo,
+      this.emotionalRepertoireRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -5025,6 +5029,81 @@ Rules:
         const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
         const comparisons = this.apeService.contextualAppraisalService.listComparisons(limit);
         this.sendJson(res, 200, comparisons);
+        return;
+      }
+
+      // ==========================================
+      // Emotional Repertoire Routes (Milestone 26)
+      // ==========================================
+      if (url.pathname === '/api/ape/repertoire/state' && method === 'GET') {
+        const state = this.apeService.getEmotionalRepertoireState();
+        this.sendJson(res, 200, { success: true, state });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/repertoire/trigger' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const state = this.apeService.triggerRepertoireEmotion(
+          body.emotionKey,
+          body.intensity,
+          body.triggerType || 'interaction',
+          body.reason,
+          body.appraisalContext,
+        );
+        this.sendJson(res, 200, { success: true, state });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/repertoire/blend' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const blend = this.apeService.blendRepertoireEmotions(
+          body.primaryEmotion,
+          body.primaryIntensity,
+          body.secondaryEmotion,
+          body.secondaryIntensity,
+          body.context,
+        );
+        this.sendJson(res, 200, { success: true, blend });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/repertoire/decay' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const state = this.apeService.applyRepertoireDecay(body.elapsedMs || 60000);
+        this.sendJson(res, 200, { success: true, state });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/repertoire/cognitive-impact' && method === 'GET') {
+        const cognitiveImpact = this.apeService.getRepertoireCognitiveImpact();
+        this.sendJson(res, 200, { success: true, cognitiveImpact });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/repertoire/transitions' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const transitions = this.apeService.getRepertoireTransitions(limit);
+        this.sendJson(res, 200, transitions);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/repertoire/blends' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const blends = this.apeService.getRepertoireBlends(limit);
+        this.sendJson(res, 200, blends);
+        return;
+      }
+
+      if (url.pathname === '/api/ape/repertoire/tendencies' && method === 'GET') {
+        const tendencies = this.apeService.getIndividualEmotionalTendencies();
+        this.sendJson(res, 200, { success: true, tendencies });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/repertoire/tendencies' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const tendencies = this.apeService.updateIndividualEmotionalTendencies(body);
+        this.sendJson(res, 200, { success: true, tendencies });
         return;
       }
 

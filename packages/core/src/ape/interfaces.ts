@@ -99,6 +99,10 @@ import {
   AutonomousActivityStatus,
   AutonomousActivityType,
   AppraisalInterpretationComparison,
+  EmotionalRepertoireState,
+  EmotionalTransitionRecord,
+  MixedEmotionalBlend,
+  IndividualEmotionalTendencies,
 } from '@arletex/contracts';
 
 export interface IApeRepository {
@@ -507,6 +511,17 @@ export interface IEmotionalAppraisalRepository {
   getComparisonById(id: string): AppraisalInterpretationComparison | null;
   listComparisons(limit?: number): AppraisalInterpretationComparison[];
   deleteComparison(id: string): void;
+}
+
+export interface IEmotionalRepertoireRepository {
+  saveActiveState(state: EmotionalRepertoireState): void;
+  getActiveState(): EmotionalRepertoireState | null;
+  recordTransition(record: EmotionalTransitionRecord): void;
+  getTransitions(limit?: number): EmotionalTransitionRecord[];
+  recordBlend(blend: MixedEmotionalBlend): void;
+  getBlendHistory(limit?: number): MixedEmotionalBlend[];
+  getIndividualTendencies(): IndividualEmotionalTendencies;
+  saveIndividualTendencies(tendencies: IndividualEmotionalTendencies): void;
 }
 
 

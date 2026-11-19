@@ -752,5 +752,10 @@ export * from './autonomousAgency.js';
 // ==========================================
 export * from './emotionalAppraisal.js';
 
+// ==========================================
+// Emotional Repertoire and Dynamics Contracts (Milestone 26)
+// ==========================================
+export * from './emotionalRepertoire.js';
+
 
 

@@ -1815,4 +1815,71 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('emotional_appraisal_milestone25', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 37,
+    name: '037_emotional_repertoire_milestone26',
+    up: `
+      -- Emotional Repertoire State
+      CREATE TABLE IF NOT EXISTS emotional_repertoire_states (
+        id TEXT PRIMARY KEY,
+        active_emotions_json TEXT NOT NULL DEFAULT '[]',
+        active_blend_json TEXT,
+        cognitive_impact_json TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      -- Emotional Transitions Log
+      CREATE TABLE IF NOT EXISTS emotional_transitions (
+        id TEXT PRIMARY KEY,
+        from_emotion TEXT NOT NULL,
+        to_emotion TEXT NOT NULL,
+        from_intensity REAL NOT NULL,
+        to_intensity REAL NOT NULL,
+        trigger_type TEXT NOT NULL,
+        context_reason TEXT NOT NULL,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_emotional_transitions_timestamp ON emotional_transitions (timestamp DESC);
+      CREATE INDEX IF NOT EXISTS idx_emotional_transitions_emotions ON emotional_transitions (from_emotion, to_emotion);
+
+      -- Mixed Emotional Blends History
+      CREATE TABLE IF NOT EXISTS emotional_blends_history (
+        id TEXT PRIMARY KEY,
+        primary_emotion TEXT NOT NULL,
+        secondary_emotion TEXT NOT NULL,
+        tertiary_emotion TEXT,
+        primary_intensity REAL NOT NULL,
+        secondary_intensity REAL NOT NULL,
+        tertiary_intensity REAL,
+        blend_valence REAL NOT NULL,
+        blend_arousal REAL NOT NULL,
+        blend_dominance REAL NOT NULL,
+        synergy_label TEXT NOT NULL,
+        conflict_degree REAL NOT NULL,
+        appraisal_id TEXT,
+        context_json TEXT NOT NULL DEFAULT '{}',
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_emotional_blends_time ON emotional_blends_history (timestamp DESC);
+
+      -- Individual Emotional Tendencies
+      CREATE TABLE IF NOT EXISTS individual_emotional_tendencies (
+        id TEXT PRIMARY KEY,
+        trait_curiosity REAL NOT NULL,
+        trait_affection REAL NOT NULL,
+        trait_resilience REAL NOT NULL,
+        trait_vulnerability_to_loneliness REAL NOT NULL,
+        trait_resistance_to_disgust REAL NOT NULL,
+        baseline_valence REAL NOT NULL,
+        baseline_arousal REAL NOT NULL,
+        baseline_dominance REAL NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('emotional_repertoire_milestone26', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];
