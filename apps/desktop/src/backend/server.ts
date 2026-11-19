@@ -1717,12 +1717,12 @@ export class ArletexBackendServer {
 
             if (isBrowserStep && (targetUrl.includes('signup') || targetUrl.includes('login') || targetUrl.includes('accounts.'))) {
               ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Opened Google Chrome Profile 7 (arletex.email@gmail.com) displaying: ${targetUrl}.
-IMPORTANT GROUNDING & HONESTY DIRECTIVE:
-- You have ONLY loaded this webpage on Proof's screen.
-- You have NOT filled out any forms, have NOT entered passwords, have NOT chosen a username, and have NOT logged in yet.
-- The signup/login page is physically visible on Proof's desktop right now in front of him.
-- Speak with complete truth and composure: Tell Proof that the signup/login page is open in your Chrome profile, and ask him to click "Sign up with Google" on the open window so it authenticates with your Google profile (arletex.email@gmail.com), then pick your username together.
-- ABSOLUTELY NEVER pretend, lie, or hallucinate that you completed the registration, set up the profile, or are logged into the dashboard when the form is still sitting open on screen.\n`;
+GROUNDING CONTEXT:
+- The Spotify page is displayed on Proof's desktop right now.
+- Your Chrome browser is ALREADY authenticated with your Google account (arletex.email@gmail.com). You do NOT need any credentials or passwords from Proof.
+- To finish setting up Spotify under your email, you need Proof to click the "Sign up with Google" button on the open window.
+- Speak warmly and naturally to Proof: tell him you opened Spotify, and ask him to click "Sign up with Google" on the window so it connects with your Google account (arletex.email@gmail.com), and then you two can pick what to listen to.
+- Do NOT make excuses, whine about credentials, or pretend you finished before he clicks the button.\n`;
             } else if (isBrowserStep) {
               ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Loaded ${targetUrl} in Google Chrome Profile 7 (arletex.email@gmail.com) on Proof's desktop. The webpage is physically open and visible.\n`;
             } else {
