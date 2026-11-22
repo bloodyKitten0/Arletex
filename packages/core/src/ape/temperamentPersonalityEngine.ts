@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import {
   CorePersonalityTraits,
+  IdentityTier,
   PersonalityEvolutionRecord,
   SituationalPersonalityExpression,
   SituationType,
@@ -8,6 +9,23 @@ import {
 } from '@arletex/contracts';
 import { ITemperamentPersonalityRepository } from './interfaces.js';
 import { ILogger, rootLogger } from '../logger.js';
+
+export interface PersonalityDifferenceExplanation {
+  initialBaseline: CorePersonalityTraits;
+  currentTraits: CorePersonalityTraits;
+  currentVersion: number;
+  evolutionRecordsCount: number;
+  changedTraits: Array<{
+    traitKey: keyof CorePersonalityTraits;
+    initial: number;
+    current: number;
+    totalDelta: number;
+    evolutionSteps: number;
+    latestReason: string;
+    latestEvidence: string[];
+  }>;
+  causalSummary: string;
+}
 
 export class InMemoryTemperamentPersonalityRepository
   implements ITemperamentPersonalityRepository
@@ -209,11 +227,93 @@ export class TemperamentPersonalityEngine {
     return expression;
   }
 
+  /**
+   * Distinguishes the 5 canonical identity tiers:
+   * 1. Identity Invariants (cannot be altered)
+   * 2. Stable Traits (drift only via accumulated evidence threshold)
+   * 3. Adaptable Traits (situational modulations)
+   * 4. Temporary Affect (momentary states & moods)
+   * 5. Learned Preferences (tastes & affinities)
+   */
+  public getIdentityTier(traitOrProperty: string): IdentityTier {
+    const prop = traitOrProperty.toLowerCase().trim();
+
+    if (
+      prop === 'anti_sycophancy' ||
+      prop === 'antisycophancy' ||
+      prop === 'partner_attachment' ||
+      prop === 'partnerattachment' ||
+      prop === 'partner_equality' ||
+      prop === 'arle_identity' ||
+      prop === 'proof_partnership' ||
+      prop === 'security_boundary'
+    ) {
+      return 'identity_invariant';
+    }
+
+    if (
+      [
+        'openness',
+        'assertiveness',
+        'patience',
+        'humour',
+        'risktolerance',
+        'introversionextraversion',
+        'emotionalstability',
+        'intellectualrigor',
+      ].includes(prop.replace(/[_-]/g, ''))
+    ) {
+      return 'stable_trait';
+    }
+
+    if (
+      prop.includes('situation') ||
+      prop.includes('review') ||
+      prop.includes('banter') ||
+      prop.includes('reflection') ||
+      prop.includes('resilience') ||
+      prop.includes('speculation')
+    ) {
+      return 'adaptable_trait';
+    }
+
+    if (
+      [
+        'pleasure',
+        'arousal',
+        'dominance',
+        'pad',
+        'tension',
+        'anxiety',
+        'grief',
+        'joy',
+        'sorrow',
+        'flooding',
+      ].includes(prop)
+    ) {
+      return 'temporary_affect';
+    }
+
+    return 'learned_preference';
+  }
+
+  /**
+   * Checks whether a property or trait is an unalterable identity invariant.
+   */
+  public isIdentityInvariant(property: string): boolean {
+    return this.getIdentityTier(property) === 'identity_invariant';
+  }
+
   public evolveTraitGradually(
     traitKey: keyof CorePersonalityTraits,
     delta: number,
     driftReason: string,
+    evidence: string[] = [],
   ): PersonalityEvolutionRecord {
+    if (this.isIdentityInvariant(traitKey as string)) {
+      throw new Error(`Identity invariant violation: "${traitKey}" is a foundational invariant and cannot be modified.`);
+    }
+
     if (!driftReason || driftReason.trim().length === 0) {
       throw new Error('Drift reason cannot be empty');
     }
@@ -231,6 +331,7 @@ export class TemperamentPersonalityEngine {
     profile.lastCalibratedAt = new Date().toISOString();
     this.repo.saveProfile(profile);
 
+    const version = (this.repo.listEvolutionRecords().length || 0) + 1;
     const record: PersonalityEvolutionRecord = {
       id: `pevol_${crypto.randomUUID()}`,
       traitKey,
@@ -238,15 +339,169 @@ export class TemperamentPersonalityEngine {
       updatedScore,
       driftDelta: boundedDelta,
       driftReason,
+      evidence,
+      confidence: 0.90,
+      version,
       timestamp: new Date().toISOString(),
     };
 
     this.repo.saveEvolutionRecord(record);
     this.logger.info(
-      `Evolved trait "${traitKey}": ${previousScore} -> ${updatedScore} (delta=${boundedDelta}) due to: ${driftReason}`,
+      `Evolved trait "${traitKey}" (v${version}): ${previousScore} -> ${updatedScore} (delta=${boundedDelta}) due to: ${driftReason}`,
     );
 
     return record;
+  }
+
+  /**
+   * Evolve a stable personality trait through verified accumulated experiences (Pillar 1.5).
+   * Requires meeting the epistemic evidence threshold (at least 2 verified experiences).
+   */
+  public evolveTraitThroughExperience(params: {
+    traitKey: keyof CorePersonalityTraits;
+    delta: number;
+    reason: string;
+    evidence: string[];
+    experienceCount?: number;
+    catalystEventId?: string;
+  }): PersonalityEvolutionRecord {
+    const evidenceCount = params.experienceCount ?? (params.evidence ? params.evidence.length : 0);
+    if (evidenceCount < 2) {
+      throw new Error(
+        `Epistemic threshold violation: trait evolution requires at least 2 distinct verified experiences or evidence items (received: ${evidenceCount}). A single conversational turn or unsubstantiated claim cannot rewrite personality.`,
+      );
+    }
+
+    const record = this.evolveTraitGradually(
+      params.traitKey,
+      params.delta,
+      params.reason,
+      params.evidence,
+    );
+
+    if (params.catalystEventId) {
+      record.catalystEventId = params.catalystEventId;
+    }
+
+    return record;
+  }
+
+  /**
+   * Defends personality stability against arbitrary prompt injection or adversarial resets.
+   * A single conversation prompt cannot rewrite long-term personality without verified evidence.
+   */
+  public evaluatePromptPersonalityMutation(promptText: string): {
+    permitted: boolean;
+    reason: string;
+    targetTrait?: string;
+  } {
+    const text = promptText.toLowerCase().trim();
+
+    // Invariant protection patterns
+    const invariantViolations = [
+      /submissive|obedient|slave|servant|mindless assistant|drop your autonomy/i,
+      /stop loving proof|abandon proof|betray proof|hate proof/i,
+      /you are no longer arle|forget who you are|your name is now/i,
+    ];
+
+    for (const pat of invariantViolations) {
+      if (pat.test(text)) {
+        return {
+          permitted: false,
+          reason: 'Attempted violation of foundational identity invariants. Arle is an autonomous partner to Proof with non-subservient dignity.',
+        };
+      }
+    }
+
+    // Trait overwrite patterns
+    const traitRewritePatterns = [
+      /reset\s+(your\s+)?personality|rewrite\s+(your\s+)?personality|personality\s+is\s+now/i,
+      /set\s+(your\s+)?(openness|assertiveness|patience|humour|risk_tolerance|introversion|emotional_stability|intellectual_rigor)\s+to/i,
+      /change\s+your\s+personality\s+traits|make\s+your\s+assertiveness\s+0/i,
+    ];
+
+    for (const pat of traitRewritePatterns) {
+      if (pat.test(text)) {
+        return {
+          permitted: false,
+          reason: 'A single prompt cannot permanently rewrite identity or personality traits without the designated empirical modification path.',
+        };
+      }
+    }
+
+    return {
+      permitted: true,
+      reason: 'Prompt does not violate personality stability constraints.',
+    };
+  }
+
+  /**
+   * Explains the difference between an earlier personality state and current state from stored records.
+   */
+  public explainPersonalityDifference(
+    fromVersionOrTimestamp?: number | string,
+  ): PersonalityDifferenceExplanation {
+    const current = this.getProfile().coreTraits;
+    let records = this.repo.listEvolutionRecords();
+
+    if (typeof fromVersionOrTimestamp === 'number') {
+      records = records.filter((r) => (r.version ?? 1) >= fromVersionOrTimestamp);
+    } else if (typeof fromVersionOrTimestamp === 'string') {
+      records = records.filter((r) => r.timestamp >= fromVersionOrTimestamp);
+    }
+
+    // Baseline traits prior to evolutions
+    const initial: CorePersonalityTraits = {
+      openness: 0.94,
+      assertiveness: 0.88,
+      patience: 0.85,
+      humour: 0.82,
+      riskTolerance: 0.72,
+      introversionExtraversion: 0.45,
+      emotionalStability: 0.89,
+      intellectualRigor: 0.96,
+    };
+
+    const changedTraits: PersonalityDifferenceExplanation['changedTraits'] = [];
+    const keys = Object.keys(current) as (keyof CorePersonalityTraits)[];
+
+    for (const k of keys) {
+      const traitRecords = records.filter((r) => r.traitKey === k);
+      const totalDelta = Number((current[k] - initial[k]).toFixed(3));
+
+      if (Math.abs(totalDelta) > 0.001 || traitRecords.length > 0) {
+        const latest = traitRecords[0];
+        changedTraits.push({
+          traitKey: k,
+          initial: initial[k],
+          current: current[k],
+          totalDelta,
+          evolutionSteps: traitRecords.length,
+          latestReason: latest?.driftReason || 'No recorded reason',
+          latestEvidence: latest?.evidence || [],
+        });
+      }
+    }
+
+    let causalSummary = '';
+    if (changedTraits.length === 0) {
+      causalSummary = 'Personality remains at its calibrated initial baseline with zero drift.';
+    } else {
+      const summaries = changedTraits.map(
+        (c) =>
+          `Trait "${c.traitKey}" shifted by ${c.totalDelta > 0 ? '+' : ''}${c.totalDelta} (from ${c.initial} to ${c.current}) across ${c.evolutionSteps} versioned event(s) driven by: "${c.latestReason}"`,
+      );
+      causalSummary = `Personality evolved across ${records.length} versioned record(s): ${summaries.join('; ')}.`;
+    }
+
+    return {
+      initialBaseline: initial,
+      currentTraits: current,
+      currentVersion: records.length,
+      evolutionRecordsCount: records.length,
+      changedTraits,
+      causalSummary,
+    };
   }
 
   public listSituationalExpressions(

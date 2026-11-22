@@ -73,6 +73,23 @@ export type SituationalPersonalityExpression = z.infer<
   typeof SituationalPersonalityExpressionSchema
 >;
 
+export const IdentityTierSchema = z.enum([
+  'identity_invariant',
+  'stable_trait',
+  'adaptable_trait',
+  'temporary_affect',
+  'learned_preference',
+]);
+export type IdentityTier = z.infer<typeof IdentityTierSchema>;
+
+export const CapabilityEpistemicCategorySchema = z.enum([
+  'demonstrated_capability',
+  'plausible_capability',
+  'unknown',
+  'known_limitation',
+]);
+export type CapabilityEpistemicCategory = z.infer<typeof CapabilityEpistemicCategorySchema>;
+
 export const PersonalityEvolutionRecordSchema = z.object({
   id: z.string(),
   traitKey: z.string().min(1),
@@ -80,6 +97,10 @@ export const PersonalityEvolutionRecordSchema = z.object({
   updatedScore: z.number().min(0.0).max(1.0),
   driftDelta: z.number().min(-0.05).max(0.05), // Invariant: bounded drift prevents erratic resets
   driftReason: z.string().min(1),
+  evidence: z.array(z.string()).optional().default([]),
+  confidence: z.number().min(0.0).max(1.0).optional().default(0.85),
+  version: z.number().int().positive().optional().default(1),
+  catalystEventId: z.string().optional(),
   timestamp: z.string(),
 });
 export type PersonalityEvolutionRecord = z.infer<typeof PersonalityEvolutionRecordSchema>;

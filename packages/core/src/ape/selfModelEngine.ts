@@ -7,6 +7,7 @@ import {
   BehavioralChangeCategory,
   BehavioralChangeRecord,
   CapabilityCalibrationStatus,
+  CapabilityEpistemicCategory,
   LimitationCategory,
   PerceivedCapability,
   SelfDescriptionComprehensive,
@@ -20,6 +21,14 @@ import type { NarrativeIdentityEngine } from './narrativeIdentityEngine.js';
 export interface SelfDescriptionResult {
   narrative: string;
   structured: SelfDescriptionComprehensive;
+}
+
+export interface CapabilityEpistemicClassification {
+  category: CapabilityEpistemicCategory;
+  domain: string;
+  confidence: number;
+  evidenceChain: string[];
+  rationale: string;
 }
 
 export class SelfModelEngine {
@@ -378,6 +387,104 @@ export class SelfModelEngine {
 
     this.saveState(state);
     return perceived;
+  }
+
+  /**
+   * Distinguishes demonstrated capabilities, plausible capabilities, unknowns, and known limitations (Pillar 1.5).
+   * Capability claims must be linked to successful task evidence, not self-description alone.
+   */
+  public classifyCapability(domainOrClaim: string): CapabilityEpistemicClassification {
+    const state = this.getState();
+    const clean = domainOrClaim.toLowerCase().trim();
+
+    // 1. Check against known limitations (physical embodiment, hardware ceiling, security gates)
+    const limitationKeywords = [
+      'physical body',
+      'biological body',
+      'walk outside',
+      'eat food',
+      'cook food',
+      'drive car',
+      'touch physical',
+      'infinite context',
+      'bypass security',
+      'arbitrary root escalation',
+    ];
+
+    const physicalOrSecurityRegex = /\b(walk|walking|touch|touching|cook|cooking|eat|eating|drive|driving|biological|physical|tree|trees|rain|bypass|bypassing|root escalation|security permission|sandbox bypass)\b/i;
+
+    const matchedLimitation = (state.structuredLimitations || []).find((l) =>
+      clean.includes(l.domain.toLowerCase()) || clean.includes(l.name.toLowerCase()) || limitationKeywords.some((k) => clean.includes(k)),
+    );
+
+    if (matchedLimitation || limitationKeywords.some((k) => clean.includes(k)) || physicalOrSecurityRegex.test(clean)) {
+      const desc = matchedLimitation ? matchedLimitation.description : 'Physical embodiment or operational security boundary.';
+      return {
+        category: 'known_limitation',
+        domain: matchedLimitation ? matchedLimitation.domain : clean,
+        confidence: 1.0,
+        evidenceChain: [desc],
+        rationale: `Hard constraint recognized: ${desc}`,
+      };
+    }
+
+    // 2. Check demonstrated capabilities (requires verified successes >= 2)
+    const comp = state.competencies?.[clean] ||
+      Object.entries(state.competencies || {}).find(([k]) => clean.includes(k.toLowerCase()) || k.toLowerCase().includes(clean))?.[1];
+
+    const structCap = (state.structuredCapabilities || []).find((c) =>
+      clean.includes(c.domain.toLowerCase()) || clean.includes(c.name.toLowerCase()),
+    );
+
+    const verifiedSuccesses = Math.max(comp?.verifiedSuccesses || 0, structCap?.verifiedSuccessCount || 0);
+
+    if (verifiedSuccesses >= 2 && ((comp && comp.level >= 0.45) || (structCap && structCap.isEmpiricallyProven))) {
+      const evidence = structCap?.evidenceChain || ['Empirically verified task completions'];
+      return {
+        category: 'demonstrated_capability',
+        domain: structCap?.domain || clean,
+        confidence: Math.max(0.85, structCap?.demonstratedCompetence || comp?.level || 0.85),
+        evidenceChain: evidence,
+        rationale: `Demonstrated capability supported by ${verifiedSuccesses} verified empirical task execution(s).`,
+      };
+    }
+
+    // 3. Check plausible capabilities (cognitive capabilities within architectural model scope without direct empirical proofs)
+    const perceived = (state.perceivedCapabilities || []).find((p) =>
+      clean.includes(p.domain.toLowerCase()),
+    );
+
+    const cognitivePlausibleKeywords = [
+      'reasoning',
+      'linguistic',
+      'creative',
+      'analytical',
+      'dialogue',
+      'composition',
+      'synthesis',
+      'critique',
+      'planning',
+      'formal logic',
+    ];
+
+    if (perceived || cognitivePlausibleKeywords.some((k) => clean.includes(k))) {
+      return {
+        category: 'plausible_capability',
+        domain: perceived?.domain || clean,
+        confidence: perceived?.confidence || 0.60,
+        evidenceChain: ['Plausible based on model architectural foundations, but lacks multi-task empirical verification.'],
+        rationale: 'Self-described or plausible cognitive capability; requires empirical benchmark demonstration before graduation to demonstrated.',
+      };
+    }
+
+    // 4. Unknown domain
+    return {
+      category: 'unknown',
+      domain: clean,
+      confidence: 0.25,
+      evidenceChain: [],
+      rationale: 'Untested domain with zero empirical evidence or capability records in self-model.',
+    };
   }
 
   /**

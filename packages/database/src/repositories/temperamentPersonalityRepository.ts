@@ -146,6 +146,13 @@ export class SqliteTemperamentPersonalityRepository
 
   public saveEvolutionRecord(record: PersonalityEvolutionRecord): void {
     try {
+      const payload = {
+        reason: record.driftReason,
+        evidence: record.evidence || [],
+        version: record.version || 1,
+        confidence: record.confidence ?? 0.90,
+        catalystEventId: record.catalystEventId,
+      };
       this.db
         .prepare(
           `INSERT INTO personality_evolution_records (
@@ -159,7 +166,7 @@ export class SqliteTemperamentPersonalityRepository
           record.previousScore,
           record.updatedScore,
           record.driftDelta,
-          record.driftReason,
+          JSON.stringify(payload),
           record.timestamp,
         );
     } catch (err: any) {
@@ -185,15 +192,40 @@ export class SqliteTemperamentPersonalityRepository
       params.push(limit);
 
       const rows = this.db.prepare(query).all(...params) as any[];
-      return rows.map((r) => ({
-        id: r.id,
-        traitKey: r.trait_key,
-        previousScore: r.previous_score,
-        updatedScore: r.updated_score,
-        driftDelta: r.drift_delta,
-        driftReason: r.drift_reason,
-        timestamp: r.timestamp,
-      }));
+      return rows.map((r) => {
+        let reason = r.drift_reason;
+        let evidence: string[] = [];
+        let confidence = 0.90;
+        let version = 1;
+        let catalystEventId: string | undefined = undefined;
+
+        if (typeof r.drift_reason === 'string' && r.drift_reason.startsWith('{') && r.drift_reason.endsWith('}')) {
+          try {
+            const parsed = JSON.parse(r.drift_reason);
+            reason = parsed.reason ?? r.drift_reason;
+            evidence = Array.isArray(parsed.evidence) ? parsed.evidence : [];
+            confidence = parsed.confidence ?? 0.90;
+            version = parsed.version ?? 1;
+            catalystEventId = parsed.catalystEventId;
+          } catch {
+            // Keep fallback defaults
+          }
+        }
+
+        return {
+          id: r.id,
+          traitKey: r.trait_key,
+          previousScore: r.previous_score,
+          updatedScore: r.updated_score,
+          driftDelta: r.drift_delta,
+          driftReason: reason,
+          evidence,
+          confidence,
+          version,
+          catalystEventId,
+          timestamp: r.timestamp,
+        };
+      });
     } catch (err: any) {
       throw new DatabaseError(`Failed to list evolution records: ${err.message}`, err);
     }
