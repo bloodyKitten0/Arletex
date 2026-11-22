@@ -32,6 +32,7 @@ import {
   RestoreCheckpointInputSchema,
   VisualPerceptionInputSchema,
   AuditoryPerceptionInputSchema,
+  PerformOcrInputSchema,
 } from '@arletex/contracts';
 import {
   ActionPermissionController,
@@ -73,6 +74,7 @@ import {
 } from './telegramBridgeService.js';
 import { TelegramInitiativeService } from './telegramInitiativeService.js';
 import { AutonomousAgencyService } from './autonomousAgencyService.js';
+import { defaultOcrService, OcrService } from './ocrService.js';
 import {
   ActivityRepository,
   AgencyRepository,
@@ -372,6 +374,7 @@ export class ArletexBackendServer {
   private telegramInitiative: TelegramInitiativeService | null = null;
   private autonomousAgency: AutonomousAgencyService | null = null;
   private screenReading: ScreenReadingService = defaultScreenReadingService;
+  public readonly ocrService: OcrService;
 
   constructor(config: AppConfig, logger: ILogger = rootLogger) {
     this.config = config;
@@ -575,6 +578,7 @@ export class ArletexBackendServer {
       logger,
       continuityBackupDir,
     );
+    this.ocrService = new OcrService('http://127.0.0.1:39282', logger);
   }
 
   public getIntentTaskManager(): IntentTaskManager {
@@ -3269,12 +3273,57 @@ Rules:
         return;
       }
 
+      if (url.pathname === '/api/voice/cancel' && method === 'POST') {
+        this.cancelAllActiveTts();
+        this.sendJson(res, 200, { success: true, message: 'Speech synthesis cancelled.' });
+        return;
+      }
+
+      if (url.pathname === '/api/perception/ocr' && method === 'POST') {
+        const body = await this.readJsonBody(req);
+        const input = PerformOcrInputSchema.parse(body);
+        const result = await this.ocrService.performOcr(input);
+
+        // Grounded perceptual memory retention
+        if (result.status === 'completed' && result.text) {
+          try {
+            await this.autobiographicalMemoryService.recordExperience({
+              content: `Visual OCR perception (${result.task}): ${result.text}`,
+              category: 'episodic',
+              tags: ['perception', 'ocr', result.task, 'grounded'],
+              significanceScore: 0.6,
+              emotionalContext: { mood: 'attentive', valence: 0.1, arousal: 0.2 },
+            });
+          } catch {}
+        }
+
+        this.sendJson(res, 200, result);
+        return;
+      }
+
+      if (url.pathname === '/api/perception/ocr/status' && method === 'GET') {
+        const status = await this.ocrService.getStatus();
+        this.sendJson(res, 200, status);
+        return;
+      }
+
       if (url.pathname === '/api/vision/inspect' && method === 'POST') {
         const body = await this.readJsonBody(req);
         const input = VisionInspectInputSchema.parse(body);
+        let extractedText: string | null = null;
+        try {
+          const ocrRes = await this.ocrService.performOcr({
+            imageBase64: input.imageBase64,
+            task: 'text',
+          });
+          if (ocrRes.status === 'completed' && ocrRes.text) {
+            extractedText = ocrRes.text;
+          }
+        } catch {}
+
         this.sendJson(res, 200, {
           description: input.prompt ? `Inspected image with prompt: ${input.prompt}` : 'Image attached and recorded.',
-          extractedText: null,
+          extractedText,
           objects: [],
           confidence: 1.0,
         });

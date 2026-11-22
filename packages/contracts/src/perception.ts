@@ -212,3 +212,41 @@ export const FuseMultimodalInputSchema = z.object({
   contextHint: z.string().optional(),
 });
 export type FuseMultimodalInput = z.input<typeof FuseMultimodalInputSchema>;
+
+// 6. Specialist OCR & Layout Recognition
+export const OcrTaskTypeSchema = z.enum(['text', 'formula', 'table', 'form', 'document']);
+export type OcrTaskType = z.infer<typeof OcrTaskTypeSchema>;
+
+export const OcrInspectionResultSchema = z.object({
+  id: z.string().uuid(),
+  timestamp: z.string(),
+  mediaId: z.string().optional(),
+  task: OcrTaskTypeSchema,
+  status: z.enum(['completed', 'failed', 'unavailable']),
+  text: z.string(),
+  model: z.string(),
+  confidence: z.number().min(0.0).max(1.0).default(0.95),
+  provenance: z.object({
+    prompt: z.string(),
+    imageDimensions: z.object({
+      width: z.number().optional(),
+      height: z.number().optional(),
+    }).optional(),
+    offsetMs: z.number().optional(),
+    sourcePath: z.string().optional(),
+  }),
+  error: z.string().optional(),
+});
+export type OcrInspectionResult = z.infer<typeof OcrInspectionResultSchema>;
+
+export const PerformOcrInputSchema = z.object({
+  imageBase64: z.string().optional(),
+  imagePath: z.string().optional(),
+  mediaId: z.string().optional(),
+  task: OcrTaskTypeSchema.default('text'),
+  prompt: z.string().optional(),
+  maxTokens: z.number().int().positive().optional().default(512),
+  offsetMs: z.number().optional(),
+});
+export type PerformOcrInput = z.input<typeof PerformOcrInputSchema>;
+

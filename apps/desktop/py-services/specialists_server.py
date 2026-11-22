@@ -22,6 +22,7 @@ BASE_MODELS_DIR = os.getenv("ARLETEX_SPECIALISTS_DIR", os.path.expanduser("~/mod
 EMBEDDING_MODEL_DIR = os.path.join(BASE_MODELS_DIR, "embeddinggemma-300m")
 WHISPER_MODEL_DIR = os.path.join(BASE_MODELS_DIR, "whisper-small")
 KOKORO_MODEL_DIR = os.path.join(BASE_MODELS_DIR, "kokoro-82m")
+GLM_OCR_DIR = os.path.join(BASE_MODELS_DIR, "glm-ocr")
 RVC_MODEL_DIR = os.path.join(BASE_MODELS_DIR, "rvc-arlecchino")
 RVC_MODEL_PATH = os.path.join(RVC_MODEL_DIR, "arlecchino_500e.pth")
 RVC_INDEX_PATH = os.path.join(RVC_MODEL_DIR, "arlecchino_500e.index")
@@ -613,6 +614,23 @@ def get_rvc_converter():
             print(f"[Specialists] RVC init note: {e}")
     return rvc_converter
 
+# 5. Lazy GLM-OCR Loader
+glm_ocr_processor = None
+glm_ocr_model = None
+
+def get_glm_ocr():
+    global glm_ocr_processor, glm_ocr_model
+    if glm_ocr_model is None and os.path.exists(GLM_OCR_DIR):
+        try:
+            from transformers import AutoProcessor, AutoModelForImageTextToText
+            print(f"[Specialists] Loading GLM-OCR from {GLM_OCR_DIR}...")
+            glm_ocr_processor = AutoProcessor.from_pretrained(GLM_OCR_DIR)
+            glm_ocr_model = AutoModelForImageTextToText.from_pretrained(GLM_OCR_DIR, torch_dtype="auto")
+            print("[Specialists] GLM-OCR 0.9B loaded successfully.")
+        except Exception as e:
+            print(f"[Specialists] ERROR loading GLM-OCR: {e}", file=sys.stderr)
+    return glm_ocr_processor, glm_ocr_model
+
 class SpecialistRequestHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         # Quiet standard HTTP logging to avoid log noise
@@ -650,23 +668,27 @@ class SpecialistRequestHandler(BaseHTTPRequestHandler):
             emb_installed = os.path.exists(EMBEDDING_MODEL_DIR)
             whi_installed = os.path.exists(WHISPER_MODEL_DIR)
             kok_installed = os.path.exists(KOKORO_MODEL_DIR)
+            ocr_installed = os.path.exists(GLM_OCR_DIR)
             rvc_installed = os.path.exists(RVC_MODEL_PATH)
             self.send_json(200, {
                 "status": "connected",
                 "embeddingGemma": emb_installed,
                 "whisper": whi_installed,
                 "kokoro": kok_installed,
+                "glmOcr": ocr_installed,
                 "rvc": rvc_installed,
                 "modelsInstalled": {
                     "embeddingGemma": emb_installed,
                     "whisper": whi_installed,
                     "kokoro": kok_installed,
+                    "glmOcr": ocr_installed,
                     "rvc": rvc_installed
                 },
                 "modelsLoaded": {
                     "embeddingGemma": embedding_model is not None,
                     "whisper": whisper_model is not None,
                     "kokoro": kokoro_pipeline is not None,
+                    "glmOcr": glm_ocr_model is not None,
                     "rvc": rvc_converter is not None
                 }
             })
@@ -871,6 +893,74 @@ class SpecialistRequestHandler(BaseHTTPRequestHandler):
                 self.send_json(503, {"error": "Kokoro synthesizer is offline or initializing"})
             except Exception as e:
                 self.send_json(500, {"error": f"Synthesis error: {str(e)}"})
+            return
+
+        # ==========================================
+        # 4. OCR & Vision Recognition Endpoint (GLM-OCR)
+        # ==========================================
+        if self.path == "/ocr":
+            image_b64 = body.get("imageBase64", "")
+            if not image_b64:
+                self.send_json(400, {"error": "imageBase64 is required"})
+                return
+
+            task = body.get("task", "text").lower()
+            custom_prompt = body.get("prompt", None)
+
+            # Map task to default prompt if custom_prompt not provided
+            if custom_prompt:
+                prompt_text = custom_prompt
+            elif task == "formula":
+                prompt_text = "Formula Recognition:"
+            elif task == "table":
+                prompt_text = "Table Recognition:"
+            else:
+                prompt_text = "Text Recognition:"
+
+            processor, ocr_model = get_glm_ocr()
+            if processor is None or ocr_model is None:
+                self.send_json(503, {"error": "GLM-OCR model is not available or offline"})
+                return
+
+            try:
+                # Strip data URL prefix if present
+                if "," in image_b64:
+                    image_b64 = image_b64.split(",", 1)[1]
+
+                from PIL import Image
+                import torch
+
+                image_bytes = base64.b64decode(image_b64)
+                image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+
+                messages = [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "image", "image": image},
+                            {"type": "text", "text": prompt_text}
+                        ]
+                    }
+                ]
+
+                inputs = processor.apply_chat_template(messages, tokenize=True, return_dict=True, return_tensors="pt")
+                max_tokens = int(body.get("maxTokens", 512))
+                with torch.no_grad():
+                    generated_ids = ocr_model.generate(**inputs, max_new_tokens=max_tokens)
+
+                output_text = processor.decode(generated_ids[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True).strip()
+
+                self.send_json(200, {
+                    "text": output_text,
+                    "task": task,
+                    "model": "glm-ocr-0.9b",
+                    "provenance": {
+                        "prompt": prompt_text,
+                        "imageDimensions": {"width": image.width, "height": image.height}
+                    }
+                })
+            except Exception as e:
+                self.send_json(500, {"error": f"OCR processing failure: {str(e)}"})
             return
 
         self.send_json(404, {"error": "Endpoint not found"})
