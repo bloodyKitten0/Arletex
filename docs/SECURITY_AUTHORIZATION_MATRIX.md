@@ -1,0 +1,33 @@
+# Security Authorization Matrix & Fail-Closed Boundary (P0.3)
+
+This document establishes the canonical action-to-authorization matrix for Arletex as mandated by `next.md` Section 1.3 (P0.3). Every side-effect action executed by Arletex must pass deterministic security authorization through `ActionPermissionController` (and `EthicalBoundariesSecurityEngine`) before execution.
+
+---
+
+## 1. Action-to-Authorization Matrix
+
+| Action Class | Action Proposal Type (`type`) | Security Policy Category | Normalized Target Resource | Approval Requirements | Audit Event Recorded | Execution Function / Provider |
+|---|---|---|---|---|---|---|
+| **Filesystem Read** | `file_read`, `read_file`, `system_read_file` | `filesystem_access` | Canonical file path (`path.resolve`) | Allowed in `allowedFilesystemPaths` or `readOnlyFilesystemPaths`. Denied if parent traversal (`..`), forbidden substrings (`.ssh`, `id_rsa`), or symlink escapes root. | `filesystem:read` (`granted` or `denied`) | `SafeComputerAgencyService.readFile` / `DesktopEnvironmentProvider.openFile` |
+| **Filesystem Write** | `file_write`, `write_file`, `system_write_file` | `filesystem_access` | Canonical file path (`path.resolve`) | Strictly contained within `allowedFilesystemPaths`. Denied on path-prefix collisions, read-only roots, symlink escapes, or forbidden substrings. Requires read-back hash matching. | `filesystem:write` (`granted` or `denied`) | `SafeComputerAgencyService.writeFile` |
+| **Filesystem Directory List** | `list_directory`, `system_list_directory` | `filesystem_access` | Canonical directory path | Contained within allowed read or write roots. | `filesystem` (`granted` or `denied`) | `SafeComputerAgencyService.listDirectory` |
+| **Process / App Launch** | `app_launch`, `execute_command`, `process_launch` | `process_execution` | Normalized executable binary name | Must be in `SUPPORTED_APPLICATIONS` positive allowlist or policy `allowedApplications`. Zero shell metacharacters `[;&|><$\`\\]`. Prohibited dangerous commands (`rm`, `sudo`, `sh`, `bash`, `dd`, `curl`) fail closed. | `process:launch` (`granted` or `denied`) | `SafeComputerAgencyService.launchApp` / `DesktopEnvironmentProvider.launchApplication` |
+| **Web Navigation & Browser** | `web_navigate`, `web_search`, `web_read_page`, `web_select_video`, `desktop_open_browser` | `network_request` | Validated HTTP/HTTPS URL (`new URL`) | Public HTTPS/HTTP only. Zero SSRF: blocks `localhost`, `127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.0.0/16` (metadata), decimal/hex/octal encodings, IPv6 loopback (`::1`), link-local (`fe80:`), unique-local (`fc00:`, `fd00:`), and non-HTTP protocols (`file://`, `gopher://`, `data:`). | `network:web` / `network:internal` (`granted` or `denied`) | `PlaywrightBrowserProvider.navigate` / `DesktopEnvironmentProvider.openBrowser` |
+| **Desktop Mouse & Keyboard** | `desktop_mouse_click`, `desktop_mouse_move`, `desktop_mouse_drag`, `desktop_key_tap`, `desktop_type_text`, `desktop_key_combination`, `desktop_media_control` | `desktop:input` | Coordinate pair / key symbol / MPRIS target | Requires `autonomousExecutionEnabled`. If `requireApprovalForDesktopClicks` is set, prompts user. Wayland input restricted to local socket via `ydotool` / MPRIS D-Bus. | `desktop:input` (`granted` or `denied`) | `DesktopEnvironmentProvider.mouseClick` / `keyTap` / `executeMprisMethod` |
+| **Screen / Visual Perception** | `desktop_take_screenshot`, `screen_capture` | `perception:screen` | Display index / screen buffer | Read-only sensory perception. Allowed for situational awareness. | `perception:screen` (`granted`) | `DesktopEnvironmentProvider.takeScreenshot` |
+| **External Messaging** | `telegram_send_message`, `telegram_send_media`, `send_message`, `send_email` | `external_communication` | Recipient ID / Chat ID | Non-empty recipient required. Ethical boundary content scan. | `external:communication` (`granted` or `denied`) | `TelegramBridgeService.sendMessage` |
+| **Code Modification** | `code_modify`, `protected_code_modification`, `edit_file` | `code_modification` | Source file path | Requires cryptographically signed HMAC-SHA256 `approvalToken` bound to action digest, target, user identity (`Proof`), and single-use nonce. | `code:modify` (`granted` or `denied`) | Self-evolution proposal harness only |
+| **Credential Access** | `credential_read`, `credential_write`, `keyring_access` | `credential_access` | Secret key identifier | Denied fail-closed. No model or background cycle can query raw secrets or system keyring. | `security:boundary` (`denied`) | Categorically blocked |
+| **Unrecognized / Unknown Action** | *Any unspecified action type* | `unknown` | Action payload target | **Deny-by-default fail-closed**. Unrecognized action types are unconditionally rejected. | `unknown` (`denied`) | None (rejected before invocation) |
+
+---
+
+## 2. Invariant Security Principles
+
+1. **Deterministic Enforcement:** All security evaluations happen in TypeScript code without model interpretation or prompt intervention.
+2. **Deny-by-Default:** Any action type, target resource, or protocol not explicitly authorized is denied.
+3. **Fail-Closed on Missing Dependencies:** If the permission controller, ethical engine, or approval token is missing when required, the action is denied fail-closed.
+4. **Naked Boolean Approval Rejection:** A naked boolean flag `userApproved: true` without a valid HMAC-SHA256 `approvalToken` is rejected fail-closed to prevent tool evasion.
+5. **Replay & Tamper Defense:** Approval tokens contain single-use cryptographic nonces and expire after their configured TTL.
+6. **Emergency Shutdown Supremacy:** When emergency shutdown is triggered, all computer operations are immediately halted, running operations are aborted, and no action can be authorized until explicit user reactivation with token `CONFIRM_REACTIVATION`.
+7. **Complete Audit Trail:** Every authorization decision (`granted`, `denied`, `prompt_user`) is written to SQLite `audit_logs` table for offline inspection and verification.
