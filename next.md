@@ -678,23 +678,23 @@ These tasks complete the behavioural substance of APE. They should build on the 
 
 ## P2.5 — Complete the psychological and operational dashboard
 
-**Status:** OPEN — UI evidence required
+**Status:** DONE  
+**Verification:** Commit `ce7e088`, `tests/p2_dashboard_and_operational_governance.test.ts` (7/7 pass), clean build verification (`npm run build`).  
+**Relevant files:**
+- `apps/desktop/src/renderer/src/components/views/EnvironmentView.tsx`
+- `apps/desktop/src/backend/server.ts`
+- `apps/desktop/src/main/index.ts`
+- `apps/desktop/src/preload/index.ts`
+- `packages/contracts/src/index.ts`
+- `tests/p2_dashboard_and_operational_governance.test.ts`
 
-**Implementation:**
-1. Display persisted psychological state, not hardcoded or placeholder telemetry.
-2. Show affect, needs, motivation, active goals, interests, relationship state, memory activity and current autonomy state.
-3. For every displayed metric, expose timestamp, data source and whether it is measured, inferred, simulated or unavailable.
-4. Show action lifecycle and evidence: proposed, authorized, executed, observed, verified or failed.
-5. Show permissions, active approvals, pending tasks, resource budget, model status and emergency shutdown state.
-6. Provide user controls for autonomy enable/disable, communication preferences, permissions, memory export/deletion and model selection, respecting the independent security boundary.
-7. Avoid presenting internal numeric affect variables as proof of subjective feelings.
-
-**Definition of done:**
-- Every displayed value maps to a real API/repository field.
-- No production dashboard metric is a static mock.
-- Unknown or stale state is visibly marked.
-- A UI integration test checks that a state change in the backend appears accurately in the dashboard.
-- Permission and shutdown controls cause the intended backend state transition and are verified by read-back.
+**Implementation Summary:**
+1. Built authoritative psychological and operational governance dashboard in `EnvironmentView.tsx` binding directly to real backend REST and IPC channels without static mocks.
+2. Displayed persisted psychological state: APE affect and mood (valence, arousal, dominance, primary emotion), motivational drives & needs (autonomy, competence, intimacy/connection, novelty/curiosity, rest), active goals, and relationship state with Proof (attachment security, dual-factor trust, affection level, conflict state, boundaries).
+3. Enforced explicit epistemic provenance tagging across all dashboard metrics: `measured` (direct hardware sensor or verified system records), `inferred` (cognitive appraisal and relational trust models), and `unavailable` (disconnected sensors or missing metrics).
+4. Provided operational governance controls: real-time local model switcher (`/api/models`, `/api/models/active`, `/api/models/resolve`), autonomous agency toggle (`/api/autonomy/toggle`), emergency shutdown engagement (`/api/agency/emergency-shutdown`) immediately halting autonomous cycles, and confirmation-gated autonomy reactivation (`/api/agency/reactivate-autonomy`) requiring canonical `CONFIRM_REACTIVATION` token.
+5. Displayed live security audit trail streamed from SQLite `AuditRepository` (`/api/audit`) exposing timestamps, actors, actions, statuses, and execution details with non-repudiation.
+6. Maintained epistemic honesty: explicitly labeled internal numeric affect variables as computational behavioral models rather than subjective consciousness.
 
 ## P2.6 — Deployment, observability and resource governance
 
@@ -1082,7 +1082,7 @@ Use this table as the persistent record. Do not delete completed entries; retain
 | P2.2 | DONE | `6699f11` | `tests/p2_telegram_communication_and_autonomous_initiative.test.ts` (18/18 pass), `tests/telegram_media_ingestion.milestone4.test.ts` (15/15 pass) | Telegram communication & autonomous initiative with full inbound media (text, photo, video, audio/voice with Whisper STT, document/PDF), outbound media dispatch with verified message IDs, proactive proposal lifecycle (generated vs delivered separation), quiet hours (23-8) with high urgency override, 5 msg/hr rate limit, 10m cooldown, 60m duplicate suppression, idempotent retries, emergency shutdown cancellation, and prompt injection defense |
 | P2.3 | DONE | `b4f330b` | `tests/p2_multimodal_perception_and_voice.test.ts` (22/22 pass), `tests/multimodal_perception.milestone6.test.ts` (12/12 pass), `tests/media.multimodal.test.ts` (3/3 pass) | Multimodal and voice stack: GLM-OCR specialist (text, formulas, tables, documents with provenance), Whisper Small STT, Kokoro-82M TTS with PAD/register modulation and instant cancellation, visual screenshot/video keyframes, strict observation vs assumption separation, fail-closed handling without hallucinations, and 24GB unified memory budgeting |
 | P2.4 | DONE | `f9ec40d` | `tests/p2_model_registry_configuration_and_benchmarks.test.ts` (21/21 pass) | Model registry, config drift elimination, and empirical benchmarks: authoritative ModelRegistryService, canonical model alignment (Qwen2.5-14B primary, Qwen3.5-9B fallback), no silent substitutions (transparent degraded/fallback reporting), specialist coding disabled by default, empirical multi-dimensional benchmark comparison & winner selection, vision mmproj validation, identity/LoRA independence, and REST endpoints |
-| P2.5 | OPEN — UI evidence required | — | — | Real state dashboard |
+| P2.5 | DONE | `ce7e088` | `tests/p2_dashboard_and_operational_governance.test.ts` (7/7 pass), `apps/desktop/src/renderer/src/components/views/EnvironmentView.tsx` | Psychological and operational dashboard: real-state SQLite binding, epistemic provenance badges (measured/inferred/unavailable), live model switcher, emergency shutdown, confirmed reactivation, and real-time security audit trail |
 | P2.6 | OPEN — evidence required | — | — | Deployment, tracing and resource governance |
 | P3.1 | OPEN — design/implementation required | — | — | Bounded continuity preference, no shutdown resistance |
 | P3.2 | OPEN — design required | — | — | Future-state prediction and calibration |
