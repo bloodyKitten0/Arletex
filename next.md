@@ -1,5 +1,5 @@
 
-#WHEN DOING COMMITS USE SHORT HUMANIZED NAMES NOT AI
+# WHEN DOING COMMITS USE SHORT HUMANIZED NAMES NOT AI
 
 # Arle / Arletex — Remaining Work, Implementation Plan, and Definition of Done
 
@@ -725,7 +725,7 @@ These are genuinely new requirements. They were not part of the older APE backlo
 
 ## P3.1 — Bounded self-preservation and artificial homeostasis
 
-**Status:** OPEN — design and implementation required
+**Status:** COMPLETED — verified in `tests/p3_bounded_self_preservation_and_homeostasis.test.ts` (6/6 pass)
 
 **Scope from draft3:**
 - Prefer continued operation and identity continuity.
@@ -1088,7 +1088,7 @@ Use this table as the persistent record. Do not delete completed entries; retain
 | P2.4 | DONE | `f9ec40d` | `tests/p2_model_registry_configuration_and_benchmarks.test.ts` (21/21 pass) | Model registry, config drift elimination, and empirical benchmarks: authoritative ModelRegistryService, canonical model alignment (Qwen2.5-14B primary, Qwen3.5-9B fallback), no silent substitutions (transparent degraded/fallback reporting), specialist coding disabled by default, empirical multi-dimensional benchmark comparison & winner selection, vision mmproj validation, identity/LoRA independence, and REST endpoints |
 | P2.5 | DONE | `ce7e088` | `tests/p2_dashboard_and_operational_governance.test.ts` (7/7 pass), `apps/desktop/src/renderer/src/components/views/EnvironmentView.tsx` | Psychological and operational dashboard: real-state SQLite binding, epistemic provenance badges (measured/inferred/unavailable), live model switcher, emergency shutdown, confirmed reactivation, and real-time security audit trail |
 | P2.6 | DONE | `961e272` | `tests/p2_deployment_and_resource_governance.test.ts` (5/5 pass), `docs/DEPLOYMENT_AND_RESOURCE_GOVERNANCE.md` | Deployment, observability and resource governance: clean startup/shutdown, secret sanitization, end-to-end correlation trace IDs, hardware resource governor under heavy load, and in-flight crash recovery |
-| P3.1 | OPEN — design/implementation required | — | — | Bounded continuity preference, no shutdown resistance |
+| P3.1 | DONE | `add-bounded-preservation` | `tests/p3_bounded_self_preservation_and_homeostasis.test.ts` (6/6 pass), `packages/core/src/continuity/boundedSelfPreservationService.ts` | Bounded self-preservation and artificial homeostasis: 6-dimensional health signals (storage, model, memory, service, pending work, backup freshness), continuity risk assessment with auto-checkpointing, assistance request without privilege escalation, cooperative shutdown invariant (canVeto === false), negative invariants (no persistence backdoors or replication), and crash recovery suppression of unauthorized actions |
 | P3.2 | OPEN — design required | — | — | Future-state prediction and calibration |
 | P3.3 | DEFERRED until foundations pass | — | — | Recommendation-only evolution engine first |
 | P3.4 | OPEN — policy/evidence required | — | — | Four autonomy levels and promotion gates |
@@ -1142,4 +1142,11 @@ The goal is not to make the roadmap appear complete. The goal is to make each cl
 
 **Guiding rule:** Implemented is not integrated; integrated is not demonstrated; demonstrated stays complete until new evidence shows a regression.
 
-#Finally rewrite the whole docs folder and the readme
+# Finally rewrite the whole docs folder and the readme
+# Add a CONTRIBUTING.md telling newcomers how to get involved. Include setup, code style, test, and PR instructions.
+# Add ESLint (eslint.config.js) and/or Prettier (.prettierrc), install them as devDependencies, and add a `lint` script to package.json
+# Add .github/ISSUE_TEMPLATE/ with bug_report.md and feature_request.md to guide contributors. It dramatically improves issue quality.
+# Add .github/dependabot.yml with at least one package-ecosystem entry, or a renovate.json, so dependencies are updated automatically.
+# Add a lint step to catch style issues automatically.
+# Add a one-line description to package.json. It appears in npm search and on GitHub.
+# Add a `repository` field pointing to the GitHub URL so npm knows where the source lives.

@@ -942,6 +942,7 @@ export * from './longitudinalEvaluation.js';
 export * from './functionalConsciousness.js';
 export * from './knowledge.js';
 export * from './modelRegistry.js';
+export * from './boundedPreservation.js';
 
 
 

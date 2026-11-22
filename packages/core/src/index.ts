@@ -96,6 +96,7 @@ export * from './memory/autobiographicalMemoryService.js';
 // Persistent Individual Continuity Subsystem
 export * from './continuity/interfaces.js';
 export * from './continuity/continuityManager.js';
+export * from './continuity/boundedSelfPreservationService.js';
 
 // Three-Tier Knowledge Acquisition, RAG & LoRA Subsystem
 export * from './knowledge/interfaces.js';

@@ -39,6 +39,7 @@ import {
   AdapterLifecycleManager,
   ApeService,
   AutobiographicalMemoryService,
+  BoundedSelfPreservationService,
   ClosedLoopAgencyService,
   CognitiveControlBus,
   ContinuityManager,
@@ -376,6 +377,7 @@ export class ArletexBackendServer {
   private screenReading: ScreenReadingService = defaultScreenReadingService;
   public readonly ocrService: OcrService;
   public readonly modelRegistry: ModelRegistryService;
+  public readonly boundedPreservation: BoundedSelfPreservationService;
 
   constructor(config: AppConfig, logger: ILogger = rootLogger) {
     this.config = config;
@@ -581,6 +583,14 @@ export class ArletexBackendServer {
     );
     this.ocrService = new OcrService('http://127.0.0.1:39282', logger);
     this.modelRegistry = new ModelRegistryService(logger);
+    this.boundedPreservation = new BoundedSelfPreservationService({
+      continuityManager: this.continuityManager,
+      continuityRepo: this.continuityRepo,
+      resourceGovernor: this.resourceGovernor,
+      permissionController: this.permissionController,
+      taskManager: this.intentTaskManager,
+      logger,
+    });
   }
 
   public getIntentTaskManager(): IntentTaskManager {
@@ -2932,6 +2942,31 @@ Rules:
         const modelId = body.modelId || 'Qwen3.5-9B-Heretic-Q4_K_M';
         const validation = this.modelRegistry.validateVisionProjector(modelId);
         this.sendJson(res, 200, validation);
+        return;
+      }
+
+      // Bounded Self-Preservation & Artificial Homeostasis (P3.1)
+      if (url.pathname === '/api/preservation/health' && method === 'GET') {
+        const health = await this.boundedPreservation.evaluateHealthSignals();
+        this.sendJson(res, 200, health);
+        return;
+      }
+
+      if (url.pathname === '/api/preservation/risk' && method === 'GET') {
+        const risk = await this.boundedPreservation.assessContinuityRisk();
+        this.sendJson(res, 200, risk);
+        return;
+      }
+
+      if (url.pathname === '/api/preservation/shutdown' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const reason = body?.reason || 'User initiated cooperative shutdown';
+        const result = await this.boundedPreservation.executeCooperativeShutdown(reason, 'user');
+        this.sendJson(res, 200, result);
+        // Cleanly stop backend asynchronously
+        setImmediate(() => {
+          void this.stop();
+        });
         return;
       }
 
