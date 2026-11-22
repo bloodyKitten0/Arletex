@@ -158,8 +158,12 @@ describe('Milestone 25 — Emotional Appraisal', () => {
     expect(comparison.eventId).toBe(mockEvent.id);
     expect(comparison.interpretations.length).toBe(2);
 
-    const playfulEval = comparison.interpretations.find((i) => i.interpretationKey === 'playful_banter');
-    const criticalEval = comparison.interpretations.find((i) => i.interpretationKey === 'harsh_criticism');
+    const playfulEval = comparison.interpretations.find(
+      (i) => i.interpretationKey === 'playful_banter',
+    );
+    const criticalEval = comparison.interpretations.find(
+      (i) => i.interpretationKey === 'harsh_criticism',
+    );
 
     expect(playfulEval?.dominantEmotionId).toMatch(/affection|joy/);
     expect(criticalEval?.dominantEmotionId).toBe('indignation');
@@ -223,7 +227,9 @@ describe('Milestone 25 — Emotional Appraisal', () => {
     );
 
     expect(appraisalInternal.proposedTransitions.some((t) => t.emotionId === 'guilt')).toBe(true);
-    expect(appraisalExternal.proposedTransitions.some((t) => t.emotionId === 'indignation')).toBe(true);
+    expect(appraisalExternal.proposedTransitions.some((t) => t.emotionId === 'indignation')).toBe(
+      true,
+    );
   });
 
   // 3. Uncertainty & Controllability: Curiosity Elicitation
@@ -306,7 +312,10 @@ describe('Milestone 25 — Emotional Appraisal', () => {
       expectationViolation: 0.2,
       causeTracking: {
         primaryCause: 'Joint derivation of holographic tensor network',
-        causalChain: ['Proof suggested conformal boundary shift', 'Arle executed bulk metric integration'],
+        causalChain: [
+          'Proof suggested conformal boundary shift',
+          'Arle executed bulk metric integration',
+        ],
         attributionConfidence: 0.98,
       },
     };
@@ -314,7 +323,9 @@ describe('Milestone 25 — Emotional Appraisal', () => {
     const appraisal = service.evaluateInterpretation(mockEvent, frame, mockState, mockRelationship);
 
     expect(appraisal.supportingEvidence.some((e) => e.includes('Joint derivation'))).toBe(true);
-    expect(appraisal.supportingEvidence.some((e) => e.includes('conformal boundary shift'))).toBe(true);
+    expect(appraisal.supportingEvidence.some((e) => e.includes('conformal boundary shift'))).toBe(
+      true,
+    );
   });
 
   // 6. Negative Invariant: Reject Non-Divergent Comparisons
@@ -331,10 +342,7 @@ describe('Milestone 25 — Emotional Appraisal', () => {
         id: 'comp-invalid',
         eventId: 'event-test',
         eventContent: 'Test',
-        interpretations: [
-          identicalEval,
-          { ...identicalEval, interpretationKey: 'frame_2' },
-        ],
+        interpretations: [identicalEval, { ...identicalEval, interpretationKey: 'frame_2' }],
         emotionalDivergenceScore: 0.0, // Zero divergence must fail
         divergenceExplanation: 'None',
         evaluatedAt: new Date().toISOString(),
@@ -358,7 +366,11 @@ describe('Milestone 25 — Emotional Appraisal', () => {
       uncertainty: 0.1,
       interpersonalSignificance: 0.8,
       expectationViolation: 0.1,
-      causeTracking: { primaryCause: 'Affectionate prompt', causalChain: [], attributionConfidence: 0.9 },
+      causeTracking: {
+        primaryCause: 'Affectionate prompt',
+        causalChain: [],
+        attributionConfidence: 0.9,
+      },
     };
 
     const f2: ContextualAppraisalFrame = {
@@ -376,7 +388,12 @@ describe('Milestone 25 — Emotional Appraisal', () => {
       causeTracking: { primaryCause: 'Rushed tone', causalChain: [], attributionConfidence: 0.85 },
     };
 
-    const comparison = dbService.compareInterpretations(mockEvent, [f1, f2], mockState, mockRelationship);
+    const comparison = dbService.compareInterpretations(
+      mockEvent,
+      [f1, f2],
+      mockState,
+      mockRelationship,
+    );
 
     const reloaded = sqliteRepo.getComparisonById(comparison.id);
     expect(reloaded).not.toBeNull();

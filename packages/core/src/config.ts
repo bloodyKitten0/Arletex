@@ -26,7 +26,10 @@ export function loadEnvFile(explicitPath?: string): void {
           const eqIdx = trimmed.indexOf('=');
           if (eqIdx !== -1) {
             const key = trimmed.slice(0, eqIdx).trim();
-            const val = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, '');
+            const val = trimmed
+              .slice(eqIdx + 1)
+              .trim()
+              .replace(/^["']|["']$/g, '');
             if (key && process.env[key] === undefined) {
               process.env[key] = val;
             }
@@ -45,7 +48,11 @@ loadEnvFile();
  * Returns Arle's dedicated personal email, configurable via ARLETEX_EMAIL or ARLETEX_EMAIL_ADDRESS.
  */
 export function getArleEmail(): string {
-  return process.env['ARLETEX_EMAIL'] || process.env['ARLETEX_EMAIL_ADDRESS'] || 'arletex.email@gmail.com';
+  return (
+    process.env['ARLETEX_EMAIL'] ||
+    process.env['ARLETEX_EMAIL_ADDRESS'] ||
+    'arletex.email@gmail.com'
+  );
 }
 
 /**
@@ -83,17 +90,19 @@ export function createDefaultConfig(overrides?: AppConfigOverrides): AppConfig {
   // Primary URL & model resolution based on provider
   const defaultServerUrl =
     activeProvider === 'llama.cpp'
-      ? process.env['LLAMA_SERVER_URL'] ?? 'http://127.0.0.1:8080'
-      : process.env['COLIBRI_SERVER_URL'] ?? 'http://127.0.0.1:8000';
+      ? (process.env['LLAMA_SERVER_URL'] ?? 'http://127.0.0.1:8080')
+      : (process.env['COLIBRI_SERVER_URL'] ?? 'http://127.0.0.1:8000');
 
   const defaultModelId =
     activeProvider === 'llama.cpp'
-      ? process.env['LLAMA_MODEL_ID'] ?? 'Qwen2.5-14B-Instruct-abliterated-v2.Q4_K_M'
-      : process.env['COLIBRI_MODEL_ID'] ?? 'qwen3.6-colibri';
+      ? (process.env['LLAMA_MODEL_ID'] ?? 'Qwen2.5-14B-Instruct-abliterated-v2.Q4_K_M')
+      : (process.env['COLIBRI_MODEL_ID'] ?? 'qwen3.6-colibri');
 
   const fallbackEnabled =
     overrides?.inference?.fallbackEnabled ??
-    (process.env['ARLETEX_INFERENCE_FALLBACK'] ? process.env['ARLETEX_INFERENCE_FALLBACK'] !== 'false' : true);
+    (process.env['ARLETEX_INFERENCE_FALLBACK']
+      ? process.env['ARLETEX_INFERENCE_FALLBACK'] !== 'false'
+      : true);
 
   const rawConfig = {
     dataDirectory: dataDir,
@@ -121,7 +130,7 @@ export function createDefaultConfig(overrides?: AppConfigOverrides): AppConfig {
       specialistCoding: {
         enabled:
           overrides?.inference?.specialistCoding?.enabled ??
-          (process.env['SPECIALIST_CODING_ENABLED'] === 'true'),
+          process.env['SPECIALIST_CODING_ENABLED'] === 'true',
         provider:
           overrides?.inference?.specialistCoding?.provider ??
           (process.env['SPECIALIST_CODING_PROVIDER'] as any) ??

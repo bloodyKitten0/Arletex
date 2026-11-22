@@ -51,7 +51,9 @@ export class SqlitePlayHumourAestheticsRepository implements IPlayHumourAestheti
 
   public getPreference(id: string): AestheticPreference | null {
     try {
-      const row = this.db.prepare(`SELECT * FROM aesthetic_preferences WHERE id = ?`).get(id) as any;
+      const row = this.db
+        .prepare(`SELECT * FROM aesthetic_preferences WHERE id = ?`)
+        .get(id) as any;
       if (!row) return null;
       return {
         id: row.id,
@@ -134,9 +136,7 @@ export class SqlitePlayHumourAestheticsRepository implements IPlayHumourAestheti
             )
             .all(category, limit) as any[])
         : (this.db
-            .prepare(
-              `SELECT * FROM recreational_activities ORDER BY timestamp DESC LIMIT ?`,
-            )
+            .prepare(`SELECT * FROM recreational_activities ORDER BY timestamp DESC LIMIT ?`)
             .all(limit) as any[]);
 
       return rows.map((r) => ({
@@ -185,9 +185,7 @@ export class SqlitePlayHumourAestheticsRepository implements IPlayHumourAestheti
   public listPlaySessions(limit: number = 50): IntellectualPlaySession[] {
     try {
       const rows = this.db
-        .prepare(
-          `SELECT * FROM intellectual_play_sessions ORDER BY timestamp DESC LIMIT ?`,
-        )
+        .prepare(`SELECT * FROM intellectual_play_sessions ORDER BY timestamp DESC LIMIT ?`)
         .all(limit) as any[];
       return rows.map((r) => ({
         id: r.id,
@@ -231,9 +229,7 @@ export class SqlitePlayHumourAestheticsRepository implements IPlayHumourAestheti
   public listHumorRecords(limit: number = 50): HumorDevelopmentRecord[] {
     try {
       const rows = this.db
-        .prepare(
-          `SELECT * FROM humor_development_records ORDER BY created_date DESC LIMIT ?`,
-        )
+        .prepare(`SELECT * FROM humor_development_records ORDER BY created_date DESC LIMIT ?`)
         .all(limit) as any[];
       return rows.map((r) => ({
         id: r.id,

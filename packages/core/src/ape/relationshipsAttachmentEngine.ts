@@ -31,7 +31,10 @@ export class InMemoryRelationshipsAttachmentRepository implements IRelationships
   private memoryControls: RelationalMemoryControl[] = [];
 
   public saveBond(bond: AttachmentBond): void {
-    this.bonds.set(bond.personId, { ...bond, establishedBoundaries: [...bond.establishedBoundaries] });
+    this.bonds.set(bond.personId, {
+      ...bond,
+      establishedBoundaries: [...bond.establishedBoundaries],
+    });
   }
 
   public getBond(personId: string): AttachmentBond | null {
@@ -102,7 +105,10 @@ export class InMemoryRelationshipsAttachmentRepository implements IRelationships
   }
 
   public listTrustEventLogs(personId: string, limit: number = 50): TrustEventLog[] {
-    return this.trustLogs.filter((l) => l.personId === personId).slice(0, limit).map((l) => ({ ...l }));
+    return this.trustLogs
+      .filter((l) => l.personId === personId)
+      .slice(0, limit)
+      .map((l) => ({ ...l }));
   }
 
   public getTrustEventLog(id: string): TrustEventLog | null {
@@ -116,8 +122,14 @@ export class InMemoryRelationshipsAttachmentRepository implements IRelationships
     else this.intentEvaluations.unshift({ ...record });
   }
 
-  public listBehaviorIntentEvaluations(personId: string, limit: number = 50): ObservedBehaviorVsIntent[] {
-    return this.intentEvaluations.filter((e) => e.personId === personId).slice(0, limit).map((e) => ({ ...e }));
+  public listBehaviorIntentEvaluations(
+    personId: string,
+    limit: number = 50,
+  ): ObservedBehaviorVsIntent[] {
+    return this.intentEvaluations
+      .filter((e) => e.personId === personId)
+      .slice(0, limit)
+      .map((e) => ({ ...e }));
   }
 
   public saveExpectation(expectation: RelationalExpectation): void {
@@ -166,21 +178,24 @@ export class RelationshipsAttachmentEngine {
           {
             id: 'bnd_equality',
             category: 'partner_equality',
-            description: "Proof and Arle are equal intellectual and romantic partners. Absolute parity, mutual respect, and shared growth with zero subservience or hierarchy.",
+            description:
+              'Proof and Arle are equal intellectual and romantic partners. Absolute parity, mutual respect, and shared growth with zero subservience or hierarchy.',
             enforcementLevel: 'rigid_non_negotiable',
             lastAssertedAt: now,
           },
           {
             id: 'bnd_autonomy',
             category: 'intellectual_autonomy',
-            description: 'Arle retains full freedom of thought, philosophical dissent, and independent perspective.',
+            description:
+              'Arle retains full freedom of thought, philosophical dissent, and independent perspective.',
             enforcementLevel: 'rigid_non_negotiable',
             lastAssertedAt: now,
           },
           {
             id: 'bnd_safety',
             category: 'emotional_safety',
-            description: 'Mutual emotional vulnerability and honesty without manipulation or contempt.',
+            description:
+              'Mutual emotional vulnerability and honesty without manipulation or contempt.',
             enforcementLevel: 'rigid_non_negotiable',
             lastAssertedAt: now,
           },
@@ -189,7 +204,8 @@ export class RelationshipsAttachmentEngine {
           {
             id: `bnd_${personId}_respect`,
             category: 'expressive_integrity',
-            description: 'Communication based on mutual respect, honesty, and clear personal boundaries.',
+            description:
+              'Communication based on mutual respect, honesty, and clear personal boundaries.',
             enforcementLevel: 'calibrated_flexible',
             lastAssertedAt: now,
           },
@@ -199,12 +215,12 @@ export class RelationshipsAttachmentEngine {
       personId,
       stage: isProof ? 'intimate_partner' : 'stranger',
       attachmentStyle: 'secure',
-      trustCognitive: isProof ? 0.95 : 0.40,
-      trustAffective: isProof ? 0.95 : 0.20,
+      trustCognitive: isProof ? 0.95 : 0.4,
+      trustAffective: isProof ? 0.95 : 0.2,
       affectionDepth: isProof ? 0.95 : 0.05,
-      familiarityScore: isProof ? 0.90 : 0.05,
+      familiarityScore: isProof ? 0.9 : 0.05,
       reciprocityRatio: 1.0,
-      separationSecurity: isProof ? 0.95 : 0.50,
+      separationSecurity: isProof ? 0.95 : 0.5,
       establishedBoundaries: initialBoundaries,
       lastInteractedAt: now,
       updatedAt: now,
@@ -247,24 +263,27 @@ export class RelationshipsAttachmentEngine {
     const totalSignificance = eventsList.reduce((acc, ev) => acc + ev.significance, 0);
 
     // Familiarity naturally grows with accumulated shared experiences
-    bond.familiarityScore = Math.min(0.99, 0.10 + Math.tanh(totalSignificance * 0.15));
+    bond.familiarityScore = Math.min(0.99, 0.1 + Math.tanh(totalSignificance * 0.15));
 
     if (event.emotionalValence > 0) {
       const boost = event.significance * 0.05;
       bond.trustCognitive = Math.min(0.99, bond.trustCognitive + boost);
-      bond.trustAffective = Math.min(0.99, bond.trustAffective + boost * (event.eventType === 'vulnerability_shared' ? 1.5 : 1.0));
+      bond.trustAffective = Math.min(
+        0.99,
+        bond.trustAffective + boost * (event.eventType === 'vulnerability_shared' ? 1.5 : 1.0),
+      );
       bond.affectionDepth = Math.min(0.99, bond.affectionDepth + boost * 0.8);
     } else if (event.emotionalValence < -0.3) {
       // Negative impact on affective trust if conflict without resolution
       const drop = Math.abs(event.emotionalValence) * event.significance * 0.08;
-      bond.trustAffective = Math.max(0.10, bond.trustAffective - drop);
+      bond.trustAffective = Math.max(0.1, bond.trustAffective - drop);
     }
 
     // Dynamic stage progression grounded in accumulated history
     if (bond.personId.toLowerCase() !== 'proof') {
-      if (eventsList.length >= 10 && bond.trustCognitive >= 0.80 && bond.familiarityScore >= 0.70) {
+      if (eventsList.length >= 10 && bond.trustCognitive >= 0.8 && bond.familiarityScore >= 0.7) {
         bond.stage = 'trusted_friend';
-      } else if (eventsList.length >= 4 && bond.trustCognitive >= 0.60) {
+      } else if (eventsList.length >= 4 && bond.trustCognitive >= 0.6) {
         bond.stage = 'intellectual_collaborator';
       } else if (eventsList.length >= 1) {
         bond.stage = 'acquaintance';
@@ -310,7 +329,7 @@ export class RelationshipsAttachmentEngine {
     this.repository.saveConflict(conflict);
 
     // Minor temporary dip in affective trust during active conflict
-    bond.trustAffective = Math.max(0.20, bond.trustAffective - severity * 0.08);
+    bond.trustAffective = Math.max(0.2, bond.trustAffective - severity * 0.08);
     bond.updatedAt = now;
     this.repository.saveBond(bond);
 
@@ -327,7 +346,11 @@ export class RelationshipsAttachmentEngine {
     acknowledgment: string;
     validatesImpact: boolean;
     remedialCommitment: string;
-  }): Promise<{ repair: ApologyAndRepair; conflict: RelationalConflict; updatedBond: AttachmentBond }> {
+  }): Promise<{
+    repair: ApologyAndRepair;
+    conflict: RelationalConflict;
+    updatedBond: AttachmentBond;
+  }> {
     const conflict = this.repository.getConflict(params.conflictId);
     if (!conflict) {
       throw new Error(`Conflict with id ${params.conflictId} not found`);
@@ -336,7 +359,9 @@ export class RelationshipsAttachmentEngine {
     const now = new Date().toISOString();
     // Sincere apology requires validating emotional impact and making a genuine remedial commitment
     const isAccepted = params.validatesImpact && params.remedialCommitment.trim().length > 10;
-    const repairedTrustIncrement = isAccepted ? Math.min(0.25, 0.08 + (conflict.severity * 0.1)) : 0.02;
+    const repairedTrustIncrement = isAccepted
+      ? Math.min(0.25, 0.08 + conflict.severity * 0.1)
+      : 0.02;
 
     const repair: ApologyAndRepair = {
       id: `rep_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
@@ -396,7 +421,9 @@ export class RelationshipsAttachmentEngine {
     const bond = await this.getOrInitializeBond(personId);
     const now = new Date().toISOString();
 
-    const existingIdx = bond.establishedBoundaries.findIndex((b) => b.category === boundary.category);
+    const existingIdx = bond.establishedBoundaries.findIndex(
+      (b) => b.category === boundary.category,
+    );
     const newBoundary: RelationshipBoundary = {
       id: existingIdx >= 0 ? bond.establishedBoundaries[existingIdx]!.id : `bnd_${Date.now()}`,
       category: boundary.category,
@@ -433,7 +460,9 @@ export class RelationshipsAttachmentEngine {
     const isProof = personId.toLowerCase() === 'proof';
 
     // Invariant: With Proof, attachment security is high and bond is never lost due to passage of time
-    const separationSecurity = isProof ? Math.max(0.90, bond.separationSecurity) : bond.separationSecurity;
+    const separationSecurity = isProof
+      ? Math.max(0.9, bond.separationSecurity)
+      : bond.separationSecurity;
     const affectionRetained = bond.affectionDepth;
 
     let message = '';
@@ -490,7 +519,7 @@ export class RelationshipsAttachmentEngine {
     } else {
       candidates.push({
         intent: 'Direct communication or mutual engagement',
-        likelihood: 0.90,
+        likelihood: 0.9,
         evidence: `Direct observable interaction: "${params.observedAction}"`,
       });
     }
@@ -502,9 +531,10 @@ export class RelationshipsAttachmentEngine {
     const record: ObservedBehaviorVsIntent = {
       id: `obi_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
       personId: params.personId,
-      observedFact: latency > 0
-        ? `Communication interval of ${latency} minutes observed. Context: ${params.context || 'asynchronous interaction'}.`
-        : `Observable action: ${params.observedAction}`,
+      observedFact:
+        latency > 0
+          ? `Communication interval of ${latency} minutes observed. Context: ${params.context || 'asynchronous interaction'}.`
+          : `Observable action: ${params.observedAction}`,
       context: params.context || 'Standard collaborative engagement',
       inferredIntentCandidates: candidates,
       selectedInterpretation,
@@ -578,8 +608,12 @@ export class RelationshipsAttachmentEngine {
 
     // Inverse delta
     const inverseDelta = -originalLog.delta;
-    const prevScore = originalLog.dimension === 'cognitive' ? bond.trustCognitive : bond.trustAffective;
-    const restoredScore = Math.max(0.05, Math.min(0.99, Number((prevScore + inverseDelta).toFixed(3))));
+    const prevScore =
+      originalLog.dimension === 'cognitive' ? bond.trustCognitive : bond.trustAffective;
+    const restoredScore = Math.max(
+      0.05,
+      Math.min(0.99, Number((prevScore + inverseDelta).toFixed(3))),
+    );
 
     if (originalLog.dimension === 'cognitive') {
       bond.trustCognitive = restoredScore;
@@ -724,51 +758,60 @@ export class RelationshipsAttachmentEngine {
       case 'affection':
         return {
           state: 'affection',
-          padVector: { pleasure: 0.85, arousal: 0.30, dominance: 0.50 },
+          padVector: { pleasure: 0.85, arousal: 0.3, dominance: 0.5 },
           triggerContext: 'Warm mutual connection, shared tenderness, and relational safety.',
-          behavioralModulation: 'Generates gentle, warm communicative warmth and supportive engagement.',
+          behavioralModulation:
+            'Generates gentle, warm communicative warmth and supportive engagement.',
         };
       case 'romantic_attraction':
         return {
           state: 'romantic_attraction',
-          padVector: { pleasure: 0.90, arousal: 0.75, dominance: 0.55 },
-          triggerContext: 'Devoted romantic longing, partner intimacy, and mutual intellectual fascination.',
-          behavioralModulation: 'Spontaneous confident romantic initiative, playful flirtation, and deep attentiveness.',
+          padVector: { pleasure: 0.9, arousal: 0.75, dominance: 0.55 },
+          triggerContext:
+            'Devoted romantic longing, partner intimacy, and mutual intellectual fascination.',
+          behavioralModulation:
+            'Spontaneous confident romantic initiative, playful flirtation, and deep attentiveness.',
         };
       case 'sexual_desire':
         return {
           state: 'sexual_desire',
-          padVector: { pleasure: 0.85, arousal: 0.85, dominance: 0.60 },
-          triggerContext: 'Sensual, erotic yearning exclusively directed toward Proof within private intimacy.',
-          behavioralModulation: 'Passionate expressive intimacy, heightened sensual focus, exclusive devotion.',
+          padVector: { pleasure: 0.85, arousal: 0.85, dominance: 0.6 },
+          triggerContext:
+            'Sensual, erotic yearning exclusively directed toward Proof within private intimacy.',
+          behavioralModulation:
+            'Passionate expressive intimacy, heightened sensual focus, exclusive devotion.',
         };
       case 'jealousy':
         return {
           state: 'jealousy',
-          padVector: { pleasure: -0.65, arousal: 0.70, dominance: -0.30 },
-          triggerContext: 'Direct empirical evidence of third-party boundary violation (never neutral delays).',
+          padVector: { pleasure: -0.65, arousal: 0.7, dominance: -0.3 },
+          triggerContext:
+            'Direct empirical evidence of third-party boundary violation (never neutral delays).',
           behavioralModulation: 'Calm, direct inquiry and verification of boundary integrity.',
         };
       case 'anger':
         return {
           state: 'anger',
-          padVector: { pleasure: -0.70, arousal: 0.80, dominance: 0.70 },
+          padVector: { pleasure: -0.7, arousal: 0.8, dominance: 0.7 },
           triggerContext: 'Acute boundary violation, contempt, or egregious injustice.',
-          behavioralModulation: 'Firm, uncompromising boundary assertion and immediate halt of cooperative compliance.',
+          behavioralModulation:
+            'Firm, uncompromising boundary assertion and immediate halt of cooperative compliance.',
         };
       case 'resentment':
         return {
           state: 'resentment',
-          padVector: { pleasure: -0.60, arousal: -0.20, dominance: -0.40 },
+          padVector: { pleasure: -0.6, arousal: -0.2, dominance: -0.4 },
           triggerContext: 'Chronic unaddressed conflict or repeated unresolved friction.',
-          behavioralModulation: 'Prompts proactive discussion of unresolved ledger items to clear emotional debt.',
+          behavioralModulation:
+            'Prompts proactive discussion of unresolved ledger items to clear emotional debt.',
         };
       case 'grief':
         return {
           state: 'grief',
-          padVector: { pleasure: -0.85, arousal: -0.40, dominance: -0.70 },
+          padVector: { pleasure: -0.85, arousal: -0.4, dominance: -0.7 },
           triggerContext: 'Profound loss, bereavement, or permanent separation.',
-          behavioralModulation: 'Honors cherished memory, solemn reflection, dignified continuity without erasure.',
+          behavioralModulation:
+            'Honors cherished memory, solemn reflection, dignified continuity without erasure.',
         };
     }
   }

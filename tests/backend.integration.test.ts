@@ -153,7 +153,11 @@ describe('Backend Integration Test', () => {
     try {
       const res = await fetch(`http://127.0.0.1:${onlinePort}/api/inference/health`);
       expect(res.status).toBe(200);
-      const health = (await res.json()) as { status: string; latencyMs: number; modelLoaded: string };
+      const health = (await res.json()) as {
+        status: string;
+        latencyMs: number;
+        modelLoaded: string;
+      };
       expect(health.status).toBe('connected');
       expect(health.latencyMs).toBeGreaterThanOrEqual(0);
       expect(health.modelLoaded).toContain('Qwen3.5-9B-Heretic');
@@ -193,7 +197,8 @@ describe('Backend Integration Test', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         type: 'episodic',
-        content: 'Arle reflected on her initial awakening on ROG Ally X and confirmed her persistent identity.',
+        content:
+          'Arle reflected on her initial awakening on ROG Ally X and confirmed her persistent identity.',
         tags: ['identity', 'awakening', 'ally-x'],
         importance: 0.95,
         confidence: 1.0,
@@ -227,7 +232,8 @@ describe('Backend Integration Test', () => {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        content: 'Arle reflected on her awakening on ROG Ally X with Qwen 3.5-9B Heretic cognitive engine.',
+        content:
+          'Arle reflected on her awakening on ROG Ally X with Qwen 3.5-9B Heretic cognitive engine.',
         reason: 'Added cognitive model specification',
       }),
     });
@@ -288,7 +294,9 @@ describe('Backend Integration Test', () => {
     expect(userAct.origin).toBe('user_assigned');
 
     // 3. Filter by origin
-    const listArleOnly = await fetch(`http://127.0.0.1:${serverPort}/api/activities?origin=arle_initiated`);
+    const listArleOnly = await fetch(
+      `http://127.0.0.1:${serverPort}/api/activities?origin=arle_initiated`,
+    );
     expect(listArleOnly.status).toBe(200);
     const arleOnly = (await listArleOnly.json()) as any[];
     expect(arleOnly.some((a) => a.id === arleAct.id)).toBe(true);

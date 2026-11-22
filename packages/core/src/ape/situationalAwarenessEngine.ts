@@ -65,7 +65,9 @@ export class SituationalAwarenessEngine {
         lastActiveAt: now,
       };
       this.repo.saveActivity(paused);
-      this.logger.info(`Paused ongoing activity ${current.id} (${current.title}) to start new activity`);
+      this.logger.info(
+        `Paused ongoing activity ${current.id} (${current.title}) to start new activity`,
+      );
     }
 
     const activeApp: ActiveApplication = {
@@ -92,7 +94,9 @@ export class SituationalAwarenessEngine {
     return activity;
   }
 
-  public updateActiveApplication(app: Partial<ActiveApplication> & { name: string }): ActiveApplication {
+  public updateActiveApplication(
+    app: Partial<ActiveApplication> & { name: string },
+  ): ActiveApplication {
     const updated: ActiveApplication = {
       name: app.name,
       windowTitle: app.windowTitle ?? this.currentActiveApp.windowTitle,
@@ -278,7 +282,12 @@ export class SituationalAwarenessEngine {
       .sort((a, b) => b.relevanceScore - a.relevanceScore);
 
     const recentChanges = recentEvents
-      .filter((e) => e.eventType === 'window_focus_change' || e.eventType === 'app_lifecycle' || e.isInterruption)
+      .filter(
+        (e) =>
+          e.eventType === 'window_focus_change' ||
+          e.eventType === 'app_lifecycle' ||
+          e.isInterruption,
+      )
       .slice(0, 5)
       .map((e) => `${e.description} (${e.timestamp})`);
 
@@ -287,10 +296,14 @@ export class SituationalAwarenessEngine {
 
     if (!currentActivity || currentActivity.status !== 'active') {
       const pausedOrInterrupted = this.repo.listActivities(undefined, 1)[0];
-      if (pausedOrInterrupted && (pausedOrInterrupted.status === 'interrupted' || pausedOrInterrupted.status === 'paused')) {
+      if (
+        pausedOrInterrupted &&
+        (pausedOrInterrupted.status === 'interrupted' || pausedOrInterrupted.status === 'paused')
+      ) {
         currentActivityDescription = `Currently inactive; last activity was '${pausedOrInterrupted.title}' which is currently ${pausedOrInterrupted.status}. Monitoring environment in idle state.`;
       } else {
-        currentActivityDescription = 'Currently idle; no active operational activity. Monitoring environment in background.';
+        currentActivityDescription =
+          'Currently idle; no active operational activity. Monitoring environment in background.';
       }
       isCurrentlyEngaged = false;
     } else {
@@ -335,8 +348,18 @@ export class SituationalAwarenessEngine {
     const narrative = [
       `[Situational Context at ${now}]`,
       `Activity: ${desc.currentActivityDescription}`,
-      `Foreground Events (${foregroundEvents.length}): ${foregroundEvents.slice(0, 3).map((e) => e.description).join('; ') || 'None'}`,
-      `Background Events (${backgroundEvents.length}): ${backgroundEvents.slice(0, 3).map((e) => e.description).join('; ') || 'None'}`,
+      `Foreground Events (${foregroundEvents.length}): ${
+        foregroundEvents
+          .slice(0, 3)
+          .map((e) => e.description)
+          .join('; ') || 'None'
+      }`,
+      `Background Events (${backgroundEvents.length}): ${
+        backgroundEvents
+          .slice(0, 3)
+          .map((e) => e.description)
+          .join('; ') || 'None'
+      }`,
       `Active Interruptions: ${activeInterruptions.length > 0 ? activeInterruptions.map((e) => e.description).join(', ') : 'None'}`,
     ].join(' | ');
 

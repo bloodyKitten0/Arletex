@@ -57,15 +57,16 @@ export class SqliteIntrinsicMotivationRepository implements IIntrinsicMotivation
           activity.updatedAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save motivated activity ${activity.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save motivated activity ${activity.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
   public getActivityById(id: string): MotivatedActivity | null {
     try {
-      const row = this.db
-        .prepare(`SELECT * FROM motivated_activities WHERE id = ?`)
-        .get(id) as any;
+      const row = this.db.prepare(`SELECT * FROM motivated_activities WHERE id = ?`).get(id) as any;
       if (!row) return null;
       return this.mapActivityRow(row);
     } catch (err: any) {
@@ -132,7 +133,10 @@ export class SqliteIntrinsicMotivationRepository implements IIntrinsicMotivation
           record.timestamp,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save goal internalization ${record.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save goal internalization ${record.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -141,7 +145,9 @@ export class SqliteIntrinsicMotivationRepository implements IIntrinsicMotivation
       let rows: any[];
       if (activityId) {
         rows = this.db
-          .prepare(`SELECT * FROM goal_internalizations WHERE activity_id = ? ORDER BY timestamp DESC LIMIT ?`)
+          .prepare(
+            `SELECT * FROM goal_internalizations WHERE activity_id = ? ORDER BY timestamp DESC LIMIT ?`,
+          )
           .all(activityId, limit) as any[];
       } else {
         rows = this.db
@@ -193,7 +199,10 @@ export class SqliteIntrinsicMotivationRepository implements IIntrinsicMotivation
           record.evaluatedAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save motivation reassessment ${record.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save motivation reassessment ${record.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -202,7 +211,9 @@ export class SqliteIntrinsicMotivationRepository implements IIntrinsicMotivation
       let rows: any[];
       if (activityId) {
         rows = this.db
-          .prepare(`SELECT * FROM motivation_reassessments WHERE activity_id = ? ORDER BY evaluated_at DESC LIMIT ?`)
+          .prepare(
+            `SELECT * FROM motivation_reassessments WHERE activity_id = ? ORDER BY evaluated_at DESC LIMIT ?`,
+          )
           .all(activityId, limit) as any[];
       } else {
         rows = this.db

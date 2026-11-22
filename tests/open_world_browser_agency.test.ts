@@ -11,11 +11,7 @@ import {
   IBrowserProvider,
   PageObservation,
 } from '@arletex/core';
-import {
-  DatabaseService,
-  MigrationRunner,
-  MemoryRepository,
-} from '@arletex/database';
+import { DatabaseService, MigrationRunner, MemoryRepository } from '@arletex/database';
 
 describe('Phase 2: Open-World Browser Agency (General-Purpose Internet Operator)', () => {
   let tempDir: string;
@@ -53,12 +49,16 @@ describe('Phase 2: Open-World Browser Agency (General-Purpose Internet Operator)
     expect(pubmedIntent.searchQuery).toContain('mRNA vaccine clinical trials');
 
     // 1c. arXiv scientific paper
-    const arxivIntent = agency.understandIntent('Find recent papers on transformer architecture on arXiv');
+    const arxivIntent = agency.understandIntent(
+      'Find recent papers on transformer architecture on arXiv',
+    );
     expect(arxivIntent.category).toBe('document_reading');
     expect(arxivIntent.targetPlatform).toBe('arxiv');
 
     // 1d. Direct URL navigation
-    const directIntent = agency.understandIntent('Go to https://github.com/trending and see top projects');
+    const directIntent = agency.understandIntent(
+      'Go to https://github.com/trending and see top projects',
+    );
     expect(directIntent.category).toBe('direct_navigation');
     expect(directIntent.targetUrl).toBe('https://github.com/trending');
   });
@@ -90,7 +90,9 @@ describe('Phase 2: Open-World Browser Agency (General-Purpose Internet Operator)
       targetPlatform: 'generic',
       searchQuery: 'quantum computing coherence time',
     });
-    expect(genericUrl).toBe('https://html.duckduckgo.com/html/?q=quantum%20computing%20coherence%20time');
+    expect(genericUrl).toBe(
+      'https://html.duckduckgo.com/html/?q=quantum%20computing%20coherence%20time',
+    );
   });
 
   it('3. Rejects SSRF, internal metadata, and private IP URLs fail-closed', async () => {
@@ -103,9 +105,9 @@ describe('Phase 2: Open-World Browser Agency (General-Purpose Internet Operator)
     await expect(agency.executeBrowserObjective('https://127.0.0.1:8080/admin')).rejects.toThrow(
       /Security policy blocked URL/,
     );
-    await expect(agency.executeBrowserObjective('https://169.254.169.254/latest/meta-data')).rejects.toThrow(
-      /Security policy blocked URL/,
-    );
+    await expect(
+      agency.executeBrowserObjective('https://169.254.169.254/latest/meta-data'),
+    ).rejects.toThrow(/Security policy blocked URL/);
     await expect(agency.executeBrowserObjective('https://localhost:3000')).rejects.toThrow(
       /Security policy blocked URL/,
     );

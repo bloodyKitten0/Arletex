@@ -1,8 +1,4 @@
-import {
-  ActionProposal,
-  AgencyObservation,
-  VerificationResult,
-} from '@arletex/contracts';
+import { ActionProposal, AgencyObservation, VerificationResult } from '@arletex/contracts';
 import { ILogger, rootLogger } from '../logger.js';
 
 export class VerificationEngine {
@@ -16,10 +12,7 @@ export class VerificationEngine {
    * Compares the observed state against the expected state of an action.
    * Produces an uncompromising, deterministic verification verdict.
    */
-  public verify(
-    action: ActionProposal,
-    observation: AgencyObservation | null,
-  ): VerificationResult {
+  public verify(action: ActionProposal, observation: AgencyObservation | null): VerificationResult {
     return this.verifyInternal(action, observation);
   }
 
@@ -38,7 +31,9 @@ export class VerificationEngine {
     observation: AgencyObservation | null,
   ): VerificationResult {
     const timestamp = new Date().toISOString();
-    this.logger.debug(`Verifying action ${action.id} (${action.type}) against observation ${observation?.id}`);
+    this.logger.debug(
+      `Verifying action ${action.id} (${action.type}) against observation ${observation?.id}`,
+    );
 
     if (!observation) {
       return {
@@ -78,20 +73,35 @@ export class VerificationEngine {
     // 1. Web Video Selection Verification (Acceptance Scenario)
     if (action.type === 'web_select_video') {
       const actionParams = (action as any).parameters || {};
-      const targetUrl = (actionParams.url as string) || (action.payload?.targetUrl as string) || (action.payload?.url as string);
-      const expectedTitle = ((actionParams.title as string) || (action.payload?.videoTitle as string) || '').toLowerCase();
-      const currentUrl = (observation.data?.currentUrl as string || observation.data?.url as string || '');
-      const pageTitle = (observation.data?.pageTitle as string || observation.data?.title as string || '').toLowerCase();
+      const targetUrl =
+        (actionParams.url as string) ||
+        (action.payload?.targetUrl as string) ||
+        (action.payload?.url as string);
+      const expectedTitle = (
+        (actionParams.title as string) ||
+        (action.payload?.videoTitle as string) ||
+        ''
+      ).toLowerCase();
+      const currentUrl =
+        (observation.data?.currentUrl as string) || (observation.data?.url as string) || '';
+      const pageTitle = (
+        (observation.data?.pageTitle as string) ||
+        (observation.data?.title as string) ||
+        ''
+      ).toLowerCase();
       const isVideoPresent = Boolean(observation.data?.hasVideoElement);
       const isPlaying = Boolean(observation.data?.isPlaying);
       const isProgressing = Boolean(observation.data?.playbackProgressing ?? isPlaying);
-      const playbackState = (observation.data?.playbackState as string) || (isPlaying ? 'playing' : 'paused');
+      const playbackState =
+        (observation.data?.playbackState as string) || (isPlaying ? 'playing' : 'paused');
       const timeObservations = observation.data?.timeObservations || [];
       const playbackError = observation.data?.playbackError as string | undefined;
 
       // URL Verification
       const urlMatches = Boolean(
-        targetUrl && currentUrl && (currentUrl.includes(targetUrl) || targetUrl.includes(currentUrl)),
+        targetUrl &&
+        currentUrl &&
+        (currentUrl.includes(targetUrl) || targetUrl.includes(currentUrl)),
       );
 
       // Title & Video element presence
@@ -214,7 +224,9 @@ export class VerificationEngine {
         };
       }
 
-      const match = Boolean(targetUrl && currentUrl && currentUrl.startsWith(targetUrl.slice(0, 20)));
+      const match = Boolean(
+        targetUrl && currentUrl && currentUrl.startsWith(targetUrl.slice(0, 20)),
+      );
       return {
         actionId: action.id,
         expectedOutcome: `Loaded page ${targetUrl}`,
@@ -232,9 +244,16 @@ export class VerificationEngine {
 
     // 3. Application Launch Verification
     if (action.type === 'app_launch') {
-      const appName = String(action.payload?.appName || action.payload?.app || (action as any).parameters?.app || 'application');
+      const appName = String(
+        action.payload?.appName ||
+          action.payload?.app ||
+          (action as any).parameters?.app ||
+          'application',
+      );
       const pid = observation.data?.pid as number | undefined;
-      const isRunning = Boolean(observation.data?.isRunning ?? observation.success ?? (pid && pid > 0));
+      const isRunning = Boolean(
+        observation.data?.isRunning ?? observation.success ?? (pid && pid > 0),
+      );
       const windowFound = observation.data?.windowFound as boolean | undefined;
 
       // Spawning a process successfully does not establish that the requested application window opened.
@@ -287,7 +306,7 @@ export class VerificationEngine {
         verified: opened,
         confidence: opened ? 0.98 : 0.0,
         status: opened ? 'verified_successful' : 'failed',
-        failureReason: opened ? null : (observation.error || `Could not open file "${target}"`),
+        failureReason: opened ? null : observation.error || `Could not open file "${target}"`,
         isRecoverable: !opened,
         recommendedStrategy: opened ? undefined : 'retry_with_backoff',
         evidence: observation.data || {},
@@ -300,7 +319,9 @@ export class VerificationEngine {
       const command = String(action.payload?.command || 'PlayPause');
       const success = Boolean(observation.success);
       const playbackStatus = observation.data?.playbackStatus as string | undefined;
-      const isAudioActive = Boolean(observation.data?.audioStreamActive || observation.data?.isAudioPlaying);
+      const isAudioActive = Boolean(
+        observation.data?.audioStreamActive || observation.data?.isAudioPlaying,
+      );
 
       // If the command was Play or Resume, verify playback is genuinely active
       if (command === 'Play' || command === 'Resume') {
@@ -314,7 +335,9 @@ export class VerificationEngine {
           verified: isActuallyPlaying && success,
           confidence: isActuallyPlaying ? 0.98 : 0.9,
           status: isActuallyPlaying ? 'verified_successful' : 'failed',
-          failureReason: isActuallyPlaying ? null : 'Audio stream is not active in PipeWire or MPRIS',
+          failureReason: isActuallyPlaying
+            ? null
+            : 'Audio stream is not active in PipeWire or MPRIS',
           isRecoverable: true,
           recommendedStrategy: 'retry_with_backoff',
           evidence: observation.data || {},
@@ -331,7 +354,7 @@ export class VerificationEngine {
         verified: success,
         confidence: success ? 0.95 : 0.0,
         status: success ? 'verified_successful' : 'failed',
-        failureReason: success ? null : (observation.error || 'Media player communication failed'),
+        failureReason: success ? null : observation.error || 'Media player communication failed',
         isRecoverable: !success,
         recommendedStrategy: success ? undefined : 'retry_with_backoff',
         evidence: observation.data || {},
@@ -390,7 +413,7 @@ export class VerificationEngine {
         verified: success && !isSynthetic,
         confidence: success ? 0.98 : 0.0,
         status: success ? 'verified_successful' : 'failed',
-        failureReason: success ? null : (observation.error || 'Browser launch failed'),
+        failureReason: success ? null : observation.error || 'Browser launch failed',
         isRecoverable: !success,
         recommendedStrategy: success ? undefined : 'retry_with_backoff',
         evidence: observation.data || {},
@@ -402,8 +425,8 @@ export class VerificationEngine {
     if (action.type === 'web_search') {
       const candidatesCount = Number(
         observation.data?.candidatesEvaluated ||
-        (Array.isArray(observation.data?.candidates) ? observation.data.candidates.length : 0) ||
-        (Array.isArray(observation.data?.results) ? observation.data.results.length : 0),
+          (Array.isArray(observation.data?.candidates) ? observation.data.candidates.length : 0) ||
+          (Array.isArray(observation.data?.results) ? observation.data.results.length : 0),
       );
       const hasResearchFindings = Boolean(
         observation.data?.benchmarkSource ||
@@ -415,9 +438,9 @@ export class VerificationEngine {
         actionId: action.id,
         expectedOutcome: action.expectedOutcome,
         observedOutcome: verified
-          ? (hasResearchFindings
-              ? `Retrieved empirical research findings from ${observation.data?.benchmarkSource || 'benchmark source'}`
-              : `Discovered ${candidatesCount} relevant search candidate(s)`)
+          ? hasResearchFindings
+            ? `Retrieved empirical research findings from ${observation.data?.benchmarkSource || 'benchmark source'}`
+            : `Discovered ${candidatesCount} relevant search candidate(s)`
           : 'Zero search results or candidates returned from source',
         verified,
         confidence: verified ? 0.95 : 0.9,
@@ -435,19 +458,19 @@ export class VerificationEngine {
       const verified = Boolean(
         observation.success &&
         (typeof observation.data?.textSnippet === 'string' ||
-         Array.isArray(observation.data?.headings) ||
-         observation.data?.title),
+          Array.isArray(observation.data?.headings) ||
+          observation.data?.title),
       );
       return {
         actionId: action.id,
         expectedOutcome: action.expectedOutcome || 'Page content and metadata extracted',
         observedOutcome: verified
           ? `Page read successfully (${String(observation.data?.textSnippet || observation.data?.title || '').slice(0, 60)}...)`
-          : (observation.error || 'Failed to read page content'),
+          : observation.error || 'Failed to read page content',
         verified,
         confidence: verified ? 0.95 : 0.0,
         status: verified ? 'verified_successful' : 'failed',
-        failureReason: verified ? null : (observation.error || 'Failed to extract page content'),
+        failureReason: verified ? null : observation.error || 'Failed to extract page content',
         isRecoverable: !verified,
         evidence: observation.data || {},
         timestamp,
@@ -465,31 +488,37 @@ export class VerificationEngine {
       const hashMatched = Boolean(readBackPerformed && sha256 === expectedSha256);
       const contentVerified = Boolean(observation.data?.contentVerified ?? hashMatched);
 
-      const verified = Boolean(fileExists && sizeBytes >= 0 && hashMatched && contentVerified && observation.success);
+      const verified = Boolean(
+        fileExists && sizeBytes >= 0 && hashMatched && contentVerified && observation.success,
+      );
       return {
         actionId: action.id,
         expectedOutcome: `File written at ${filePath} with verified content hash`,
         observedOutcome: verified
           ? `File exists (${sizeBytes} bytes, sha256: ${sha256!.slice(0, 8)}... read-back verified)`
-          : (!observation.success
-              ? 'File write execution failed'
-              : (!fileExists
-                  ? 'File missing or zero length on disk'
-                  : (!readBackPerformed
-                      ? 'Read-back verification was unperformed or unsupported'
-                      : 'SHA-256 hash mismatch: file contents on disk do not match written payload'))),
+          : !observation.success
+            ? 'File write execution failed'
+            : !fileExists
+              ? 'File missing or zero length on disk'
+              : !readBackPerformed
+                ? 'Read-back verification was unperformed or unsupported'
+                : 'SHA-256 hash mismatch: file contents on disk do not match written payload',
         verified,
-        confidence: verified ? 1.0 : (observation.success ? 0.7 : 0.0),
-        status: verified ? 'verified_successful' : (observation.success && !readBackPerformed ? 'executed_unverified' : 'failed'),
+        confidence: verified ? 1.0 : observation.success ? 0.7 : 0.0,
+        status: verified
+          ? 'verified_successful'
+          : observation.success && !readBackPerformed
+            ? 'executed_unverified'
+            : 'failed',
         failureReason: verified
           ? null
-          : (!observation.success
-              ? 'Filesystem write could not be executed on disk'
-              : (!fileExists
-                  ? 'File missing or zero length on disk'
-                  : (!readBackPerformed
-                      ? 'Read-back verification is mandatory for file write verification'
-                      : 'SHA-256 content verification failed upon read-back'))),
+          : !observation.success
+            ? 'Filesystem write could not be executed on disk'
+            : !fileExists
+              ? 'File missing or zero length on disk'
+              : !readBackPerformed
+                ? 'Read-back verification is mandatory for file write verification'
+                : 'SHA-256 content verification failed upon read-back',
         isRecoverable: !verified,
         recommendedStrategy: verified ? undefined : 'replan_sub_steps',
         evidence: observation.data || {},
@@ -507,11 +536,11 @@ export class VerificationEngine {
         expectedOutcome: `Read file contents of ${filePath}`,
         observedOutcome: verified
           ? `File content read (${String(content).length} chars)`
-          : (observation.error || 'Failed to read file'),
+          : observation.error || 'Failed to read file',
         verified,
         confidence: verified ? 1.0 : 0.0,
         status: verified ? 'verified_successful' : 'failed',
-        failureReason: verified ? null : (observation.error || 'Failed to read file'),
+        failureReason: verified ? null : observation.error || 'Failed to read file',
         isRecoverable: !verified,
         evidence: observation.data || {},
         timestamp,
@@ -528,11 +557,11 @@ export class VerificationEngine {
         expectedOutcome: `List directory entries of ${dirPath}`,
         observedOutcome: verified
           ? `Discovered ${entries.length} directory entry(ies)`
-          : (observation.error || 'Failed to list directory'),
+          : observation.error || 'Failed to list directory',
         verified,
         confidence: verified ? 1.0 : 0.0,
         status: verified ? 'verified_successful' : 'failed',
-        failureReason: verified ? null : (observation.error || 'Failed to list directory'),
+        failureReason: verified ? null : observation.error || 'Failed to list directory',
         isRecoverable: !verified,
         evidence: observation.data || {},
         timestamp,
@@ -553,7 +582,9 @@ export class VerificationEngine {
         verified,
         confidence: 1.0,
         status: verified ? 'verified_successful' : 'failed',
-        failureReason: verified ? null : (observation.error || `Process exited with code ${exitCode}`),
+        failureReason: verified
+          ? null
+          : observation.error || `Process exited with code ${exitCode}`,
         isRecoverable: !verified,
         evidence: observation.data || {},
         timestamp,
@@ -562,17 +593,19 @@ export class VerificationEngine {
 
     // 4e. External Communication Verification
     if (action.type.startsWith('telegram_') || action.type === 'send_message') {
-      const sent = Boolean(observation.success && (observation.data?.messageId || observation.data?.sent));
+      const sent = Boolean(
+        observation.success && (observation.data?.messageId || observation.data?.sent),
+      );
       return {
         actionId: action.id,
         expectedOutcome: action.expectedOutcome || 'Message delivered to recipient',
         observedOutcome: sent
           ? `Message delivered (messageId: ${observation.data?.messageId || 'acknowledged'})`
-          : (observation.error || 'Message dispatch failed'),
+          : observation.error || 'Message dispatch failed',
         verified: sent,
         confidence: sent ? 0.98 : 0.0,
         status: sent ? 'verified_successful' : 'failed',
-        failureReason: sent ? null : (observation.error || 'Message dispatch failed'),
+        failureReason: sent ? null : observation.error || 'Message dispatch failed',
         isRecoverable: !sent,
         evidence: observation.data || {},
         timestamp,
@@ -585,11 +618,13 @@ export class VerificationEngine {
       return {
         actionId: action.id,
         expectedOutcome: action.expectedOutcome,
-        observedOutcome: executed ? `Input action ${action.type} executed successfully` : (observation.error || 'Input execution failed'),
+        observedOutcome: executed
+          ? `Input action ${action.type} executed successfully`
+          : observation.error || 'Input execution failed',
         verified: executed,
         confidence: executed ? 0.95 : 0.0,
         status: executed ? 'verified_successful' : 'failed',
-        failureReason: executed ? null : (observation.error || 'Input execution failed'),
+        failureReason: executed ? null : observation.error || 'Input execution failed',
         isRecoverable: !executed,
         evidence: observation.data || {},
         timestamp,
@@ -601,9 +636,9 @@ export class VerificationEngine {
       const hasImage = Boolean(
         observation.success &&
         (observation.data?.imageBase64 ||
-         observation.data?.width ||
-         observation.data?.metrics ||
-         observation.data?.benchmarkSource)
+          observation.data?.width ||
+          observation.data?.metrics ||
+          observation.data?.benchmarkSource),
       );
       return {
         actionId: action.id,
@@ -644,13 +679,13 @@ export class VerificationEngine {
       expectedOutcome: action.expectedOutcome,
       observedOutcome: observation.success
         ? 'Action executed without independent verification evidence'
-        : (observation.error || 'Observation reported execution failure'),
+        : observation.error || 'Observation reported execution failure',
       verified: false,
       confidence: 0.5,
       status: observation.success ? 'executed_unverified' : 'failed',
       failureReason: observation.success
         ? 'No independent empirical verification procedure for this action type'
-        : (observation.error || 'Observation reported unverified state'),
+        : observation.error || 'Observation reported unverified state',
       isRecoverable: !observation.success,
       recommendedStrategy: observation.success ? undefined : 'retry_with_backoff',
       evidence: observation.data || {},

@@ -122,7 +122,9 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
   const renderMeter = (percent: number | null, color = 'var(--accent)') => {
     if (percent === null) {
       return (
-        <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+        <span
+          style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}
+        >
           N/A
         </span>
       );
@@ -265,7 +267,9 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
           <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)' }}>
             ASUS ROG Ally X
           </div>
-          <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+          <div
+            style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}
+          >
             Ryzen Z1 Extreme • Radeon 780M • 24GB Unified
           </div>
         </div>
@@ -273,12 +277,29 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
         {/* CPU Section */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 600 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '12px',
+                fontWeight: 600,
+              }}
+            >
               <Cpu size={14} color="var(--accent)" />
               <span>CPU (Z1 Extreme)</span>
             </div>
             {telemetry?.cpu.temperatureC !== null && telemetry?.cpu.temperatureC !== undefined && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '3px',
+                  fontSize: '11px',
+                  fontFamily: 'var(--font-mono)',
+                  color: 'var(--text-secondary)',
+                }}
+              >
                 <Thermometer size={12} />
                 <span>{telemetry.cpu.temperatureC}°C</span>
               </div>
@@ -286,7 +307,13 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
           </div>
           {renderMeter(telemetry?.cpu.usagePercent ?? null)}
           {telemetry?.cpu.frequencyMhz && (
-            <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+            <div
+              style={{
+                fontSize: '10px',
+                color: 'var(--text-muted)',
+                fontFamily: 'var(--font-mono)',
+              }}
+            >
               Clock: {(telemetry.cpu.frequencyMhz / 1000).toFixed(2)} GHz
             </div>
           )}
@@ -295,12 +322,28 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
         {/* Unified Memory Section */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 600 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '12px',
+                fontWeight: 600,
+              }}
+            >
               <Activity size={14} color="#a371f7" />
               <span>Unified Memory</span>
             </div>
-            <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
-              {telemetry ? `${(telemetry.memory.usedBytes / (1024 ** 3)).toFixed(1)} / ${(telemetry.memory.totalBytes / (1024 ** 3)).toFixed(1)} GB` : '--'}
+            <span
+              style={{
+                fontSize: '11px',
+                fontFamily: 'var(--font-mono)',
+                color: 'var(--text-secondary)',
+              }}
+            >
+              {telemetry
+                ? `${(telemetry.memory.usedBytes / 1024 ** 3).toFixed(1)} / ${(telemetry.memory.totalBytes / 1024 ** 3).toFixed(1)} GB`
+                : '--'}
             </span>
           </div>
           {renderMeter(telemetry?.memory.usagePercent ?? null, '#a371f7')}
@@ -309,12 +352,26 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
         {/* GPU Section */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 600 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '12px',
+                fontWeight: 600,
+              }}
+            >
               <Zap size={14} color="var(--warning)" />
               <span>Radeon 780M (Vulkan)</span>
             </div>
             {telemetry?.gpu.temperatureC !== null && telemetry?.gpu.temperatureC !== undefined && (
-              <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontFamily: 'var(--font-mono)',
+                  color: 'var(--text-secondary)',
+                }}
+              >
                 {telemetry.gpu.temperatureC}°C
               </span>
             )}
@@ -325,11 +382,25 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
         {/* Battery & Power */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 600 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '12px',
+                fontWeight: 600,
+              }}
+            >
               <Battery size={14} color="var(--success)" />
               <span>Battery</span>
             </div>
-            <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
+            <span
+              style={{
+                fontSize: '11px',
+                fontFamily: 'var(--font-mono)',
+                color: 'var(--text-secondary)',
+              }}
+            >
               {telemetry?.battery.isCharging ? 'AC Powered' : 'Discharging'}
             </span>
           </div>
@@ -339,12 +410,28 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
         {/* Storage */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 600 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '12px',
+                fontWeight: 600,
+              }}
+            >
               <HardDrive size={14} color="#79c0ff" />
               <span>Storage (NVMe)</span>
             </div>
-            <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
-              {telemetry ? `${(telemetry.storage.usedBytes / (1024 ** 3)).toFixed(0)} / ${(telemetry.storage.totalBytes / (1024 ** 3)).toFixed(0)} GB` : '--'}
+            <span
+              style={{
+                fontSize: '11px',
+                fontFamily: 'var(--font-mono)',
+                color: 'var(--text-secondary)',
+              }}
+            >
+              {telemetry
+                ? `${(telemetry.storage.usedBytes / 1024 ** 3).toFixed(0)} / ${(telemetry.storage.totalBytes / 1024 ** 3).toFixed(0)} GB`
+                : '--'}
             </span>
           </div>
           {renderMeter(telemetry?.storage.usagePercent ?? null, '#79c0ff')}
@@ -362,7 +449,14 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
             gap: '8px',
           }}
         >
-          <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+          <div
+            style={{
+              fontSize: '11px',
+              fontWeight: 600,
+              color: 'var(--text-secondary)',
+              textTransform: 'uppercase',
+            }}
+          >
             Cognitive Inference
           </div>
           <div style={{ fontSize: '11px', color: 'var(--text-primary)', wordBreak: 'break-all' }}>
@@ -370,8 +464,14 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
             <span style={{ color: 'var(--text-muted)' }}>Throughput:</span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--accent)' }}>
-              {speedTps > 0 ? `${speedTps.toFixed(1)} tok/s` : (telemetry?.inference.lastTps ? `${telemetry.inference.lastTps.toFixed(1)} tok/s` : 'Idle')}
+            <span
+              style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--accent)' }}
+            >
+              {speedTps > 0
+                ? `${speedTps.toFixed(1)} tok/s`
+                : telemetry?.inference.lastTps
+                  ? `${telemetry.inference.lastTps.toFixed(1)} tok/s`
+                  : 'Idle'}
             </span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
@@ -411,8 +511,14 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
           </div>
           {renderServicePill('Host Backend (39281)', telemetry?.services.backend ?? false)}
           {renderServicePill('SQLite / WAL Engine', telemetry?.services.database ?? false)}
-          {renderServicePill('llama-server Vulkan (8080)', telemetry?.services.llamaServer ?? false)}
-          {renderServicePill('EmbeddingGemma 300M (39282)', telemetry?.services.embeddingGemma ?? false)}
+          {renderServicePill(
+            'llama-server Vulkan (8080)',
+            telemetry?.services.llamaServer ?? false,
+          )}
+          {renderServicePill(
+            'EmbeddingGemma 300M (39282)',
+            telemetry?.services.embeddingGemma ?? false,
+          )}
           {renderServicePill('Whisper Small STT (39282)', telemetry?.services.whisper ?? false)}
           {renderServicePill('Kokoro 82M TTS (39282)', telemetry?.services.kokoro ?? false)}
         </div>

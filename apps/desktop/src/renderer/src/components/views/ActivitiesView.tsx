@@ -20,11 +20,7 @@ import {
   Eye,
   Gamepad2,
 } from 'lucide-react';
-import {
-  Activity,
-  ActivityOrigin,
-  ActivityStatus,
-} from '@arletex/contracts';
+import { Activity, ActivityOrigin, ActivityStatus } from '@arletex/contracts';
 
 const STATUS_FILTERS: { id: ActivityStatus | 'all'; label: string }[] = [
   { id: 'all', label: 'All Statuses' },
@@ -183,7 +179,7 @@ export const ActivitiesView: React.FC = () => {
   const handleToggleAutonomy = async () => {
     if (!api?.toggleAutonomy) return;
     try {
-      const next = !(autonomyStatus?.isEnabled);
+      const next = !autonomyStatus?.isEnabled;
       const res = await api.toggleAutonomy(next);
       if (res.success) {
         setActionNotice(`Autonomous Agency ${next ? 'enabled' : 'paused'}.`);
@@ -347,31 +343,76 @@ export const ActivitiesView: React.FC = () => {
     switch (status) {
       case 'in_progress':
         return (
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--accent)', fontSize: '11px', fontWeight: 600 }}>
+          <span
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              color: 'var(--accent)',
+              fontSize: '11px',
+              fontWeight: 600,
+            }}
+          >
             <Play size={12} fill="currentColor" /> In Progress
           </span>
         );
       case 'planned':
         return (
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-secondary)', fontSize: '11px', fontWeight: 600 }}>
+          <span
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              color: 'var(--text-secondary)',
+              fontSize: '11px',
+              fontWeight: 600,
+            }}
+          >
             <Clock size={12} /> Planned
           </span>
         );
       case 'paused':
         return (
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--warning)', fontSize: '11px', fontWeight: 600 }}>
+          <span
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              color: 'var(--warning)',
+              fontSize: '11px',
+              fontWeight: 600,
+            }}
+          >
             <Pause size={12} /> Paused
           </span>
         );
       case 'completed':
         return (
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--success)', fontSize: '11px', fontWeight: 600 }}>
+          <span
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              color: 'var(--success)',
+              fontSize: '11px',
+              fontWeight: 600,
+            }}
+          >
             <CheckCircle2 size={12} /> Completed
           </span>
         );
       case 'cancelled':
         return (
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--danger)', fontSize: '11px', fontWeight: 600 }}>
+          <span
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              color: 'var(--danger)',
+              fontSize: '11px',
+              fontWeight: 600,
+            }}
+          >
             <XCircle size={12} /> Cancelled
           </span>
         );
@@ -379,7 +420,15 @@ export const ActivitiesView: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minWidth: 0 }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        width: '100%',
+        minWidth: 0,
+      }}
+    >
       {/* Header */}
       <div
         style={{
@@ -393,12 +442,22 @@ export const ActivitiesView: React.FC = () => {
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <h1 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h1
+              style={{
+                fontSize: '18px',
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
               <Target size={20} color="var(--accent)" />
               <span>Pursuits & Activities</span>
             </h1>
             <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
-              Projects, independent research, hobbies, and learning goals. Distinguishes Arle's pursuits from user tasks.
+              Projects, independent research, hobbies, and learning goals. Distinguishes Arle's
+              pursuits from user tasks.
             </p>
           </div>
 
@@ -441,7 +500,15 @@ export const ActivitiesView: React.FC = () => {
             gap: '10px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '8px',
+            }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div
                 style={{
@@ -468,7 +535,9 @@ export const ActivitiesView: React.FC = () => {
                 Drive: {autonomyStatus?.dominantDrive || 'curiosity'}
               </span>
               {autonomyStatus?.currentActivity && (
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                <span
+                  style={{ fontSize: '12px', color: 'var(--text-secondary)', fontStyle: 'italic' }}
+                >
                   "{autonomyStatus.currentActivity}"
                 </span>
               )}
@@ -483,7 +552,9 @@ export const ActivitiesView: React.FC = () => {
                   padding: '4px 10px',
                   borderRadius: '4px',
                   border: '1px solid var(--border-subtle)',
-                  backgroundColor: autonomyStatus?.isEnabled ? 'var(--bg-card)' : 'var(--accent-muted)',
+                  backgroundColor: autonomyStatus?.isEnabled
+                    ? 'var(--bg-card)'
+                    : 'var(--accent-muted)',
                   color: autonomyStatus?.isEnabled ? 'var(--text-secondary)' : 'var(--accent)',
                   cursor: 'pointer',
                 }}
@@ -621,12 +692,26 @@ export const ActivitiesView: React.FC = () => {
           </div>
 
           {actionNotice && (
-            <div style={{ fontSize: '12px', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div
+              style={{
+                fontSize: '12px',
+                color: 'var(--accent)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
               <span>{actionNotice}</span>
               <button
                 type="button"
                 onClick={() => setActionNotice(null)}
-                style={{ fontSize: '11px', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
+                style={{
+                  fontSize: '11px',
+                  color: 'var(--text-muted)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
               >
                 Dismiss
               </button>
@@ -646,7 +731,8 @@ export const ActivitiesView: React.FC = () => {
                 borderRadius: '6px',
                 fontSize: '12px',
                 fontWeight: originFilter === 'all' ? 600 : 500,
-                backgroundColor: originFilter === 'all' ? 'var(--accent-muted)' : 'var(--bg-tertiary)',
+                backgroundColor:
+                  originFilter === 'all' ? 'var(--accent-muted)' : 'var(--bg-tertiary)',
                 color: originFilter === 'all' ? 'var(--accent)' : 'var(--text-secondary)',
                 border: '1px solid var(--border-subtle)',
               }}
@@ -664,8 +750,10 @@ export const ActivitiesView: React.FC = () => {
                 borderRadius: '6px',
                 fontSize: '12px',
                 fontWeight: originFilter === 'arle_initiated' ? 600 : 500,
-                backgroundColor: originFilter === 'arle_initiated' ? 'var(--accent-muted)' : 'var(--bg-tertiary)',
-                color: originFilter === 'arle_initiated' ? 'var(--accent)' : 'var(--text-secondary)',
+                backgroundColor:
+                  originFilter === 'arle_initiated' ? 'var(--accent-muted)' : 'var(--bg-tertiary)',
+                color:
+                  originFilter === 'arle_initiated' ? 'var(--accent)' : 'var(--text-secondary)',
                 border: '1px solid var(--border-subtle)',
               }}
             >
@@ -683,7 +771,8 @@ export const ActivitiesView: React.FC = () => {
                 borderRadius: '6px',
                 fontSize: '12px',
                 fontWeight: originFilter === 'user_assigned' ? 600 : 500,
-                backgroundColor: originFilter === 'user_assigned' ? 'var(--accent-muted)' : 'var(--bg-tertiary)',
+                backgroundColor:
+                  originFilter === 'user_assigned' ? 'var(--accent-muted)' : 'var(--bg-tertiary)',
                 color: originFilter === 'user_assigned' ? 'var(--accent)' : 'var(--text-secondary)',
                 border: '1px solid var(--border-subtle)',
               }}
@@ -730,7 +819,13 @@ export const ActivitiesView: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '16px' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+              gap: '16px',
+            }}
+          >
             {activities.map((act) => {
               const isArle = act.origin === 'arle_initiated';
               const progressPct = Math.round(act.progress * 100);
@@ -749,7 +844,13 @@ export const ActivitiesView: React.FC = () => {
                   }}
                 >
                   {/* Top Origin & Status */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       {isArle ? (
                         <span
@@ -805,21 +906,50 @@ export const ActivitiesView: React.FC = () => {
                       {act.title}
                     </h3>
                     {act.objective && (
-                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', lineHeight: 1.5 }}>
+                      <p
+                        style={{
+                          fontSize: '12px',
+                          color: 'var(--text-secondary)',
+                          marginTop: '4px',
+                          lineHeight: 1.5,
+                        }}
+                      >
                         {act.objective}
                       </p>
                     )}
                   </div>
 
                   {/* Progress Bar */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: 'auto' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                      marginTop: 'auto',
+                    }}
+                  >
+                    <div
+                      style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}
+                    >
                       <span style={{ color: 'var(--text-muted)' }}>Progress:</span>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      <span
+                        style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontWeight: 600,
+                          color: 'var(--text-primary)',
+                        }}
+                      >
                         {progressPct}%
                       </span>
                     </div>
-                    <div style={{ height: '6px', backgroundColor: 'var(--bg-tertiary)', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        height: '6px',
+                        backgroundColor: 'var(--bg-tertiary)',
+                        borderRadius: '3px',
+                        overflow: 'hidden',
+                      }}
+                    >
                       <div
                         style={{
                           width: `${progressPct}%`,
@@ -894,14 +1024,22 @@ export const ActivitiesView: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleUpdateProgress(act.id, act.progress - 0.1)}
-                        style={{ padding: '2px 6px', backgroundColor: 'var(--bg-tertiary)', borderRadius: '3px' }}
+                        style={{
+                          padding: '2px 6px',
+                          backgroundColor: 'var(--bg-tertiary)',
+                          borderRadius: '3px',
+                        }}
                       >
                         -10%
                       </button>
                       <button
                         type="button"
                         onClick={() => handleUpdateProgress(act.id, act.progress + 0.1)}
-                        style={{ padding: '2px 6px', backgroundColor: 'var(--bg-tertiary)', borderRadius: '3px' }}
+                        style={{
+                          padding: '2px 6px',
+                          backgroundColor: 'var(--bg-tertiary)',
+                          borderRadius: '3px',
+                        }}
                       >
                         +10%
                       </button>
@@ -942,15 +1080,31 @@ export const ActivitiesView: React.FC = () => {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>New Activity</h2>
-              <button type="button" onClick={() => setShowCreateModal(false)} style={{ color: 'var(--text-muted)' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                New Activity
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                style={{ color: 'var(--text-muted)' }}
+              >
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleCreateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <form
+              onSubmit={handleCreateSubmit}
+              style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
+            >
               <div>
-                <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+                <label
+                  style={{
+                    fontSize: '12px',
+                    color: 'var(--text-secondary)',
+                    display: 'block',
+                    marginBottom: '6px',
+                  }}
+                >
                   Activity Title
                 </label>
                 <input
@@ -972,7 +1126,14 @@ export const ActivitiesView: React.FC = () => {
               </div>
 
               <div>
-                <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+                <label
+                  style={{
+                    fontSize: '12px',
+                    color: 'var(--text-secondary)',
+                    display: 'block',
+                    marginBottom: '6px',
+                  }}
+                >
                   Objective & Description
                 </label>
                 <textarea
@@ -995,7 +1156,14 @@ export const ActivitiesView: React.FC = () => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
-                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+                  <label
+                    style={{
+                      fontSize: '12px',
+                      color: 'var(--text-secondary)',
+                      display: 'block',
+                      marginBottom: '6px',
+                    }}
+                  >
                     Origin
                   </label>
                   <select
@@ -1016,7 +1184,14 @@ export const ActivitiesView: React.FC = () => {
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+                  <label
+                    style={{
+                      fontSize: '12px',
+                      color: 'var(--text-secondary)',
+                      display: 'block',
+                      marginBottom: '6px',
+                    }}
+                  >
                     Initial Status
                   </label>
                   <select
@@ -1039,7 +1214,14 @@ export const ActivitiesView: React.FC = () => {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '10px',
+                  marginTop: '8px',
+                }}
+              >
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
@@ -1117,16 +1299,33 @@ export const ActivitiesView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setCapturedScreen(null)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                }}
               >
                 <X size={18} />
               </button>
             </div>
-            <div style={{ padding: '16px', overflowY: 'auto', display: 'flex', justifyContent: 'center' }}>
+            <div
+              style={{
+                padding: '16px',
+                overflowY: 'auto',
+                display: 'flex',
+                justifyContent: 'center',
+              }}
+            >
               <img
                 src={capturedScreen.imageBase64}
                 alt="Monitor Capture"
-                style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: '4px', border: '1px solid var(--border-subtle)' }}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '70vh',
+                  borderRadius: '4px',
+                  border: '1px solid var(--border-subtle)',
+                }}
               />
             </div>
           </div>
@@ -1174,10 +1373,24 @@ export const ActivitiesView: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <Eye size={20} color="var(--accent)" />
                 <div>
-                  <h2 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
+                  <h2
+                    style={{
+                      fontSize: '16px',
+                      fontWeight: 600,
+                      color: 'var(--text-primary)',
+                      margin: 0,
+                    }}
+                  >
                     Embodied Desktop Agency & Vision
                   </h2>
-                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0, marginTop: '2px' }}>
+                  <p
+                    style={{
+                      fontSize: '11px',
+                      color: 'var(--text-muted)',
+                      margin: 0,
+                      marginTop: '2px',
+                    }}
+                  >
                     Physical mouse & keyboard automation and VLM screen perception (No API tokens)
                   </p>
                 </div>
@@ -1185,14 +1398,27 @@ export const ActivitiesView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowAgencyModal(false)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                }}
               >
                 <X size={20} />
               </button>
             </div>
 
             {/* Modal Body */}
-            <div style={{ padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div
+              style={{
+                padding: '20px',
+                overflowY: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '20px',
+              }}
+            >
               {/* Section 1: Screen Perception & Vision */}
               <div
                 style={{
@@ -1205,10 +1431,14 @@ export const ActivitiesView: React.FC = () => {
                   gap: '12px',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Camera size={16} color="var(--accent)" />
-                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    <span
+                      style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}
+                    >
                       Monitor Vision & Screen Reading
                     </span>
                     <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
@@ -1236,12 +1466,21 @@ export const ActivitiesView: React.FC = () => {
                     }}
                   >
                     <Eye size={13} />
-                    <span>{isAnalyzingScreen ? 'Analyzing Screen...' : 'Read Screen with VLM'}</span>
+                    <span>
+                      {isAnalyzingScreen ? 'Analyzing Screen...' : 'Read Screen with VLM'}
+                    </span>
                   </button>
                 </div>
 
                 {screenReading && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '6px' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
+                      marginTop: '6px',
+                    }}
+                  >
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                       {screenReading.imageBase64 && (
                         <img
@@ -1257,8 +1496,12 @@ export const ActivitiesView: React.FC = () => {
                           }}
                         />
                       )}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
-                        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                      <div
+                        style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}
+                      >
+                        <span
+                          style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)' }}
+                        >
                           VLM Visual Perception:
                         </span>
                         <p
@@ -1274,7 +1517,9 @@ export const ActivitiesView: React.FC = () => {
                             overflowY: 'auto',
                           }}
                         >
-                          {screenReading.visualDescription || screenReading.reasoning || 'No details generated.'}
+                          {screenReading.visualDescription ||
+                            screenReading.reasoning ||
+                            'No details generated.'}
                         </p>
                       </div>
                     </div>
@@ -1283,14 +1528,26 @@ export const ActivitiesView: React.FC = () => {
 
                 {/* Visible Windows List */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
                     <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)' }}>
                       Active Desktop Windows ({windowsList.length}):
                     </span>
                     <button
                       type="button"
                       onClick={handleFetchWindows}
-                      style={{ fontSize: '11px', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}
+                      style={{
+                        fontSize: '11px',
+                        color: 'var(--accent)',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
                     >
                       Refresh
                     </button>
@@ -1306,8 +1563,14 @@ export const ActivitiesView: React.FC = () => {
                             fontSize: '11px',
                             padding: '4px 8px',
                             borderRadius: '4px',
-                            backgroundColor: targetWin === (win.title || win.client) ? 'var(--accent-muted)' : 'var(--bg-tertiary)',
-                            color: targetWin === (win.title || win.client) ? 'var(--accent)' : 'var(--text-secondary)',
+                            backgroundColor:
+                              targetWin === (win.title || win.client)
+                                ? 'var(--accent-muted)'
+                                : 'var(--bg-tertiary)',
+                            color:
+                              targetWin === (win.title || win.client)
+                                ? 'var(--accent)'
+                                : 'var(--text-secondary)',
                             border: '1px solid var(--border-subtle)',
                             cursor: 'pointer',
                           }}
@@ -1316,7 +1579,9 @@ export const ActivitiesView: React.FC = () => {
                         </button>
                       ))
                     ) : (
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Click Refresh to list open windows.</span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                        Click Refresh to list open windows.
+                      </span>
                     )}
                   </div>
                 </div>
@@ -1341,10 +1606,20 @@ export const ActivitiesView: React.FC = () => {
                   </span>
                 </div>
 
-                <form onSubmit={handleTypeToWindow} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <form
+                  onSubmit={handleTypeToWindow}
+                  style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
+                >
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '3px' }}>
+                      <label
+                        style={{
+                          fontSize: '11px',
+                          color: 'var(--text-muted)',
+                          display: 'block',
+                          marginBottom: '3px',
+                        }}
+                      >
                         Target Window (e.g. Telegram, Chrome, Steam):
                       </label>
                       <input
@@ -1366,7 +1641,14 @@ export const ActivitiesView: React.FC = () => {
                   </div>
 
                   <div>
-                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '3px' }}>
+                    <label
+                      style={{
+                        fontSize: '11px',
+                        color: 'var(--text-muted)',
+                        display: 'block',
+                        marginBottom: '3px',
+                      }}
+                    >
                       Type Text & Send (Sends Return Key):
                     </label>
                     <div style={{ display: 'flex', gap: '8px' }}>
@@ -1407,9 +1689,27 @@ export const ActivitiesView: React.FC = () => {
                 </form>
 
                 {/* Mouse Click Coordinate Tester */}
-                <form onSubmit={handleClickCoords} style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', borderTop: '1px solid var(--border-subtle)', paddingTop: '10px' }}>
+                <form
+                  onSubmit={handleClickCoords}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    gap: '10px',
+                    borderTop: '1px solid var(--border-subtle)',
+                    paddingTop: '10px',
+                  }}
+                >
                   <div style={{ width: '90px' }}>
-                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '3px' }}>X Coord:</label>
+                    <label
+                      style={{
+                        fontSize: '11px',
+                        color: 'var(--text-muted)',
+                        display: 'block',
+                        marginBottom: '3px',
+                      }}
+                    >
+                      X Coord:
+                    </label>
                     <input
                       type="number"
                       placeholder="e.g. 500"
@@ -1427,7 +1727,16 @@ export const ActivitiesView: React.FC = () => {
                     />
                   </div>
                   <div style={{ width: '90px' }}>
-                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '3px' }}>Y Coord:</label>
+                    <label
+                      style={{
+                        fontSize: '11px',
+                        color: 'var(--text-muted)',
+                        display: 'block',
+                        marginBottom: '3px',
+                      }}
+                    >
+                      Y Coord:
+                    </label>
                     <input
                       type="number"
                       placeholder="e.g. 400"

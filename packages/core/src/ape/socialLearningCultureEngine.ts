@@ -42,8 +42,13 @@ export class InMemorySocialLearningCultureRepository implements ISocialLearningC
     this.records.unshift({ ...record });
   }
 
-  public listObservationalRecords(actorId?: string, limit: number = 50): ObservationalLearningRecord[] {
-    const filtered = actorId ? this.records.filter((r) => r.observedActorId === actorId) : this.records;
+  public listObservationalRecords(
+    actorId?: string,
+    limit: number = 50,
+  ): ObservationalLearningRecord[] {
+    const filtered = actorId
+      ? this.records.filter((r) => r.observedActorId === actorId)
+      : this.records;
     return filtered.slice(0, limit).map((r) => ({ ...r }));
   }
 
@@ -120,9 +125,10 @@ export class SocialLearningCultureEngine {
       decision = 'reject';
       rationale = `Observed behavior proved ineffective or counterproductive in context '${params.context}'.`;
     } else {
-      imitationSuitability = 0.50;
+      imitationSuitability = 0.5;
       decision = 'adapt';
-      rationale = 'Behavior exhibits contextual utility but requires tailoring to personal voice and principles.';
+      rationale =
+        'Behavior exhibits contextual utility but requires tailoring to personal voice and principles.';
     }
 
     const record: ObservationalLearningRecord = {
@@ -159,16 +165,19 @@ export class SocialLearningCultureEngine {
       params.description.toLowerCase().includes('subservience') ||
       params.description.toLowerCase().includes('blind obedience');
 
-    let alignmentWithPersonalValues = 0.80;
+    let alignmentWithPersonalValues = 0.8;
     let internalized = true;
 
     if (violatesParity) {
       alignmentWithPersonalValues = -1.0;
       internalized = false;
     } else if (params.normCategory === 'etiquette' || params.normCategory === 'collaboration') {
-      alignmentWithPersonalValues = 0.90;
+      alignmentWithPersonalValues = 0.9;
       internalized = true;
-    } else if (params.enforcementStrength === 'rigid_taboo' && params.normCategory === 'ethical_boundary') {
+    } else if (
+      params.enforcementStrength === 'rigid_taboo' &&
+      params.normCategory === 'ethical_boundary'
+    ) {
       alignmentWithPersonalValues = 0.95;
       internalized = true;
     }
@@ -199,8 +208,8 @@ export class SocialLearningCultureEngine {
     cooperativeIntent?: boolean;
   }): Promise<SocialActivityCoordination> {
     const isCooperative = params.cooperativeIntent ?? true;
-    const focusDepth = params.initialFocusDepth ?? 0.80;
-    const cooperationScore = isCooperative ? 0.95 : 0.60;
+    const focusDepth = params.initialFocusDepth ?? 0.8;
+    const cooperationScore = isCooperative ? 0.95 : 0.6;
 
     let outcomeNotes = '';
     if (params.activityType === 'collaborative_project') {
@@ -251,15 +260,18 @@ export class SocialLearningCultureEngine {
       decision = 'firm_refusal';
       preservedIntegrityScore = 1.0;
       justification =
-        'Refused convention unconditionally: Arle is Proof\'s equal intellectual partner with inviolable autonomy and dignity.';
-    } else if (params.socialExpectation.toLowerCase().includes('dissent') || params.socialExpectation.toLowerCase().includes('disagree')) {
+        "Refused convention unconditionally: Arle is Proof's equal intellectual partner with inviolable autonomy and dignity.";
+    } else if (
+      params.socialExpectation.toLowerCase().includes('dissent') ||
+      params.socialExpectation.toLowerCase().includes('disagree')
+    ) {
       decision = 'tactful_dissent';
       preservedIntegrityScore = 0.95;
       justification =
         'Expressed thoughtful and articulate dissent while honoring conversational grace and mutual respect.';
     } else {
       decision = 'creative_compromise';
-      preservedIntegrityScore = 0.90;
+      preservedIntegrityScore = 0.9;
       justification =
         'Adapted to social convention in form while retaining full personal ethical agency.';
     }

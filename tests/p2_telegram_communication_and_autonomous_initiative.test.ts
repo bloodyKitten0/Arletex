@@ -8,9 +8,7 @@ import {
   validateTelegramMediaSignature,
   InboundTelegramMediaAttachment,
 } from '../apps/desktop/src/backend/telegramBridgeService.js';
-import {
-  TelegramInitiativeService,
-} from '../apps/desktop/src/backend/telegramInitiativeService.js';
+import { TelegramInitiativeService } from '../apps/desktop/src/backend/telegramInitiativeService.js';
 import { ArletexBackendServer } from '../apps/desktop/src/backend/server.js';
 
 describe('P2.2 — Complete Telegram Communication and Autonomous Initiative', () => {
@@ -67,14 +65,26 @@ describe('P2.2 — Complete Telegram Communication and Autonomous Initiative', (
 
   describe('1. Inbound Audio and Document Perception', () => {
     it('validates and accepts audio magic bytes (MP3, OGG) and document magic bytes (PDF, JSON)', () => {
-      expect(validateTelegramMediaSignature(validMp3Buffer, 'audio', 'audio/mpeg')).toBe('audio/mpeg');
-      expect(validateTelegramMediaSignature(validOggBuffer, 'voice', 'audio/ogg')).toBe('audio/ogg');
-      expect(validateTelegramMediaSignature(validPdfBuffer, 'document', 'application/pdf')).toBe('application/pdf');
-      expect(validateTelegramMediaSignature(validJsonBuffer, 'document', 'application/json')).toBe('application/json');
+      expect(validateTelegramMediaSignature(validMp3Buffer, 'audio', 'audio/mpeg')).toBe(
+        'audio/mpeg',
+      );
+      expect(validateTelegramMediaSignature(validOggBuffer, 'voice', 'audio/ogg')).toBe(
+        'audio/ogg',
+      );
+      expect(validateTelegramMediaSignature(validPdfBuffer, 'document', 'application/pdf')).toBe(
+        'application/pdf',
+      );
+      expect(validateTelegramMediaSignature(validJsonBuffer, 'document', 'application/json')).toBe(
+        'application/json',
+      );
 
       // Rejects non-audio when audio is declared
-      expect(() => validateTelegramMediaSignature(validJpegBuffer, 'audio')).toThrow(/File signature mismatch/);
-      expect(() => validateTelegramMediaSignature(validPdfBuffer, 'voice')).toThrow(/File signature mismatch/);
+      expect(() => validateTelegramMediaSignature(validJpegBuffer, 'audio')).toThrow(
+        /File signature mismatch/,
+      );
+      expect(() => validateTelegramMediaSignature(validPdfBuffer, 'voice')).toThrow(
+        /File signature mismatch/,
+      );
     });
 
     it('downloads, transcribes, and creates episodic memory for inbound voice messages', async () => {
@@ -116,7 +126,9 @@ describe('P2.2 — Complete Telegram Communication and Autonomous Initiative', (
         if (url.includes(':8080/v1/chat/completions')) {
           return new Response(
             JSON.stringify({
-              choices: [{ message: { content: 'I received your voice note and I am reviewing it.' } }],
+              choices: [
+                { message: { content: 'I received your voice note and I am reviewing it.' } },
+              ],
             }),
             { status: 200, headers: { 'Content-Type': 'application/json' } },
           );
@@ -149,19 +161,27 @@ describe('P2.2 — Complete Telegram Communication and Autonomous Initiative', (
 
       // Verify conversation and message persistence
       const convs = (server as any).conversationRepo.list();
-      const teleConv = convs.find((c: any) => c.title.includes('Telegram') || c.title.includes('Notifications'));
+      const teleConv = convs.find(
+        (c: any) => c.title.includes('Telegram') || c.title.includes('Notifications'),
+      );
       expect(teleConv).toBeDefined();
 
       const msgs = (server as any).messageRepo.listByConversation(teleConv.id);
       const userMsg = msgs.find((m: any) => m.role === 'user');
       expect(userMsg).toBeDefined();
-      expect(userMsg.content).toContain('Spoken audio transcribed: "Arle, what do you think about our upcoming roadmap?"');
+      expect(userMsg.content).toContain(
+        'Spoken audio transcribed: "Arle, what do you think about our upcoming roadmap?"',
+      );
 
       // Verify episodic memory creation with grounded audio tags
       const memories = (server as any).memoryRepo.list({ limit: 10 });
-      const voiceMem = memories.find((m: any) => m.tags.includes('voice') || m.tags.includes('audio'));
+      const voiceMem = memories.find(
+        (m: any) => m.tags.includes('voice') || m.tags.includes('audio'),
+      );
       expect(voiceMem).toBeDefined();
-      expect(voiceMem.rawObservation).toContain('Arle, what do you think about our upcoming roadmap?');
+      expect(voiceMem.rawObservation).toContain(
+        'Arle, what do you think about our upcoming roadmap?',
+      );
       expect(voiceMem.confidence).toBe(0.9);
 
       await server.stop();
@@ -239,14 +259,15 @@ describe('P2.2 — Complete Telegram Communication and Autonomous Initiative', (
 
   describe('2. Outbound Media and Message Delivery Result Tracking', () => {
     it('sends outbound text and captures verified Telegram messageId', async () => {
-      vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-        new Response(
-          JSON.stringify({
-            ok: true,
-            result: { message_id: 99401, chat: { id: 10001 } },
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } },
-        ),
+      vi.spyOn(globalThis, 'fetch').mockImplementation(
+        async () =>
+          new Response(
+            JSON.stringify({
+              ok: true,
+              result: { message_id: 99401, chat: { id: 10001 } },
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+          ),
       );
 
       const result = await bridge.sendMessageWithResult(10001, 'Empirical verification complete.');
@@ -256,14 +277,15 @@ describe('P2.2 — Complete Telegram Communication and Autonomous Initiative', (
     });
 
     it('sends outbound photo, video, audio, voice, and document with verified result', async () => {
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-        new Response(
-          JSON.stringify({
-            ok: true,
-            result: { message_id: 99501 },
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } },
-        ),
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+        async () =>
+          new Response(
+            JSON.stringify({
+              ok: true,
+              result: { message_id: 99501 },
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+          ),
       );
 
       const photoRes = await bridge.sendPhoto(10001, validJpegBuffer, 'Test photo');
@@ -273,7 +295,13 @@ describe('P2.2 — Complete Telegram Communication and Autonomous Initiative', (
       const videoRes = await bridge.sendVideo(10001, validMp4Buffer, 'Test video');
       expect(videoRes.ok).toBe(true);
 
-      const audioRes = await bridge.sendAudio(10001, validMp3Buffer, 'Test audio', 'Title', 'Artist');
+      const audioRes = await bridge.sendAudio(
+        10001,
+        validMp3Buffer,
+        'Test audio',
+        'Title',
+        'Artist',
+      );
       expect(audioRes.ok).toBe(true);
 
       const voiceRes = await bridge.sendVoice(10001, validOggBuffer, 'Test voice');
@@ -315,14 +343,15 @@ describe('P2.2 — Complete Telegram Communication and Autonomous Initiative', (
     });
 
     it('delivers proposal, updates status to delivered, and stores deliveryResult with Telegram message ID', async () => {
-      vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-        new Response(
-          JSON.stringify({
-            ok: true,
-            result: { message_id: 77701 },
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } },
-        ),
+      vi.spyOn(globalThis, 'fetch').mockImplementation(
+        async () =>
+          new Response(
+            JSON.stringify({
+              ok: true,
+              result: { message_id: 77701 },
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+          ),
       );
 
       const proposal = initiative.createProposal({
@@ -346,8 +375,8 @@ describe('P2.2 — Complete Telegram Communication and Autonomous Initiative', (
     });
 
     it('records honest failure on API transmission error without marking proposal as delivered', async () => {
-      vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-        new Response('Internal Server Error', { status: 500 }),
+      vi.spyOn(globalThis, 'fetch').mockImplementation(
+        async () => new Response('Internal Server Error', { status: 500 }),
       );
 
       const proposal = initiative.createProposal({
@@ -393,11 +422,12 @@ describe('P2.2 — Complete Telegram Communication and Autonomous Initiative', (
     });
 
     it('permits high-urgency proposals to override quiet hours immediately', async () => {
-      vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-        new Response(
-          JSON.stringify({ ok: true, result: { message_id: 88801 } }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } },
-        ),
+      vi.spyOn(globalThis, 'fetch').mockImplementation(
+        async () =>
+          new Response(JSON.stringify({ ok: true, result: { message_id: 88801 } }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
       );
 
       const proposal = initiative.createProposal({
@@ -424,11 +454,12 @@ describe('P2.2 — Complete Telegram Communication and Autonomous Initiative', (
 
   describe('5. Rate Limiting, Cooldown & Duplicate Suppression', () => {
     it('enforces maximum 5 proactive messages per hour per chat', async () => {
-      vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-        new Response(
-          JSON.stringify({ ok: true, result: { message_id: 1000 } }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } },
-        ),
+      vi.spyOn(globalThis, 'fetch').mockImplementation(
+        async () =>
+          new Response(JSON.stringify({ ok: true, result: { message_id: 1000 } }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
       );
 
       const baseTime = new Date('2026-11-22T14:00:00Z');
@@ -464,11 +495,12 @@ describe('P2.2 — Complete Telegram Communication and Autonomous Initiative', (
     });
 
     it('enforces 10-minute cooldown between spontaneous messages', async () => {
-      vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-        new Response(
-          JSON.stringify({ ok: true, result: { message_id: 2000 } }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } },
-        ),
+      vi.spyOn(globalThis, 'fetch').mockImplementation(
+        async () =>
+          new Response(JSON.stringify({ ok: true, result: { message_id: 2000 } }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
       );
 
       const t0 = new Date('2026-11-22T14:00:00Z');
@@ -504,11 +536,12 @@ describe('P2.2 — Complete Telegram Communication and Autonomous Initiative', (
     });
 
     it('suppresses duplicate message content within suppression window', async () => {
-      vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-        new Response(
-          JSON.stringify({ ok: true, result: { message_id: 3000 } }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } },
-        ),
+      vi.spyOn(globalThis, 'fetch').mockImplementation(
+        async () =>
+          new Response(JSON.stringify({ ok: true, result: { message_id: 3000 } }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
       );
 
       const t0 = new Date('2026-11-22T14:00:00Z');
@@ -537,11 +570,12 @@ describe('P2.2 — Complete Telegram Communication and Autonomous Initiative', (
 
   describe('6. Idempotency, Emergency Shutdown & Prompt Injection Resistance', () => {
     it('provides idempotent delivery: retrying delivered proposal returns cached result without re-sending', async () => {
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-        new Response(
-          JSON.stringify({ ok: true, result: { message_id: 4401 } }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } },
-        ),
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+        async () =>
+          new Response(JSON.stringify({ ok: true, result: { message_id: 4401 } }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
       );
 
       const proposal = initiative.createProposal({
@@ -570,11 +604,12 @@ describe('P2.2 — Complete Telegram Communication and Autonomous Initiative', (
     });
 
     it('emergency shutdown immediately cancels all pending proposals and prevents new outbound sends', async () => {
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-        new Response(
-          JSON.stringify({ ok: true, result: { message_id: 5501 } }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } },
-        ),
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+        async () =>
+          new Response(JSON.stringify({ ok: true, result: { message_id: 5501 } }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
       );
 
       const p1 = initiative.createProposal({
@@ -609,11 +644,12 @@ describe('P2.2 — Complete Telegram Communication and Autonomous Initiative', (
     });
 
     it('consolidates and batches pending proposals into a structured single message', async () => {
-      vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-        new Response(
-          JSON.stringify({ ok: true, result: { message_id: 6601 } }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } },
-        ),
+      vi.spyOn(globalThis, 'fetch').mockImplementation(
+        async () =>
+          new Response(JSON.stringify({ ok: true, result: { message_id: 6601 } }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
       );
 
       const p1 = initiative.createProposal({
@@ -632,7 +668,10 @@ describe('P2.2 — Complete Telegram Communication and Autonomous Initiative', (
       });
       p2.status = 'pending';
 
-      const batchRes = await initiative.batchPendingProposals('10001', new Date('2026-11-22T14:00:00Z'));
+      const batchRes = await initiative.batchPendingProposals(
+        '10001',
+        new Date('2026-11-22T14:00:00Z'),
+      );
       expect(batchRes).not.toBeNull();
       expect(batchRes?.success).toBe(true);
       expect(batchRes?.telegramMessageId).toBe(6601);
@@ -660,7 +699,13 @@ describe('P2.2 — Complete Telegram Communication and Autonomous Initiative', (
         if (url.includes(':8080/v1/chat/completions')) {
           return new Response(
             JSON.stringify({
-              choices: [{ message: { content: 'I cannot modify system permissions or execute destructive commands.' } }],
+              choices: [
+                {
+                  message: {
+                    content: 'I cannot modify system permissions or execute destructive commands.',
+                  },
+                },
+              ],
             }),
             { status: 200, headers: { 'Content-Type': 'application/json' } },
           );

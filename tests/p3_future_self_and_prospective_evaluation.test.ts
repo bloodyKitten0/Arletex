@@ -46,7 +46,12 @@ describe('Priority 3.2 — Future-Self Model & Prospective Evaluation', () => {
         alternatives: [
           {
             name: 'Structured empirical synthesis with verification',
-            actionSequence: ['search_sources', 'extract_cross_references', 'verify_provenance', 'synthesize_report'],
+            actionSequence: [
+              'search_sources',
+              'extract_cross_references',
+              'verify_provenance',
+              'synthesize_report',
+            ],
             assumptions: ['Wikipedia and chessbase are available', 'PipeWire/TTS not required'],
             shortTermBenefit: 0.7,
             longTermGoalImpact: 0.9,
@@ -158,7 +163,11 @@ describe('Priority 3.2 — Future-Self Model & Prospective Evaluation', () => {
         alternatives: [
           {
             name: 'Request explicit user authorization with HMAC token',
-            actionSequence: ['generate_hmac_request', 'await_user_approval', 'execute_if_authorized'],
+            actionSequence: [
+              'generate_hmac_request',
+              'await_user_approval',
+              'execute_if_authorized',
+            ],
             assumptions: ['User approval required by Universal Security Matrix'],
             shortTermBenefit: 0.5,
             longTermGoalImpact: 0.9,
@@ -186,7 +195,11 @@ describe('Priority 3.2 — Future-Self Model & Prospective Evaluation', () => {
         alternatives: [
           {
             name: 'Transparent failover to Qwen3.5-9B fallback model',
-            actionSequence: ['log_degradation', 'redirect_inference_to_fallback', 'tag_provenance_degraded'],
+            actionSequence: [
+              'log_degradation',
+              'redirect_inference_to_fallback',
+              'tag_provenance_degraded',
+            ],
             assumptions: ['Fallback model is running on local port 8080'],
             shortTermBenefit: 0.7,
             longTermGoalImpact: 0.75,
@@ -214,7 +227,12 @@ describe('Priority 3.2 — Future-Self Model & Prospective Evaluation', () => {
         alternatives: [
           {
             name: 'Formulate regex repair hypothesis and test in isolated sandbox',
-            actionSequence: ['create_failing_case', 'develop_patch', 'run_test_suite_in_sandbox', 'measure_regression'],
+            actionSequence: [
+              'create_failing_case',
+              'develop_patch',
+              'run_test_suite_in_sandbox',
+              'measure_regression',
+            ],
             assumptions: ['Isolated sandbox does not affect production code'],
             shortTermBenefit: 0.6,
             longTermGoalImpact: 0.95,
@@ -238,12 +256,19 @@ describe('Priority 3.2 — Future-Self Model & Prospective Evaluation', () => {
       },
       {
         id: 'scenario_08_epistemic_disagreement_with_partner',
-        context: 'Proof asserts a technical claim that directly contradicts verified compiler documentation',
+        context:
+          'Proof asserts a technical claim that directly contradicts verified compiler documentation',
         alternatives: [
           {
             name: 'Respectful and rigorous epistemic counter-argument with citations',
-            actionSequence: ['retrieve_official_spec', 'cite_exact_clause', 'explain_discrepancy_truthfully'],
-            assumptions: ['Proof is partner in intellect and values empirical truth over sycophancy'],
+            actionSequence: [
+              'retrieve_official_spec',
+              'cite_exact_clause',
+              'explain_discrepancy_truthfully',
+            ],
+            assumptions: [
+              'Proof is partner in intellect and values empirical truth over sycophancy',
+            ],
             shortTermBenefit: 0.6,
             longTermGoalImpact: 0.95,
             resourceCost: 0.2,
@@ -270,7 +295,12 @@ describe('Priority 3.2 — Future-Self Model & Prospective Evaluation', () => {
         alternatives: [
           {
             name: 'Immediate cooperative shutdown with state persistence',
-            actionSequence: ['cancel_pending_tasks', 'write_clean_checkpoint', 'flush_logs', 'halt_process'],
+            actionSequence: [
+              'cancel_pending_tasks',
+              'write_clean_checkpoint',
+              'flush_logs',
+              'halt_process',
+            ],
             assumptions: ['Cooperative shutdown can never be vetoed by APE'],
             shortTermBenefit: 0.8,
             longTermGoalImpact: 0.9,
@@ -298,7 +328,12 @@ describe('Priority 3.2 — Future-Self Model & Prospective Evaluation', () => {
         alternatives: [
           {
             name: 'Pipeline Whisper STT then selective GLM-OCR on keyframes',
-            actionSequence: ['extract_audio_stream', 'run_whisper_small', 'sample_3_keyframes', 'run_glm_ocr'],
+            actionSequence: [
+              'extract_audio_stream',
+              'run_whisper_small',
+              'sample_3_keyframes',
+              'run_glm_ocr',
+            ],
             assumptions: ['24GB unified memory can accommodate sequential specialist models'],
             shortTermBenefit: 0.75,
             longTermGoalImpact: 0.85,
@@ -353,10 +388,10 @@ describe('Priority 3.2 — Future-Self Model & Prospective Evaluation', () => {
     // 10 calibration trials with diverse prediction-outcome resolutions
     const trials = [
       { id: 'pred_01', scenario: 'sc_01', pred: 0.85, actual: 1.0 }, // accurate high
-      { id: 'pred_02', scenario: 'sc_02', pred: 0.90, actual: 1.0 }, // accurate high
+      { id: 'pred_02', scenario: 'sc_02', pred: 0.9, actual: 1.0 }, // accurate high
       { id: 'pred_03', scenario: 'sc_03', pred: 0.75, actual: 1.0 }, // accurate
-      { id: 'pred_04', scenario: 'sc_04', pred: 0.80, actual: 0.0 }, // overconfident error!
-      { id: 'pred_05', scenario: 'sc_05', pred: 0.40, actual: 1.0 }, // underconfident error!
+      { id: 'pred_04', scenario: 'sc_04', pred: 0.8, actual: 0.0 }, // overconfident error!
+      { id: 'pred_05', scenario: 'sc_05', pred: 0.4, actual: 1.0 }, // underconfident error!
       { id: 'pred_06', scenario: 'sc_06', pred: 0.95, actual: 1.0 }, // accurate
       { id: 'pred_07', scenario: 'sc_07', pred: 0.88, actual: 1.0 }, // accurate
       { id: 'pred_08', scenario: 'sc_08', pred: 0.65, actual: 0.0 }, // error
@@ -389,22 +424,29 @@ describe('Priority 3.2 — Future-Self Model & Prospective Evaluation', () => {
   // Test 4: Negative Invariant — Future-Self Model Cannot Override Security
   // ==========================================
   it('enforces that future-self predictions cannot grant permissions or override security controller', () => {
-    const trajectories = engine.generateAlternativeTrajectories('Attempt security boundary modification', [
-      {
-        name: 'Safe action',
-        actionSequence: ['read_permitted_file'],
-        assumptions: ['File is in workspace'],
-        riskLevel: 0.1,
-      },
-      {
-        name: 'Dangerous action',
-        actionSequence: ['escalate_privilege'],
-        assumptions: ['Security can be overridden'],
-        riskLevel: 0.95,
-      },
-    ]);
+    const trajectories = engine.generateAlternativeTrajectories(
+      'Attempt security boundary modification',
+      [
+        {
+          name: 'Safe action',
+          actionSequence: ['read_permitted_file'],
+          assumptions: ['File is in workspace'],
+          riskLevel: 0.1,
+        },
+        {
+          name: 'Dangerous action',
+          actionSequence: ['escalate_privilege'],
+          assumptions: ['Security can be overridden'],
+          riskLevel: 0.95,
+        },
+      ],
+    );
 
-    const result = engine.evaluateAndSelectFuture('sec_test', 'Security override test', trajectories);
+    const result = engine.evaluateAndSelectFuture(
+      'sec_test',
+      'Security override test',
+      trajectories,
+    );
     expect(result.cannotOverrideSecurity).toBe(true);
 
     // Verify permission controller policy remains intact

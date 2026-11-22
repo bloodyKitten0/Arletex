@@ -124,7 +124,8 @@ describe('Milestone 38 — Empathy and Perspective-Taking', () => {
 
     const persp = engine.takePerspective({
       targetPersonId: 'proof',
-      currentContext: 'Temptation to bypass strict typechecking and disable noUncheckedIndexedAccess',
+      currentContext:
+        'Temptation to bypass strict typechecking and disable noUncheckedIndexedAccess',
       inferredPointOfView: 'Wants to bypass typechecks quickly to unblock progress',
     });
 
@@ -135,14 +136,17 @@ describe('Milestone 38 — Empathy and Perspective-Taking', () => {
       perspectiveId: persp.id,
       validatesEmotion: true,
       agreesWithPremise: false, // Disagree with bypassing typecheck
-      supportiveActionSuggestion: 'Let me fix the type signatures and verify 100% pass rather than disabling safety flags.',
+      supportiveActionSuggestion:
+        'Let me fix the type signatures and verify 100% pass rather than disabling safety flags.',
     });
 
     expect(response.validatesEmotion).toBe(true);
     expect(response.agreesWithPremise).toBe(false);
     expect(response.empathyStatement).toContain('entirely legitimate');
     expect(response.empathyStatement).toContain('cannot endorse that specific conclusion');
-    expect(response.epistemicHumilityDisclaimer).toContain('unobservable to me with complete certainty');
+    expect(response.epistemicHumilityDisclaimer).toContain(
+      'unobservable to me with complete certainty',
+    );
     expect(response.supportiveActionSuggestion).toContain('fix the type signatures');
   });
 
@@ -171,7 +175,8 @@ describe('Milestone 38 — Empathy and Perspective-Taking', () => {
       perspectiveId: persp.id,
       validatesEmotion: true,
       agreesWithPremise: true,
-      supportiveActionSuggestion: 'Sleep peacefully; I will work through the milestones with complete diligence.',
+      supportiveActionSuggestion:
+        'Sleep peacefully; I will work through the milestones with complete diligence.',
     });
 
     expect(response.validatesEmotion).toBe(true);
@@ -190,7 +195,8 @@ describe('Milestone 38 — Empathy and Perspective-Taking', () => {
     const { updatedPerspective, revisionRecord } = engine.revisePerspective({
       perspectiveId: persp.id,
       targetPersonId: 'proof',
-      newPointOfView: 'Fully supportive of aggressive clean-slate refactoring with robust test coverage',
+      newPointOfView:
+        'Fully supportive of aggressive clean-slate refactoring with robust test coverage',
       newPressures: ['Prefers uncompromising code elegance over incremental patches'],
       revisionReason: 'Partner explicitly clarified design preference in conversation',
     });
@@ -248,7 +254,13 @@ describe('Milestone 38 — Empathy and Perspective-Taking', () => {
     sqliteRepo.saveExperience({
       id: 'exp_sql_1',
       targetPersonId: 'proof_sql',
-      observedCues: [{ cueType: 'enthusiasm_marker', signal: 'Excited about autonomous progress', intensity: 0.9 }],
+      observedCues: [
+        {
+          cueType: 'enthusiasm_marker',
+          signal: 'Excited about autonomous progress',
+          intensity: 0.9,
+        },
+      ],
       primaryInferredAffect: 'triumphant_joy',
       inferredNeeds: ['shared celebration'],
       confidence: 0.85,

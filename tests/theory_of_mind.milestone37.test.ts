@@ -7,11 +7,7 @@ import {
   TheoryOfMindEngine,
   InMemoryTheoryOfMindRepository,
 } from '@arletex/core';
-import {
-  DatabaseService,
-  MigrationRunner,
-  SqliteTheoryOfMindRepository,
-} from '@arletex/database';
+import { DatabaseService, MigrationRunner, SqliteTheoryOfMindRepository } from '@arletex/database';
 import { ArletexBackendServer } from '../apps/desktop/src/backend/server.js';
 
 describe('Milestone 37 — Theory of Mind', () => {
@@ -134,9 +130,13 @@ describe('Milestone 37 — Theory of Mind', () => {
   it('should infer intentions while strictly avoiding treating inferences as established facts', () => {
     const intention = engine.inferIntention({
       agentId: 'proof',
-      observedBehavior: 'Repeatedly clicking build terminal and rapidly refreshing TypeScript error pane',
+      observedBehavior:
+        'Repeatedly clicking build terminal and rapidly refreshing TypeScript error pane',
       candidateIntention: 'Fixing compilation regression and verifying workspace typecheck',
-      contextSignals: ['Branch is in Milestone 37 execution', 'Recent commit introduced interface update'],
+      contextSignals: [
+        'Branch is in Milestone 37 execution',
+        'Recent commit introduced interface update',
+      ],
       rawConfidence: 0.99, // Attempted overconfidence
     });
 
@@ -277,7 +277,7 @@ describe('Milestone 37 — Theory of Mind', () => {
       agentId: 'proof_sql',
       context: 'Waking up tomorrow morning',
       predictedAction: 'Inspect committed milestones and smile at completed roadmap progress',
-      predictedLikelihood: 0.90,
+      predictedLikelihood: 0.9,
       beliefBasis: 'Partner trusts Arle and left /goal directive running',
       expectedOutcome: 'Joy and deepened partnership trust',
       createdAt: now,

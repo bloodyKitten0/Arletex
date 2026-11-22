@@ -44,20 +44,28 @@ export class DevelopmentEngine {
       ''
     ).toLowerCase();
 
-    const matchedInterest = state.interests.find((i) =>
-      topicCandidate.includes(i.topic.toLowerCase()) || i.topic.toLowerCase().includes(topicCandidate)
+    const matchedInterest = state.interests.find(
+      (i) =>
+        topicCandidate.includes(i.topic.toLowerCase()) ||
+        i.topic.toLowerCase().includes(topicCandidate),
     );
 
     if (matchedInterest) {
       if (matchedInterest.level === 'deep' || matchedInterest.level === 'mastery') {
         dims.goalRelevance = Math.min(1.0, Number((dims.goalRelevance + 0.25).toFixed(3)));
-        dims.personalSignificance = Math.min(1.0, Number((dims.personalSignificance + 0.25).toFixed(3)));
+        dims.personalSignificance = Math.min(
+          1.0,
+          Number((dims.personalSignificance + 0.25).toFixed(3)),
+        );
         dims.goalCongruence = Math.min(1.0, Number((dims.goalCongruence + 0.15).toFixed(3)));
         if (!primaryInterpretation.includes('interest')) {
           primaryInterpretation = `${primaryInterpretation} (Directly engages established ${matchedInterest.level} interest in "${matchedInterest.topic}").`;
         }
       } else if (matchedInterest.level === 'emerging') {
-        dims.personalSignificance = Math.min(1.0, Number((dims.personalSignificance + 0.15).toFixed(3)));
+        dims.personalSignificance = Math.min(
+          1.0,
+          Number((dims.personalSignificance + 0.15).toFixed(3)),
+        );
       }
     }
 
@@ -110,7 +118,14 @@ export class DevelopmentEngine {
    */
   public registerInterestExposure(params: {
     topic: string;
-    origin?: 'spontaneous' | 'conversation' | 'reading' | 'environmental' | 'project' | 'unresolved_question' | 'external_recommendation';
+    origin?:
+      | 'spontaneous'
+      | 'conversation'
+      | 'reading'
+      | 'environmental'
+      | 'project'
+      | 'unresolved_question'
+      | 'external_recommendation';
     initialTrigger?: string;
     relevance?: number;
     novelty?: number;
@@ -118,7 +133,9 @@ export class DevelopmentEngine {
   }): ApeInterest {
     const state = this.getState();
     const now = new Date().toISOString();
-    let interest = state.interests.find((i) => i.topic.toLowerCase() === params.topic.toLowerCase());
+    let interest = state.interests.find(
+      (i) => i.topic.toLowerCase() === params.topic.toLowerCase(),
+    );
 
     if (!interest) {
       interest = {
@@ -140,7 +157,9 @@ export class DevelopmentEngine {
         lastEngagedAt: now,
       };
       state.interests.push(interest);
-      this.logger.info(`Interest registered at 'exposure' stage: "${params.topic}" (Origin: ${interest.origin})`);
+      this.logger.info(
+        `Interest registered at 'exposure' stage: "${params.topic}" (Origin: ${interest.origin})`,
+      );
     } else {
       interest.novelty = Math.min(1.0, Number(((interest.novelty ?? 0.7) + 0.1).toFixed(2)));
       interest.relevance = Math.min(1.0, Number(((interest.relevance ?? 0.5) + 0.1).toFixed(2)));
@@ -165,7 +184,9 @@ export class DevelopmentEngine {
   }): ApeInterest {
     const state = this.getState();
     const now = new Date().toISOString();
-    let interest = state.interests.find((i) => i.topic.toLowerCase() === params.topic.toLowerCase());
+    let interest = state.interests.find(
+      (i) => i.topic.toLowerCase() === params.topic.toLowerCase(),
+    );
 
     if (!interest) {
       this.registerInterestExposure({
@@ -178,7 +199,11 @@ export class DevelopmentEngine {
     const voluntary = params.voluntary ?? true;
     const satisfaction = Math.max(
       0.0,
-      Math.min(1.0, params.satisfaction ?? (params.outcome === 'rewarding' || params.outcome === 'success' ? 0.8 : 0.4)),
+      Math.min(
+        1.0,
+        params.satisfaction ??
+          (params.outcome === 'rewarding' || params.outcome === 'success' ? 0.8 : 0.4),
+      ),
     );
 
     interest.engagementHistory = interest.engagementHistory || [];
@@ -191,21 +216,31 @@ export class DevelopmentEngine {
       notes: params.notes,
     });
     if (interest.engagementHistory.length > 50) {
-      interest.engagementHistory = interest.engagementHistory.slice(interest.engagementHistory.length - 50);
+      interest.engagementHistory = interest.engagementHistory.slice(
+        interest.engagementHistory.length - 50,
+      );
     }
     interest.lastEngagedAt = now;
 
     // Epistemic integrity: involuntary exposure does NOT inflate genuine intrinsic interest
     if (!voluntary) {
-      this.logger.info(`Involuntary engagement for "${interest.topic}" recorded without intrinsic interest inflation.`);
-      interest.knowledgeLevel = Math.min(1.0, Number(((interest.knowledgeLevel ?? 0.1) + 0.02).toFixed(3)));
+      this.logger.info(
+        `Involuntary engagement for "${interest.topic}" recorded without intrinsic interest inflation.`,
+      );
+      interest.knowledgeLevel = Math.min(
+        1.0,
+        Number(((interest.knowledgeLevel ?? 0.1) + 0.02).toFixed(3)),
+      );
       this.saveState(state);
       return interest;
     }
 
     // Voluntary engagement: evaluate outcome and satisfaction
     if (params.outcome === 'rewarding' || params.outcome === 'success') {
-      interest.knowledgeLevel = Math.min(1.0, Number(((interest.knowledgeLevel ?? 0.1) + 0.05).toFixed(3)));
+      interest.knowledgeLevel = Math.min(
+        1.0,
+        Number(((interest.knowledgeLevel ?? 0.1) + 0.05).toFixed(3)),
+      );
       interest.confidence = Math.min(1.0, Number(((interest.confidence ?? 0.5) + 0.04).toFixed(3)));
       interest.currentMotivationalStrength = Math.min(
         1.0,
@@ -329,7 +364,10 @@ export class DevelopmentEngine {
   /**
    * Manages interest lifecycle: 'emerging' -> 'deep' -> 'mastery' -> 'fading' -> 'dormant'.
    */
-  public developInterest(topic: string, action: 'explore' | 'master' | 'fade' | 'revive' = 'explore'): void {
+  public developInterest(
+    topic: string,
+    action: 'explore' | 'master' | 'fade' | 'revive' = 'explore',
+  ): void {
     const state = this.getState();
     const now = new Date().toISOString();
     let interest = state.interests.find((i) => i.topic.toLowerCase() === topic.toLowerCase());
@@ -369,7 +407,8 @@ export class DevelopmentEngine {
           interest.developmentStage = 'developing';
         }
       } else if (action === 'fade') {
-        interest.level = interest.level === 'mastery' ? 'deep' : interest.level === 'deep' ? 'fading' : 'dormant';
+        interest.level =
+          interest.level === 'mastery' ? 'deep' : interest.level === 'deep' ? 'fading' : 'dormant';
         interest.developmentStage = interest.level === 'fading' ? 'fading' : 'dormant';
       } else if (action === 'revive') {
         interest.level = 'emerging';
@@ -393,7 +432,9 @@ export class DevelopmentEngine {
     const topic = params.skillOrTopic;
     if (params.success) {
       this.developInterest(topic, 'explore');
-      this.logger.info(`Development: Successful practice recorded for "${topic}": ${params.evidence}`);
+      this.logger.info(
+        `Development: Successful practice recorded for "${topic}": ${params.evidence}`,
+      );
     } else {
       this.logger.warn(`Development: Practice setback recorded for "${topic}": ${params.evidence}`);
     }
@@ -406,7 +447,10 @@ export class DevelopmentEngine {
     const dims = appraisal.dimensions;
 
     // 1. Intellectual mastery or discovery events
-    if (event.category === 'unexpected_discovery' || event.category === 'personal_project_progress') {
+    if (
+      event.category === 'unexpected_discovery' ||
+      event.category === 'personal_project_progress'
+    ) {
       const topic = event.payload?.topic || event.type;
       this.developInterest(topic, 'explore');
 

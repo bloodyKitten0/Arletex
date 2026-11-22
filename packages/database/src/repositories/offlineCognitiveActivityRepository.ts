@@ -148,10 +148,7 @@ export class SqliteOfflineCognitiveActivityRepository implements IOfflineCogniti
           run.timestamp,
         );
     } catch (err: any) {
-      throw new DatabaseError(
-        `Failed to save consolidation run ${run.id}: ${err.message}`,
-        err,
-      );
+      throw new DatabaseError(`Failed to save consolidation run ${run.id}: ${err.message}`, err);
     }
   }
 
@@ -160,7 +157,9 @@ export class SqliteOfflineCognitiveActivityRepository implements IOfflineCogniti
       const query = limit
         ? `SELECT * FROM consolidation_runs ORDER BY timestamp DESC LIMIT ?`
         : `SELECT * FROM consolidation_runs ORDER BY timestamp DESC`;
-      const rows = (limit ? this.db.prepare(query).all(limit) : this.db.prepare(query).all()) as any[];
+      const rows = (
+        limit ? this.db.prepare(query).all(limit) : this.db.prepare(query).all()
+      ) as any[];
 
       return rows.map((r) => ({
         id: r.id,
@@ -214,7 +213,9 @@ export class SqliteOfflineCognitiveActivityRepository implements IOfflineCogniti
       const query = status
         ? `SELECT * FROM unfinished_work_items WHERE recovery_state = ? ORDER BY last_active_at DESC`
         : `SELECT * FROM unfinished_work_items ORDER BY last_active_at DESC`;
-      const rows = (status ? this.db.prepare(query).all(status) : this.db.prepare(query).all()) as any[];
+      const rows = (
+        status ? this.db.prepare(query).all(status) : this.db.prepare(query).all()
+      ) as any[];
 
       return rows.map((r) => ({
         id: r.id,
@@ -266,9 +267,10 @@ export class SqliteOfflineCognitiveActivityRepository implements IOfflineCogniti
 
   public listProactiveProposals(delivered?: boolean): ProactiveNotificationProposal[] {
     try {
-      const query = delivered !== undefined
-        ? `SELECT * FROM proactive_proposals WHERE delivered = ? ORDER BY created_at DESC`
-        : `SELECT * FROM proactive_proposals ORDER BY created_at DESC`;
+      const query =
+        delivered !== undefined
+          ? `SELECT * FROM proactive_proposals WHERE delivered = ? ORDER BY created_at DESC`
+          : `SELECT * FROM proactive_proposals ORDER BY created_at DESC`;
       const rows = (
         delivered !== undefined
           ? this.db.prepare(query).all(delivered ? 1 : 0)

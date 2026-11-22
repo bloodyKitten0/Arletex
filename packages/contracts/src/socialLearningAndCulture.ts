@@ -49,7 +49,12 @@ export const GroupDynamicProfileSchema = z.object({
   groupName: z.string().min(1),
   memberRoles: z.record(z.string()),
   cohesionLevel: z.number().min(0.0).max(1.0),
-  interactionPattern: z.enum(['cooperative', 'competitive_playful', 'hierarchical', 'peer_egalitarian']),
+  interactionPattern: z.enum([
+    'cooperative',
+    'competitive_playful',
+    'hierarchical',
+    'peer_egalitarian',
+  ]),
   sharedGoals: z.array(z.string()),
   lastActivityAt: z.string(),
 });

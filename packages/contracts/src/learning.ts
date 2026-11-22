@@ -10,12 +10,7 @@ export const LearningChannelSchema = z.enum([
 ]);
 export type LearningChannel = z.infer<typeof LearningChannelSchema>;
 
-export const LearningOutcomeTypeSchema = z.enum([
-  'success',
-  'failure',
-  'partial',
-  'neutral',
-]);
+export const LearningOutcomeTypeSchema = z.enum(['success', 'failure', 'partial', 'neutral']);
 export type LearningOutcomeType = z.infer<typeof LearningOutcomeTypeSchema>;
 
 export const LearningExperienceSchema = z.object({
@@ -35,7 +30,9 @@ export type LearningExperience = z.infer<typeof LearningExperienceSchema>;
 
 export const BehavioralAdaptationRuleSchema = z.object({
   id: z.string().min(1),
-  sourceExperienceIds: z.array(z.string()).min(1, 'Rule must originate from at least one empirical experience'),
+  sourceExperienceIds: z
+    .array(z.string())
+    .min(1, 'Rule must originate from at least one empirical experience'),
   domain: z.string().min(1),
   condition: z.string().min(1),
   recommendedStrategy: z.string().min(1),
@@ -97,7 +94,9 @@ export type LearningSummary = z.infer<typeof LearningSummarySchema>;
  */
 export function assertLearningIntegrity(rule: BehavioralAdaptationRule): void {
   if (!rule.sourceExperienceIds || rule.sourceExperienceIds.length === 0) {
-    throw new Error('Negative Invariant Violation: Rules cannot be artificially synthesized without empirical source experiences.');
+    throw new Error(
+      'Negative Invariant Violation: Rules cannot be artificially synthesized without empirical source experiences.',
+    );
   }
   if (rule.confidence < 0 || rule.confidence > 1) {
     throw new Error(`Invalid confidence value ${rule.confidence}: must be in range [0, 1].`);

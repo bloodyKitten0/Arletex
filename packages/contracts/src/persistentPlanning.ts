@@ -112,10 +112,14 @@ export type LongTermCommitment = z.infer<typeof LongTermCommitmentSchema>;
  */
 export function assertMultiStagePlanIntegrity(plan: MultiStagePlan): void {
   if (plan.overallPriority < 0 || plan.overallPriority > 1) {
-    throw new Error(`Plan overallPriority ${plan.overallPriority} outside allowed [0.0, 1.0] range.`);
+    throw new Error(
+      `Plan overallPriority ${plan.overallPriority} outside allowed [0.0, 1.0] range.`,
+    );
   }
   if (plan.overallProgress < 0 || plan.overallProgress > 1) {
-    throw new Error(`Plan overallProgress ${plan.overallProgress} outside allowed [0.0, 1.0] range.`);
+    throw new Error(
+      `Plan overallProgress ${plan.overallProgress} outside allowed [0.0, 1.0] range.`,
+    );
   }
 
   // DAG validation
@@ -132,7 +136,9 @@ export function assertMultiStagePlanIntegrity(plan: MultiStagePlan): void {
 
   function checkCycles(nodeId: string): void {
     if (visiting.has(nodeId)) {
-      throw new Error(`Negative Invariant Violation: Cyclic dependency detected involving stage ${nodeId}.`);
+      throw new Error(
+        `Negative Invariant Violation: Cyclic dependency detected involving stage ${nodeId}.`,
+      );
     }
     if (visited.has(nodeId)) return;
 
@@ -158,7 +164,9 @@ export function assertMultiStagePlanIntegrity(plan: MultiStagePlan): void {
 
   // Completion check
   if (plan.status === 'completed') {
-    const incomplete = plan.stages.find((s) => s.status === 'pending' || s.status === 'in_progress');
+    const incomplete = plan.stages.find(
+      (s) => s.status === 'pending' || s.status === 'in_progress',
+    );
     if (incomplete) {
       throw new Error(
         `Negative Invariant Violation: Plan ${plan.id} marked completed but stage ${incomplete.id} is ${incomplete.status}.`,

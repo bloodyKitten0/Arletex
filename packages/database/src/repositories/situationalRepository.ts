@@ -50,7 +50,10 @@ export class SituationalRepository implements ISituationalRepository {
           new Date().toISOString(),
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save operational activity ${activity.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save operational activity ${activity.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -69,7 +72,9 @@ export class SituationalRepository implements ISituationalRepository {
   public getActiveActivity(): OperationalActivity | null {
     try {
       const row = this.db
-        .prepare('SELECT * FROM operational_activities WHERE status = ? ORDER BY last_active_at DESC LIMIT 1')
+        .prepare(
+          'SELECT * FROM operational_activities WHERE status = ? ORDER BY last_active_at DESC LIMIT 1',
+        )
         .get('active') as any;
       if (!row) return null;
       return this.mapActivityRow(row);
@@ -127,15 +132,16 @@ export class SituationalRepository implements ISituationalRepository {
           new Date().toISOString(),
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to record environmental event ${event.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to record environmental event ${event.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
   public getEnvironmentalEventById(id: string): EnvironmentalEvent | null {
     try {
-      const row = this.db
-        .prepare('SELECT * FROM environmental_events WHERE id = ?')
-        .get(id) as any;
+      const row = this.db.prepare('SELECT * FROM environmental_events WHERE id = ?').get(id) as any;
       if (!row) return null;
       return this.mapEventRow(row);
     } catch (err: any) {
@@ -205,7 +211,10 @@ export class SituationalRepository implements ISituationalRepository {
           new Date().toISOString(),
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save situational snapshot ${snapshot.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save situational snapshot ${snapshot.id}: ${err.message}`,
+        err,
+      );
     }
   }
 

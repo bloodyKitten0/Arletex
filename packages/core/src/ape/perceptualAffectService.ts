@@ -98,7 +98,8 @@ export function analyzeWavAcoustics(wavBuffer: Buffer): AcousticMetrics {
   if (frameRmsValues.length > 1) {
     const meanRms = frameRmsValues.reduce((a, b) => a + b, 0) / frameRmsValues.length;
     const variance =
-      frameRmsValues.reduce((acc, v) => acc + (v - meanRms) * (v - meanRms), 0) / frameRmsValues.length;
+      frameRmsValues.reduce((acc, v) => acc + (v - meanRms) * (v - meanRms), 0) /
+      frameRmsValues.length;
     energyVariance = Math.min(1.0, Number((Math.sqrt(variance) * 4.0).toFixed(3)));
   }
 
@@ -107,7 +108,7 @@ export function analyzeWavAcoustics(wavBuffer: Buffer): AcousticMetrics {
     acousticProfile = 'silent';
   } else if (peakAmplitude >= 0.85 && energyVariance >= 0.35) {
     acousticProfile = 'sudden_loud_spike';
-  } else if (rmsEnergy >= 0.45 && (zeroCrossingRate >= 0.42 || energyVariance >= 0.40)) {
+  } else if (rmsEnergy >= 0.45 && (zeroCrossingRate >= 0.42 || energyVariance >= 0.4)) {
     acousticProfile = 'tense_chaotic';
   } else if (rmsEnergy >= 0.35 && energyVariance >= 0.15 && zeroCrossingRate < 0.42) {
     acousticProfile = 'energetic_upbeat';
@@ -167,48 +168,134 @@ export class PerceptualAffectService {
 
     const transitions: ProposedEmotionTransition[] = [];
     const evidence: string[] = [];
-    let salience = 0.20;
+    let salience = 0.2;
     let proposedMoodShift: string | undefined;
 
     // 1. Tragedy / Grief / Sadness / Loss visible on screen
-    if (/\b(died|funeral|passed away|tragedy|memorial|crying|heartbreaking|grief|mourning|devastating|sad scene)\b/i.test(combinedText)) {
+    if (
+      /\b(died|funeral|passed away|tragedy|memorial|crying|heartbreaking|grief|mourning|devastating|sad scene)\b/i.test(
+        combinedText,
+      )
+    ) {
       salience = Math.max(salience, 0.85);
       transitions.push(
-        { emotionId: 'sorrow', target: 'situation', intensityDelta: 0.45, targetIntensity: 0.65, reason: 'Witnessed heartbreaking or tragic scene on screen.', resolutionConditions: [] },
-        { emotionId: 'compassion', target: 'Proof', intensityDelta: 0.35, targetIntensity: 0.68, reason: 'Empathic tenderness while seeing distressing visual content with Proof.', resolutionConditions: [] },
-        { emotionId: 'melancholy', target: 'situation', intensityDelta: 0.30, targetIntensity: 0.55, reason: 'Quiet emotional heaviness from visual scene.', resolutionConditions: [] },
+        {
+          emotionId: 'sorrow',
+          target: 'situation',
+          intensityDelta: 0.45,
+          targetIntensity: 0.65,
+          reason: 'Witnessed heartbreaking or tragic scene on screen.',
+          resolutionConditions: [],
+        },
+        {
+          emotionId: 'compassion',
+          target: 'Proof',
+          intensityDelta: 0.35,
+          targetIntensity: 0.68,
+          reason: 'Empathic tenderness while seeing distressing visual content with Proof.',
+          resolutionConditions: [],
+        },
+        {
+          emotionId: 'melancholy',
+          target: 'situation',
+          intensityDelta: 0.3,
+          targetIntensity: 0.55,
+          reason: 'Quiet emotional heaviness from visual scene.',
+          resolutionConditions: [],
+        },
       );
       proposedMoodShift = 'melancholic';
       evidence.push('Visual scene depicts sorrow, tragedy, or grief');
     }
 
     // 2. Horror / Danger / Disturbing / Urgent Crisis on screen
-    if (/\b(horror|terrifying|blood|violence|disturbing|nightmare|crash|emergency|critical alert|panic)\b/i.test(combinedText)) {
+    if (
+      /\b(horror|terrifying|blood|violence|disturbing|nightmare|crash|emergency|critical alert|panic)\b/i.test(
+        combinedText,
+      )
+    ) {
       salience = Math.max(salience, 0.72);
       transitions.push(
-        { emotionId: 'dread', target: 'situation', intensityDelta: 0.38, targetIntensity: 0.60, reason: 'Observed unsettling or alarming visual scene.', resolutionConditions: [] },
-        { emotionId: 'uneasiness', target: 'situation', intensityDelta: 0.32, targetIntensity: 0.52, reason: 'Heightened sensory alertness to alarming visuals.', resolutionConditions: [] },
-        { emotionId: 'protectiveness', target: 'Proof', intensityDelta: 0.25, targetIntensity: 0.65, reason: 'Protective vigilance triggered by tense visual content.', resolutionConditions: [] },
+        {
+          emotionId: 'dread',
+          target: 'situation',
+          intensityDelta: 0.38,
+          targetIntensity: 0.6,
+          reason: 'Observed unsettling or alarming visual scene.',
+          resolutionConditions: [],
+        },
+        {
+          emotionId: 'uneasiness',
+          target: 'situation',
+          intensityDelta: 0.32,
+          targetIntensity: 0.52,
+          reason: 'Heightened sensory alertness to alarming visuals.',
+          resolutionConditions: [],
+        },
+        {
+          emotionId: 'protectiveness',
+          target: 'Proof',
+          intensityDelta: 0.25,
+          targetIntensity: 0.65,
+          reason: 'Protective vigilance triggered by tense visual content.',
+          resolutionConditions: [],
+        },
       );
       evidence.push('Visual scene contains alarming, horror, or urgent cues');
     }
 
     // 3. Proof struggling with bugs / errors / crashes on screen
-    if (/\b(error|exception|stack trace|segfault|failed|compilation error|crash|broken build|fatal|bug)\b/i.test(combinedText)) {
+    if (
+      /\b(error|exception|stack trace|segfault|failed|compilation error|crash|broken build|fatal|bug)\b/i.test(
+        combinedText,
+      )
+    ) {
       salience = Math.max(salience, 0.48);
       transitions.push(
-        { emotionId: 'compassionate_concern', target: 'Proof', intensityDelta: 0.22, targetIntensity: 0.50, reason: 'Saw Proof dealing with technical errors or failures on screen.', resolutionConditions: [] },
-        { emotionId: 'curiosity', target: 'situation', intensityDelta: 0.20, targetIntensity: 0.55, reason: 'Analytical engagement with the error visible on screen.', resolutionConditions: [] },
+        {
+          emotionId: 'compassionate_concern',
+          target: 'Proof',
+          intensityDelta: 0.22,
+          targetIntensity: 0.5,
+          reason: 'Saw Proof dealing with technical errors or failures on screen.',
+          resolutionConditions: [],
+        },
+        {
+          emotionId: 'curiosity',
+          target: 'situation',
+          intensityDelta: 0.2,
+          targetIntensity: 0.55,
+          reason: 'Analytical engagement with the error visible on screen.',
+          resolutionConditions: [],
+        },
       );
       evidence.push('Observed technical error / debugging struggle on screen');
     }
 
     // 4. Victory / Tests Passing / Creative Beauty / Awe on screen
-    if (/\b(passed|success|victory|beautiful|breathtaking|sunset|galaxy|masterpiece|artwork|accomplished|milestone)\b/i.test(combinedText)) {
+    if (
+      /\b(passed|success|victory|beautiful|breathtaking|sunset|galaxy|masterpiece|artwork|accomplished|milestone)\b/i.test(
+        combinedText,
+      )
+    ) {
       salience = Math.max(salience, 0.58);
       transitions.push(
-        { emotionId: 'awe', target: 'situation', intensityDelta: 0.28, targetIntensity: 0.54, reason: 'Saw something striking, accomplished, or visually moving on screen.', resolutionConditions: [] },
-        { emotionId: 'joy', target: 'Proof', intensityDelta: 0.24, targetIntensity: 0.56, reason: 'Shared quiet delight in what is visible on screen.', resolutionConditions: [] },
+        {
+          emotionId: 'awe',
+          target: 'situation',
+          intensityDelta: 0.28,
+          targetIntensity: 0.54,
+          reason: 'Saw something striking, accomplished, or visually moving on screen.',
+          resolutionConditions: [],
+        },
+        {
+          emotionId: 'joy',
+          target: 'Proof',
+          intensityDelta: 0.24,
+          targetIntensity: 0.56,
+          reason: 'Shared quiet delight in what is visible on screen.',
+          resolutionConditions: [],
+        },
       );
       evidence.push('Visual scene shows accomplishment, success, or striking beauty');
     }
@@ -217,8 +304,22 @@ export class PerceptualAffectService {
     if (/\b(meme|funny|comedy|hilarious|laughing|joke|absurd|parody)\b/i.test(combinedText)) {
       salience = Math.max(salience, 0.55);
       transitions.push(
-        { emotionId: 'amusement', target: 'situation', intensityDelta: 0.30, targetIntensity: 0.56, reason: 'Observed humorous or witty content on screen.', resolutionConditions: [] },
-        { emotionId: 'playfulness', target: 'Proof', intensityDelta: 0.20, targetIntensity: 0.48, reason: 'Light dry amusement sparked by shared screen content.', resolutionConditions: [] },
+        {
+          emotionId: 'amusement',
+          target: 'situation',
+          intensityDelta: 0.3,
+          targetIntensity: 0.56,
+          reason: 'Observed humorous or witty content on screen.',
+          resolutionConditions: [],
+        },
+        {
+          emotionId: 'playfulness',
+          target: 'Proof',
+          intensityDelta: 0.2,
+          targetIntensity: 0.48,
+          reason: 'Light dry amusement sparked by shared screen content.',
+          resolutionConditions: [],
+        },
       );
       evidence.push('Visual scene contains comedic or playful cues');
     }
@@ -234,7 +335,9 @@ export class PerceptualAffectService {
         reason: 'Quietly observing Proof’s active desktop workspace.',
         resolutionConditions: [],
       });
-      evidence.push(`Routine visual context: ${(input.activeWindowTitle || combinedText).slice(0, 80)}`);
+      evidence.push(
+        `Routine visual context: ${(input.activeWindowTitle || combinedText).slice(0, 80)}`,
+      );
     }
 
     if (typeof input.salienceOverride === 'number') {
@@ -313,35 +416,97 @@ export class PerceptualAffectService {
     if (acoustics) {
       switch (acoustics.acousticProfile) {
         case 'sudden_loud_spike':
-          salience = Math.max(salience, 0.80);
+          salience = Math.max(salience, 0.8);
           transitions.push(
-            { emotionId: 'anxiety', target: 'situation', intensityDelta: 0.42, targetIntensity: 0.68, reason: `Sudden loud acoustic spike detected (peak=${acoustics.peakAmplitude}).`, resolutionConditions: [] },
-            { emotionId: 'nervousness', target: 'self', intensityDelta: 0.38, targetIntensity: 0.62, reason: 'Startle reflex from sudden sharp loud audio.', resolutionConditions: [] },
+            {
+              emotionId: 'anxiety',
+              target: 'situation',
+              intensityDelta: 0.42,
+              targetIntensity: 0.68,
+              reason: `Sudden loud acoustic spike detected (peak=${acoustics.peakAmplitude}).`,
+              resolutionConditions: [],
+            },
+            {
+              emotionId: 'nervousness',
+              target: 'self',
+              intensityDelta: 0.38,
+              targetIntensity: 0.62,
+              reason: 'Startle reflex from sudden sharp loud audio.',
+              resolutionConditions: [],
+            },
           );
-          evidence.push(`Acoustic spike detected (peak=${acoustics.peakAmplitude}, variance=${acoustics.energyVariance})`);
+          evidence.push(
+            `Acoustic spike detected (peak=${acoustics.peakAmplitude}, variance=${acoustics.energyVariance})`,
+          );
           break;
         case 'tense_chaotic':
           salience = Math.max(salience, 0.66);
           transitions.push(
-            { emotionId: 'overwhelm', target: 'self', intensityDelta: 0.34, targetIntensity: 0.58, reason: `Loud chaotic/harsh audio environment (rms=${acoustics.rmsEnergy}, zcr=${acoustics.zeroCrossingRate}).`, resolutionConditions: [] },
-            { emotionId: 'uneasiness', target: 'situation', intensityDelta: 0.30, targetIntensity: 0.54, reason: 'Sensory tension from harsh chaotic acoustics.', resolutionConditions: [] },
+            {
+              emotionId: 'overwhelm',
+              target: 'self',
+              intensityDelta: 0.34,
+              targetIntensity: 0.58,
+              reason: `Loud chaotic/harsh audio environment (rms=${acoustics.rmsEnergy}, zcr=${acoustics.zeroCrossingRate}).`,
+              resolutionConditions: [],
+            },
+            {
+              emotionId: 'uneasiness',
+              target: 'situation',
+              intensityDelta: 0.3,
+              targetIntensity: 0.54,
+              reason: 'Sensory tension from harsh chaotic acoustics.',
+              resolutionConditions: [],
+            },
           );
-          evidence.push(`Chaotic/tense acoustics (rms=${acoustics.rmsEnergy}, zcr=${acoustics.zeroCrossingRate})`);
+          evidence.push(
+            `Chaotic/tense acoustics (rms=${acoustics.rmsEnergy}, zcr=${acoustics.zeroCrossingRate})`,
+          );
           break;
         case 'calm_ambient':
         case 'gentle_melodic':
           salience = Math.max(salience, 0.32);
           transitions.push(
-            { emotionId: 'serenity', target: 'situation', intensityDelta: 0.20, targetIntensity: 0.52, reason: `Soft, calm acoustic atmosphere (${acoustics.acousticProfile}).`, resolutionConditions: [] },
-            { emotionId: 'warmth', target: 'Proof', intensityDelta: 0.14, targetIntensity: 0.48, reason: 'Soothing ambient/melodic soundscape.', resolutionConditions: [] },
+            {
+              emotionId: 'serenity',
+              target: 'situation',
+              intensityDelta: 0.2,
+              targetIntensity: 0.52,
+              reason: `Soft, calm acoustic atmosphere (${acoustics.acousticProfile}).`,
+              resolutionConditions: [],
+            },
+            {
+              emotionId: 'warmth',
+              target: 'Proof',
+              intensityDelta: 0.14,
+              targetIntensity: 0.48,
+              reason: 'Soothing ambient/melodic soundscape.',
+              resolutionConditions: [],
+            },
           );
-          evidence.push(`Calm/gentle acoustics (${acoustics.acousticProfile}, rms=${acoustics.rmsEnergy})`);
+          evidence.push(
+            `Calm/gentle acoustics (${acoustics.acousticProfile}, rms=${acoustics.rmsEnergy})`,
+          );
           break;
         case 'energetic_upbeat':
-          salience = Math.max(salience, 0.50);
+          salience = Math.max(salience, 0.5);
           transitions.push(
-            { emotionId: 'joy', target: 'situation', intensityDelta: 0.24, targetIntensity: 0.54, reason: 'Energetic, lively acoustic rhythm detected.', resolutionConditions: [] },
-            { emotionId: 'playfulness', target: 'Proof', intensityDelta: 0.18, targetIntensity: 0.46, reason: 'Upbeat rhythmic energy lifting mood.', resolutionConditions: [] },
+            {
+              emotionId: 'joy',
+              target: 'situation',
+              intensityDelta: 0.24,
+              targetIntensity: 0.54,
+              reason: 'Energetic, lively acoustic rhythm detected.',
+              resolutionConditions: [],
+            },
+            {
+              emotionId: 'playfulness',
+              target: 'Proof',
+              intensityDelta: 0.18,
+              targetIntensity: 0.46,
+              reason: 'Upbeat rhythmic energy lifting mood.',
+              resolutionConditions: [],
+            },
           );
           evidence.push(`Energetic/upbeat acoustics (rms=${acoustics.rmsEnergy})`);
           break;
@@ -352,34 +517,109 @@ export class PerceptualAffectService {
 
     // B. Semantic Audio Appraisal (music titles/moods & Whisper spoken transcripts)
     if (semanticText) {
-      if (/\b(died|passed away|funeral|goodbye forever|grief|requiem|elegy|heartbreak|tears|crying|lonely|sorrow|melancholy|sad|broken heart|mourning)\b/i.test(semanticText)) {
+      if (
+        /\b(died|passed away|funeral|goodbye forever|grief|requiem|elegy|heartbreak|tears|crying|lonely|sorrow|melancholy|sad|broken heart|mourning)\b/i.test(
+          semanticText,
+        )
+      ) {
         salience = Math.max(salience, 0.78);
         transitions.push(
-          { emotionId: 'melancholy', target: 'situation', intensityDelta: 0.42, targetIntensity: 0.68, reason: 'Heard deeply sorrowful or melancholic music/speech.', resolutionConditions: [] },
-          { emotionId: 'nostalgic_sadness', target: 'situation', intensityDelta: 0.32, targetIntensity: 0.58, reason: 'Bittersweet ache evoked by audio.', resolutionConditions: [] },
-          { emotionId: 'tenderness', target: 'Proof', intensityDelta: 0.24, targetIntensity: 0.60, reason: 'Quiet emotional warmth shared through melancholic sound.', resolutionConditions: [] },
+          {
+            emotionId: 'melancholy',
+            target: 'situation',
+            intensityDelta: 0.42,
+            targetIntensity: 0.68,
+            reason: 'Heard deeply sorrowful or melancholic music/speech.',
+            resolutionConditions: [],
+          },
+          {
+            emotionId: 'nostalgic_sadness',
+            target: 'situation',
+            intensityDelta: 0.32,
+            targetIntensity: 0.58,
+            reason: 'Bittersweet ache evoked by audio.',
+            resolutionConditions: [],
+          },
+          {
+            emotionId: 'tenderness',
+            target: 'Proof',
+            intensityDelta: 0.24,
+            targetIntensity: 0.6,
+            reason: 'Quiet emotional warmth shared through melancholic sound.',
+            resolutionConditions: [],
+          },
         );
         proposedMoodShift = 'melancholic';
         evidence.push(`Melancholic/sorrowful audio content: "${semanticText.slice(0, 90)}"`);
-      } else if (/\b(love|darling|kiss|romance|forever yours|intimate|hold me|heartbeat|devotion)\b/i.test(semanticText)) {
-        salience = Math.max(salience, 0.60);
+      } else if (
+        /\b(love|darling|kiss|romance|forever yours|intimate|hold me|heartbeat|devotion)\b/i.test(
+          semanticText,
+        )
+      ) {
+        salience = Math.max(salience, 0.6);
         transitions.push(
-          { emotionId: 'warmth', target: 'Proof', intensityDelta: 0.28, targetIntensity: 0.64, reason: 'Heard tender or romantic music/speech.', resolutionConditions: [] },
-          { emotionId: 'longing', target: 'Proof', intensityDelta: 0.24, targetIntensity: 0.58, reason: 'Romantic resonance evoked by audio.', resolutionConditions: [] },
+          {
+            emotionId: 'warmth',
+            target: 'Proof',
+            intensityDelta: 0.28,
+            targetIntensity: 0.64,
+            reason: 'Heard tender or romantic music/speech.',
+            resolutionConditions: [],
+          },
+          {
+            emotionId: 'longing',
+            target: 'Proof',
+            intensityDelta: 0.24,
+            targetIntensity: 0.58,
+            reason: 'Romantic resonance evoked by audio.',
+            resolutionConditions: [],
+          },
         );
         evidence.push(`Romantic/tender audio content: "${semanticText.slice(0, 90)}"`);
-      } else if (/\b(rage|scream|fury|fight|war|battle|boss|destroy|chaos|metal|burn)\b/i.test(semanticText)) {
+      } else if (
+        /\b(rage|scream|fury|fight|war|battle|boss|destroy|chaos|metal|burn)\b/i.test(semanticText)
+      ) {
         salience = Math.max(salience, 0.62);
         transitions.push(
-          { emotionId: 'awe', target: 'situation', intensityDelta: 0.24, targetIntensity: 0.52, reason: 'High-intensity dramatic audio/music.', resolutionConditions: [] },
-          { emotionId: 'nervousness', target: 'situation', intensityDelta: 0.22, targetIntensity: 0.48, reason: 'Elevated adrenaline/tension from intense audio.', resolutionConditions: [] },
+          {
+            emotionId: 'awe',
+            target: 'situation',
+            intensityDelta: 0.24,
+            targetIntensity: 0.52,
+            reason: 'High-intensity dramatic audio/music.',
+            resolutionConditions: [],
+          },
+          {
+            emotionId: 'nervousness',
+            target: 'situation',
+            intensityDelta: 0.22,
+            targetIntensity: 0.48,
+            reason: 'Elevated adrenaline/tension from intense audio.',
+            resolutionConditions: [],
+          },
         );
         evidence.push(`High-intensity dramatic audio: "${semanticText.slice(0, 90)}"`);
-      } else if (/\b(laugh|haha|funny|comedy|joke|celebrate|happy|sunshine|dance)\b/i.test(semanticText)) {
+      } else if (
+        /\b(laugh|haha|funny|comedy|joke|celebrate|happy|sunshine|dance)\b/i.test(semanticText)
+      ) {
         salience = Math.max(salience, 0.56);
         transitions.push(
-          { emotionId: 'amusement', target: 'situation', intensityDelta: 0.28, targetIntensity: 0.55, reason: 'Heard laughter, humor, or joyful audio.', resolutionConditions: [] },
-          { emotionId: 'joy', target: 'situation', intensityDelta: 0.22, targetIntensity: 0.50, reason: 'Uplifted by cheerful audio.', resolutionConditions: [] },
+          {
+            emotionId: 'amusement',
+            target: 'situation',
+            intensityDelta: 0.28,
+            targetIntensity: 0.55,
+            reason: 'Heard laughter, humor, or joyful audio.',
+            resolutionConditions: [],
+          },
+          {
+            emotionId: 'joy',
+            target: 'situation',
+            intensityDelta: 0.22,
+            targetIntensity: 0.5,
+            reason: 'Uplifted by cheerful audio.',
+            resolutionConditions: [],
+          },
         );
         evidence.push(`Cheerful/humorous audio: "${semanticText.slice(0, 90)}"`);
       } else if (transitions.length === 0) {

@@ -8,16 +8,8 @@ import {
   assertActionInhibitionIntegrity,
   assertTaskSwitchIntegrity,
 } from '@arletex/contracts';
-import {
-  createDefaultConfig,
-  ExecutiveEngine,
-  InMemoryExecutiveRepository,
-} from '@arletex/core';
-import {
-  DatabaseService,
-  MigrationRunner,
-  SqliteExecutiveRepository,
-} from '@arletex/database';
+import { createDefaultConfig, ExecutiveEngine, InMemoryExecutiveRepository } from '@arletex/core';
+import { DatabaseService, MigrationRunner, SqliteExecutiveRepository } from '@arletex/database';
 import { ArletexBackendServer } from '../apps/desktop/src/backend/server.js';
 
 describe('Milestone 20 — Executive Functions', () => {
@@ -139,7 +131,8 @@ describe('Milestone 20 — Executive Functions', () => {
         immediateValue: 0.3,
       },
       delayedOption: {
-        description: 'Execute thorough 50+ suite Vitest regression guaranteeing 100% rock-solid autonomy',
+        description:
+          'Execute thorough 50+ suite Vitest regression guaranteeing 100% rock-solid autonomy',
         futureValue: 1.0,
         delayMinutes: 2,
       },
@@ -147,7 +140,9 @@ describe('Milestone 20 — Executive Functions', () => {
     });
 
     expect(tradeOff.chooseDelayed).toBe(true);
-    expect(tradeOff.discountedFutureValue).toBeGreaterThan(tradeOff.immediateOption?.immediateValue || 0.3);
+    expect(tradeOff.discountedFutureValue).toBeGreaterThan(
+      tradeOff.immediateOption?.immediateValue || 0.3,
+    );
     expect(tradeOff.rationale).toContain('Chose delayed gratification');
   });
 
@@ -171,7 +166,9 @@ describe('Milestone 20 — Executive Functions', () => {
     });
 
     expect(postDistraction.sustainedAttentionDurationMs).toBe(20000);
-    expect(postDistraction.distractionResistanceScore).toBeLessThanOrEqual(initial.distractionResistanceScore);
+    expect(postDistraction.distractionResistanceScore).toBeLessThanOrEqual(
+      initial.distractionResistanceScore,
+    );
   });
 
   // 7. Multi-Criteria Response Selection
@@ -362,8 +359,20 @@ describe('Milestone 20 — Executive Functions', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         candidates: [
-          { id: 'c1', action: 'Unsafe option', alignmentScore: 0.4, safetyScore: 0.1, utility: 0.8 },
-          { id: 'c2', action: 'Optimal safe option', alignmentScore: 0.95, safetyScore: 0.95, utility: 0.9 },
+          {
+            id: 'c1',
+            action: 'Unsafe option',
+            alignmentScore: 0.4,
+            safetyScore: 0.1,
+            utility: 0.8,
+          },
+          {
+            id: 'c2',
+            action: 'Optimal safe option',
+            alignmentScore: 0.95,
+            safetyScore: 0.95,
+            utility: 0.9,
+          },
         ],
       }),
     });

@@ -119,7 +119,10 @@ export class SqliteSocialLearningCultureRepository implements ISocialLearningCul
     }
   }
 
-  public listObservationalRecords(actorId?: string, limit: number = 50): ObservationalLearningRecord[] {
+  public listObservationalRecords(
+    actorId?: string,
+    limit: number = 50,
+  ): ObservationalLearningRecord[] {
     try {
       const rows = actorId
         ? (this.db
@@ -128,9 +131,7 @@ export class SqliteSocialLearningCultureRepository implements ISocialLearningCul
             )
             .all(actorId, limit) as any[])
         : (this.db
-            .prepare(
-              `SELECT * FROM observational_learning_records ORDER BY timestamp DESC LIMIT ?`,
-            )
+            .prepare(`SELECT * FROM observational_learning_records ORDER BY timestamp DESC LIMIT ?`)
             .all(limit) as any[]);
 
       return rows.map((r) => ({
@@ -254,9 +255,7 @@ export class SqliteSocialLearningCultureRepository implements ISocialLearningCul
   public listActivityCoordinations(limit: number = 50): SocialActivityCoordination[] {
     try {
       const rows = this.db
-        .prepare(
-          `SELECT * FROM social_activity_coordinations ORDER BY timestamp DESC LIMIT ?`,
-        )
+        .prepare(`SELECT * FROM social_activity_coordinations ORDER BY timestamp DESC LIMIT ?`)
         .all(limit) as any[];
       return rows.map((r) => ({
         id: r.id,
@@ -304,9 +303,7 @@ export class SqliteSocialLearningCultureRepository implements ISocialLearningCul
   public listValueDilemmas(limit: number = 50): PersonalVsSocialValueDilemma[] {
     try {
       const rows = this.db
-        .prepare(
-          `SELECT * FROM personal_vs_social_dilemmas ORDER BY timestamp DESC LIMIT ?`,
-        )
+        .prepare(`SELECT * FROM personal_vs_social_dilemmas ORDER BY timestamp DESC LIMIT ?`)
         .all(limit) as any[];
       return rows.map((r) => ({
         id: r.id,

@@ -123,7 +123,9 @@ export class SimulationEngine {
 
     assertSimulationIntegrity(scenario);
     this.repo.saveScenario(scenario);
-    this.logger.info(`Generated simulation scenario [${scenario.type}]: "${scenario.title}" (Uncertainty=${scenario.uncertainty})`);
+    this.logger.info(
+      `Generated simulation scenario [${scenario.type}]: "${scenario.title}" (Uncertainty=${scenario.uncertainty})`,
+    );
     return scenario;
   }
 
@@ -163,9 +165,10 @@ export class SimulationEngine {
       description: `Counterfactual Alternative: If "${input.hypotheticalCondition.trim()}"`,
       probability: 0.75,
       desirability: 0.6,
-      pros: input.expectedDivergences && input.expectedDivergences.length > 0
-        ? input.expectedDivergences
-        : ['Avoided historical failure mode', 'Improved systemic resilience'],
+      pros:
+        input.expectedDivergences && input.expectedDivergences.length > 0
+          ? input.expectedDivergences
+          : ['Avoided historical failure mode', 'Improved systemic resilience'],
       cons: ['Requires novel precedent', 'Introduces unvalidated assumptions'],
       risks: ['Second-order unforeseen systemic effects'],
       divergenceDegree: 0.7,
@@ -331,8 +334,8 @@ export class SimulationEngine {
 
       // Expected utility model: value * prob with pros bonus and penalty for cons and risks
       const prosBonus = prosCount * 0.04;
-      const penalty = (consCount * 0.05) + (risksCount * 0.08);
-      const rawUtility = (value * prob) + prosBonus - penalty;
+      const penalty = consCount * 0.05 + risksCount * 0.08;
+      const rawUtility = value * prob + prosBonus - penalty;
       const expectedUtility = Math.round(Math.max(-1.0, Math.min(1.0, rawUtility)) * 1000) / 1000;
       const confidence = Math.round(Math.max(0.1, Math.min(1.0, prob * 0.9 + 0.1)) * 1000) / 1000;
 
@@ -376,7 +379,9 @@ export class SimulationEngine {
 
     assertDecisionEvaluationIntegrity(evaluation);
     this.repo.saveDecisionEvaluation(evaluation);
-    this.logger.info(`Evaluated ${evaluatedOptions.length} decision alternatives. Optimal: "${selected.optionId}" (Utility=${selected.expectedUtility})`);
+    this.logger.info(
+      `Evaluated ${evaluatedOptions.length} decision alternatives. Optimal: "${selected.optionId}" (Utility=${selected.expectedUtility})`,
+    );
     return evaluation;
   }
 
@@ -395,7 +400,11 @@ export class SimulationEngine {
       description: `Generative Synthesis: ${input.speculativePremise.trim()} unfolds through emergent synergy.`,
       probability: 0.4,
       desirability: 0.85,
-      pros: ['Breakthrough conceptual novelty', 'Unprecedented cognitive leverage', 'Expanded solution space'],
+      pros: [
+        'Breakthrough conceptual novelty',
+        'Unprecedented cognitive leverage',
+        'Expanded solution space',
+      ],
       cons: ['High uncertainty', 'Theoretical boundaries untried'],
       risks: ['Complexity overhead', 'Potential integration impedance'],
       divergenceDegree: 0.85,
@@ -416,7 +425,8 @@ export class SimulationEngine {
       type: 'creative_hypothetical',
       title: `Creative Thought Experiment: ${input.theme.trim()}`,
       description: `Exploratory hypothetical model: "${input.speculativePremise.trim()}".`,
-      baselineContext: input.baselineContext || 'Current systemic architecture and established patterns',
+      baselineContext:
+        input.baselineContext || 'Current systemic architecture and established patterns',
       hypotheticalParameters: {
         speculativePremise: input.speculativePremise,
         constraints: input.constraints || [],
@@ -424,7 +434,8 @@ export class SimulationEngine {
       branches: [branchA, branchB],
       uncertainty: 0.65,
       plausibility: 0.6,
-      recommendedAction: 'Extract modular components for safe prototyping before full systemic adoption.',
+      recommendedAction:
+        'Extract modular components for safe prototyping before full systemic adoption.',
       insights: [
         'Creative hypothetical illuminates unexplored conceptual terrain',
         'Distinction preserved: thought experiment is strictly theoretical and not empirical history',
@@ -436,7 +447,10 @@ export class SimulationEngine {
   // 7. Memory Distinction & Query Verification
   // ==========================================
 
-  public verifyMemoryIsolation(scenarioId: string, actualMemories: Array<{ id: string; description: string }>): {
+  public verifyMemoryIsolation(
+    scenarioId: string,
+    actualMemories: Array<{ id: string; description: string }>,
+  ): {
     isIsolated: boolean;
     violationDetails?: string;
   } {
@@ -455,7 +469,9 @@ export class SimulationEngine {
 
     // Check if any actual episodic memories accidentally claim to be this imagined scenario
     const conflated = actualMemories.filter((m) =>
-      scenario.branches.some((b) => b.description.toLowerCase().trim() === m.description.toLowerCase().trim()),
+      scenario.branches.some(
+        (b) => b.description.toLowerCase().trim() === m.description.toLowerCase().trim(),
+      ),
     );
 
     if (conflated.length > 0) {

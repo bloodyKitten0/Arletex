@@ -84,7 +84,10 @@ export class SensorimotorActionEngine {
     }
 
     const isWithinScreenBounds =
-      x >= 0 && x <= this.currentCalibration.screenWidth && y >= 0 && y <= this.currentCalibration.screenHeight;
+      x >= 0 &&
+      x <= this.currentCalibration.screenWidth &&
+      y >= 0 &&
+      y <= this.currentCalibration.screenHeight;
 
     return {
       x,
@@ -122,7 +125,10 @@ export class SensorimotorActionEngine {
 
     // 1. Validate spatial grounding
     const translated = this.translateCoordinates(input.spatialTarget);
-    if (!translated.isWithinScreenBounds && (input.actionType.startsWith('mouse_') || input.actionType === 'window_action')) {
+    if (
+      !translated.isWithinScreenBounds &&
+      (input.actionType.startsWith('mouse_') || input.actionType === 'window_action')
+    ) {
       const failureVerification: ActionOutcomeVerification = {
         status: 'verified_failure',
         verificationMethod: 'window_event',
@@ -132,8 +138,7 @@ export class SensorimotorActionEngine {
         isVerified: true,
       };
 
-      const distinctionAnalysis =
-        `Attempted ${input.actionType} toward (${translated.x}, ${translated.y}) to achieve "${input.intendedOutcome}". Outcome: Verified failure due to out-of-bounds target coordinates. Attempted interaction did not achieve intended outcome.`;
+      const distinctionAnalysis = `Attempted ${input.actionType} toward (${translated.x}, ${translated.y}) to achieve "${input.intendedOutcome}". Outcome: Verified failure due to out-of-bounds target coordinates. Attempted interaction did not achieve intended outcome.`;
 
       const record: SensorimotorActionRecord = {
         id,
@@ -162,9 +167,12 @@ export class SensorimotorActionEngine {
     const verification: ActionOutcomeVerification = isSuccess
       ? {
           status: 'verified_success',
-          verificationMethod: input.actionType === 'tool_execution' ? 'exit_code' : 'screen_state_change',
+          verificationMethod:
+            input.actionType === 'tool_execution' ? 'exit_code' : 'screen_state_change',
           intendedOutcome: input.intendedOutcome,
-          observedDelta: input.mockObservedDelta || `Verified environmental state transition confirming: ${input.intendedOutcome}`,
+          observedDelta:
+            input.mockObservedDelta ||
+            `Verified environmental state transition confirming: ${input.intendedOutcome}`,
           confidence: 0.95,
           isVerified: true,
         }
@@ -172,7 +180,9 @@ export class SensorimotorActionEngine {
           status: 'verified_failure',
           verificationMethod: 'screen_state_change',
           intendedOutcome: input.intendedOutcome,
-          observedDelta: input.mockObservedDelta || 'No environmental state change observed following action dispatch.',
+          observedDelta:
+            input.mockObservedDelta ||
+            'No environmental state change observed following action dispatch.',
           confidence: 0.92,
           isVerified: true,
         };
@@ -184,7 +194,11 @@ export class SensorimotorActionEngine {
       : `Attempted ${input.actionType} targeting ${input.spatialTarget.coordinateSystem} coordinates (${translated.x}, ${translated.y}) with expectation "${input.intendedOutcome}". Independent verification observed: ${verification.observedDelta}. Epistemic distinction: The action was dispatched but FAILED to achieve the intended outcome.`;
 
     // Assert integrity: Never allow claims of success if verification failed
-    const check = assertActionGroundingIntegrity(input.intendedOutcome, verification, distinctionAnalysis);
+    const check = assertActionGroundingIntegrity(
+      input.intendedOutcome,
+      verification,
+      distinctionAnalysis,
+    );
     if (!check.valid) {
       throw new Error(check.error);
     }
@@ -240,7 +254,10 @@ export class SensorimotorActionEngine {
     return item;
   }
 
-  public getAdaptiveActionPlan(targetAppOrContext: string, goalType: string): {
+  public getAdaptiveActionPlan(
+    targetAppOrContext: string,
+    goalType: string,
+  ): {
     strategy: InteractionStrategy | null;
     recommendedSequence: Array<Record<string, any>>;
     hasFallback: boolean;
@@ -258,7 +275,8 @@ export class SensorimotorActionEngine {
     const useFallback = strat.empiricalReliability < 0.5 && Boolean(strat.fallbackSequence?.length);
     return {
       strategy: strat,
-      recommendedSequence: (useFallback && strat.fallbackSequence) ? strat.fallbackSequence : strat.primarySequence,
+      recommendedSequence:
+        useFallback && strat.fallbackSequence ? strat.fallbackSequence : strat.primarySequence,
       hasFallback: Boolean(strat.fallbackSequence?.length),
     };
   }
@@ -298,9 +316,14 @@ export class SensorimotorActionEngine {
   } {
     const actions = this.repo.listActionRecords({ limit: 50 });
     const totalActions = actions.length;
-    const verifiedSuccesses = actions.filter((a) => a.verification.status === 'verified_success').length;
-    const verifiedFailures = actions.filter((a) => a.verification.status === 'verified_failure').length;
-    const successRate = totalActions > 0 ? parseFloat(((verifiedSuccesses / totalActions) * 100).toFixed(1)) : 100;
+    const verifiedSuccesses = actions.filter(
+      (a) => a.verification.status === 'verified_success',
+    ).length;
+    const verifiedFailures = actions.filter(
+      (a) => a.verification.status === 'verified_failure',
+    ).length;
+    const successRate =
+      totalActions > 0 ? parseFloat(((verifiedSuccesses / totalActions) * 100).toFixed(1)) : 100;
 
     const latest = actions[0];
     const recentSummary = latest

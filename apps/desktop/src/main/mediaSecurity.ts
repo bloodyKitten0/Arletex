@@ -32,7 +32,7 @@ export interface MediaValidationResult {
  */
 export function validateMediaFilePath(
   decodedPath: string,
-  customApprovedRoots?: string[]
+  customApprovedRoots?: string[],
 ): MediaValidationResult {
   if (!decodedPath || typeof decodedPath !== 'string') {
     return { allowed: false, statusCode: 400, reason: 'Empty or invalid media path' };
@@ -40,7 +40,11 @@ export function validateMediaFilePath(
 
   // Reject null bytes and explicit parent directory traversal tokens before normalization
   if (decodedPath.includes('\0') || decodedPath.includes('..') || decodedPath.includes('/../')) {
-    return { allowed: false, statusCode: 403, reason: 'Path traversal or malformed identifier rejected' };
+    return {
+      allowed: false,
+      statusCode: 403,
+      reason: 'Path traversal or malformed identifier rejected',
+    };
   }
 
   const normalized = path.normalize(decodedPath.startsWith('/') ? decodedPath : '/' + decodedPath);
@@ -60,7 +64,11 @@ export function validateMediaFilePath(
   const ext = path.extname(canonicalPath).toLowerCase();
   const mimeType = MEDIA_MIME_TYPES[ext];
   if (!mimeType) {
-    return { allowed: false, statusCode: 403, reason: `Disallowed media file extension: ${ext || 'none'}` };
+    return {
+      allowed: false,
+      statusCode: 403,
+      reason: `Disallowed media file extension: ${ext || 'none'}`,
+    };
   }
 
   // Enforce directory containment within approved storage roots

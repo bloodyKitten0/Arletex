@@ -25,11 +25,7 @@ export class WorldModelEngine {
   public readonly apeRepo?: IApeRepository;
   private readonly logger: ILogger;
 
-  constructor(
-    worldRepo: IWorldRepository,
-    apeRepo?: IApeRepository,
-    logger: ILogger = rootLogger,
-  ) {
+  constructor(worldRepo: IWorldRepository, apeRepo?: IApeRepository, logger: ILogger = rootLogger) {
     this.worldRepo = worldRepo;
     this.apeRepo = apeRepo;
     this.logger = logger;
@@ -128,7 +124,9 @@ export class WorldModelEngine {
           sourceEntityId: proof.id,
           targetEntityId: arle.id,
           relationType: 'partner_of',
-          properties: { description: 'Reciprocal equal intellectual companionship and technical collaboration' },
+          properties: {
+            description: 'Reciprocal equal intellectual companionship and technical collaboration',
+          },
           confidence: 1.0,
           certainty: 'verified_fact',
           isBidirectional: true,
@@ -160,9 +158,13 @@ export class WorldModelEngine {
         this.worldRepo.saveRelation(relation);
       }
 
-      this.logger.info('WorldModelEngine initialized with verified baseline entities and relational invariants.');
+      this.logger.info(
+        'WorldModelEngine initialized with verified baseline entities and relational invariants.',
+      );
     } catch (err: any) {
-      this.logger.error(`Failed to seed foundational world model entities: ${err.message}`, { error: err });
+      this.logger.error(`Failed to seed foundational world model entities: ${err.message}`, {
+        error: err,
+      });
     }
   }
 
@@ -323,7 +325,9 @@ export class WorldModelEngine {
       }
     }
 
-    this.logger.info(`World observation processed: "${entity.name}" [Type: ${entity.entityType}, Certainty: ${entity.certainty}]`);
+    this.logger.info(
+      `World observation processed: "${entity.name}" [Type: ${entity.entityType}, Certainty: ${entity.certainty}]`,
+    );
     return { entity, change, relation, locationEntity };
   }
 
@@ -336,11 +340,14 @@ export class WorldModelEngine {
     relations: WorldRelation[];
     location?: WorldEntity;
   } | null {
-    const entity = this.worldRepo.getEntityById(idOrName) || this.worldRepo.getEntityByName(idOrName);
+    const entity =
+      this.worldRepo.getEntityById(idOrName) || this.worldRepo.getEntityByName(idOrName);
     if (!entity) return null;
 
     const relations = this.worldRepo.listRelations({ sourceEntityId: entity.id });
-    const location = entity.locationId ? this.worldRepo.getEntityById(entity.locationId) || undefined : undefined;
+    const location = entity.locationId
+      ? this.worldRepo.getEntityById(entity.locationId) || undefined
+      : undefined;
 
     return { entity, relations, location };
   }
@@ -404,7 +411,9 @@ export class WorldModelEngine {
   // 4. Environmental Changes & Causal Models
   // ==========================================
 
-  public recordEnvironmentalChange(input: RecordEnvironmentalChangeInput): WorldEnvironmentalChange {
+  public recordEnvironmentalChange(
+    input: RecordEnvironmentalChangeInput,
+  ): WorldEnvironmentalChange {
     const now = new Date().toISOString();
     const change: WorldEnvironmentalChange = {
       id: crypto.randomUUID(),
@@ -420,7 +429,10 @@ export class WorldModelEngine {
     return change;
   }
 
-  public listEnvironmentalChanges(filter?: { entityId?: string; limit?: number }): WorldEnvironmentalChange[] {
+  public listEnvironmentalChanges(filter?: {
+    entityId?: string;
+    limit?: number;
+  }): WorldEnvironmentalChange[] {
     return this.worldRepo.listEnvironmentalChanges(filter);
   }
 
@@ -477,7 +489,9 @@ export class WorldModelEngine {
     unknown.resolvedAt = now;
 
     this.worldRepo.saveUnknown(unknown);
-    this.logger.info(`Resolved epistemic unknown "${unknown.topic}" with evidence: "${resolutionEvidence}"`);
+    this.logger.info(
+      `Resolved epistemic unknown "${unknown.topic}" with evidence: "${resolutionEvidence}"`,
+    );
     return unknown;
   }
 
@@ -501,16 +515,20 @@ export class WorldModelEngine {
       else if (e.certainty === 'unverified_claim') unverifiedClaims++;
     }
 
-    const openInquiries = allUnknowns.filter((u) => u.status === 'open' || u.status === 'investigating');
+    const openInquiries = allUnknowns.filter(
+      (u) => u.status === 'open' || u.status === 'investigating',
+    );
     const resolvedInquiries = allUnknowns.filter((u) => u.status === 'resolved');
 
     const knownSum = verifiedFacts + empiricalObs;
-    const ratio = openInquiries.length > 0 ? Number((knownSum / openInquiries.length).toFixed(2)) : knownSum;
+    const ratio =
+      openInquiries.length > 0 ? Number((knownSum / openInquiries.length).toFixed(2)) : knownSum;
 
     const topInquiries = openInquiries.slice(0, 2).map((u) => `"${u.question}"`);
-    const frontierDesc = openInquiries.length > 0
-      ? `Actively tracking ${openInquiries.length} open questions at the epistemic frontier: ${topInquiries.join('; ')}.`
-      : 'Epistemic frontier is clear with zero unresolved inquiries.';
+    const frontierDesc =
+      openInquiries.length > 0
+        ? `Actively tracking ${openInquiries.length} open questions at the epistemic frontier: ${topInquiries.join('; ')}.`
+        : 'Epistemic frontier is clear with zero unresolved inquiries.';
 
     return {
       totalKnownFacts: verifiedFacts,
@@ -535,7 +553,9 @@ export class WorldModelEngine {
     const epistemicAnalysis = this.getKnownVsUnknownAnalysis();
 
     const locations = allEntities.filter((e) => e.entityType === 'location');
-    const objects = allEntities.filter((e) => e.entityType === 'object' || e.entityType === 'digital_artifact');
+    const objects = allEntities.filter(
+      (e) => e.entityType === 'object' || e.entityType === 'digital_artifact',
+    );
 
     const summary = `Persistent world model holds ${allEntities.length} entities (${locations.length} locations, ${objects.length} artifacts/objects), ${allRelations.length} relations, and ${epistemicAnalysis.openInquiriesCount} open epistemic inquiries.`;
 
@@ -607,10 +627,18 @@ export class InMemoryWorldRepository implements IWorldRepository {
   }): WorldRelation[] {
     let list = Array.from(this.relations.values());
     if (filter?.sourceEntityId) {
-      list = list.filter((r) => r.sourceEntityId === filter.sourceEntityId || (r.isBidirectional && r.targetEntityId === filter.sourceEntityId));
+      list = list.filter(
+        (r) =>
+          r.sourceEntityId === filter.sourceEntityId ||
+          (r.isBidirectional && r.targetEntityId === filter.sourceEntityId),
+      );
     }
     if (filter?.targetEntityId) {
-      list = list.filter((r) => r.targetEntityId === filter.targetEntityId || (r.isBidirectional && r.sourceEntityId === filter.targetEntityId));
+      list = list.filter(
+        (r) =>
+          r.targetEntityId === filter.targetEntityId ||
+          (r.isBidirectional && r.sourceEntityId === filter.targetEntityId),
+      );
     }
     if (filter?.relationType) {
       list = list.filter((r) => r.relationType === filter.relationType);
@@ -630,7 +658,10 @@ export class InMemoryWorldRepository implements IWorldRepository {
     this.changes.unshift({ ...change });
   }
 
-  public listEnvironmentalChanges(filter?: { entityId?: string; limit?: number }): WorldEnvironmentalChange[] {
+  public listEnvironmentalChanges(filter?: {
+    entityId?: string;
+    limit?: number;
+  }): WorldEnvironmentalChange[] {
     let list = [...this.changes];
     if (filter?.entityId) list = list.filter((c) => c.entityId === filter.entityId);
     if (filter?.limit) list = list.slice(0, filter.limit);
@@ -647,7 +678,8 @@ export class InMemoryWorldRepository implements IWorldRepository {
   }): CausalRelationship[] {
     let list = Array.from(this.causalRelationships.values());
     if (filter?.causeEntityId) list = list.filter((c) => c.causeEntityId === filter.causeEntityId);
-    if (filter?.effectEntityId) list = list.filter((c) => c.effectEntityId === filter.effectEntityId);
+    if (filter?.effectEntityId)
+      list = list.filter((c) => c.effectEntityId === filter.effectEntityId);
     return list;
   }
 

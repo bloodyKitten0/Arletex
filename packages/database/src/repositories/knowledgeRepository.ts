@@ -1,9 +1,5 @@
 import Database from 'better-sqlite3';
-import {
-  KnowledgeDocument,
-  KnowledgeChunk,
-  LoRAAdapterRecord,
-} from '@arletex/contracts';
+import { KnowledgeDocument, KnowledgeChunk, LoRAAdapterRecord } from '@arletex/contracts';
 import { IKnowledgeRepository } from '@arletex/core';
 
 export { IKnowledgeRepository };
@@ -38,7 +34,9 @@ export class SqliteKnowledgeRepository implements IKnowledgeRepository {
   }
 
   public getDocument(id: string): KnowledgeDocument | null {
-    const row = this.db.prepare(`SELECT * FROM external_knowledge_documents WHERE id = ?`).get(id) as any;
+    const row = this.db
+      .prepare(`SELECT * FROM external_knowledge_documents WHERE id = ?`)
+      .get(id) as any;
     if (!row) return null;
     return {
       id: row.id,
@@ -56,7 +54,9 @@ export class SqliteKnowledgeRepository implements IKnowledgeRepository {
     const query = domain
       ? `SELECT * FROM external_knowledge_documents WHERE domain = ? ORDER BY created_at DESC`
       : `SELECT * FROM external_knowledge_documents ORDER BY created_at DESC`;
-    const rows = (domain ? this.db.prepare(query).all(domain) : this.db.prepare(query).all()) as any[];
+    const rows = (
+      domain ? this.db.prepare(query).all(domain) : this.db.prepare(query).all()
+    ) as any[];
 
     return rows.map((row) => ({
       id: row.id,
@@ -98,7 +98,9 @@ export class SqliteKnowledgeRepository implements IKnowledgeRepository {
 
   public getChunksByDocument(documentId: string): KnowledgeChunk[] {
     const rows = this.db
-      .prepare(`SELECT * FROM external_knowledge_chunks WHERE document_id = ? ORDER BY chunk_index ASC`)
+      .prepare(
+        `SELECT * FROM external_knowledge_chunks WHERE document_id = ? ORDER BY chunk_index ASC`,
+      )
       .all(documentId) as any[];
 
     return rows.map((r) => ({
@@ -112,7 +114,9 @@ export class SqliteKnowledgeRepository implements IKnowledgeRepository {
     }));
   }
 
-  public getAllChunksWithDocs(domain?: string): Array<{ chunk: KnowledgeChunk; document: KnowledgeDocument }> {
+  public getAllChunksWithDocs(
+    domain?: string,
+  ): Array<{ chunk: KnowledgeChunk; document: KnowledgeDocument }> {
     const query = domain
       ? `
         SELECT c.*, d.title as doc_title, d.domain as doc_domain, d.source_uri, d.author, d.reliability_score, d.metadata_json, d.created_at as doc_created_at
@@ -126,7 +130,9 @@ export class SqliteKnowledgeRepository implements IKnowledgeRepository {
         JOIN external_knowledge_documents d ON c.document_id = d.id
       `;
 
-    const rows = (domain ? this.db.prepare(query).all(domain) : this.db.prepare(query).all()) as any[];
+    const rows = (
+      domain ? this.db.prepare(query).all(domain) : this.db.prepare(query).all()
+    ) as any[];
 
     return rows.map((r) => ({
       chunk: {
@@ -202,7 +208,9 @@ export class SqliteKnowledgeRepository implements IKnowledgeRepository {
     const query = domain
       ? `SELECT * FROM lora_adapters WHERE domain = ? ORDER BY created_at DESC`
       : `SELECT * FROM lora_adapters ORDER BY created_at DESC`;
-    const rows = (domain ? this.db.prepare(query).all(domain) : this.db.prepare(query).all()) as any[];
+    const rows = (
+      domain ? this.db.prepare(query).all(domain) : this.db.prepare(query).all()
+    ) as any[];
 
     return rows.map((r) => ({
       id: r.id,

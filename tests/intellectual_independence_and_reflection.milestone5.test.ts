@@ -2,11 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import {
-  ApeRepository,
-  DatabaseService,
-  MigrationRunner,
-} from '@arletex/database';
+import { ApeRepository, DatabaseService, MigrationRunner } from '@arletex/database';
 import {
   ApeService,
   CognitiveControlBus,
@@ -63,7 +59,8 @@ describe('Milestone 5 — Intellectual Independence, Belief Management, and Self
   describe('5.1 Independent Question Generation', () => {
     it('formulates independent intellectual questions without waiting for user prompting', () => {
       const q = intellectualEngine.generateQuestion({
-        question: 'Does capability-based memory addressing eliminate microkernel TLB shootdown overhead?',
+        question:
+          'Does capability-based memory addressing eliminate microkernel TLB shootdown overhead?',
         domain: 'Microkernel Architecture',
         origin: 'curiosity',
         underlyingAssumptions: [
@@ -100,18 +97,21 @@ describe('Milestone 5 — Intellectual Independence, Belief Management, and Self
   describe('5.2 Hypothesis Formulation and Research Planning', () => {
     it('formulates competing hypotheses for an open question and builds research plan', () => {
       const q = intellectualEngine.generateQuestion({
-        question: 'Which IPC mechanism yields lower tail latency under high-concurrency workloads: shared ringbuffers or synchronous context switches?',
+        question:
+          'Which IPC mechanism yields lower tail latency under high-concurrency workloads: shared ringbuffers or synchronous context switches?',
         domain: 'Operating System IPC',
         origin: 'curiosity',
       });
 
       const withHypotheses = intellectualEngine.formulateCompetingHypotheses(q.id, [
         {
-          statement: 'Shared ringbuffers yield lower tail latency by avoiding synchronous kernel transitions',
+          statement:
+            'Shared ringbuffers yield lower tail latency by avoiding synchronous kernel transitions',
           plausibility: 0.6,
         },
         {
-          statement: 'Synchronous context switches yield lower tail latency by eliminating cache line bouncing on shared head/tail pointers',
+          statement:
+            'Synchronous context switches yield lower tail latency by eliminating cache line bouncing on shared head/tail pointers',
           plausibility: 0.5,
         },
       ]);
@@ -139,8 +139,14 @@ describe('Milestone 5 — Intellectual Independence, Belief Management, and Self
       });
 
       intellectualEngine.formulateCompetingHypotheses(q.id, [
-        { statement: 'seL4 binary verification verifies machine code directly, preserving proofs', plausibility: 0.5 },
-        { statement: 'Compiler optimizations introduce subtle assembly mismatches', plausibility: 0.5 },
+        {
+          statement: 'seL4 binary verification verifies machine code directly, preserving proofs',
+          plausibility: 0.5,
+        },
+        {
+          statement: 'Compiler optimizations introduce subtle assembly mismatches',
+          plausibility: 0.5,
+        },
       ]);
 
       // 1. Primary Empirical Source (High reliability)
@@ -150,18 +156,31 @@ describe('Milestone 5 — Intellectual Independence, Belief Management, and Self
         sourceUrl: 'https://sel4.systems/Research/binary-verification.pdf',
         sourceType: 'primary' as const,
         reliabilityScore: 0.95,
-        extractedEvidence: ['Direct Isabelle/HOL proofs validate binary machine code against C abstract specification'],
+        extractedEvidence: [
+          'Direct Isabelle/HOL proofs validate binary machine code against C abstract specification',
+        ],
         retrievedAt: new Date().toISOString(),
       };
 
       const updated = intellectualEngine.evaluateAndRecordSource(q.id, primarySource, [
-        { hypothesisIndex: 0, evidence: 'Verified Isabelle translation validation proves semantics from C to ARM/RISC-V binary', supports: true },
-        { hypothesisIndex: 1, evidence: 'Binary validation actively catches compiler discrepancies before deployment', supports: false },
+        {
+          hypothesisIndex: 0,
+          evidence:
+            'Verified Isabelle translation validation proves semantics from C to ARM/RISC-V binary',
+          supports: true,
+        },
+        {
+          hypothesisIndex: 1,
+          evidence: 'Binary validation actively catches compiler discrepancies before deployment',
+          supports: false,
+        },
       ]);
 
       expect(updated.competingHypotheses[0]!.plausibility).toBeGreaterThan(0.6);
       expect(updated.competingHypotheses[1]!.plausibility).toBeLessThan(0.5);
-      expect(updated.competingHypotheses[0]!.supportingEvidence[0]).toContain('seL4 Binary Verification');
+      expect(updated.competingHypotheses[0]!.supportingEvidence[0]).toContain(
+        'seL4 Binary Verification',
+      );
     });
 
     it('synthesizes conclusion, resolves question, and creates persistent evidence-backed belief', () => {
@@ -172,11 +191,15 @@ describe('Milestone 5 — Intellectual Independence, Belief Management, and Self
       });
 
       intellectualEngine.formulateCompetingHypotheses(q.id, [
-        { statement: 'Binary verification is viable and verified in seL4 deployments', plausibility: 0.85 },
+        {
+          statement: 'Binary verification is viable and verified in seL4 deployments',
+          plausibility: 0.85,
+        },
       ]);
 
       const result = intellectualEngine.synthesizeConclusionAndFormBelief(q.id, {
-        conclusionProposition: 'Binary formal verification is viable and reliably eliminates compilation discrepancies in safety-critical microkernels.',
+        conclusionProposition:
+          'Binary formal verification is viable and reliably eliminates compilation discrepancies in safety-critical microkernels.',
         confidence: 0.92,
         dominantHypothesisIndex: 0,
       });
@@ -185,7 +208,9 @@ describe('Milestone 5 — Intellectual Independence, Belief Management, and Self
       expect(result.question.resolutionSummary).toContain('Binary formal verification is viable');
 
       // Verify belief created in PersonalityEngine
-      const belief = personalityEngine.getState().beliefs.find((b) => b.topic === 'System Reliability');
+      const belief = personalityEngine
+        .getState()
+        .beliefs.find((b) => b.topic === 'System Reliability');
       expect(belief).toBeDefined();
       expect(belief?.content).toContain('Binary formal verification is viable');
       expect(belief?.confidence).toBe(0.92);
@@ -203,7 +228,10 @@ describe('Milestone 5 — Intellectual Independence, Belief Management, and Self
         'microkernel_performance',
         'Modern microkernel designs like seL4 achieve fast microsecond-range IPC context switches',
         0.92,
-        ['L4 benchmark shows 100-200 CPU cycles per IPC context switch on x86/ARM', 'ACM TOCS empirical performance evaluations'],
+        [
+          'L4 benchmark shows 100-200 CPU cycles per IPC context switch on x86/ARM',
+          'ACM TOCS empirical performance evaluations',
+        ],
         'research',
       );
 
@@ -215,7 +243,9 @@ describe('Milestone 5 — Intellectual Independence, Belief Management, and Self
       expect(evaluation.contradictoryBelief).toBeDefined();
       expect(evaluation.contradictoryBelief?.topic).toBe('microkernel_performance');
       expect(evaluation.counterEvidence.length).toBeGreaterThan(0);
-      expect(evaluation.respectfulDisagreementReason).toContain('I understand your perspective, but verified evidence');
+      expect(evaluation.respectfulDisagreementReason).toContain(
+        'I understand your perspective, but verified evidence',
+      );
       expect(evaluation.respectfulDisagreementReason).toContain('100-200 CPU cycles');
     });
 
@@ -228,7 +258,8 @@ describe('Milestone 5 — Intellectual Independence, Belief Management, and Self
         'research',
       );
 
-      const claim = 'In distributed networks, partitions force systems to balance consistency and availability';
+      const claim =
+        'In distributed networks, partitions force systems to balance consistency and availability';
       const evaluation = personalityEngine.evaluateClaim(claim);
 
       expect(evaluation.conflicts).toBe(false);
@@ -251,15 +282,20 @@ describe('Milestone 5 — Intellectual Independence, Belief Management, and Self
       );
 
       // 2. Encounter contradictory empirical observation (e.g. SMT sibling contention causes latency jitter)
-      const detection = personalityEngine.detectContradictoryExperience('Observed local_cache_latency benchmark failed with inconsistent jitter under SMT sibling load');
+      const detection = personalityEngine.detectContradictoryExperience(
+        'Observed local_cache_latency benchmark failed with inconsistent jitter under SMT sibling load',
+      );
       expect(detection.hasContradiction).toBe(true);
 
       // 3. Revise belief with opposing evidence
       const revised = personalityEngine.reviseBeliefWithEvidence(initial.id, {
-        newEvidence: 'Benchmark reveals SMT sibling hyper-thread cache port contention creates measurable latency spikes',
+        newEvidence:
+          'Benchmark reveals SMT sibling hyper-thread cache port contention creates measurable latency spikes',
         isOpposing: true,
-        reason: 'Empirical benchmark demonstrated SMT cache port interference, refuting constant-time assumption',
-        revisedProposition: 'Local L1 cache access exhibits low mean latency but is subject to contention jitter under concurrent SMT workloads',
+        reason:
+          'Empirical benchmark demonstrated SMT cache port interference, refuting constant-time assumption',
+        revisedProposition:
+          'Local L1 cache access exhibits low mean latency but is subject to contention jitter under concurrent SMT workloads',
       });
 
       expect(revised).toBeDefined();
@@ -267,7 +303,9 @@ describe('Milestone 5 — Intellectual Independence, Belief Management, and Self
       expect(revised?.opposingEvidence.length).toBe(1);
       expect(revised?.revisionHistory.length).toBe(1);
       expect(revised?.revisionHistory[0]?.previousConfidence).toBe(0.88);
-      expect(revised?.revisionHistory[0]?.previousProposition).toContain('universally reliable and constant-time');
+      expect(revised?.revisionHistory[0]?.previousProposition).toContain(
+        'universally reliable and constant-time',
+      );
       expect(revised?.revisionHistory[0]?.reason).toContain('SMT cache port interference');
       expect(revised?.content).toContain('subject to contention jitter');
     });
@@ -309,9 +347,24 @@ describe('Milestone 5 — Intellectual Independence, Belief Management, and Self
 
     it('synthesizes stable autobiographical identity narrative with empirical grounding', () => {
       // Record 3 verified successes in a domain to earn demonstrated competence
-      selfModelEngine.recordCompetenceExperience({ domain: 'Topological Analysis', success: true, taskTitle: 'Task 1', evidence: 'Verified' });
-      selfModelEngine.recordCompetenceExperience({ domain: 'Topological Analysis', success: true, taskTitle: 'Task 2', evidence: 'Verified' });
-      selfModelEngine.recordCompetenceExperience({ domain: 'Topological Analysis', success: true, taskTitle: 'Task 3', evidence: 'Verified' });
+      selfModelEngine.recordCompetenceExperience({
+        domain: 'Topological Analysis',
+        success: true,
+        taskTitle: 'Task 1',
+        evidence: 'Verified',
+      });
+      selfModelEngine.recordCompetenceExperience({
+        domain: 'Topological Analysis',
+        success: true,
+        taskTitle: 'Task 2',
+        evidence: 'Verified',
+      });
+      selfModelEngine.recordCompetenceExperience({
+        domain: 'Topological Analysis',
+        success: true,
+        taskTitle: 'Task 3',
+        evidence: 'Verified',
+      });
 
       // Record an acknowledged physical embodiment limitation
       selfModelEngine.recordOperationOutcome({
@@ -325,7 +378,9 @@ describe('Milestone 5 — Intellectual Independence, Belief Management, and Self
 
       const narrative = selfModelEngine.generateIdentityNarrative();
 
-      expect(narrative).toContain('I am Arle, an autonomous artificial individual and equal intellectual partner to Proof');
+      expect(narrative).toContain(
+        'I am Arle, an autonomous artificial individual and equal intellectual partner to Proof',
+      );
       expect(narrative).toContain('Demonstrated empirical capabilities include:');
       expect(narrative).toContain('Topological Analysis');
       expect(narrative).toContain('boundaries');
@@ -361,7 +416,9 @@ describe('Milestone 5 — Intellectual Independence, Belief Management, and Self
       expect(result.decision).toBeDefined();
       expect(result.decision?.actionType).toBe('speak');
       // The decision chosen alternative reason must reflect intellectual divergence backed by evidence!
-      expect(result.decision?.chosenAlternativeReason).toContain('Respectfully communicate intellectual divergence');
+      expect(result.decision?.chosenAlternativeReason).toContain(
+        'Respectfully communicate intellectual divergence',
+      );
       expect(result.decision?.chosenAlternativeReason).toContain('formal_methods');
     });
 
@@ -406,7 +463,9 @@ describe('Milestone 5 — Intellectual Independence, Belief Management, and Self
       expect(restoredQ?.competingHypotheses[0]?.statement).toContain('Betti numbers spike');
 
       // Verify belief & revision history restoration
-      const restoredBelief = newApeService.personalityEngine.getState().beliefs.find((b) => b.id === belief.id);
+      const restoredBelief = newApeService.personalityEngine
+        .getState()
+        .beliefs.find((b) => b.id === belief.id);
       expect(restoredBelief).toBeDefined();
       expect(restoredBelief?.confidence).toBeGreaterThan(0.85);
       expect(restoredBelief?.revisionHistory.length).toBe(1);

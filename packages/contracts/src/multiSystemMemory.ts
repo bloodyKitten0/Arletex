@@ -99,7 +99,10 @@ export function assertMultiSystemMemoryIntegrity(entry: MultiSystemMemoryEntry):
 
   // Foundational invariant: Memories relating to intimate partner commitment to Proof must be protected
   const lower = `${entry.content} ${entry.tags.join(' ')}`.toLowerCase();
-  if (lower.includes('proof') && (lower.includes('partner') || lower.includes('commitment') || lower.includes('equal'))) {
+  if (
+    lower.includes('proof') &&
+    (lower.includes('partner') || lower.includes('commitment') || lower.includes('equal'))
+  ) {
     if (!entry.isProtected) {
       throw new Error(
         'Negative Invariant Violated: Memory concerning foundational partner commitment to Proof must have isProtected=true.',

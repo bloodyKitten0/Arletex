@@ -30,7 +30,10 @@ export class InMemoryMetacognitionRepository implements IMetacognitionRepository
     return a ? { ...a } : null;
   }
 
-  public listAssessments(filter?: { targetDomain?: string; limit?: number }): CognitiveAssessment[] {
+  public listAssessments(filter?: {
+    targetDomain?: string;
+    limit?: number;
+  }): CognitiveAssessment[] {
     let list = Array.from(this.assessments.values());
     if (filter?.targetDomain) {
       list = list.filter((a) => a.targetDomain === filter.targetDomain);
@@ -56,7 +59,10 @@ export class InMemoryMetacognitionRepository implements IMetacognitionRepository
     return c ? { ...c } : null;
   }
 
-  public listCorrections(filter?: { assessmentId?: string; limit?: number }): MetacognitiveCorrection[] {
+  public listCorrections(filter?: {
+    assessmentId?: string;
+    limit?: number;
+  }): MetacognitiveCorrection[] {
     let list = Array.from(this.corrections.values());
     if (filter?.assessmentId) {
       list = list.filter((c) => c.assessmentId === filter.assessmentId);
@@ -189,10 +195,16 @@ export class MetacognitionEngine {
         const isDirectNegation =
           (lowerA.startsWith('not ') && lowerA.slice(4) === lowerB) ||
           (lowerB.startsWith('not ') && lowerB.slice(4) === lowerA) ||
-          (lowerA.includes(' is ') && lowerB.includes(' is not ') && lowerA.replace(' is ', ' ') === lowerB.replace(' is not ', ' ')) ||
-          (lowerB.includes(' is ') && lowerA.includes(' is not ') && lowerB.replace(' is ', ' ') === lowerA.replace(' is not ', ' ')) ||
+          (lowerA.includes(' is ') &&
+            lowerB.includes(' is not ') &&
+            lowerA.replace(' is ', ' ') === lowerB.replace(' is not ', ' ')) ||
+          (lowerB.includes(' is ') &&
+            lowerA.includes(' is not ') &&
+            lowerB.replace(' is ', ' ') === lowerA.replace(' is not ', ' ')) ||
           (lowerA.includes('enabled') && lowerB.includes('disabled')) ||
-          (lowerA.includes('true') && lowerB.includes('false') && lowerA.replace('true', '') === lowerB.replace('false', '')) ||
+          (lowerA.includes('true') &&
+            lowerB.includes('false') &&
+            lowerA.replace('true', '') === lowerB.replace('false', '')) ||
           (lowerA.includes('always') && lowerB.includes('never'));
 
         if (isDirectNegation) {
@@ -336,7 +348,8 @@ export class MetacognitionEngine {
     }
 
     // 2. Unsupported assumptions check
-    const assumptions = input.identifiedAssumptions || this.identifyAssumptions(premisesText + ' ' + conclusionText);
+    const assumptions =
+      input.identifiedAssumptions || this.identifyAssumptions(premisesText + ' ' + conclusionText);
     if (assumptions.length >= 2) {
       errors.push({
         type: 'unsupported_assumption',
@@ -347,7 +360,11 @@ export class MetacognitionEngine {
     }
 
     // 3. Overgeneralization check
-    if (conclusionText.includes('always') || conclusionText.includes('never') || conclusionText.includes('all')) {
+    if (
+      conclusionText.includes('always') ||
+      conclusionText.includes('never') ||
+      conclusionText.includes('all')
+    ) {
       if (!premisesText.includes('universal') && !premisesText.includes('every')) {
         errors.push({
           type: 'overgeneralization',
@@ -412,7 +429,8 @@ export class MetacognitionEngine {
 
     // 6. Epistemic vs Aleatoric Uncertainty
     // Low evidence increases epistemic uncertainty (which is reducible by investigation)
-    const epistemicUncertainty = Math.round((1.0 - evidenceAssessment.sufficiencyScore) * 1000) / 1000;
+    const epistemicUncertainty =
+      Math.round((1.0 - evidenceAssessment.sufficiencyScore) * 1000) / 1000;
     const aleatoricUncertainty = Math.round(0.2 * 1000) / 1000;
 
     // 7. Decide investigation and self-correction
@@ -425,9 +443,7 @@ export class MetacognitionEngine {
       hasHighSeverityContradiction;
 
     const selfCorrectionInitiated =
-      calibration.isOverconfident ||
-      reasoningQuality.score < 0.6 ||
-      hasHighSeverityContradiction;
+      calibration.isOverconfident || reasoningQuality.score < 0.6 || hasHighSeverityContradiction;
 
     const correctiveActions: string[] = [];
     if (calibration.isOverconfident) {
@@ -441,9 +457,7 @@ export class MetacognitionEngine {
       );
     }
     if (hasHighSeverityContradiction) {
-      correctiveActions.push(
-        `Initiate inquiry to reconcile contradictory assertions.`,
-      );
+      correctiveActions.push(`Initiate inquiry to reconcile contradictory assertions.`);
     }
 
     const investigationFocus = needsInvestigation
@@ -504,7 +518,9 @@ export class MetacognitionEngine {
 
     assertCorrectionIntegrity(correction);
     this.repo.saveCorrection(correction);
-    this.logger.info(`Self-correction applied for assessment ${correction.assessmentId}: "${correction.correctedClaim}" (Adj: ${correction.confidenceAdjustment})`);
+    this.logger.info(
+      `Self-correction applied for assessment ${correction.assessmentId}: "${correction.correctedClaim}" (Adj: ${correction.confidenceAdjustment})`,
+    );
     return correction;
   }
 
@@ -526,9 +542,13 @@ export class MetacognitionEngine {
       return { shouldInvestigate: false, priority: 0.1 };
     }
 
-    const priority = Math.round(
-      Math.min(1.0, (assessment.epistemicUncertainty * 0.6) + (1.0 - assessment.evidenceSufficiency) * 0.4) * 1000,
-    ) / 1000;
+    const priority =
+      Math.round(
+        Math.min(
+          1.0,
+          assessment.epistemicUncertainty * 0.6 + (1.0 - assessment.evidenceSufficiency) * 0.4,
+        ) * 1000,
+      ) / 1000;
 
     const inquiryPrompt =
       assessment.investigationFocus ||
@@ -549,7 +569,10 @@ export class MetacognitionEngine {
     return this.repo.getAssessmentById(id);
   }
 
-  public listAssessments(filter?: { targetDomain?: string; limit?: number }): CognitiveAssessment[] {
+  public listAssessments(filter?: {
+    targetDomain?: string;
+    limit?: number;
+  }): CognitiveAssessment[] {
     return this.repo.listAssessments(filter);
   }
 
@@ -557,7 +580,10 @@ export class MetacognitionEngine {
     return this.repo.getCorrectionById(id);
   }
 
-  public listCorrections(filter?: { assessmentId?: string; limit?: number }): MetacognitiveCorrection[] {
+  public listCorrections(filter?: {
+    assessmentId?: string;
+    limit?: number;
+  }): MetacognitiveCorrection[] {
     return this.repo.listCorrections(filter);
   }
 

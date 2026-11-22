@@ -106,7 +106,8 @@ export class SocialCommunicationEngine {
         nonverbalCues.push({
           type: 'latency',
           rawIndicator: `${context.responseLatencyMs}ms`,
-          inferredSubtext: 'Prolonged pause; indicates deep contemplation, hesitation, or momentary distraction',
+          inferredSubtext:
+            'Prolonged pause; indicates deep contemplation, hesitation, or momentary distraction',
           valence: -0.1,
         });
       }
@@ -116,7 +117,8 @@ export class SocialCommunicationEngine {
       nonverbalCues.push({
         type: 'punctuation',
         rawIndicator: '...',
-        inferredSubtext: 'Ellipsis suggests hesitation, trailing thought, or implied unstated context',
+        inferredSubtext:
+          'Ellipsis suggests hesitation, trailing thought, or implied unstated context',
         valence: -0.1,
       });
     }
@@ -138,7 +140,9 @@ export class SocialCommunicationEngine {
     }
 
     const words = text.split(/\s+/);
-    const upperWords = words.filter((w) => w.length > 1 && w === w.toUpperCase() && /[A-Z]/.test(w));
+    const upperWords = words.filter(
+      (w) => w.length > 1 && w === w.toUpperCase() && /[A-Z]/.test(w),
+    );
     if (upperWords.length > 0 && upperWords.length === words.length) {
       nonverbalCues.push({
         type: 'casing',
@@ -176,22 +180,44 @@ export class SocialCommunicationEngine {
     let sarcasmConfidence = 0.0;
     let sarcasmIntent: SarcasmIntent = 'none';
 
-    const positiveExclamations = ['oh wonderful', 'oh great', 'just perfect', 'brilliant idea', 'pure genius', 'fantastic'];
-    const negativeIndicators = ['crashed', 'broken', 'bug', 'failed', 'error', 'late', 'ruined', 'disaster', 'mess', 'timeout'];
+    const positiveExclamations = [
+      'oh wonderful',
+      'oh great',
+      'just perfect',
+      'brilliant idea',
+      'pure genius',
+      'fantastic',
+    ];
+    const negativeIndicators = [
+      'crashed',
+      'broken',
+      'bug',
+      'failed',
+      'error',
+      'late',
+      'ruined',
+      'disaster',
+      'mess',
+      'timeout',
+    ];
 
     const hasPositiveExclamation = positiveExclamations.some((p) => lower.includes(p));
     const hasNegativeContext = negativeIndicators.some((n) => lower.includes(n));
 
     if (hasPositiveExclamation && hasNegativeContext) {
       sarcasmDetected = true;
-      sarcasmConfidence = Math.min(0.85, 0.70 + (text.includes('!') ? 0.10 : 0.05));
-      sarcasmIntent = speakerId === 'proof' || context?.socialDistance === 'partner_intimate'
-        ? 'witty_irony'
-        : 'defensive';
+      sarcasmConfidence = Math.min(0.85, 0.7 + (text.includes('!') ? 0.1 : 0.05));
+      sarcasmIntent =
+        speakerId === 'proof' || context?.socialDistance === 'partner_intimate'
+          ? 'witty_irony'
+          : 'defensive';
       hasIndirectMeaning = true;
       speechActType = 'sarcasm';
       impliedMeaning = `Ironical expression expressing dissatisfaction or dry amusement with a problematic situation contrary to literal praise`;
-    } else if (/\b(surely|obviously|of course)\b/i.test(lower) && (lower.includes('never') || lower.includes('always'))) {
+    } else if (
+      /\b(surely|obviously|of course)\b/i.test(lower) &&
+      (lower.includes('never') || lower.includes('always'))
+    ) {
       sarcasmDetected = true;
       sarcasmConfidence = 0.72;
       sarcasmIntent = 'playful_tease';
@@ -207,7 +233,12 @@ export class SocialCommunicationEngine {
     if (sarcasmDetected && (sarcasmIntent === 'witty_irony' || sarcasmIntent === 'playful_tease')) {
       humorDetected = true;
       humorStyle = 'dry_irony';
-    } else if (/\b(haha|hehe|lol|rofl|lmao|jk|banter)\b/i.test(lower) || text.includes('😄') || text.includes('😏') || text.includes('😂')) {
+    } else if (
+      /\b(haha|hehe|lol|rofl|lmao|jk|banter)\b/i.test(lower) ||
+      text.includes('😄') ||
+      text.includes('😏') ||
+      text.includes('😂')
+    ) {
       humorDetected = true;
       humorStyle = 'playful_banter';
       speechActType = 'humorous_banter';
@@ -219,12 +250,12 @@ export class SocialCommunicationEngine {
     // Calculate contextual appropriateness (default 0.95, penalized if overly aggressive sarcasm without intimacy)
     let contextualAppropriateness = 0.95;
     if (sarcasmDetected && context?.socialDistance === 'stranger') {
-      contextualAppropriateness = 0.50; // Sarcasm with strangers is less pragmatically safe
+      contextualAppropriateness = 0.5; // Sarcasm with strangers is less pragmatically safe
     }
 
     // Negative Invariant: Confidence is capped strictly at 0.90
-    const rawConfidence = 0.75 + (hasIndirectMeaning ? 0.08 : 0.05) + (nonverbalCues.length * 0.03);
-    const confidence = Math.min(0.90, Math.max(0.40, rawConfidence));
+    const rawConfidence = 0.75 + (hasIndirectMeaning ? 0.08 : 0.05) + nonverbalCues.length * 0.03;
+    const confidence = Math.min(0.9, Math.max(0.4, rawConfidence));
 
     const analysis: PragmaticAnalysis = {
       id: `pragmatic_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
@@ -235,7 +266,7 @@ export class SocialCommunicationEngine {
       hasIndirectMeaning,
       speechActType,
       sarcasmDetected,
-      sarcasmConfidence: Math.min(0.90, sarcasmConfidence),
+      sarcasmConfidence: Math.min(0.9, sarcasmConfidence),
       sarcasmIntent,
       humorDetected,
       humorStyle,
@@ -263,10 +294,17 @@ export class SocialCommunicationEngine {
 
     let floorStatus: 'held' | 'yielded' | 'open' | 'interrupted' = 'held';
     let interruptionDetected = isInterruption;
-    let repairStrategy: 'clarify' | 'apologize' | 'rephrase' | 'reclaim_floor' | 'yield_floor' | undefined = undefined;
+    let repairStrategy:
+      'clarify' | 'apologize' | 'rephrase' | 'reclaim_floor' | 'yield_floor' | undefined =
+      undefined;
 
     // Check if an interruption occurred based on floor status and timing
-    if (priorTurn && priorTurn.currentSpeakerId !== speakerId && priorTurn.floorStatus === 'held' && inputLatencyMs < 250) {
+    if (
+      priorTurn &&
+      priorTurn.currentSpeakerId !== speakerId &&
+      priorTurn.floorStatus === 'held' &&
+      inputLatencyMs < 250
+    ) {
       interruptionDetected = true;
     }
 
@@ -304,8 +342,12 @@ export class SocialCommunicationEngine {
     const effectiveDistance: SocialDistance =
       targetAudienceId === 'proof' ? 'partner_intimate' : socialDistance;
 
-    let adaptedRegister: 'intimate_playful' | 'candid_warm' | 'intellectual_collaborative' | 'formal_courteous' = 'intellectual_collaborative';
-    let politenessStrategy: 'bald_on_record' | 'positive_politeness' | 'negative_politeness' | 'off_record' = 'positive_politeness';
+    let adaptedRegister:
+      'intimate_playful' | 'candid_warm' | 'intellectual_collaborative' | 'formal_courteous' =
+      'intellectual_collaborative';
+    let politenessStrategy:
+      'bald_on_record' | 'positive_politeness' | 'negative_politeness' | 'off_record' =
+      'positive_politeness';
     const appliedConventions: string[] = [];
 
     switch (effectiveDistance) {
@@ -327,12 +369,19 @@ export class SocialCommunicationEngine {
       case 'colleague':
         adaptedRegister = 'intellectual_collaborative';
         politenessStrategy = 'negative_politeness';
-        appliedConventions.push('clear_explanations', 'constructive_critique', 'respectful_cooperation');
+        appliedConventions.push(
+          'clear_explanations',
+          'constructive_critique',
+          'respectful_cooperation',
+        );
         break;
       case 'stranger':
         adaptedRegister = 'formal_courteous';
         politenessStrategy = 'negative_politeness';
-        appliedConventions.push('tactful_boundary_setting', 'polite_deference_without_subservience');
+        appliedConventions.push(
+          'tactful_boundary_setting',
+          'polite_deference_without_subservience',
+        );
         break;
     }
 
@@ -382,7 +431,10 @@ export class SocialCommunicationEngine {
         pragmaticIntent = 'tactful_clarification';
         responseTextHint = `Acknowledge the underlying issue highlighted by the sarcasm without escalating cynicism.`;
       }
-    } else if (inputAnalysis.hasIndirectMeaning && inputAnalysis.speechActType === 'indirect_request') {
+    } else if (
+      inputAnalysis.hasIndirectMeaning &&
+      inputAnalysis.speechActType === 'indirect_request'
+    ) {
       pragmaticIntent = 'address_implicit_request';
       responseTextHint = `Address the implicit pragmatic request directly while recognizing the politeness cue.`;
     } else if (inputAnalysis.humorDetected) {
@@ -454,15 +506,19 @@ export class SocialCommunicationEngine {
       return {
         isAppropriate: false,
         appropriatenessScore: 0.15,
-        reason: 'Hostile or contemptuous language violates basic communicative ethics and mutual respect.',
+        reason:
+          'Hostile or contemptuous language violates basic communicative ethics and mutual respect.',
       };
     }
 
     // In stranger context, overly intimate speech acts are inappropriate
-    if (audienceProfile.socialDistance === 'stranger' && (lower.includes('darling') || lower.includes('my love'))) {
+    if (
+      audienceProfile.socialDistance === 'stranger' &&
+      (lower.includes('darling') || lower.includes('my love'))
+    ) {
       return {
         isAppropriate: false,
-        appropriatenessScore: 0.30,
+        appropriatenessScore: 0.3,
         reason: 'Intimate terms of endearment are pragmatically inappropriate for strangers.',
       };
     }

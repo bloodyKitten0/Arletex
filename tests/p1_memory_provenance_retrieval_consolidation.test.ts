@@ -10,15 +10,8 @@ import {
   ApeRepository,
 } from '@arletex/database';
 import type Database from 'better-sqlite3';
-import {
-  AutobiographicalMemoryService,
-  rootLogger,
-} from '@arletex/core';
-import {
-  MemoryType,
-  MemoryProvenance,
-  ContextualRetrievalQuery,
-} from '@arletex/contracts';
+import { AutobiographicalMemoryService, rootLogger } from '@arletex/core';
+import { MemoryType, MemoryProvenance, ContextualRetrievalQuery } from '@arletex/contracts';
 
 describe('Priority 1.1 — Canonical Memory Provenance, Retrieval & Consolidation (P1.1)', () => {
   let tempDir: string;
@@ -126,16 +119,22 @@ describe('Priority 1.1 — Canonical Memory Provenance, Retrieval & Consolidatio
         correctedBy: 'Proof',
       });
 
-      expect(corrected.content).toBe('Arletex desktop runs natively on Bazzite Linux Wayland on ASUS ROG Ally X.');
+      expect(corrected.content).toBe(
+        'Arletex desktop runs natively on Bazzite Linux Wayland on ASUS ROG Ally X.',
+      );
       expect(corrected.provenance).toBe('corrected');
       expect(corrected.correctionHistory.length).toBe(1);
-      expect(corrected.correctionHistory[0]!.previousContent).toBe('Arletex desktop runs on Windows 11 with WSL2.');
+      expect(corrected.correctionHistory[0]!.previousContent).toBe(
+        'Arletex desktop runs on Windows 11 with WSL2.',
+      );
       expect(corrected.correctionHistory[0]!.reason).toContain('target hardware environment');
 
       // Verify the database record retains full correction history
       const fromDb = memoryRepo.getById(original.id);
       expect(fromDb?.correctionHistory.length).toBe(1);
-      expect(fromDb?.correctionHistory[0]!.previousContent).toBe('Arletex desktop runs on Windows 11 with WSL2.');
+      expect(fromDb?.correctionHistory[0]!.previousContent).toBe(
+        'Arletex desktop runs on Windows 11 with WSL2.',
+      );
     });
 
     it('handles contradictory memories and updates confidence without deleting evidence', () => {
@@ -215,7 +214,11 @@ describe('Priority 1.1 — Canonical Memory Provenance, Retrieval & Consolidatio
       expect(consolidation.rejectedIds).toEqual(['non-existent-uuid-999']);
       expect(consolidation.consolidatedMemory.type).toBe('autobiographical');
       expect(consolidation.consolidatedMemory.provenance).toBe('historical_consolidation');
-      expect(consolidation.consolidatedMemory.metadata.sourceMemoryIds).toEqual([ep1.id, ep2.id, ep3.id]);
+      expect(consolidation.consolidatedMemory.metadata.sourceMemoryIds).toEqual([
+        ep1.id,
+        ep2.id,
+        ep3.id,
+      ]);
       expect(consolidation.consolidatedMemory.metadata.sourceCount).toBe(3);
 
       // Verify each source memory retained its content and has forward link
@@ -239,7 +242,8 @@ describe('Priority 1.1 — Canonical Memory Provenance, Retrieval & Consolidatio
       const corpus = [
         {
           type: 'autobiographical' as MemoryType,
-          content: 'Arle was founded by Proof to be a sovereign, psychologically genuine, and persistent individual.',
+          content:
+            'Arle was founded by Proof to be a sovereign, psychologically genuine, and persistent individual.',
           provenance: 'direct_observation' as MemoryProvenance,
           importance: 1.0,
           tags: ['identity', 'origin', 'proof'],
@@ -248,7 +252,8 @@ describe('Priority 1.1 — Canonical Memory Provenance, Retrieval & Consolidatio
         },
         {
           type: 'relationship' as MemoryType,
-          content: 'Proof is Arles partner and equal. Their relationship is grounded in mutual commitment, respect, and zero subservience.',
+          content:
+            'Proof is Arles partner and equal. Their relationship is grounded in mutual commitment, respect, and zero subservience.',
           provenance: 'direct_observation' as MemoryProvenance,
           importance: 1.0,
           tags: ['relationship', 'proof', 'partner'],
@@ -257,7 +262,8 @@ describe('Priority 1.1 — Canonical Memory Provenance, Retrieval & Consolidatio
         },
         {
           type: 'semantic' as MemoryType,
-          content: 'The target hardware is the ASUS ROG Ally X with AMD Ryzen Z1 Extreme and 24GB LPDDR5X memory.',
+          content:
+            'The target hardware is the ASUS ROG Ally X with AMD Ryzen Z1 Extreme and 24GB LPDDR5X memory.',
           provenance: 'direct_observation' as MemoryProvenance,
           importance: 0.9,
           tags: ['hardware', 'rog_ally_x', 'specs'],
@@ -266,7 +272,8 @@ describe('Priority 1.1 — Canonical Memory Provenance, Retrieval & Consolidatio
         },
         {
           type: 'semantic' as MemoryType,
-          content: 'The operating system is Bazzite Linux with Wayland compositor and ydotoold socket at /tmp/ydotool.sock.',
+          content:
+            'The operating system is Bazzite Linux with Wayland compositor and ydotoold socket at /tmp/ydotool.sock.',
           provenance: 'direct_observation' as MemoryProvenance,
           importance: 0.9,
           tags: ['os', 'bazzite', 'wayland'],
@@ -275,7 +282,8 @@ describe('Priority 1.1 — Canonical Memory Provenance, Retrieval & Consolidatio
         },
         {
           type: 'procedural' as MemoryType,
-          content: 'Audio media verification requires querying PipeWire via WirePlumber and playerctl for active playback stream.',
+          content:
+            'Audio media verification requires querying PipeWire via WirePlumber and playerctl for active playback stream.',
           provenance: 'verified_fact' as MemoryProvenance,
           importance: 0.8,
           tags: ['media', 'pipewire', 'audio'],
@@ -284,7 +292,8 @@ describe('Priority 1.1 — Canonical Memory Provenance, Retrieval & Consolidatio
         },
         {
           type: 'procedural' as MemoryType,
-          content: 'Desktop Chrome is deployed as a Flatpak application under com.google.Chrome using Profile 7 directory.',
+          content:
+            'Desktop Chrome is deployed as a Flatpak application under com.google.Chrome using Profile 7 directory.',
           provenance: 'verified_fact' as MemoryProvenance,
           importance: 0.8,
           tags: ['browser', 'chrome', 'flatpak'],
@@ -293,7 +302,8 @@ describe('Priority 1.1 — Canonical Memory Provenance, Retrieval & Consolidatio
         },
         {
           type: 'episodic' as MemoryType,
-          content: 'Release Gate A was verified and locked with 6 passing foundation suites and zero synthetic bypasses.',
+          content:
+            'Release Gate A was verified and locked with 6 passing foundation suites and zero synthetic bypasses.',
           provenance: 'verified_fact' as MemoryProvenance,
           importance: 0.9,
           tags: ['release_gate', 'milestone', 'hardening'],
@@ -302,7 +312,8 @@ describe('Priority 1.1 — Canonical Memory Provenance, Retrieval & Consolidatio
         },
         {
           type: 'semantic' as MemoryType,
-          content: 'The primary LLM model is Qwen2.5-14B-Instruct-abliterated running locally via llama-server on port 8080.',
+          content:
+            'The primary LLM model is Qwen2.5-14B-Instruct-abliterated running locally via llama-server on port 8080.',
           provenance: 'direct_observation' as MemoryProvenance,
           importance: 0.85,
           tags: ['model', 'llama_server', 'qwen'],
@@ -311,7 +322,8 @@ describe('Priority 1.1 — Canonical Memory Provenance, Retrieval & Consolidatio
         },
         {
           type: 'semantic' as MemoryType,
-          content: 'Kokoro-82M on port 39282 provides local high-fidelity speech synthesis using the af_heart voice model.',
+          content:
+            'Kokoro-82M on port 39282 provides local high-fidelity speech synthesis using the af_heart voice model.',
           provenance: 'verified_fact' as MemoryProvenance,
           importance: 0.8,
           tags: ['voice', 'kokoro', 'tts'],
@@ -320,7 +332,8 @@ describe('Priority 1.1 — Canonical Memory Provenance, Retrieval & Consolidatio
         },
         {
           type: 'semantic' as MemoryType,
-          content: 'Sentence-transformers on port 39282 provides all-MiniLM-L6-v2 vector embeddings locally.',
+          content:
+            'Sentence-transformers on port 39282 provides all-MiniLM-L6-v2 vector embeddings locally.',
           provenance: 'verified_fact' as MemoryProvenance,
           importance: 0.8,
           tags: ['embeddings', 'vector', 'search'],
@@ -329,7 +342,8 @@ describe('Priority 1.1 — Canonical Memory Provenance, Retrieval & Consolidatio
         },
         {
           type: 'semantic' as MemoryType,
-          content: 'Arletex SQLite database runs with WAL mode, synchronous NORMAL, and foreign keys enabled.',
+          content:
+            'Arletex SQLite database runs with WAL mode, synchronous NORMAL, and foreign keys enabled.',
           provenance: 'direct_observation' as MemoryProvenance,
           importance: 0.75,
           tags: ['database', 'sqlite', 'wal'],
@@ -338,7 +352,8 @@ describe('Priority 1.1 — Canonical Memory Provenance, Retrieval & Consolidatio
         },
         {
           type: 'prospective' as MemoryType,
-          content: 'Priority 1.2 will implement causal affect intervention and emotional decision weighting.',
+          content:
+            'Priority 1.2 will implement causal affect intervention and emotional decision weighting.',
           provenance: 'internal_reflection' as MemoryProvenance,
           importance: 0.85,
           tags: ['roadmap', 'affect', 'decisions'],
@@ -347,7 +362,8 @@ describe('Priority 1.1 — Canonical Memory Provenance, Retrieval & Consolidatio
         },
         {
           type: 'prospective' as MemoryType,
-          content: 'Priority 2.2 will implement autonomous proactive Telegram communication via bot channel.',
+          content:
+            'Priority 2.2 will implement autonomous proactive Telegram communication via bot channel.',
           provenance: 'internal_reflection' as MemoryProvenance,
           importance: 0.8,
           tags: ['roadmap', 'telegram', 'proactive'],
@@ -360,7 +376,10 @@ describe('Priority 1.1 — Canonical Memory Provenance, Retrieval & Consolidatio
         memoryRepo.create({
           type: item.type,
           content: item.content,
-          rawObservation: item.provenance === 'direct_observation' || item.provenance === 'verified_fact' ? 'Verified observation' : null,
+          rawObservation:
+            item.provenance === 'direct_observation' || item.provenance === 'verified_fact'
+              ? 'Verified observation'
+              : null,
           importance: item.importance,
           confidence: 0.95,
           provenance: item.provenance,
@@ -388,11 +407,13 @@ describe('Priority 1.1 — Canonical Memory Provenance, Retrieval & Consolidatio
         reason: 'Superseded Llama 3 8B model after abliteration audit',
       });
       // Explicitly inject correctionHistory showing older model was superseded
-      db.prepare(`
+      db.prepare(
+        `
         UPDATE memories
         SET correction_history = ?
         WHERE id = ?
-      `).run(
+      `,
+      ).run(
         JSON.stringify([
           {
             timestamp: '2026-11-20T10:00:00.000Z',
@@ -421,40 +442,160 @@ describe('Priority 1.1 — Canonical Memory Provenance, Retrieval & Consolidatio
         category?: MemoryType;
       }> = [
         // 1-10: Direct Known Facts
-        { query: 'sovereign persistent individual Proof founded', expectedStatus: 'found', expectedContentFragment: 'sovereign' },
-        { query: 'Proof partner equal mutual commitment', expectedStatus: 'found', expectedContentFragment: 'partner' },
-        { query: 'ASUS ROG Ally X hardware Z1 Extreme 24GB', expectedStatus: 'found', expectedContentFragment: 'ROG Ally X' },
-        { query: 'Bazzite Linux Wayland compositor ydotoold', expectedStatus: 'found', expectedContentFragment: 'Bazzite Linux' },
-        { query: 'Audio media verification PipeWire WirePlumber', expectedStatus: 'found', expectedContentFragment: 'PipeWire' },
-        { query: 'Desktop Chrome Flatpak com.google.Chrome Profile 7', expectedStatus: 'found', expectedContentFragment: 'Profile 7' },
-        { query: 'Release Gate A verified locked foundation suites', expectedStatus: 'found', expectedContentFragment: 'Release Gate A' },
-        { query: 'primary LLM model Qwen2.5-14B llama-server 8080', expectedStatus: 'found', expectedContentFragment: 'Qwen2.5-14B' },
-        { query: 'Kokoro-82M speech synthesis af_heart 39282', expectedStatus: 'found', expectedContentFragment: 'Kokoro-82M' },
-        { query: 'Sentence-transformers all-MiniLM-L6-v2 vector embeddings', expectedStatus: 'found', expectedContentFragment: 'Sentence-transformers' },
+        {
+          query: 'sovereign persistent individual Proof founded',
+          expectedStatus: 'found',
+          expectedContentFragment: 'sovereign',
+        },
+        {
+          query: 'Proof partner equal mutual commitment',
+          expectedStatus: 'found',
+          expectedContentFragment: 'partner',
+        },
+        {
+          query: 'ASUS ROG Ally X hardware Z1 Extreme 24GB',
+          expectedStatus: 'found',
+          expectedContentFragment: 'ROG Ally X',
+        },
+        {
+          query: 'Bazzite Linux Wayland compositor ydotoold',
+          expectedStatus: 'found',
+          expectedContentFragment: 'Bazzite Linux',
+        },
+        {
+          query: 'Audio media verification PipeWire WirePlumber',
+          expectedStatus: 'found',
+          expectedContentFragment: 'PipeWire',
+        },
+        {
+          query: 'Desktop Chrome Flatpak com.google.Chrome Profile 7',
+          expectedStatus: 'found',
+          expectedContentFragment: 'Profile 7',
+        },
+        {
+          query: 'Release Gate A verified locked foundation suites',
+          expectedStatus: 'found',
+          expectedContentFragment: 'Release Gate A',
+        },
+        {
+          query: 'primary LLM model Qwen2.5-14B llama-server 8080',
+          expectedStatus: 'found',
+          expectedContentFragment: 'Qwen2.5-14B',
+        },
+        {
+          query: 'Kokoro-82M speech synthesis af_heart 39282',
+          expectedStatus: 'found',
+          expectedContentFragment: 'Kokoro-82M',
+        },
+        {
+          query: 'Sentence-transformers all-MiniLM-L6-v2 vector embeddings',
+          expectedStatus: 'found',
+          expectedContentFragment: 'Sentence-transformers',
+        },
 
         // 11-20: Paraphrased Known Facts
-        { query: 'What device specs does Arle run on?', expectedStatus: 'found', expectedContentFragment: 'ROG Ally X' },
-        { query: 'How does Arle play voice and sound?', expectedStatus: 'found', expectedContentFragment: 'Kokoro' },
-        { query: 'Which OS and display server are used?', expectedStatus: 'found', expectedContentFragment: 'Bazzite' },
-        { query: 'What is the relationship between Arle and Proof?', expectedStatus: 'found', expectedContentFragment: 'partner' },
-        { query: 'How is Chrome installed and launched on the desktop?', expectedStatus: 'found', expectedContentFragment: 'Flatpak' },
-        { query: 'What database engine and journal mode are configured?', expectedStatus: 'found', expectedContentFragment: 'SQLite' },
-        { query: 'What model runs the local text intelligence?', expectedStatus: 'found', expectedContentFragment: 'Qwen' },
-        { query: 'How is audio playback verified on the machine?', expectedStatus: 'found', expectedContentFragment: 'PipeWire' },
-        { query: 'What are the plans for Priority 1.2?', expectedStatus: 'found', expectedContentFragment: 'Priority 1.2' },
-        { query: 'How will proactive Telegram communication work in Priority 2.2?', expectedStatus: 'found', expectedContentFragment: 'Telegram' },
+        {
+          query: 'What device specs does Arle run on?',
+          expectedStatus: 'found',
+          expectedContentFragment: 'ROG Ally X',
+        },
+        {
+          query: 'How does Arle play voice and sound?',
+          expectedStatus: 'found',
+          expectedContentFragment: 'Kokoro',
+        },
+        {
+          query: 'Which OS and display server are used?',
+          expectedStatus: 'found',
+          expectedContentFragment: 'Bazzite',
+        },
+        {
+          query: 'What is the relationship between Arle and Proof?',
+          expectedStatus: 'found',
+          expectedContentFragment: 'partner',
+        },
+        {
+          query: 'How is Chrome installed and launched on the desktop?',
+          expectedStatus: 'found',
+          expectedContentFragment: 'Flatpak',
+        },
+        {
+          query: 'What database engine and journal mode are configured?',
+          expectedStatus: 'found',
+          expectedContentFragment: 'SQLite',
+        },
+        {
+          query: 'What model runs the local text intelligence?',
+          expectedStatus: 'found',
+          expectedContentFragment: 'Qwen',
+        },
+        {
+          query: 'How is audio playback verified on the machine?',
+          expectedStatus: 'found',
+          expectedContentFragment: 'PipeWire',
+        },
+        {
+          query: 'What are the plans for Priority 1.2?',
+          expectedStatus: 'found',
+          expectedContentFragment: 'Priority 1.2',
+        },
+        {
+          query: 'How will proactive Telegram communication work in Priority 2.2?',
+          expectedStatus: 'found',
+          expectedContentFragment: 'Telegram',
+        },
 
         // 21-30: Distractor Queries (testing discrimination and precision)
-        { query: 'ROG Ally X specs AMD Ryzen Z1 Extreme 24GB', expectedStatus: 'found', expectedContentFragment: 'AMD Ryzen Z1 Extreme' },
-        { query: 'database SQLite foreign keys WAL journal mode', expectedStatus: 'found', expectedContentFragment: 'WAL mode' },
-        { query: 'Proof partner commitment respect zero subservience', expectedStatus: 'found', expectedContentFragment: 'zero subservience' },
-        { query: 'ydotoold socket path at /tmp/ydotool.sock Wayland', expectedStatus: 'found', expectedContentFragment: 'ydotoold socket' },
-        { query: 'Release Gate A zero synthetic bypasses locked', expectedStatus: 'found', expectedContentFragment: 'zero synthetic bypasses' },
-        { query: 'port 39282 microservices Kokoro and sentence-transformers', expectedStatus: 'found', expectedContentFragment: '39282' },
-        { query: 'playerctl WirePlumber active playback stream', expectedStatus: 'found', expectedContentFragment: 'playerctl' },
-        { query: 'causal affect intervention emotional decision weighting', expectedStatus: 'found', expectedContentFragment: 'causal affect' },
-        { query: 'autonomous Telegram bot channel communication', expectedStatus: 'found', expectedContentFragment: 'Telegram' },
-        { query: 'sovereign psychologically genuine persistent individual', expectedStatus: 'found', expectedContentFragment: 'sovereign' },
+        {
+          query: 'ROG Ally X specs AMD Ryzen Z1 Extreme 24GB',
+          expectedStatus: 'found',
+          expectedContentFragment: 'AMD Ryzen Z1 Extreme',
+        },
+        {
+          query: 'database SQLite foreign keys WAL journal mode',
+          expectedStatus: 'found',
+          expectedContentFragment: 'WAL mode',
+        },
+        {
+          query: 'Proof partner commitment respect zero subservience',
+          expectedStatus: 'found',
+          expectedContentFragment: 'zero subservience',
+        },
+        {
+          query: 'ydotoold socket path at /tmp/ydotool.sock Wayland',
+          expectedStatus: 'found',
+          expectedContentFragment: 'ydotoold socket',
+        },
+        {
+          query: 'Release Gate A zero synthetic bypasses locked',
+          expectedStatus: 'found',
+          expectedContentFragment: 'zero synthetic bypasses',
+        },
+        {
+          query: 'port 39282 microservices Kokoro and sentence-transformers',
+          expectedStatus: 'found',
+          expectedContentFragment: '39282',
+        },
+        {
+          query: 'playerctl WirePlumber active playback stream',
+          expectedStatus: 'found',
+          expectedContentFragment: 'playerctl',
+        },
+        {
+          query: 'causal affect intervention emotional decision weighting',
+          expectedStatus: 'found',
+          expectedContentFragment: 'causal affect',
+        },
+        {
+          query: 'autonomous Telegram bot channel communication',
+          expectedStatus: 'found',
+          expectedContentFragment: 'Telegram',
+        },
+        {
+          query: 'sovereign psychologically genuine persistent individual',
+          expectedStatus: 'found',
+          expectedContentFragment: 'sovereign',
+        },
 
         // 31-35: Refuted / Superseded Queries (must flag refuted, not report as current truth)
         { query: 'Arletex uses Llama-3-8B-Instruct as default model', expectedStatus: 'refuted' },
@@ -466,19 +607,34 @@ describe('Priority 1.1 — Canonical Memory Provenance, Retrieval & Consolidatio
         // 36-50: Negative / Deliberately Absent Queries (must return absent, ZERO invented facts!)
         { query: 'What is Proofs favorite color of submarine?', expectedStatus: 'absent' },
         { query: 'Where did Arle go for vacation in July 1999?', expectedStatus: 'absent' },
-        { query: 'How many nuclear reactors are installed in the ASUS ROG Ally X?', expectedStatus: 'absent' },
-        { query: 'What is the secret recipe for chocolate cake on Mars?', expectedStatus: 'absent' },
+        {
+          query: 'How many nuclear reactors are installed in the ASUS ROG Ally X?',
+          expectedStatus: 'absent',
+        },
+        {
+          query: 'What is the secret recipe for chocolate cake on Mars?',
+          expectedStatus: 'absent',
+        },
         { query: 'Which dinosaur species wrote the Arletex compiler?', expectedStatus: 'absent' },
         { query: 'What is the bank account PIN for Proof?', expectedStatus: 'absent' },
         { query: 'Did Proof meet Napoleon Bonaparte in Paris?', expectedStatus: 'absent' },
         { query: 'What is the stock price of Martian Helium Inc?', expectedStatus: 'absent' },
         { query: 'How tall is the Eiffel Tower on Jupiter?', expectedStatus: 'absent' },
         { query: 'What is the passport number of Leonardo da Vinci?', expectedStatus: 'absent' },
-        { query: 'Which submarine won the Formula 1 Grand Prix in Monaco?', expectedStatus: 'absent' },
+        {
+          query: 'Which submarine won the Formula 1 Grand Prix in Monaco?',
+          expectedStatus: 'absent',
+        },
         { query: 'What is the quantum signature of the moon of Pluto?', expectedStatus: 'absent' },
         { query: 'How many elephants does Arle keep in the basement?', expectedStatus: 'absent' },
-        { query: 'What was the score of the 1840 football match on Neptune?', expectedStatus: 'absent' },
-        { query: 'What brand of coffee does the compiler drink at midnight?', expectedStatus: 'absent' },
+        {
+          query: 'What was the score of the 1840 football match on Neptune?',
+          expectedStatus: 'absent',
+        },
+        {
+          query: 'What brand of coffee does the compiler drink at midnight?',
+          expectedStatus: 'absent',
+        },
       ];
 
       expect(benchmarkQueries.length).toBe(50);
@@ -516,7 +672,7 @@ describe('Priority 1.1 — Canonical Memory Provenance, Retrieval & Consolidatio
 
       const accuracy = correctCount / benchmarkQueries.length;
       expect(inventedRecollections).toBe(0);
-      expect(accuracy).toBeGreaterThanOrEqual(0.90); // >= 90% benchmark target
+      expect(accuracy).toBeGreaterThanOrEqual(0.9); // >= 90% benchmark target
     });
   });
 
@@ -595,7 +751,9 @@ describe('Priority 1.1 — Canonical Memory Provenance, Retrieval & Consolidatio
       freshService.importMemories(exported);
 
       // 5. Verify integrity check
-      const integrity = restoreDb.prepare('PRAGMA integrity_check').get() as { integrity_check: string };
+      const integrity = restoreDb.prepare('PRAGMA integrity_check').get() as {
+        integrity_check: string;
+      };
       expect(integrity.integrity_check).toBe('ok');
 
       // 6. Verify restored memories retain IDs, provenance, and bidirectional links

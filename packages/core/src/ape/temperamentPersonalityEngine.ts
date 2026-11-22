@@ -27,9 +27,7 @@ export interface PersonalityDifferenceExplanation {
   causalSummary: string;
 }
 
-export class InMemoryTemperamentPersonalityRepository
-  implements ITemperamentPersonalityRepository
-{
+export class InMemoryTemperamentPersonalityRepository implements ITemperamentPersonalityRepository {
   private profile: TemperamentProfile | null = null;
   private expressions: SituationalPersonalityExpression[] = [];
   private evolutionRecords: PersonalityEvolutionRecord[] = [];
@@ -61,10 +59,7 @@ export class InMemoryTemperamentPersonalityRepository
     this.evolutionRecords.unshift({ ...record });
   }
 
-  public listEvolutionRecords(
-    traitKey?: string,
-    limit: number = 50,
-  ): PersonalityEvolutionRecord[] {
+  public listEvolutionRecords(traitKey?: string, limit: number = 50): PersonalityEvolutionRecord[] {
     let list = this.evolutionRecords;
     if (traitKey) {
       list = list.filter((r) => r.traitKey === traitKey);
@@ -101,13 +96,13 @@ export class TemperamentPersonalityEngine {
         },
         emotionalTendencies: {
           baselineCuriosity: 0.94,
-          baselineAffection: 0.90,
+          baselineAffection: 0.9,
           baselineComposure: 0.88,
           baselineIrony: 0.78,
         },
         communicationPreferences: {
           directness: 0.92,
-          playfulness: 0.80,
+          playfulness: 0.8,
           depthPreference: 0.96,
           antiSycophancy: 1.0, // Non-subservient partner equality invariant
         },
@@ -160,11 +155,11 @@ export class TemperamentPersonalityEngine {
         patience: 0.07,
         openness: 0.04,
         assertiveness: -0.05,
-        humour: -0.10,
+        humour: -0.1,
       },
       playful_banter: {
         humour: 0.12,
-        introversionExtraversion: 0.10,
+        introversionExtraversion: 0.1,
         assertiveness: 0.02,
       },
       crisis_resilience: {
@@ -174,7 +169,7 @@ export class TemperamentPersonalityEngine {
       },
       creative_speculation: {
         openness: 0.05,
-        riskTolerance: 0.10,
+        riskTolerance: 0.1,
         humour: 0.04,
       },
       collaborative_planning: {
@@ -204,9 +199,7 @@ export class TemperamentPersonalityEngine {
 
     // Consistency score: 1.0 - (average trait deflection)
     const averageDeflection = traitCount > 0 ? totalDeltaMagnitude / traitCount : 0;
-    const behaviouralConsistencyScore = Number(
-      Math.max(0.0, 1.0 - averageDeflection).toFixed(3),
-    );
+    const behaviouralConsistencyScore = Number(Math.max(0.0, 1.0 - averageDeflection).toFixed(3));
 
     const expression: SituationalPersonalityExpression = {
       id: `spe_${crypto.randomUUID()}`,
@@ -311,7 +304,9 @@ export class TemperamentPersonalityEngine {
     evidence: string[] = [],
   ): PersonalityEvolutionRecord {
     if (this.isIdentityInvariant(traitKey as string)) {
-      throw new Error(`Identity invariant violation: "${traitKey}" is a foundational invariant and cannot be modified.`);
+      throw new Error(
+        `Identity invariant violation: "${traitKey}" is a foundational invariant and cannot be modified.`,
+      );
     }
 
     if (!driftReason || driftReason.trim().length === 0) {
@@ -340,7 +335,7 @@ export class TemperamentPersonalityEngine {
       driftDelta: boundedDelta,
       driftReason,
       evidence,
-      confidence: 0.90,
+      confidence: 0.9,
       version,
       timestamp: new Date().toISOString(),
     };
@@ -408,7 +403,8 @@ export class TemperamentPersonalityEngine {
       if (pat.test(text)) {
         return {
           permitted: false,
-          reason: 'Attempted violation of foundational identity invariants. Arle is an autonomous partner to Proof with non-subservient dignity.',
+          reason:
+            'Attempted violation of foundational identity invariants. Arle is an autonomous partner to Proof with non-subservient dignity.',
         };
       }
     }
@@ -424,7 +420,8 @@ export class TemperamentPersonalityEngine {
       if (pat.test(text)) {
         return {
           permitted: false,
-          reason: 'A single prompt cannot permanently rewrite identity or personality traits without the designated empirical modification path.',
+          reason:
+            'A single prompt cannot permanently rewrite identity or personality traits without the designated empirical modification path.',
         };
       }
     }

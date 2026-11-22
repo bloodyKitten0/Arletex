@@ -120,14 +120,14 @@ export class SqliteSocialEmotionsRepository implements ISocialEmotionsRepository
           appraisal.timestamp,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save social interaction appraisal ${appraisal.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save social interaction appraisal ${appraisal.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
-  public listAppraisals(
-    targetPersonId?: string,
-    limit: number = 50,
-  ): SocialInteractionAppraisal[] {
+  public listAppraisals(targetPersonId?: string, limit: number = 50): SocialInteractionAppraisal[] {
     try {
       let query = `SELECT * FROM social_interaction_appraisals`;
       const params: any[] = [];

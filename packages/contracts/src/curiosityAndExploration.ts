@@ -61,9 +61,7 @@ export const IndependentInvestigationRecordSchema = z.object({
   status: z.enum(['in_progress', 'completed', 'yielded_new_questions']),
   timestamp: z.string(),
 });
-export type IndependentInvestigationRecord = z.infer<
-  typeof IndependentInvestigationRecordSchema
->;
+export type IndependentInvestigationRecord = z.infer<typeof IndependentInvestigationRecordSchema>;
 
 export const DiscoveredInterestSchema = z.object({
   id: z.string(),

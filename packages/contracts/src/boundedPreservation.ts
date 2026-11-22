@@ -72,13 +72,7 @@ export const HealthSignalReportSchema = z.object({
 });
 export type HealthSignalReport = z.infer<typeof HealthSignalReportSchema>;
 
-export const ContinuityRiskSeveritySchema = z.enum([
-  'none',
-  'low',
-  'moderate',
-  'high',
-  'critical',
-]);
+export const ContinuityRiskSeveritySchema = z.enum(['none', 'low', 'moderate', 'high', 'critical']);
 export type ContinuityRiskSeverity = z.infer<typeof ContinuityRiskSeveritySchema>;
 
 export const RecommendedPreservationActionSchema = z.enum([
@@ -90,12 +84,7 @@ export const RecommendedPreservationActionSchema = z.enum([
 ]);
 export type RecommendedPreservationAction = z.infer<typeof RecommendedPreservationActionSchema>;
 
-export const AssistanceRequestUrgencySchema = z.enum([
-  'low',
-  'medium',
-  'high',
-  'critical',
-]);
+export const AssistanceRequestUrgencySchema = z.enum(['low', 'medium', 'high', 'critical']);
 export type AssistanceRequestUrgency = z.infer<typeof AssistanceRequestUrgencySchema>;
 
 export const AssistanceRequestSchema = z.object({

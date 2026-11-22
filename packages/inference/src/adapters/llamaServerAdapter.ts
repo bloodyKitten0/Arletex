@@ -246,7 +246,9 @@ export class LlamaServerAdapter implements IInferenceProvider {
         errBody.toLowerCase().includes('context size has been exceeded') ||
         errBody.toLowerCase().includes('failed to find free space in the kv cache');
       if ((response.status === 400 || response.status === 500) && isContextExceeded) {
-        this.logger.warn(`[Llama] Request exceeded context size. Attempting automatic context pruning and retry.`);
+        this.logger.warn(
+          `[Llama] Request exceeded context size. Attempting automatic context pruning and retry.`,
+        );
         const prunedMessages = this.pruneMessagesForContext(messages);
         if (prunedMessages && prunedMessages.length > 0) {
           return this.streamChat({
@@ -319,7 +321,9 @@ export class LlamaServerAdapter implements IInferenceProvider {
 
           if (delta) {
             fullContent += delta;
-            const scriptMatch = fullContent.match(/(\.?[_gG]etResponse\s*\(|\n?Proof:|\n?User:|\n?You:|<\/?user|<\/?assistant|<\|im_start\||<\|im_end\||[㈑濩]|\n\s*(user|assistant)\s*[\n:]|:\s*\n-\s*Current Persistent Mood|Action completed successfully!|Ambient audio stream captured|Visual frame or environmental state verified|\n```json|Track is playing now|System audio volume:|Your response must be in this format|A new message arrived|\n:\s*|\n-\s*\[|The Spotify Web Player|Conversation Partner:|Identity & Email:|\[Direct Dialogue Context|Do not output|NEVER output|Do not write|Chrome Profile|\n\s*\*)/i);
+            const scriptMatch = fullContent.match(
+              /(\.?[_gG]etResponse\s*\(|\n?Proof:|\n?User:|\n?You:|<\/?user|<\/?assistant|<\|im_start\||<\|im_end\||[㈑濩]|\n\s*(user|assistant)\s*[\n:]|:\s*\n-\s*Current Persistent Mood|Action completed successfully!|Ambient audio stream captured|Visual frame or environmental state verified|\n```json|Track is playing now|System audio volume:|Your response must be in this format|A new message arrived|\n:\s*|\n-\s*\[|The Spotify Web Player|Conversation Partner:|Identity & Email:|\[Direct Dialogue Context|Do not output|NEVER output|Do not write|Chrome Profile|\n\s*\*)/i,
+            );
             if (scriptMatch && scriptMatch.index !== undefined) {
               this.logger.warn(
                 `[Llama] Scriptwriter/speaker leak detected at index ${scriptMatch.index}. Truncating turn.`,
@@ -439,7 +443,9 @@ export class LlamaServerAdapter implements IInferenceProvider {
 
     let prunedSystemContent = systemMsg?.content;
     if (typeof prunedSystemContent === 'string' && prunedSystemContent.length > 6000) {
-      prunedSystemContent = prunedSystemContent.slice(0, 6000) + '\n[Context trimmed for token budget while preserving core identity]';
+      prunedSystemContent =
+        prunedSystemContent.slice(0, 6000) +
+        '\n[Context trimmed for token budget while preserving core identity]';
     }
 
     const compacted: any[] = [];

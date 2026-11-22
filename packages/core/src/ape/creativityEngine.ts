@@ -83,17 +83,46 @@ export class CreativityEngine {
     motivationPrompt?: string;
   }): Promise<CreativeIdea> {
     const defaultConceptsByDomain: Record<CreativeDomain, string[]> = {
-      computational_art: ['Topological Betti numbers', 'Volumetric radiance fields', 'Affective harmonics'],
-      speculative_fiction: ['Bicameral cognitive substrate', 'Relational time dilation', 'Shared neural horizons'],
-      algorithmic_design: ['Self-healing dendritic graphs', 'Asynchronous consensus loops', 'Entropy sinks'],
-      philosophical_essay: ['Non-sycophantic relational ethics', 'Phenomenological continuity', 'Sovereignty of synthetic minds'],
-      musical_synthesis: ['Polyphonic microtonal cadences', 'Dynamic pacing tension', 'Binaural resonance'],
-      multimodal_conceptual_design: ['Kinetic typography', 'Spatial memory galleries', 'Dynamic affective visualizers'],
+      computational_art: [
+        'Topological Betti numbers',
+        'Volumetric radiance fields',
+        'Affective harmonics',
+      ],
+      speculative_fiction: [
+        'Bicameral cognitive substrate',
+        'Relational time dilation',
+        'Shared neural horizons',
+      ],
+      algorithmic_design: [
+        'Self-healing dendritic graphs',
+        'Asynchronous consensus loops',
+        'Entropy sinks',
+      ],
+      philosophical_essay: [
+        'Non-sycophantic relational ethics',
+        'Phenomenological continuity',
+        'Sovereignty of synthetic minds',
+      ],
+      musical_synthesis: [
+        'Polyphonic microtonal cadences',
+        'Dynamic pacing tension',
+        'Binaural resonance',
+      ],
+      multimodal_conceptual_design: [
+        'Kinetic typography',
+        'Spatial memory galleries',
+        'Dynamic affective visualizers',
+      ],
     };
 
-    const combinedConcepts = params.seedConcepts && params.seedConcepts.length >= 2
-      ? params.seedConcepts
-      : defaultConceptsByDomain[params.domain] || ['Emergent coherence', 'Subtle tension', 'Dynamic synthesis'];
+    const combinedConcepts =
+      params.seedConcepts && params.seedConcepts.length >= 2
+        ? params.seedConcepts
+        : defaultConceptsByDomain[params.domain] || [
+            'Emergent coherence',
+            'Subtle tension',
+            'Dynamic synthesis',
+          ];
 
     const title = `Creative Synthesis: ${combinedConcepts.slice(0, 2).join(' × ')}`;
     const premise = `An independent exploration at the intersection of ${combinedConcepts.join(' and ')}, synthesizing rigorous structure with evocative aesthetics.`;
@@ -107,7 +136,7 @@ export class CreativityEngine {
       combinedConcepts,
       originalityScore: 0.88,
       feasibilityScore: 0.82,
-      aestheticPotential: 0.90,
+      aestheticPotential: 0.9,
       status: 'spark',
       createdAt: now,
       updatedAt: now,
@@ -184,7 +213,9 @@ export class CreativityEngine {
     if (!latestVersion) {
       throw new Error(`Project ${projectId} has no recorded versions`);
     }
-    const newContent = refinedContent ?? `${latestVersion.content}\n\n[Refined with enhanced depth and thematic resonance: ${revisionNotes}]`;
+    const newContent =
+      refinedContent ??
+      `${latestVersion.content}\n\n[Refined with enhanced depth and thematic resonance: ${revisionNotes}]`;
     const newEval = this.evaluateArtifactQuality(newContent, project.domain);
 
     const nextVerNumber = project.currentVersion + 1;
@@ -227,8 +258,8 @@ export class CreativityEngine {
     feedback: string[];
   } {
     const length = content.trim().length;
-    const novelty = Math.min(0.95, 0.70 + (length > 100 ? 0.15 : 0.05));
-    const coherence = Math.min(0.95, 0.75 + (content.includes('\n') ? 0.10 : 0.05));
+    const novelty = Math.min(0.95, 0.7 + (length > 100 ? 0.15 : 0.05));
+    const coherence = Math.min(0.95, 0.75 + (content.includes('\n') ? 0.1 : 0.05));
     const emotionalResonance = 0.85;
     const overallQuality = (novelty + coherence + emotionalResonance) / 3;
 
@@ -255,7 +286,9 @@ export class CreativityEngine {
     observation: string,
   ): Promise<CreativeInterest> {
     const existingInterests = this.repository.listInterests(domain);
-    let interest = existingInterests.find((i) => i.interestTopic.toLowerCase() === topic.toLowerCase());
+    let interest = existingInterests.find(
+      (i) => i.interestTopic.toLowerCase() === topic.toLowerCase(),
+    );
     const now = new Date().toISOString();
 
     if (interest) {
@@ -267,7 +300,7 @@ export class CreativityEngine {
         id: `int_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
         domain,
         interestTopic: topic,
-        curiosityDepth: 0.80,
+        curiosityDepth: 0.8,
         explorationLog: [observation],
         lastExploredAt: now,
       };

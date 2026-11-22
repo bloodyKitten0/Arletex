@@ -29,7 +29,11 @@ export class GeneralReasoningEngine {
   // 1. Deductive Reasoning
   // ==========================================
 
-  public executeDeduction(premises: ReasoningPremise[], query: string, domain = 'logic'): ReasoningTask {
+  public executeDeduction(
+    premises: ReasoningPremise[],
+    query: string,
+    domain = 'logic',
+  ): ReasoningTask {
     const steps: ReasoningStep[] = [];
     const evaluation = this.evaluateArgument(premises, query);
 
@@ -88,7 +92,9 @@ export class GeneralReasoningEngine {
 
     assertReasoningIntegrity(task);
     this.repo.saveTask(task);
-    this.logger.debug(`Executed reasoning task [${task.primaryParadigm}] for query: "${task.query}" (confidence: ${task.compositeConfidence})`);
+    this.logger.debug(
+      `Executed reasoning task [${task.primaryParadigm}] for query: "${task.query}" (confidence: ${task.compositeConfidence})`,
+    );
     return task;
   }
 
@@ -96,7 +102,11 @@ export class GeneralReasoningEngine {
   // 2. Inductive Reasoning
   // ==========================================
 
-  public executeInduction(observations: string[], query: string, domain = 'empirical'): ReasoningTask {
+  public executeInduction(
+    observations: string[],
+    query: string,
+    domain = 'empirical',
+  ): ReasoningTask {
     const premises: ReasoningPremise[] = observations.map((obs, i) => ({
       id: `obs_${i + 1}`,
       statement: obs,
@@ -138,7 +148,9 @@ export class GeneralReasoningEngine {
 
     assertReasoningIntegrity(task);
     this.repo.saveTask(task);
-    this.logger.debug(`Executed reasoning task [${task.primaryParadigm}] for query: "${task.query}" (confidence: ${task.compositeConfidence})`);
+    this.logger.debug(
+      `Executed reasoning task [${task.primaryParadigm}] for query: "${task.query}" (confidence: ${task.compositeConfidence})`,
+    );
     return task;
   }
 
@@ -148,7 +160,11 @@ export class GeneralReasoningEngine {
 
   public executeAbduction(
     surprisingObservation: string,
-    candidateExplanations: Array<{ explanation: string; priorLikelihood: number; explanatoryPower: number }>,
+    candidateExplanations: Array<{
+      explanation: string;
+      priorLikelihood: number;
+      explanatoryPower: number;
+    }>,
     query: string,
     domain = 'diagnosis',
   ): ReasoningTask {
@@ -206,7 +222,9 @@ export class GeneralReasoningEngine {
 
     assertReasoningIntegrity(task);
     this.repo.saveTask(task);
-    this.logger.debug(`Executed reasoning task [${task.primaryParadigm}] for query: "${task.query}" (confidence: ${task.compositeConfidence})`);
+    this.logger.debug(
+      `Executed reasoning task [${task.primaryParadigm}] for query: "${task.query}" (confidence: ${task.compositeConfidence})`,
+    );
     return task;
   }
 
@@ -238,7 +256,8 @@ export class GeneralReasoningEngine {
         premisesUsed: premises.map((p) => p.id),
         intermediateConclusion: `Projected ${mappedRelations.length} relational alignments from '${sourceDomain}' to '${targetDomain}'`,
         confidence,
-        uncertaintyNotes: 'Structural alignments are suggestive but may break under target-domain idiosyncrasies.',
+        uncertaintyNotes:
+          'Structural alignments are suggestive but may break under target-domain idiosyncrasies.',
       },
     ];
 
@@ -259,7 +278,9 @@ export class GeneralReasoningEngine {
 
     assertReasoningIntegrity(task);
     this.repo.saveTask(task);
-    this.logger.debug(`Executed reasoning task [${task.primaryParadigm}] for query: "${task.query}" (confidence: ${task.compositeConfidence})`);
+    this.logger.debug(
+      `Executed reasoning task [${task.primaryParadigm}] for query: "${task.query}" (confidence: ${task.compositeConfidence})`,
+    );
     return task;
   }
 
@@ -289,7 +310,11 @@ export class GeneralReasoningEngine {
     const premises: ReasoningPremise[] = [
       { id: 'prior', statement: `P(H) = ${clampedPrior.toFixed(3)}`, truthValue: 'true' },
       { id: 'likelihood_H', statement: `P(E|H) = ${pEgivenH.toFixed(3)}`, truthValue: 'true' },
-      { id: 'likelihood_notH', statement: `P(E|~H) = ${pEgivenNotH.toFixed(3)}`, truthValue: 'true' },
+      {
+        id: 'likelihood_notH',
+        statement: `P(E|~H) = ${pEgivenNotH.toFixed(3)}`,
+        truthValue: 'true',
+      },
     ];
 
     const steps: ReasoningStep[] = [
@@ -321,7 +346,9 @@ export class GeneralReasoningEngine {
 
     assertReasoningIntegrity(task);
     this.repo.saveTask(task);
-    this.logger.debug(`Executed reasoning task [${task.primaryParadigm}] for query: "${task.query}" (confidence: ${task.compositeConfidence})`);
+    this.logger.debug(
+      `Executed reasoning task [${task.primaryParadigm}] for query: "${task.query}" (confidence: ${task.compositeConfidence})`,
+    );
     return task;
   }
 
@@ -359,7 +386,9 @@ export class GeneralReasoningEngine {
 
     assertReasoningIntegrity(task);
     this.repo.saveTask(task);
-    this.logger.debug(`Executed reasoning task [${task.primaryParadigm}] for query: "${task.query}" (confidence: ${task.compositeConfidence})`);
+    this.logger.debug(
+      `Executed reasoning task [${task.primaryParadigm}] for query: "${task.query}" (confidence: ${task.compositeConfidence})`,
+    );
     return task;
   }
 
@@ -388,15 +417,16 @@ export class GeneralReasoningEngine {
       confidence: Math.max(0.1, Math.min(1.0, s.confidence)),
     }));
 
-    const avgConfidence = formattedSteps.length > 0
-      ? formattedSteps.reduce((acc, s) => acc + s.confidence, 0) / formattedSteps.length
-      : 0.5;
-
-    const finalConclusion = input.finalConclusion || (
+    const avgConfidence =
       formattedSteps.length > 0
+        ? formattedSteps.reduce((acc, s) => acc + s.confidence, 0) / formattedSteps.length
+        : 0.5;
+
+    const finalConclusion =
+      input.finalConclusion ||
+      (formattedSteps.length > 0
         ? formattedSteps[formattedSteps.length - 1]!.intermediateConclusion
-        : 'Multi-step reasoning completed'
-    );
+        : 'Multi-step reasoning completed');
 
     const task: ReasoningTask = {
       id: crypto.randomUUID(),
@@ -413,7 +443,9 @@ export class GeneralReasoningEngine {
 
     assertReasoningIntegrity(task);
     this.repo.saveTask(task);
-    this.logger.debug(`Executed reasoning task [${task.primaryParadigm}] for query: "${task.query}" (confidence: ${task.compositeConfidence})`);
+    this.logger.debug(
+      `Executed reasoning task [${task.primaryParadigm}] for query: "${task.query}" (confidence: ${task.compositeConfidence})`,
+    );
     return task;
   }
 
@@ -427,13 +459,18 @@ export class GeneralReasoningEngine {
     const lowerConclusion = conclusion.toLowerCase();
 
     // Check circular reasoning
-    const isCircular = premises.some((p) => p.statement.toLowerCase().trim() === lowerConclusion.trim());
+    const isCircular = premises.some(
+      (p) => p.statement.toLowerCase().trim() === lowerConclusion.trim(),
+    );
     if (isCircular) {
       identifiedFallacies.push('circular_reasoning');
     }
 
     // Check affirming the consequent heuristic: "if P then Q", asserting Q, concluding P
-    const hasImplication = premises.find((p) => p.statement.toLowerCase().includes('if ') && p.statement.toLowerCase().includes('then '));
+    const hasImplication = premises.find(
+      (p) =>
+        p.statement.toLowerCase().includes('if ') && p.statement.toLowerCase().includes('then '),
+    );
     if (hasImplication) {
       const impText = hasImplication.statement.toLowerCase();
       const parts = impText.split('then');
@@ -442,15 +479,21 @@ export class GeneralReasoningEngine {
           .replace(/^\s*if\s+/i, '')
           .replace(/[,;.]\s*$/, '')
           .trim();
-        const consequent = (parts[1] ?? '')
-          .replace(/[,;.]\s*$/, '')
-          .trim();
+        const consequent = (parts[1] ?? '').replace(/[,;.]\s*$/, '').trim();
         const affirmsConsequent = premises.some(
-          (p) => p !== hasImplication && (p.statement.toLowerCase().includes(consequent) || consequent.includes(p.statement.toLowerCase())),
+          (p) =>
+            p !== hasImplication &&
+            (p.statement.toLowerCase().includes(consequent) ||
+              consequent.includes(p.statement.toLowerCase())),
         );
-        if (affirmsConsequent && (lowerConclusion.includes(antecedent) || antecedent.includes(lowerConclusion))) {
+        if (
+          affirmsConsequent &&
+          (lowerConclusion.includes(antecedent) || antecedent.includes(lowerConclusion))
+        ) {
           identifiedFallacies.push('affirming_the_consequent');
-          counterexamples.push(`Alternative conditions could cause '${consequent}' without '${antecedent}'`);
+          counterexamples.push(
+            `Alternative conditions could cause '${consequent}' without '${antecedent}'`,
+          );
         }
       }
     }
@@ -458,7 +501,12 @@ export class GeneralReasoningEngine {
     // Check ad hominem heuristic
     const hasAdHominem = premises.some((p) => {
       const s = p.statement.toLowerCase();
-      return s.includes('is foolish') || s.includes('is untrustworthy') || s.includes('is bad person') || s.includes('is evil');
+      return (
+        s.includes('is foolish') ||
+        s.includes('is untrustworthy') ||
+        s.includes('is bad person') ||
+        s.includes('is evil')
+      );
     });
     if (hasAdHominem) {
       identifiedFallacies.push('ad_hominem');
@@ -469,9 +517,11 @@ export class GeneralReasoningEngine {
 
     let evaluationRationale = '';
     if (isSound) {
-      evaluationRationale = 'Argument is valid and sound: all premises true and logically entail conclusion.';
+      evaluationRationale =
+        'Argument is valid and sound: all premises true and logically entail conclusion.';
     } else if (isLogicallyValid) {
-      evaluationRationale = 'Argument structure is valid, but one or more premises lack verified truth values.';
+      evaluationRationale =
+        'Argument structure is valid, but one or more premises lack verified truth values.';
     } else {
       evaluationRationale = `Argument contains formal or informal fallacies: ${identifiedFallacies.join(', ')}.`;
     }
@@ -505,12 +555,10 @@ export class GeneralReasoningEngine {
       .map(([d]) => d);
 
     const total = tasks.length;
-    const avgConfidence = total > 0
-      ? tasks.reduce((acc, t) => acc + t.compositeConfidence, 0) / total
-      : 0.0;
-    const avgUncertainty = total > 0
-      ? tasks.reduce((acc, t) => acc + t.uncertaintyLevel, 0) / total
-      : 0.0;
+    const avgConfidence =
+      total > 0 ? tasks.reduce((acc, t) => acc + t.compositeConfidence, 0) / total : 0.0;
+    const avgUncertainty =
+      total > 0 ? tasks.reduce((acc, t) => acc + t.uncertaintyLevel, 0) / total : 0.0;
 
     return {
       totalReasoningTasks: total,
@@ -543,7 +591,11 @@ export class InMemoryReasoningRepository implements IReasoningRepository {
     return t ? JSON.parse(JSON.stringify(t)) : null;
   }
 
-  public listTasks(filter?: { domain?: string; paradigm?: ReasoningParadigm; limit?: number }): ReasoningTask[] {
+  public listTasks(filter?: {
+    domain?: string;
+    paradigm?: ReasoningParadigm;
+    limit?: number;
+  }): ReasoningTask[] {
     let result = [...this.tasks];
     if (filter?.domain) {
       result = result.filter((t) => t.domain.toLowerCase() === filter.domain!.toLowerCase());

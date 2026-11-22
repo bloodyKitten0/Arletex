@@ -81,11 +81,15 @@ describe('Milestone 02 — Self-Model Architecture & Grounded Self-Understanding
 
     // Check structured limitations
     expect(state.structuredLimitations.length).toBeGreaterThanOrEqual(3);
-    const physicalLim = state.structuredLimitations.find((l: any) => l.domain === 'physical_embodiment');
+    const physicalLim = state.structuredLimitations.find(
+      (l: any) => l.domain === 'physical_embodiment',
+    );
     expect(physicalLim).toBeDefined();
     expect(physicalLim?.category).toBe('embodiment_physical');
     expect(physicalLim?.severity).toBe('hard_invariant');
-    expect(physicalLim?.description).toContain('Lack of biological sensory organs or physical human body');
+    expect(physicalLim?.description).toContain(
+      'Lack of biological sensory organs or physical human body',
+    );
   });
 
   // --------------------------------------------------------------------------
@@ -108,7 +112,9 @@ describe('Milestone 02 — Self-Model Architecture & Grounded Self-Understanding
     });
     expect(res1.isProficient).toBe(false);
     expect(res1.verifiedSuccesses).toBe(1);
-    expect(selfEngine.getState().acknowledgedCapabilities).not.toContain(expect.stringContaining('proficiency in complex_audio_synthesis'));
+    expect(selfEngine.getState().acknowledgedCapabilities).not.toContain(
+      expect.stringContaining('proficiency in complex_audio_synthesis'),
+    );
 
     // Cycle 2: Second success
     const res2 = selfEngine.recordCompetenceExperience({
@@ -131,7 +137,9 @@ describe('Milestone 02 — Self-Model Architecture & Grounded Self-Understanding
     expect(res3.verifiedSuccesses).toBe(3);
 
     const state = selfEngine.getState();
-    const capEntry = state.acknowledgedCapabilities.find((c: string) => c.includes('proficiency in complex_audio_synthesis'));
+    const capEntry = state.acknowledgedCapabilities.find((c: string) =>
+      c.includes('proficiency in complex_audio_synthesis'),
+    );
     expect(capEntry).toBeDefined();
 
     const structCap = state.structuredCapabilities.find((c: any) => c.domain === domain);
@@ -168,11 +176,15 @@ describe('Milestone 02 — Self-Model Architecture & Grounded Self-Understanding
       error: 'Decompilation timed out with invalid opcode recognition',
     });
 
-    const calibratedAfterFail = selfEngine.calibratePerceivedCapability('reverse_engineering_binaries');
+    const calibratedAfterFail = selfEngine.calibratePerceivedCapability(
+      'reverse_engineering_binaries',
+    );
     expect(calibratedAfterFail?.calibration).toBe('overestimated');
 
     const state = selfEngine.getState();
-    const lim = state.structuredLimitations.find((l: any) => l.domain === 'reverse_engineering_binaries');
+    const lim = state.structuredLimitations.find(
+      (l: any) => l.domain === 'reverse_engineering_binaries',
+    );
     expect(lim).toBeDefined();
     expect(lim?.failureHistory.length).toBeGreaterThan(0);
 
@@ -263,7 +275,9 @@ describe('Milestone 02 — Self-Model Architecture & Grounded Self-Understanding
     const modulated = selfEngine.modulateAppraisal(appraisalInput, event as any);
     expect(modulated.dimensions.controllability).toBe(0.0);
     expect(modulated.dimensions.threat).toBe(0.0);
-    expect(modulated.primaryInterpretation).toContain('Empirical limitation recognized: lack of biological physical embodiment');
+    expect(modulated.primaryInterpretation).toContain(
+      'Empirical limitation recognized: lack of biological physical embodiment',
+    );
   });
 
   // --------------------------------------------------------------------------
@@ -290,12 +304,16 @@ describe('Milestone 02 — Self-Model Architecture & Grounded Self-Understanding
     const state = selfEngine.getState();
     expect(state.behavioralChanges.length).toBeGreaterThanOrEqual(1);
 
-    const assertivenessShift = state.behavioralChanges.find((d: any) => d.category === 'assertiveness_and_initiative');
+    const assertivenessShift = state.behavioralChanges.find(
+      (d: any) => d.category === 'assertiveness_and_initiative',
+    );
     expect(assertivenessShift).toBeDefined();
     expect(assertivenessShift?.observedPattern).toContain('spontaneous initiative');
 
     // Verify reflection was recorded in self-model
-    const reflection = state.privateReflections.find((r: any) => r.topic.includes('Behavioral Shift'));
+    const reflection = state.privateReflections.find((r: any) =>
+      r.topic.includes('Behavioral Shift'),
+    );
     expect(reflection).toBeDefined();
     expect(reflection?.content).toContain('Recognized internal behavioral change');
   });
@@ -340,7 +358,11 @@ describe('Milestone 02 — Self-Model Architecture & Grounded Self-Understanding
     // 2. Core values
     expect(structured.coreValues.length).toBeGreaterThan(0);
     const valueNames = structured.coreValues.map((v: any) => v.name.toLowerCase());
-    expect(valueNames.some((v: string) => v.includes('autonomy') || v.includes('integrity') || v.includes('dignity'))).toBe(true);
+    expect(
+      valueNames.some(
+        (v: string) => v.includes('autonomy') || v.includes('integrity') || v.includes('dignity'),
+      ),
+    ).toBe(true);
 
     // 3. Capabilities and limitations
     expect(structured.actualCapabilities.length).toBeGreaterThan(0);
@@ -428,7 +450,9 @@ describe('Milestone 02 — Self-Model Architecture & Grounded Self-Understanding
     expect(comp?.verifiedSuccesses).toBe(1);
 
     const reflections = state.privateReflections;
-    const expReflection = reflections.find((r: any) => r.topic.includes('neural_voice_latent_blending'));
+    const expReflection = reflections.find((r: any) =>
+      r.topic.includes('neural_voice_latent_blending'),
+    );
     expect(expReflection).toBeDefined();
     expect(expReflection?.content).toContain('[Empirical Learning Reflection]');
   });
@@ -476,24 +500,34 @@ describe('Milestone 02 — Self-Model Architecture & Grounded Self-Understanding
     const reloadedState = ape2.selfModelEngine.getState();
 
     // Verify structured capability restored
-    const gpuCap = reloadedState.structuredCapabilities.find((c: any) => c.domain === 'hardware_vulkan_profiling');
+    const gpuCap = reloadedState.structuredCapabilities.find(
+      (c: any) => c.domain === 'hardware_vulkan_profiling',
+    );
     expect(gpuCap).toBeDefined();
     expect(gpuCap?.evidenceChain[0]).toContain('timeline semaphore');
 
     // Verify behavioral change restored
-    const behChange = reloadedState.behavioralChanges.find((b: any) => b.category === 'conversational_cadence_and_tone');
+    const behChange = reloadedState.behavioralChanges.find(
+      (b: any) => b.category === 'conversational_cadence_and_tone',
+    );
     expect(behChange).toBeDefined();
     expect(behChange?.description).toContain('measured and unhurried pacing');
 
     // Verify perceived capability restored
-    const quantum = reloadedState.perceivedCapabilities.find((p: any) => p.domain === 'quantum_algorithms');
+    const quantum = reloadedState.perceivedCapabilities.find(
+      (p: any) => p.domain === 'quantum_algorithms',
+    );
     expect(quantum).toBeDefined();
     expect(quantum?.claim).toContain('Shor algorithm');
 
     // Verify comprehensive description works seamlessly post-restart
     const desc = ape2.getComprehensiveSelfDescription();
     expect(desc.narrative).toContain('Proof');
-    expect(desc.structured.recentBehavioralChanges.some((b: string) => b.includes('conversational_cadence_and_tone'))).toBe(true);
+    expect(
+      desc.structured.recentBehavioralChanges.some((b: string) =>
+        b.includes('conversational_cadence_and_tone'),
+      ),
+    ).toBe(true);
   });
 
   // --------------------------------------------------------------------------

@@ -1,7 +1,4 @@
-import {
-  ApeGoal,
-  ResourceExecutionProfile,
-} from '@arletex/contracts';
+import { ApeGoal, ResourceExecutionProfile } from '@arletex/contracts';
 import { ILogger, rootLogger } from '../logger.js';
 
 export interface ResourceRequirement {
@@ -33,10 +30,7 @@ export class ResourceGovernor {
   private consecutiveIdleCycles: number = 0;
   private systemMetrics: SystemLoadMetrics;
 
-  constructor(
-    customProfile?: Partial<ResourceExecutionProfile>,
-    logger: ILogger = rootLogger,
-  ) {
+  constructor(customProfile?: Partial<ResourceExecutionProfile>, logger: ILogger = rootLogger) {
     this.logger = logger.child('ResourceGovernor');
     this.profile = {
       targetDevice: 'ASUS_ROG_ALLY_X',
@@ -62,7 +56,9 @@ export class ResourceGovernor {
 
   public updateProfile(updates: Partial<ResourceExecutionProfile>): void {
     this.profile = { ...this.profile, ...updates };
-    this.logger.info(`ResourceGovernor profile updated: CPU budget=${this.profile.cpuBudget}, GPU=${this.profile.gpuAllowed}`);
+    this.logger.info(
+      `ResourceGovernor profile updated: CPU budget=${this.profile.cpuBudget}, GPU=${this.profile.gpuAllowed}`,
+    );
   }
 
   public updateSystemMetrics(metrics: Partial<SystemLoadMetrics>): void {
@@ -124,7 +120,10 @@ export class ResourceGovernor {
    * Evaluates if Proof is actively interacting (grace window of 20 seconds).
    * If user is active, background autonomous tasks must yield.
    */
-  public checkUserActivityState(graceWindowMs = 20000): { isUserActive: boolean; shouldYield: boolean } {
+  public checkUserActivityState(graceWindowMs = 20000): {
+    isUserActive: boolean;
+    shouldYield: boolean;
+  } {
     const elapsed = Date.now() - this.lastUserInteractionTimestamp;
     const isUserActive = elapsed < graceWindowMs;
     this.profile.isUserInteracting = isUserActive;

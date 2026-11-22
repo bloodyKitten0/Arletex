@@ -47,7 +47,13 @@ export interface EmailSendResult {
 }
 
 export interface EmailTransportDriver {
-  sendSmtp?(host: string, port: number, rawData: string, from: string, to: string): Promise<{ success: boolean; ack: string }>;
+  sendSmtp?(
+    host: string,
+    port: number,
+    rawData: string,
+    from: string,
+    to: string,
+  ): Promise<{ success: boolean; ack: string }>;
   fetchImap?(host: string, port: number, user: string, pass?: string): Promise<string[]>;
 }
 
@@ -67,14 +73,19 @@ export class EmailProvider {
   private transportDriver?: EmailTransportDriver;
   private logger: ILogger;
 
-  constructor(options: {
-    config?: Partial<EmailAccountConfig>;
-    permissionController?: ActionPermissionController;
-    transportDriver?: EmailTransportDriver;
-    logger?: ILogger;
-  } = {}) {
+  constructor(
+    options: {
+      config?: Partial<EmailAccountConfig>;
+      permissionController?: ActionPermissionController;
+      transportDriver?: EmailTransportDriver;
+      logger?: ILogger;
+    } = {},
+  ) {
     this.config = {
-      emailAddress: options.config?.emailAddress || process.env['ARLETEX_EMAIL_ADDRESS'] || 'arletex.email@gmail.com',
+      emailAddress:
+        options.config?.emailAddress ||
+        process.env['ARLETEX_EMAIL_ADDRESS'] ||
+        'arletex.email@gmail.com',
       displayName: options.config?.displayName || 'Arle',
       password: options.config?.password || process.env['ARLETEX_EMAIL_PASSWORD'],
       oauthToken: options.config?.oauthToken || process.env['ARLETEX_EMAIL_OAUTH_TOKEN'],
@@ -88,7 +99,11 @@ export class EmailProvider {
         'partner',
         'proof',
       ],
-      isConfigured: Boolean(options.config?.password || options.config?.oauthToken || process.env['ARLETEX_EMAIL_PASSWORD']),
+      isConfigured: Boolean(
+        options.config?.password ||
+        options.config?.oauthToken ||
+        process.env['ARLETEX_EMAIL_PASSWORD'],
+      ),
     };
     this.permissionController = options.permissionController || new ActionPermissionController();
     this.transportDriver = options.transportDriver;
@@ -99,12 +114,18 @@ export class EmailProvider {
     this.config = {
       ...this.config,
       ...updates,
-      isConfigured: Boolean(updates.password || updates.oauthToken || this.config.password || this.config.oauthToken),
+      isConfigured: Boolean(
+        updates.password || updates.oauthToken || this.config.password || this.config.oauthToken,
+      ),
     };
-    this.logger.info(`Email configuration updated for identity: ${this.config.displayName} <${this.config.emailAddress}>`);
+    this.logger.info(
+      `Email configuration updated for identity: ${this.config.displayName} <${this.config.emailAddress}>`,
+    );
   }
 
-  public getConfig(): Readonly<Omit<EmailAccountConfig, 'password' | 'oauthToken'>> & { hasCredentials: boolean } {
+  public getConfig(): Readonly<Omit<EmailAccountConfig, 'password' | 'oauthToken'>> & {
+    hasCredentials: boolean;
+  } {
     const { password: _p, oauthToken: _o, ...safe } = this.config;
     return {
       ...safe,
@@ -123,7 +144,10 @@ export class EmailProvider {
   /**
    * Parses raw RFC 822/2822 email headers and text content.
    */
-  public parseRawRfc822(rawText: string, messageId: string = crypto.randomUUID()): InboundEmailMessage {
+  public parseRawRfc822(
+    rawText: string,
+    messageId: string = crypto.randomUUID(),
+  ): InboundEmailMessage {
     const headerEndIdx = rawText.indexOf('\r\n\r\n');
     const altHeaderEndIdx = rawText.indexOf('\n\n');
     const splitIdx = headerEndIdx !== -1 ? headerEndIdx : altHeaderEndIdx;
@@ -187,7 +211,9 @@ export class EmailProvider {
   /**
    * Checks inbound email inbox via IMAP over TLS.
    */
-  public async checkInbox(options: { unreadOnly?: boolean; limit?: number } = {}): Promise<InboundEmailMessage[]> {
+  public async checkInbox(
+    options: { unreadOnly?: boolean; limit?: number } = {},
+  ): Promise<InboundEmailMessage[]> {
     const limit = options.limit ?? 10;
 
     // 1. If custom transport driver is injected (for tests or customized TLS bridges)
@@ -199,7 +225,9 @@ export class EmailProvider {
           this.config.emailAddress,
           this.config.password,
         );
-        return rawList.slice(0, limit).map((raw, idx) => this.parseRawRfc822(raw, `inbound_msg_${idx + 1}`));
+        return rawList
+          .slice(0, limit)
+          .map((raw, idx) => this.parseRawRfc822(raw, `inbound_msg_${idx + 1}`));
       } catch (err: any) {
         this.logger.warn(`Transport driver IMAP fetch error: ${err.message}`);
         return [];
@@ -207,7 +235,9 @@ export class EmailProvider {
     }
 
     if (!this.config.isConfigured || !this.config.password) {
-      this.logger.debug('IMAP inbox check skipped: email credentials not configured in environment.');
+      this.logger.debug(
+        'IMAP inbox check skipped: email credentials not configured in environment.',
+      );
       return [];
     }
 
@@ -221,7 +251,9 @@ export class EmailProvider {
           rejectUnauthorized: true,
         },
         () => {
-          this.logger.debug(`Connected to IMAP server ${this.config.imapHost}:${this.config.imapPort}`);
+          this.logger.debug(
+            `Connected to IMAP server ${this.config.imapHost}:${this.config.imapPort}`,
+          );
           // Send login command
           socket.write(`A01 LOGIN "${this.config.emailAddress}" "${this.config.password}"\r\n`);
         },
@@ -385,7 +417,9 @@ export class EmailProvider {
           rejectUnauthorized: true,
         },
         () => {
-          this.logger.debug(`Connected to SMTP server ${this.config.smtpHost}:${this.config.smtpPort}`);
+          this.logger.debug(
+            `Connected to SMTP server ${this.config.smtpHost}:${this.config.smtpPort}`,
+          );
         },
       );
 
@@ -473,7 +507,9 @@ export class EmailProvider {
       return null;
     }
 
-    this.logger.info(`Routing inbound email from "${email.from}" (${email.subject}) to CognitiveControlBus`);
+    this.logger.info(
+      `Routing inbound email from "${email.from}" (${email.subject}) to CognitiveControlBus`,
+    );
 
     return bus.dispatch({
       id: crypto.randomUUID(),

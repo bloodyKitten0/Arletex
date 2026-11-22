@@ -52,7 +52,9 @@ export class WorkingMemoryEngine {
 
     this.currentBuffer = buffer;
     this.repo.saveBuffer(buffer);
-    this.logger.info(`Initialized working memory buffer for task '${taskId}' (${goalTitle}), capacity: ${maxCapacity}`);
+    this.logger.info(
+      `Initialized working memory buffer for task '${taskId}' (${goalTitle}), capacity: ${maxCapacity}`,
+    );
     return buffer;
   }
 
@@ -95,7 +97,9 @@ export class WorkingMemoryEngine {
       buffer.items[existingIdx] = updated;
       buffer.updatedAt = now;
       this.repo.saveBuffer(buffer);
-      this.logger.info(`Updated existing working memory slot '${itemInput.slotKey}' (v${updated.version})`);
+      this.logger.info(
+        `Updated existing working memory slot '${itemInput.slotKey}' (v${updated.version})`,
+      );
       return updated;
     }
 
@@ -125,7 +129,9 @@ export class WorkingMemoryEngine {
     assertWorkingMemoryCapacityIntegrity(buffer);
 
     this.repo.saveBuffer(buffer);
-    this.logger.info(`Retained item in slot '${newItem.slotKey}' [${newItem.category}]. Used: ${buffer.usedSlots}/${buffer.maxCapacity}`);
+    this.logger.info(
+      `Retained item in slot '${newItem.slotKey}' [${newItem.category}]. Used: ${buffer.usedSlots}/${buffer.maxCapacity}`,
+    );
     return newItem;
   }
 
@@ -145,7 +151,9 @@ export class WorkingMemoryEngine {
     const buffer = this.ensureActiveBuffer();
     const idx = buffer.items.findIndex((i) => i.slotKey === slotKey);
     if (idx < 0 || !buffer.items[idx]) {
-      throw new Error(`Working memory slot '${slotKey}' not found in active task context '${buffer.taskId}'`);
+      throw new Error(
+        `Working memory slot '${slotKey}' not found in active task context '${buffer.taskId}'`,
+      );
     }
 
     const current = buffer.items[idx];
@@ -157,7 +165,10 @@ export class WorkingMemoryEngine {
       category: changes.category ?? current.category,
       content: changes.content !== undefined ? changes.content : current.content,
       summary: changes.summary ?? current.summary,
-      priority: changes.priority !== undefined ? Math.max(0, Math.min(1, changes.priority)) : current.priority,
+      priority:
+        changes.priority !== undefined
+          ? Math.max(0, Math.min(1, changes.priority))
+          : current.priority,
       lastAccessedAt: now,
       version: current.version + 1,
     };
@@ -206,7 +217,9 @@ export class WorkingMemoryEngine {
       buffer.considerations.push(consideration);
       buffer.updatedAt = new Date().toISOString();
       this.repo.saveBuffer(buffer);
-      this.logger.info(`Added consideration: "${consideration}" (${buffer.considerations.length} active)`);
+      this.logger.info(
+        `Added consideration: "${consideration}" (${buffer.considerations.length} active)`,
+      );
     }
     return [...buffer.considerations];
   }
@@ -250,7 +263,9 @@ export class WorkingMemoryEngine {
     buffer.intermediateSteps.push(step);
     buffer.updatedAt = new Date().toISOString();
     this.repo.saveBuffer(buffer);
-    this.logger.info(`Preserved intermediate reasoning step #${stepNumber}: "${step.intermediateConclusion}"`);
+    this.logger.info(
+      `Preserved intermediate reasoning step #${stepNumber}: "${step.intermediateConclusion}"`,
+    );
     return step;
   }
 
@@ -271,7 +286,12 @@ export class WorkingMemoryEngine {
       `Task: ${buffer.goalTitle} (${buffer.taskId})`,
       `Items (${buffer.items.length}/${buffer.maxCapacity}): ${buffer.items.map((i) => `${i.slotKey}=${i.summary}`).join(', ') || 'None'}`,
       `Considerations (${buffer.considerations.length}): ${buffer.considerations.join('; ') || 'None'}`,
-      `Steps (${buffer.intermediateSteps.length}): ${buffer.intermediateSteps.slice(-2).map((s) => `#${s.stepNumber} ${s.intermediateConclusion}`).join('; ') || 'None'}`,
+      `Steps (${buffer.intermediateSteps.length}): ${
+        buffer.intermediateSteps
+          .slice(-2)
+          .map((s) => `#${s.stepNumber} ${s.intermediateConclusion}`)
+          .join('; ') || 'None'
+      }`,
     ].join(' | ');
 
     const snapshot: WorkingMemorySnapshot = {
@@ -302,11 +322,15 @@ export class WorkingMemoryEngine {
     }
 
     if (!buffer) {
-      throw new Error(`Cannot recover working memory context: no state or snapshot found for task '${taskId}'`);
+      throw new Error(
+        `Cannot recover working memory context: no state or snapshot found for task '${taskId}'`,
+      );
     }
 
     this.currentBuffer = buffer;
-    this.logger.info(`Recovered working memory context for task '${taskId}' (${buffer.items.length} items, ${buffer.intermediateSteps.length} steps)`);
+    this.logger.info(
+      `Recovered working memory context for task '${taskId}' (${buffer.items.length} items, ${buffer.intermediateSteps.length} steps)`,
+    );
     return buffer;
   }
 

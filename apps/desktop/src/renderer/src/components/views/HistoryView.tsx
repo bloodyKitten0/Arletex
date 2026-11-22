@@ -129,10 +129,18 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
                   borderRadius: '4px',
                 }}
               />
-              <button type="button" onClick={() => saveRename(conv.id)} style={{ color: 'var(--success)' }}>
+              <button
+                type="button"
+                onClick={() => saveRename(conv.id)}
+                style={{ color: 'var(--success)' }}
+              >
                 <Check size={16} />
               </button>
-              <button type="button" onClick={() => setEditingId(null)} style={{ color: 'var(--text-muted)' }}>
+              <button
+                type="button"
+                onClick={() => setEditingId(null)}
+                style={{ color: 'var(--text-muted)' }}
+              >
                 <X size={16} />
               </button>
             </div>
@@ -164,7 +172,11 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
               type="button"
               onClick={() => onUpdate(conv.id, undefined, !conv.isPinned)}
               title={conv.isPinned ? 'Unpin' : 'Pin to top'}
-              style={{ padding: '6px', color: conv.isPinned ? 'var(--accent)' : 'var(--text-muted)', borderRadius: '4px' }}
+              style={{
+                padding: '6px',
+                color: conv.isPinned ? 'var(--accent)' : 'var(--text-muted)',
+                borderRadius: '4px',
+              }}
             >
               {conv.isPinned ? <PinOff size={15} /> : <Pin size={15} />}
             </button>
@@ -214,7 +226,15 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minWidth: 0 }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        width: '100%',
+        minWidth: 0,
+      }}
+    >
       {/* Header */}
       <div
         style={{
@@ -228,7 +248,16 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <h1 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h1
+              style={{
+                fontSize: '18px',
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
               <Clock size={20} color="var(--accent)" />
               <span>Conversation History Archive</span>
             </h1>
@@ -284,7 +313,11 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
             }}
           />
           {searchQuery && (
-            <button type="button" onClick={() => setSearchQuery('')} style={{ color: 'var(--text-muted)' }}>
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              style={{ color: 'var(--text-muted)' }}
+            >
               <X size={14} />
             </button>
           )}
@@ -292,7 +325,16 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
       </div>
 
       {/* List Container */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '20px',
+        }}
+      >
         {filteredConversations.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
             <Clock size={40} style={{ opacity: 0.3, marginBottom: '12px' }} />
@@ -305,7 +347,17 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
             {/* Pinned Section */}
             {pinned.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    color: 'var(--accent)',
+                    textTransform: 'uppercase',
+                  }}
+                >
                   <Pin size={13} />
                   <span>Pinned Sessions</span>
                 </div>
@@ -316,7 +368,14 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
             {/* Today */}
             {today.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+                <div
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    color: 'var(--text-secondary)',
+                    textTransform: 'uppercase',
+                  }}
+                >
                   Today
                 </div>
                 {today.map(renderConversationItem)}
@@ -326,7 +385,14 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
             {/* Yesterday */}
             {yesterday.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+                <div
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    color: 'var(--text-secondary)',
+                    textTransform: 'uppercase',
+                  }}
+                >
                   Yesterday
                 </div>
                 {yesterday.map(renderConversationItem)}
@@ -336,7 +402,14 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
             {/* Earlier */}
             {earlier.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+                <div
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    color: 'var(--text-secondary)',
+                    textTransform: 'uppercase',
+                  }}
+                >
                   Earlier Sessions
                 </div>
                 {earlier.map(renderConversationItem)}

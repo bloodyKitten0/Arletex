@@ -690,19 +690,19 @@ The user wants the ability to inspect private reflections and emotions, although
 
 ## 13.1 Proposed technology stack
 
-| Component | Proposed technology |
-|---|---|
-| Desktop application | Electron |
-| User interface | React |
-| Backend | Node.js / TypeScript |
-| Model inference | llama.cpp / llama-server |
-| Model interface | OpenAI-compatible HTTP API |
-| Specialist services | Python |
-| Initial database | SQLite |
-| Database library | better-sqlite3 |
-| Communication | HTTP and streaming |
-| Local tool execution | Sandboxed subprocesses |
-| Future retrieval | Embeddings and vector search |
+| Component            | Proposed technology          |
+| -------------------- | ---------------------------- |
+| Desktop application  | Electron                     |
+| User interface       | React                        |
+| Backend              | Node.js / TypeScript         |
+| Model inference      | llama.cpp / llama-server     |
+| Model interface      | OpenAI-compatible HTTP API   |
+| Specialist services  | Python                       |
+| Initial database     | SQLite                       |
+| Database library     | better-sqlite3               |
+| Communication        | HTTP and streaming           |
+| Local tool execution | Sandboxed subprocesses       |
+| Future retrieval     | Embeddings and vector search |
 
 The architecture should begin as a modular monolith rather than a premature microservice ecosystem.
 
@@ -781,18 +781,18 @@ The operating system, Electron, Node.js, model weights, context cache, inference
 
 ## 14.2 Confirmed development environment
 
-| Tool | Installed version / status |
-|---|---|
-| Git | 2.56.0 |
-| Node.js | 26.13.0 |
-| pnpm | 12.18.0 |
-| Python | 3.15.0 |
-| uv | 0.13.7 |
-| GCC | 16.2.1 |
-| CMake | 4.3.0 |
-| Ninja | 1.13.2 |
-| llama.cpp | Installed with Vulkan |
-| llama-server | Available |
+| Tool         | Installed version / status |
+| ------------ | -------------------------- |
+| Git          | 2.56.0                     |
+| Node.js      | 26.13.0                    |
+| pnpm         | 12.18.0                    |
+| Python       | 3.15.0                     |
+| uv           | 0.13.7                     |
+| GCC          | 16.2.1                     |
+| CMake        | 4.3.0                      |
+| Ninja        | 1.13.2                     |
+| llama.cpp    | Installed with Vulkan      |
+| llama-server | Available                  |
 
 These versions were reported by the user's environment check. Installation does not establish that every dependency or service works correctly.
 
@@ -804,15 +804,15 @@ Python 3.15 and Node.js 26 are relatively new environments. Compatibility should
 
 The following models and supporting packages have been downloaded or installed.
 
-| Function | Model / package | Status |
-|---|---|---|
-| Main generative model candidate | Qwen3.5 9B Heretic Q4_K_M | Downloaded |
-| Alternative main model | Gemma 4 12B Heretic Q4_K_M | Downloaded |
-| Vision projector | Qwen vision projector | Downloaded |
-| OCR | GLM-OCR 0.9B | Downloaded |
-| Speech-to-text | Whisper Small / faster-whisper | Installed |
-| Text-to-speech | Kokoro 82M | Installed |
-| Embeddings | EmbeddingGemma 300M | Installed |
+| Function                        | Model / package                | Status     |
+| ------------------------------- | ------------------------------ | ---------- |
+| Main generative model candidate | Qwen3.5 9B Heretic Q4_K_M      | Downloaded |
+| Alternative main model          | Gemma 4 12B Heretic Q4_K_M     | Downloaded |
+| Vision projector                | Qwen vision projector          | Downloaded |
+| OCR                             | GLM-OCR 0.9B                   | Downloaded |
+| Speech-to-text                  | Whisper Small / faster-whisper | Installed  |
+| Text-to-speech                  | Kokoro 82M                     | Installed  |
+| Embeddings                      | EmbeddingGemma 300M            | Installed  |
 
 Reported file sizes:
 

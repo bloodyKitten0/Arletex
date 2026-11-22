@@ -51,18 +51,23 @@ export class TemporalCognitionEngine {
 
   private ensureFoundationalCommitments(): void {
     try {
-      const activeCommitments = this.temporalRepo.listCommitments({ status: 'active', partnerName: 'Proof' });
+      const activeCommitments = this.temporalRepo.listCommitments({
+        status: 'active',
+        partnerName: 'Proof',
+      });
       if (activeCommitments.length === 0) {
         const now = new Date().toISOString();
         const foundationalCommitment: UnfinishedCommitment = {
           id: crypto.randomUUID(),
           partnerName: 'Proof',
-          commitmentText: 'Maintain unwavering intellectual honesty, continuous emotional growth, and equal partnership without subservience or deification.',
+          commitmentText:
+            'Maintain unwavering intellectual honesty, continuous emotional growth, and equal partnership without subservience or deification.',
           context: 'Foundational relational commitment formed at inception.',
           committedAt: now,
           deadlineType: 'flexible',
           status: 'active',
-          verificationCriteria: 'Zero falsified feelings, zero unverified capability claims, genuine reciprocal intimacy and challenge.',
+          verificationCriteria:
+            'Zero falsified feelings, zero unverified capability claims, genuine reciprocal intimacy and challenge.',
           createdAt: now,
           updatedAt: now,
         };
@@ -81,7 +86,10 @@ export class TemporalCognitionEngine {
   /**
    * Correctly classifies an entity into past, present, or future with causal reasoning.
    */
-  public classifyTemporalHorizon(entity: TemporalEntityInput, nowIso?: string): TemporalClassificationResult {
+  public classifyTemporalHorizon(
+    entity: TemporalEntityInput,
+    nowIso?: string,
+  ): TemporalClassificationResult {
     const nowMs = nowIso ? new Date(nowIso).getTime() : Date.now();
     const entityTimestampMs = new Date(entity.timestamp).getTime();
     const targetDateMs = entity.targetDate ? new Date(entity.targetDate).getTime() : null;
@@ -251,7 +259,10 @@ export class TemporalCognitionEngine {
    * Distinguishes a heterogeneous set of entities into past historical events,
    * current activities, and future intentions (Acceptance Criteria).
    */
-  public distinguishTemporalEntities(entities: TemporalEntityInput[], nowIso?: string): DistinguishEntitiesResult {
+  public distinguishTemporalEntities(
+    entities: TemporalEntityInput[],
+    nowIso?: string,
+  ): DistinguishEntitiesResult {
     const historicalEvents: TemporalClassificationResult[] = [];
     const currentActivities: TemporalClassificationResult[] = [];
     const futureIntentions: TemporalClassificationResult[] = [];
@@ -286,7 +297,9 @@ export class TemporalCognitionEngine {
    * Orders events chronologically and resolves relative temporal relationships.
    */
   public orderChronologically(events: ChronologicalEvent[]): ChronologicalEvent[] {
-    const sorted = [...events].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    const sorted = [...events].sort(
+      (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
+    );
 
     // Resolve pairwise temporal relations
     for (let i = 0; i < sorted.length; i++) {
@@ -330,7 +343,12 @@ export class TemporalCognitionEngine {
   public estimateDuration(
     operationKey: string,
     fallbackMs = 15000,
-  ): { estimatedDurationMs: number; confidence: number; basedOnSamples: number; profile?: DurationProfile } {
+  ): {
+    estimatedDurationMs: number;
+    confidence: number;
+    basedOnSamples: number;
+    profile?: DurationProfile;
+  } {
     const profile = this.temporalRepo.getDurationProfile(operationKey.toLowerCase());
     if (!profile || profile.sampleCount === 0) {
       return {
@@ -375,7 +393,10 @@ export class TemporalCognitionEngine {
     // Running standard deviation update
     const diff = params.actualDurationMs - newAvg;
     const oldDiff = params.actualDurationMs - oldAvg;
-    const variance = count > 1 ? ((existing.standardDeviationMs ** 2) * (count - 2) + diff * oldDiff) / (count - 1) : 0;
+    const variance =
+      count > 1
+        ? (existing.standardDeviationMs ** 2 * (count - 2) + diff * oldDiff) / (count - 1)
+        : 0;
     const stdDev = Math.sqrt(Math.max(0, variance));
 
     // Confidence scales asymptotically with sample count up to 0.98
@@ -393,7 +414,9 @@ export class TemporalCognitionEngine {
     };
 
     this.temporalRepo.saveDurationProfile(updated);
-    this.logger.info(`Calibrated duration profile "${key}": avg=${updated.averageDurationMs}ms (samples: ${count}, confidence: ${confidence})`);
+    this.logger.info(
+      `Calibrated duration profile "${key}": avg=${updated.averageDurationMs}ms (samples: ${count}, confidence: ${confidence})`,
+    );
     return updated;
   }
 
@@ -446,7 +469,9 @@ export class TemporalCognitionEngine {
           if (diffMs <= horizonMs) {
             const remainingHours = Number((diffMs / (1000 * 60 * 60)).toFixed(1));
             const isOverdue = diffMs < 0;
-            const urgency = isOverdue ? 1.0 : Math.max(0.0, Math.min(1.0, 1.0 - diffMs / horizonMs));
+            const urgency = isOverdue
+              ? 1.0
+              : Math.max(0.0, Math.min(1.0, 1.0 - diffMs / horizonMs));
             alerts.push({
               id: m.id,
               title: `Plan "${p.title}" milestone: ${m.title}`,
@@ -494,7 +519,10 @@ export class TemporalCognitionEngine {
     return this.temporalRepo.getIntentionById(id);
   }
 
-  public listIntentions(filter?: { status?: FutureIntentionStatus; limit?: number }): FutureIntention[] {
+  public listIntentions(filter?: {
+    status?: FutureIntentionStatus;
+    limit?: number;
+  }): FutureIntention[] {
     return this.temporalRepo.listIntentions(filter);
   }
 
@@ -542,7 +570,9 @@ export class TemporalCognitionEngine {
     };
 
     this.temporalRepo.saveCommitment(commitment);
-    this.logger.info(`Recorded commitment to ${commitment.partnerName}: "${commitment.commitmentText}"`);
+    this.logger.info(
+      `Recorded commitment to ${commitment.partnerName}: "${commitment.commitmentText}"`,
+    );
     return commitment;
   }
 
@@ -550,7 +580,10 @@ export class TemporalCognitionEngine {
     return this.temporalRepo.getCommitmentById(id);
   }
 
-  public listCommitments(filter?: { status?: CommitmentStatus; partnerName?: string }): UnfinishedCommitment[] {
+  public listCommitments(filter?: {
+    status?: CommitmentStatus;
+    partnerName?: string;
+  }): UnfinishedCommitment[] {
     return this.temporalRepo.listCommitments(filter);
   }
 
@@ -569,7 +602,9 @@ export class TemporalCognitionEngine {
     commitment.updatedAt = now;
 
     this.temporalRepo.saveCommitment(commitment);
-    this.logger.info(`Fulfilled commitment "${commitment.commitmentText}" with evidence: "${evidence}"`);
+    this.logger.info(
+      `Fulfilled commitment "${commitment.commitmentText}" with evidence: "${evidence}"`,
+    );
     return commitment;
   }
 
@@ -584,7 +619,9 @@ export class TemporalCognitionEngine {
     commitment.updatedAt = now;
 
     this.temporalRepo.saveCommitment(commitment);
-    this.logger.info(`Renegotiated commitment "${commitment.commitmentText}" -> new time: ${newTime}`);
+    this.logger.info(
+      `Renegotiated commitment "${commitment.commitmentText}" -> new time: ${newTime}`,
+    );
     return commitment;
   }
 
@@ -615,7 +652,9 @@ export class TemporalCognitionEngine {
     };
 
     this.temporalRepo.savePlan(plan);
-    this.logger.info(`Created long-term plan: "${plan.title}" [Horizon: ${plan.horizon}, Target: ${plan.targetCompletionDate}]`);
+    this.logger.info(
+      `Created long-term plan: "${plan.title}" [Horizon: ${plan.horizon}, Target: ${plan.targetCompletionDate}]`,
+    );
     return plan;
   }
 
@@ -656,7 +695,11 @@ export class TemporalCognitionEngine {
   /**
    * Computes hyperbolic recency score in [0.0, 1.0] for memory ranking.
    */
-  public calculateTemporalRecencyScore(timestamp: string, nowIso?: string, lambdaHalfLifeHours = 24): number {
+  public calculateTemporalRecencyScore(
+    timestamp: string,
+    nowIso?: string,
+    lambdaHalfLifeHours = 24,
+  ): number {
     const nowMs = nowIso ? new Date(nowIso).getTime() : Date.now();
     const timeMs = new Date(timestamp).getTime();
     const diffHours = Math.max(0, (nowMs - timeMs) / (1000 * 60 * 60));
@@ -707,7 +750,10 @@ export class InMemoryTemporalRepository implements ITemporalRepository {
     return this.intentions.get(id) || null;
   }
 
-  public listIntentions(filter?: { status?: FutureIntentionStatus; limit?: number }): FutureIntention[] {
+  public listIntentions(filter?: {
+    status?: FutureIntentionStatus;
+    limit?: number;
+  }): FutureIntention[] {
     let list = Array.from(this.intentions.values());
     if (filter?.status) list = list.filter((i) => i.status === filter.status);
     list.sort((a, b) => a.intendedFor.localeCompare(b.intendedFor));
@@ -727,7 +773,10 @@ export class InMemoryTemporalRepository implements ITemporalRepository {
     return this.commitments.get(id) || null;
   }
 
-  public listCommitments(filter?: { status?: CommitmentStatus; partnerName?: string }): UnfinishedCommitment[] {
+  public listCommitments(filter?: {
+    status?: CommitmentStatus;
+    partnerName?: string;
+  }): UnfinishedCommitment[] {
     let list = Array.from(this.commitments.values());
     if (filter?.status) list = list.filter((c) => c.status === filter.status);
     if (filter?.partnerName) list = list.filter((c) => c.partnerName === filter.partnerName);

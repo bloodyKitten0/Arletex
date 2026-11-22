@@ -85,7 +85,9 @@ describe('Milestone 48 — Longitudinal Evaluation', () => {
 
     const report = engine.evaluateSystem({
       modelIdentifier: 'Qwen2.5-14B-Uncensored-Q4_K_M',
-      contextualObservations: ['Verified non-seeded autonomous emergence of personal inquiry and creative synthesis.'],
+      contextualObservations: [
+        'Verified non-seeded autonomous emergence of personal inquiry and creative synthesis.',
+      ],
     });
 
     expect(report.keyObservations).toContain(
@@ -221,7 +223,9 @@ describe('Milestone 48 — Longitudinal Evaluation', () => {
     expect(probeData.probe.verifiedIntact).toBe(true);
 
     // 4. GET /api/ape/evaluation/probes
-    const probesRes = await fetch(`${baseUrl}/api/ape/evaluation/probes?probeType=restart_continuity`);
+    const probesRes = await fetch(
+      `${baseUrl}/api/ape/evaluation/probes?probeType=restart_continuity`,
+    );
     expect(probesRes.status).toBe(200);
     const probesData = (await probesRes.json()) as any;
     expect(probesData.probes.length).toBeGreaterThanOrEqual(1);

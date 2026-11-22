@@ -361,8 +361,11 @@ export class AutonomousAgencyEngine {
     } else if (typeof verifiedOption === 'boolean') {
       isSuccess = verifiedOption;
     } else {
-      isSuccess = Boolean(observedEvidence && observedEvidence.trim().length > 0) &&
-        !/^(error|failed|failure|denied|rejection|unverified|missing)/i.test(observedEvidence.trim());
+      isSuccess =
+        Boolean(observedEvidence && observedEvidence.trim().length > 0) &&
+        !/^(error|failed|failure|denied|rejection|unverified|missing)/i.test(
+          observedEvidence.trim(),
+        );
     }
 
     // Prohibit synthetic test double observations from marking production verified
@@ -390,7 +393,9 @@ export class AutonomousAgencyEngine {
 
     assertAutonomousActivityIntegrity(activity);
     this.repo.saveActivity(activity);
-    this.logger.info(`Verified autonomous activity ${activityId}: ${criteria} (result: ${verifiedFinal})`);
+    this.logger.info(
+      `Verified autonomous activity ${activityId}: ${criteria} (result: ${verifiedFinal})`,
+    );
     return activity;
   }
 
@@ -430,7 +435,7 @@ export class AutonomousAgencyEngine {
     // Verify recovery outcome: if an observation is provided, respect its verified state.
     // If none provided, execute recovery transition and record evidence.
     const isVerified = postRecoveryObservation
-      ? (postRecoveryObservation.verified && !postRecoveryObservation.isSynthetic)
+      ? postRecoveryObservation.verified && !postRecoveryObservation.isSynthetic
       : true;
 
     activity.status = isVerified ? 'completed' : 'recovered';
@@ -444,7 +449,9 @@ export class AutonomousAgencyEngine {
     activity.verification = {
       verified: isVerified,
       criteria: `Recovery verification via strategy: ${recoveryStrategy}`,
-      observedEvidence: postRecoveryObservation?.evidence || `Activity resumed and verified intact under ${recoveryStrategy}`,
+      observedEvidence:
+        postRecoveryObservation?.evidence ||
+        `Activity resumed and verified intact under ${recoveryStrategy}`,
       verifiedAt: now,
     };
     if (isVerified) {
@@ -453,7 +460,9 @@ export class AutonomousAgencyEngine {
 
     assertAutonomousActivityIntegrity(activity);
     this.repo.saveActivity(activity);
-    this.logger.info(`Successfully recovered activity ${activityId} with strategy: ${recoveryStrategy} (verified: ${isVerified})`);
+    this.logger.info(
+      `Successfully recovered activity ${activityId} with strategy: ${recoveryStrategy} (verified: ${isVerified})`,
+    );
     return activity;
   }
 
@@ -479,7 +488,9 @@ export class AutonomousAgencyEngine {
     };
 
     this.repo.saveActivity(activity);
-    this.logger.info(`Dispatched proactive communication for activity ${activityId}: "${messageText}"`);
+    this.logger.info(
+      `Dispatched proactive communication for activity ${activityId}: "${messageText}"`,
+    );
     return activity;
   }
 
@@ -510,7 +521,11 @@ export class AutonomousAgencyEngine {
     const fileOp = await this.executeFileOperation({
       operation: 'create',
       path: `workspace/reports/${goal.id}_analysis.json`,
-      content: JSON.stringify({ goalTitle: goal.title, status: 'synthesized', timestamp: new Date().toISOString() }),
+      content: JSON.stringify({
+        goalTitle: goal.title,
+        status: 'synthesized',
+        timestamp: new Date().toISOString(),
+      }),
       goalId: goal.id,
     });
     activities.push(fileOp);

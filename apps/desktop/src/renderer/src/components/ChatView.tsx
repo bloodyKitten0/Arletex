@@ -150,7 +150,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
               Arle Prototype Session
             </div>
             <div style={{ fontSize: '13px', marginTop: '4px' }}>
-              Send a message to initiate local cognition. Responses are streamed directly from your configured inference provider.
+              Send a message to initiate local cognition. Responses are streamed directly from your
+              configured inference provider.
             </div>
           </div>
         </div>
@@ -183,7 +184,12 @@ export const ChatView: React.FC<ChatViewProps> = ({
               {isUser ? <User size={12} /> : <Bot size={12} color="var(--accent)" />}
               <span>{isUser ? 'You' : 'Arle'}</span>
               <span>•</span>
-              <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <span>
+                {new Date(msg.createdAt).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
             </div>
 
             {/* Content bubble */}
@@ -266,7 +272,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
             >
               <Zap size={13} style={{ flexShrink: 0 }} />
               <span>
-                Tip: For instant (~4s) answers on GPU, click <strong>⚡ Fast Mode (9B Vulkan)</strong> in the top bar.
+                Tip: For instant (~4s) answers on GPU, click{' '}
+                <strong>⚡ Fast Mode (9B Vulkan)</strong> in the top bar.
               </span>
             </div>
           )}
@@ -327,9 +334,14 @@ export const ChatView: React.FC<ChatViewProps> = ({
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <Zap size={14} style={{ color: 'var(--accent)', filter: 'drop-shadow(0 0 4px var(--accent))' }} />
+              <Zap
+                size={14}
+                style={{ color: 'var(--accent)', filter: 'drop-shadow(0 0 4px var(--accent))' }}
+              />
               <span style={{ fontWeight: 700, color: 'var(--accent)' }}>
-                {generationStats.tokensPerSecond > 0 ? `${generationStats.tokensPerSecond} t/s` : 'streaming...'}
+                {generationStats.tokensPerSecond > 0
+                  ? `${generationStats.tokensPerSecond} t/s`
+                  : 'streaming...'}
               </span>
             </div>
             <span style={{ opacity: 0.3 }}>|</span>

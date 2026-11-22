@@ -18,7 +18,10 @@ export interface IMemoryRepositorySink {
   update(input: any): Memory;
   delete(id: string): boolean;
   merge(primaryId: string, secondaryId: string): Memory;
-  searchSimilar?(queryVector: Float32Array, options?: { limit?: number; threshold?: number }): Memory[];
+  searchSimilar?(
+    queryVector: Float32Array,
+    options?: { limit?: number; threshold?: number },
+  ): Memory[];
   listForBackup?(): any[];
   upsertRestoredMemory?(memory: any): void;
 }
@@ -95,17 +98,17 @@ export class AutobiographicalMemoryService {
         case 'autobiographical_experience':
         case 'digital_agency':
         case 'historical_consolidation':
-          confidence = 0.80;
+          confidence = 0.8;
           break;
         case 'inferred_interpretation':
-          confidence = 0.60;
+          confidence = 0.6;
           break;
         case 'uncertain_information':
         case 'conflicting_information':
           confidence = 0.35;
           break;
         default:
-          confidence = 0.70;
+          confidence = 0.7;
       }
     }
 
@@ -147,7 +150,10 @@ export class AutobiographicalMemoryService {
   ): AssociativeMemoryMatch[] {
     const limit = options.limit ?? 5;
     const minRelevance = options.minRelevance ?? 0.25;
-    const tokens = stimulus.toLowerCase().split(/\s+/).filter((t) => t.length > 3);
+    const tokens = stimulus
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((t) => t.length > 3);
 
     // 1. If vector search is available, leverage embedding similarity
     if (options.queryVector && this.repo.searchSimilar) {
@@ -161,7 +167,8 @@ export class AutobiographicalMemoryService {
           .filter((m) => !options.typeFilter || options.typeFilter.includes(m.type))
           .slice(0, limit)
           .map((m) => {
-            const score = (m.similarityScore ?? 0.5) * 0.5 + m.importance * 0.3 + m.confidence * 0.2;
+            const score =
+              (m.similarityScore ?? 0.5) * 0.5 + m.importance * 0.3 + m.confidence * 0.2;
             return {
               memory: m,
               relevanceScore: Number(score.toFixed(3)),
@@ -169,7 +176,10 @@ export class AutobiographicalMemoryService {
             };
           });
       } catch (err) {
-        this.logger.warn('Vector similarity search failed; falling back to lexical associative retrieval', err);
+        this.logger.warn(
+          'Vector similarity search failed; falling back to lexical associative retrieval',
+          err,
+        );
       }
     }
 
@@ -239,11 +249,17 @@ export class AutobiographicalMemoryService {
         const aClean = a.content.trim().toLowerCase();
         const bClean = b.content.trim().toLowerCase();
 
-        if (aClean === bClean || (aClean.length > 30 && bClean.includes(aClean)) || (bClean.length > 30 && aClean.includes(bClean))) {
+        if (
+          aClean === bClean ||
+          (aClean.length > 30 && bClean.includes(aClean)) ||
+          (bClean.length > 30 && aClean.includes(bClean))
+        ) {
           // Designate the earlier memory (or higher importance) as primary
           const [primary, secondary] =
             new Date(a.timestamp).getTime() <= new Date(b.timestamp).getTime() ? [a, b] : [b, a];
-          this.logger.info(`Consolidation: Merging duplicate memories (${primary.id} <- ${secondary.id})`);
+          this.logger.info(
+            `Consolidation: Merging duplicate memories (${primary.id} <- ${secondary.id})`,
+          );
           this.repo.merge(primary.id, secondary.id);
           duplicatesMerged++;
           continue;
@@ -253,7 +269,9 @@ export class AutobiographicalMemoryService {
         // e.g., one states "Proof likes X" and another states "Proof dislikes X" or explicit contrary
         const isContradiction = this.detectContradiction(aClean, bClean);
         if (isContradiction) {
-          this.logger.warn(`Consolidation: Contradiction detected between memory ${a.id} and ${b.id}`);
+          this.logger.warn(
+            `Consolidation: Contradiction detected between memory ${a.id} and ${b.id}`,
+          );
           a.metadata = {
             ...(a.metadata || {}),
             contradictedByMemoryId: b.id,
@@ -312,7 +330,8 @@ export class AutobiographicalMemoryService {
 
       // D. Archival / Retention Policy
       // Protect high importance (>= 0.8) and core autobiographical identity memories!
-      const isCoreIdentity = a.metadata?.isCoreIdentity === true || a.importance >= 0.8 || a.type === 'relationship';
+      const isCoreIdentity =
+        a.metadata?.isCoreIdentity === true || a.importance >= 0.8 || a.type === 'relationship';
       const ageMs = Date.now() - new Date(a.timestamp).getTime();
       const isOldAndLowImportance = ageMs > 30 * 24 * 60 * 60 * 1000 && a.importance < 0.2;
 
@@ -376,8 +395,11 @@ export class AutobiographicalMemoryService {
       `Autobiographical Synthesis [${theme}]: ${validSources.map((s) => s.content).join(' -> ')}`;
 
     const maxImportance = Math.max(...validSources.map((s) => s.importance));
-    const avgConfidence = validSources.reduce((sum, s) => sum + s.confidence, 0) / validSources.length;
-    const allTags = Array.from(new Set(validSources.flatMap((s) => s.tags).concat(['consolidated', 'autobiographical'])));
+    const avgConfidence =
+      validSources.reduce((sum, s) => sum + s.confidence, 0) / validSources.length;
+    const allTags = Array.from(
+      new Set(validSources.flatMap((s) => s.tags).concat(['consolidated', 'autobiographical'])),
+    );
 
     const now = new Date().toISOString();
     const derivedMemory = this.repo.create({
@@ -479,7 +501,28 @@ export class AutobiographicalMemoryService {
     };
 
     // Filter out stopwords
-    const STOPWORDS = new Set(['what', 'which', 'where', 'when', 'how', 'does', 'with', 'from', 'that', 'this', 'have', 'been', 'will', 'were', 'the', 'and', 'for', 'are', 'many', 'did']);
+    const STOPWORDS = new Set([
+      'what',
+      'which',
+      'where',
+      'when',
+      'how',
+      'does',
+      'with',
+      'from',
+      'that',
+      'this',
+      'have',
+      'been',
+      'will',
+      'were',
+      'the',
+      'and',
+      'for',
+      'are',
+      'many',
+      'did',
+    ]);
     const meaningfulTokens = queryTokens.filter((t) => !STOPWORDS.has(t));
 
     // Entity tokens that are ubiquitous in Arletex
@@ -493,7 +536,8 @@ export class AutobiographicalMemoryService {
       if (options.minConfidence !== undefined && mem.confidence < options.minConfidence) continue;
 
       const memTime = new Date(mem.timestamp).getTime();
-      if (options.timeRange?.start && memTime < new Date(options.timeRange.start).getTime()) continue;
+      if (options.timeRange?.start && memTime < new Date(options.timeRange.start).getTime())
+        continue;
       if (options.timeRange?.end && memTime > new Date(options.timeRange.end).getTime()) continue;
 
       const memContentLower = mem.content.toLowerCase();
@@ -521,7 +565,11 @@ export class AutobiographicalMemoryService {
         }
       }
 
-      if (!isRefuted && (mem.provenance === 'conflicting_information' || (mem.metadata as any)?.contradictedByMemoryId)) {
+      if (
+        !isRefuted &&
+        (mem.provenance === 'conflicting_information' ||
+          (mem.metadata as any)?.contradictedByMemoryId)
+      ) {
         isRefuted = true;
         contradictionReason = `Epistemic conflict: memory flagged as conflicting or contradicted by ${(mem.metadata as any)?.contradictedByMemoryId || 'another record'}.`;
       }
@@ -537,7 +585,9 @@ export class AutobiographicalMemoryService {
           for (const token of tokensToTest) {
             let hit = memContentLower.includes(token) || memTagsLower.includes(token);
             if (!hit && SYNONYM_MAP[token]) {
-              hit = SYNONYM_MAP[token]!.some((syn) => memContentLower.includes(syn) || memTagsLower.includes(syn));
+              hit = SYNONYM_MAP[token]!.some(
+                (syn) => memContentLower.includes(syn) || memTagsLower.includes(syn),
+              );
             }
             if (hit) {
               tokenHits++;
@@ -574,10 +624,14 @@ export class AutobiographicalMemoryService {
       // People match
       let peopleMatch = 1.0;
       if (options.people && options.people.length > 0) {
-        const memPeople = (((mem.metadata as any)?.people as string[]) || []).map((p) => p.toLowerCase());
+        const memPeople = (((mem.metadata as any)?.people as string[]) || []).map((p) =>
+          p.toLowerCase(),
+        );
         const matchedPeople = options.people.filter((p) => {
           const pl = p.toLowerCase();
-          return memContentLower.includes(pl) || memTagsLower.includes(pl) || memPeople.includes(pl);
+          return (
+            memContentLower.includes(pl) || memTagsLower.includes(pl) || memPeople.includes(pl)
+          );
         });
         peopleMatch = matchedPeople.length / options.people.length;
       }
@@ -587,7 +641,12 @@ export class AutobiographicalMemoryService {
       if (options.project) {
         const projLower = options.project.toLowerCase();
         const memProj = String((mem.metadata as any)?.project || '').toLowerCase();
-        projectMatch = memProj.includes(projLower) || memContentLower.includes(projLower) || memTagsLower.includes(projLower) ? 1.0 : 0.0;
+        projectMatch =
+          memProj.includes(projLower) ||
+          memContentLower.includes(projLower) ||
+          memTagsLower.includes(projLower)
+            ? 1.0
+            : 0.0;
       }
 
       // Source reliability
@@ -601,7 +660,7 @@ export class AutobiographicalMemoryService {
           sourceReliability = 0.95;
           break;
         case 'retrieved_source':
-          sourceReliability = 0.90;
+          sourceReliability = 0.9;
           break;
         case 'user_statement':
         case 'user_reported':
@@ -610,36 +669,36 @@ export class AutobiographicalMemoryService {
         case 'autobiographical_experience':
         case 'historical_consolidation':
         case 'digital_agency':
-          sourceReliability = 0.80;
+          sourceReliability = 0.8;
           break;
         case 'interaction':
-          sourceReliability = 0.70;
+          sourceReliability = 0.7;
           break;
         case 'inferred_interpretation':
-          sourceReliability = 0.60;
+          sourceReliability = 0.6;
           break;
         case 'conflicting_information':
         case 'uncertain_information':
           sourceReliability = 0.35;
           break;
         case 'simulation':
-          sourceReliability = 0.20;
+          sourceReliability = 0.2;
           break;
       }
 
       const relevanceScore = parseFloat(
         (
           similarity * 0.45 +
-          mem.importance * 0.20 +
+          mem.importance * 0.2 +
           recency * 0.15 +
-          peopleMatch * 0.10 +
+          peopleMatch * 0.1 +
           projectMatch * 0.05 +
           sourceReliability * 0.05
         ).toFixed(4),
       );
 
       // Include if relevant
-      if (relevanceScore >= 0.20 || isRefuted) {
+      if (relevanceScore >= 0.2 || isRefuted) {
         if (isRefuted) {
           hasRefutedMatch = true;
           primaryRefutedReason = contradictionReason;
@@ -670,10 +729,13 @@ export class AutobiographicalMemoryService {
 
     if (topEntries.length === 0) {
       status = 'absent';
-      explanation = 'No memory found matching the query. (Negative result; fact is not recorded in autobiographical memory.)';
+      explanation =
+        'No memory found matching the query. (Negative result; fact is not recorded in autobiographical memory.)';
     } else if (hasRefutedMatch && topEntries.some((e) => e.isRefuted)) {
       status = 'refuted';
-      explanation = primaryRefutedReason || 'The queried fact was contradicted, superseded, or refuted by verified records.';
+      explanation =
+        primaryRefutedReason ||
+        'The queried fact was contradicted, superseded, or refuted by verified records.';
     } else {
       status = 'found';
       explanation = `Retrieved ${topEntries.length} verified memories matching multi-factor context.`;
@@ -715,7 +777,9 @@ export class AutobiographicalMemoryService {
       },
     });
 
-    this.logger.info(`Corrected memory ${params.id}: "${existing.content}" -> "${params.newContent}" (reason: ${params.reason})`);
+    this.logger.info(
+      `Corrected memory ${params.id}: "${existing.content}" -> "${params.newContent}" (reason: ${params.reason})`,
+    );
     return updated;
   }
 
@@ -768,7 +832,10 @@ export class AutobiographicalMemoryService {
     const cleanB = textB.toLowerCase();
 
     for (const [pos, neg] of negationPairs) {
-      if ((cleanA.includes(pos!) && cleanB.includes(neg!)) || (cleanA.includes(neg!) && cleanB.includes(pos!))) {
+      if (
+        (cleanA.includes(pos!) && cleanB.includes(neg!)) ||
+        (cleanA.includes(neg!) && cleanB.includes(pos!))
+      ) {
         // Must share an entity subject
         const wordsA = new Set(
           cleanA

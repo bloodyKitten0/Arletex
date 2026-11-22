@@ -263,7 +263,9 @@ export interface IApeRepository {
   createIntellectualQuestion(q: IntellectualQuestion): IntellectualQuestion;
   getIntellectualQuestionById(id: string): IntellectualQuestion | null;
   listIntellectualQuestions(filter?: { status?: string; domain?: string }): IntellectualQuestion[];
-  updateIntellectualQuestion(q: Partial<IntellectualQuestion> & { id: string }): IntellectualQuestion;
+  updateIntellectualQuestion(
+    q: Partial<IntellectualQuestion> & { id: string },
+  ): IntellectualQuestion;
   deleteIntellectualQuestion(id: string): boolean;
 
   // Durable Idempotency (P0.3)
@@ -319,7 +321,10 @@ export interface ITemporalRepository {
   deleteIntention(id: string): boolean;
 
   getCommitmentById(id: string): UnfinishedCommitment | null;
-  listCommitments(filter?: { status?: CommitmentStatus; partnerName?: string }): UnfinishedCommitment[];
+  listCommitments(filter?: {
+    status?: CommitmentStatus;
+    partnerName?: string;
+  }): UnfinishedCommitment[];
   saveCommitment(commitment: UnfinishedCommitment): void;
   deleteCommitment(id: string): boolean;
 
@@ -336,20 +341,35 @@ export interface ITemporalRepository {
 export interface IWorldRepository {
   getEntityById(id: string): WorldEntity | null;
   getEntityByName(name: string): WorldEntity | null;
-  listEntities(filter?: { entityType?: WorldEntityType; category?: string; locationId?: string; limit?: number }): WorldEntity[];
+  listEntities(filter?: {
+    entityType?: WorldEntityType;
+    category?: string;
+    locationId?: string;
+    limit?: number;
+  }): WorldEntity[];
   saveEntity(entity: WorldEntity): void;
   deleteEntity(id: string): boolean;
 
   getRelationById(id: string): WorldRelation | null;
-  listRelations(filter?: { sourceEntityId?: string; targetEntityId?: string; relationType?: WorldRelationType }): WorldRelation[];
+  listRelations(filter?: {
+    sourceEntityId?: string;
+    targetEntityId?: string;
+    relationType?: WorldRelationType;
+  }): WorldRelation[];
   saveRelation(relation: WorldRelation): void;
   deleteRelation(id: string): boolean;
 
   recordEnvironmentalChange(change: WorldEnvironmentalChange): void;
-  listEnvironmentalChanges(filter?: { entityId?: string; limit?: number }): WorldEnvironmentalChange[];
+  listEnvironmentalChanges(filter?: {
+    entityId?: string;
+    limit?: number;
+  }): WorldEnvironmentalChange[];
 
   saveCausalRelationship(relationship: CausalRelationship): void;
-  listCausalRelationships(filter?: { causeEntityId?: string; effectEntityId?: string }): CausalRelationship[];
+  listCausalRelationships(filter?: {
+    causeEntityId?: string;
+    effectEntityId?: string;
+  }): CausalRelationship[];
 
   getUnknownById(id: string): EpistemicUnknown | null;
   listUnknowns(filter?: { status?: UnknownStatus; domain?: string }): EpistemicUnknown[];
@@ -364,10 +384,18 @@ export interface IPerceptionRepository {
   listFrames(limit?: number): UnifiedMultimodalFrame[];
 
   recordPerceptualEvent(event: PerceptualEvent, frameId?: string): void;
-  listPerceptualEvents(filter?: { eventType?: string; modality?: PerceptionModality; limit?: number }): PerceptualEvent[];
+  listPerceptualEvents(filter?: {
+    eventType?: string;
+    modality?: PerceptionModality;
+    limit?: number;
+  }): PerceptualEvent[];
 
   recordDetectedObjects(objects: DetectedObject[], frameId?: string): void;
-  listDetectedObjects(filter?: { label?: string; category?: string; limit?: number }): DetectedObject[];
+  listDetectedObjects(filter?: {
+    label?: string;
+    category?: string;
+    limit?: number;
+  }): DetectedObject[];
 }
 
 export interface IEmbodimentRepository {
@@ -403,7 +431,12 @@ export interface IEmbodimentRepository {
 export interface ISensorimotorRepository {
   recordAction(record: SensorimotorActionRecord): void;
   getActionRecordById(id: string): SensorimotorActionRecord | null;
-  listActionRecords(filter?: { sessionId?: string; actionType?: string; status?: string; limit?: number }): SensorimotorActionRecord[];
+  listActionRecords(filter?: {
+    sessionId?: string;
+    actionType?: string;
+    status?: string;
+    limit?: number;
+  }): SensorimotorActionRecord[];
 
   saveStrategy(strategy: InteractionStrategy): void;
   getStrategy(targetAppOrContext: string, goalType: string): InteractionStrategy | null;
@@ -421,7 +454,12 @@ export interface ISituationalRepository {
 
   recordEnvironmentalEvent(event: EnvironmentalEvent): void;
   getEnvironmentalEventById(id: string): EnvironmentalEvent | null;
-  listEnvironmentalEvents(filter?: { layer?: EventLayer; isInterruption?: boolean; minRelevance?: number; limit?: number }): EnvironmentalEvent[];
+  listEnvironmentalEvents(filter?: {
+    layer?: EventLayer;
+    isInterruption?: boolean;
+    minRelevance?: number;
+    limit?: number;
+  }): EnvironmentalEvent[];
 
   saveSnapshot(snapshot: SituationalContextSnapshot): void;
   getSnapshotById(id: string): SituationalContextSnapshot | null;
@@ -437,8 +475,16 @@ export interface IAttentionRepository {
   recordSwitchEvent(event: AttentionSwitchEvent): void;
   listSwitchEvents(limit?: number): AttentionSwitchEvent[];
 
-  recordStimulusEvaluation(stimulus: AttentionalStimulus, salience: SalienceBreakdown, wasAttended: boolean): void;
-  listStimulusEvaluations(filter?: { wasAttended?: boolean; stimulusType?: string; limit?: number }): Array<{
+  recordStimulusEvaluation(
+    stimulus: AttentionalStimulus,
+    salience: SalienceBreakdown,
+    wasAttended: boolean,
+  ): void;
+  listStimulusEvaluations(filter?: {
+    wasAttended?: boolean;
+    stimulusType?: string;
+    limit?: number;
+  }): Array<{
     id: string;
     timestamp: string;
     stimulusType: string;
@@ -489,7 +535,11 @@ export interface ILearningRepository {
 export interface IReasoningRepository {
   saveTask(task: ReasoningTask): void;
   getTaskById(id: string): ReasoningTask | null;
-  listTasks(filter?: { domain?: string; paradigm?: ReasoningParadigm; limit?: number }): ReasoningTask[];
+  listTasks(filter?: {
+    domain?: string;
+    paradigm?: ReasoningParadigm;
+    limit?: number;
+  }): ReasoningTask[];
   deleteTask(id: string): void;
 }
 
@@ -520,10 +570,7 @@ export interface IPredictiveRepository {
 export interface ISimulationRepository {
   saveScenario(scenario: SimulationScenario): void;
   getScenarioById(id: string): SimulationScenario | null;
-  listScenarios(filter?: {
-    type?: SimulationScenarioType;
-    limit?: number;
-  }): SimulationScenario[];
+  listScenarios(filter?: { type?: SimulationScenarioType; limit?: number }): SimulationScenario[];
   deleteScenario(id: string): void;
 
   saveDecisionEvaluation(evaluation: AlternativeDecisionEvaluation): void;
@@ -544,8 +591,15 @@ export interface IMetacognitionRepository {
 
   saveContradiction(contradiction: MetacognitiveContradictionItem): void;
   getContradictionById(id: string): MetacognitiveContradictionItem | null;
-  listContradictions(filter?: { status?: MetacognitiveContradictionItem['status']; limit?: number }): MetacognitiveContradictionItem[];
-  updateContradictionStatus(id: string, status: MetacognitiveContradictionItem['status'], notes?: string): void;
+  listContradictions(filter?: {
+    status?: MetacognitiveContradictionItem['status'];
+    limit?: number;
+  }): MetacognitiveContradictionItem[];
+  updateContradictionStatus(
+    id: string,
+    status: MetacognitiveContradictionItem['status'],
+    notes?: string,
+  ): void;
 }
 
 export interface IGlobalCognitiveRepository {
@@ -578,10 +632,28 @@ export interface IExecutiveRepository {
 export interface ISelfGeneratedGoalRepository {
   saveGoal(goal: SelfGeneratedGoal): void;
   getGoalById(id: string): SelfGeneratedGoal | null;
-  listGoals(filter?: { status?: SelfGeneratedGoalStatus; origin?: GoalOriginType; limit?: number }): SelfGeneratedGoal[];
+  listGoals(filter?: {
+    status?: SelfGeneratedGoalStatus;
+    origin?: GoalOriginType;
+    limit?: number;
+  }): SelfGeneratedGoal[];
   deleteGoal(id: string): void;
-  recordTrigger(trigger: { id: string; triggerType: string; sourceEntityId?: string; generatedGoalId: string; rationale: string; createdAt: string }): void;
-  listTriggers(generatedGoalId?: string): Array<{ id: string; triggerType: string; sourceEntityId?: string; generatedGoalId: string; rationale: string; createdAt: string }>;
+  recordTrigger(trigger: {
+    id: string;
+    triggerType: string;
+    sourceEntityId?: string;
+    generatedGoalId: string;
+    rationale: string;
+    createdAt: string;
+  }): void;
+  listTriggers(generatedGoalId?: string): Array<{
+    id: string;
+    triggerType: string;
+    sourceEntityId?: string;
+    generatedGoalId: string;
+    rationale: string;
+    createdAt: string;
+  }>;
 }
 
 export interface IPersistentPlanningRepository {
@@ -593,14 +665,21 @@ export interface IPersistentPlanningRepository {
 
   saveCommitment(commitment: LongTermCommitment): void;
   getCommitmentById(id: string): LongTermCommitment | null;
-  listCommitments(filter?: { stakeholder?: string; status?: LongTermCommitmentStatus; limit?: number }): LongTermCommitment[];
+  listCommitments(filter?: {
+    stakeholder?: string;
+    status?: LongTermCommitmentStatus;
+    limit?: number;
+  }): LongTermCommitment[];
   deleteCommitment(id: string): void;
 }
 
 export interface IDeliberationRepository {
   saveConflict(conflict: InternalConflictRecord): void;
   getConflictById(id: string): InternalConflictRecord | null;
-  listConflicts(filter?: { status?: InternalConflictStatus; limit?: number }): InternalConflictRecord[];
+  listConflicts(filter?: {
+    status?: InternalConflictStatus;
+    limit?: number;
+  }): InternalConflictRecord[];
   deleteConflict(id: string): void;
 }
 
@@ -710,7 +789,10 @@ export interface ITemperamentPersonalityRepository {
   saveProfile(profile: TemperamentProfile): void;
   getProfile(id?: string): TemperamentProfile | null;
   saveSituationalExpression(expression: SituationalPersonalityExpression): void;
-  listSituationalExpressions(situationType?: string, limit?: number): SituationalPersonalityExpression[];
+  listSituationalExpressions(
+    situationType?: string,
+    limit?: number,
+  ): SituationalPersonalityExpression[];
   saveEvolutionRecord(record: PersonalityEvolutionRecord): void;
   listEvolutionRecords(traitKey?: string, limit?: number): PersonalityEvolutionRecord[];
 }
@@ -731,7 +813,11 @@ export interface ISelfEvaluationEfficacyRepository {
   getDomainCompetence(domain: string): DomainCompetence | null;
   listDomainCompetences(): DomainCompetence[];
   saveEvidence(evidence: EfficacyEvidence): void;
-  listEvidence(domain?: string, type?: 'achievement' | 'failure', limit?: number): EfficacyEvidence[];
+  listEvidence(
+    domain?: string,
+    type?: 'achievement' | 'failure',
+    limit?: number,
+  ): EfficacyEvidence[];
   saveLimitation(limitation: CapabilityLimitation): void;
   listLimitations(domain?: string): CapabilityLimitation[];
   saveImprovementGoal(goal: SelfImprovementGoal): void;
@@ -793,9 +879,13 @@ export interface ISocialCommunicationRepository {
   savePragmaticAnalysis(analysis: PragmaticAnalysis): void;
   listPragmaticAnalyses(speakerId?: string, limit?: number): PragmaticAnalysis[];
   recordTurnTakingEvent(event: TurnTakingState & { sessionId: string; timestamp: string }): void;
-  getLatestTurnTakingEvent(sessionId: string): (TurnTakingState & { sessionId: string; timestamp: string }) | null;
+  getLatestTurnTakingEvent(
+    sessionId: string,
+  ): (TurnTakingState & { sessionId: string; timestamp: string }) | null;
   saveAdaptationProfile(profile: AudienceAdaptationProfile & { updatedAt: string }): void;
-  getAdaptationProfile(targetAudienceId: string): (AudienceAdaptationProfile & { updatedAt: string }) | null;
+  getAdaptationProfile(
+    targetAudienceId: string,
+  ): (AudienceAdaptationProfile & { updatedAt: string }) | null;
 }
 
 export interface IRelationshipsAttachmentRepository {
@@ -928,24 +1018,3 @@ export interface IFunctionalConsciousnessRepository {
   saveDmnWandering(state: DefaultModeWanderingState): void;
   listDmnWanderings(limit?: number): DefaultModeWanderingState[];
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

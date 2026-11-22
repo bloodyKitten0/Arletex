@@ -1,10 +1,5 @@
 import type Database from 'better-sqlite3';
-import {
-  AgencyObservation,
-  AgencyPlan,
-  AgencyTask,
-  VerificationResult,
-} from '@arletex/contracts';
+import { AgencyObservation, AgencyPlan, AgencyTask, VerificationResult } from '@arletex/contracts';
 
 export class AgencyRepository {
   private db: Database.Database;
@@ -159,7 +154,9 @@ export class AgencyRepository {
   }
 
   public getPlanByTask(taskId: string): AgencyPlan | null {
-    const stmt = this.db.prepare(`SELECT * FROM agency_plans WHERE task_id = ? ORDER BY version DESC LIMIT 1`);
+    const stmt = this.db.prepare(
+      `SELECT * FROM agency_plans WHERE task_id = ? ORDER BY version DESC LIMIT 1`,
+    );
     const row = stmt.get(taskId) as any;
     if (!row) return null;
 

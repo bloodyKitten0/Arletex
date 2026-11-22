@@ -267,7 +267,9 @@ export class ModelRegistryService {
       throw new Error(`Cannot record benchmark: model '${modelId}' not found in registry`);
     }
     model.benchmarks = benchmark;
-    this.logger.info(`Recorded benchmark for ${modelId}: ${benchmark.tokensPerSecond} tps, ttft=${benchmark.ttftMs}ms`);
+    this.logger.info(
+      `Recorded benchmark for ${modelId}: ${benchmark.tokensPerSecond} tps, ttft=${benchmark.ttftMs}ms`,
+    );
   }
 
   /**
@@ -316,7 +318,8 @@ export class ModelRegistryService {
 
     // 3. Fallback also unavailable; look for any installed primary model
     const anyInstalled = Array.from(this.models.values()).find(
-      (m) => m.isInstalled && m.inputModalities.includes('text') && m.outputModalities.includes('text'),
+      (m) =>
+        m.isInstalled && m.inputModalities.includes('text') && m.outputModalities.includes('text'),
     );
 
     if (anyInstalled) {
@@ -355,11 +358,19 @@ export class ModelRegistryService {
   } {
     const model = this.models.get(modelId);
     if (!model) {
-      return { compatible: false, supportsVision: false, error: `Model '${modelId}' not registered` };
+      return {
+        compatible: false,
+        supportsVision: false,
+        error: `Model '${modelId}' not registered`,
+      };
     }
 
     if (!model.supportsVision) {
-      return { compatible: false, supportsVision: false, error: `Model '${modelId}' architecture does not support vision projector` };
+      return {
+        compatible: false,
+        supportsVision: false,
+        error: `Model '${modelId}' architecture does not support vision projector`,
+      };
     }
 
     if (!model.visionProjectorPath || !fs.existsSync(model.visionProjectorPath)) {
@@ -397,14 +408,18 @@ export class ModelRegistryService {
     const candidateB = this.models.get(candidateBId);
 
     if (!candidateA || !candidateB) {
-      throw new Error(`Cannot compare models: one or both models not found (${candidateAId}, ${candidateBId})`);
+      throw new Error(
+        `Cannot compare models: one or both models not found (${candidateAId}, ${candidateBId})`,
+      );
     }
 
     const bmA = candidateA.benchmarks;
     const bmB = candidateB.benchmarks;
 
     if (!bmA || !bmB) {
-      throw new Error(`Cannot compare models: benchmark results missing for ${!bmA ? candidateAId : candidateBId}`);
+      throw new Error(
+        `Cannot compare models: benchmark results missing for ${!bmA ? candidateAId : candidateBId}`,
+      );
     }
 
     const comparisons: ModelComparison['comparisons'] = {
@@ -436,12 +451,16 @@ export class ModelRegistryService {
       contextStability: {
         candidateAValue: bmA.contextStabilityScore,
         candidateBValue: bmB.contextStabilityScore,
-        advantage: bmA.contextStabilityScore >= bmB.contextStabilityScore ? 'candidateA' : 'candidateB',
+        advantage:
+          bmA.contextStabilityScore >= bmB.contextStabilityScore ? 'candidateA' : 'candidateB',
       },
       conversationalQuality: {
         candidateAValue: bmA.conversationalQualityScore,
         candidateBValue: bmB.conversationalQualityScore,
-        advantage: bmA.conversationalQualityScore >= bmB.conversationalQualityScore ? 'candidateA' : 'candidateB',
+        advantage:
+          bmA.conversationalQualityScore >= bmB.conversationalQualityScore
+            ? 'candidateA'
+            : 'candidateB',
       },
       memoryFootprint: {
         candidateAValue: bmA.peakMemoryBytes,
@@ -456,8 +475,18 @@ export class ModelRegistryService {
     let scoreA = 0;
     let scoreB = 0;
 
-    scoreA += bmA.reasoningScore * 25 + bmA.toolAdherenceScore * 20 + bmA.jsonValidityScore * 15 + bmA.conversationalQualityScore * 15 + bmA.contextStabilityScore * 10;
-    scoreB += bmB.reasoningScore * 25 + bmB.toolAdherenceScore * 20 + bmB.jsonValidityScore * 15 + bmB.conversationalQualityScore * 15 + bmB.contextStabilityScore * 10;
+    scoreA +=
+      bmA.reasoningScore * 25 +
+      bmA.toolAdherenceScore * 20 +
+      bmA.jsonValidityScore * 15 +
+      bmA.conversationalQualityScore * 15 +
+      bmA.contextStabilityScore * 10;
+    scoreB +=
+      bmB.reasoningScore * 25 +
+      bmB.toolAdherenceScore * 20 +
+      bmB.jsonValidityScore * 15 +
+      bmB.conversationalQualityScore * 15 +
+      bmB.contextStabilityScore * 10;
 
     // Throughput bonus (normalized up to 30 tps)
     scoreA += (bmA.tokensPerSecond / 30) * 10;
@@ -465,7 +494,7 @@ export class ModelRegistryService {
 
     const winnerId = scoreA >= scoreB ? candidateAId : candidateBId;
     const winnerName = scoreA >= scoreB ? candidateA.name : candidateB.name;
-    const reason = `Selected '${winnerName}' with composite score ${(Math.max(scoreA, scoreB)).toFixed(1)} vs ${(Math.min(scoreA, scoreB)).toFixed(1)} based on superior reasoning, tool adherence, and conversational quality.`;
+    const reason = `Selected '${winnerName}' with composite score ${Math.max(scoreA, scoreB).toFixed(1)} vs ${Math.min(scoreA, scoreB).toFixed(1)} based on superior reasoning, tool adherence, and conversational quality.`;
 
     return {
       candidateA,

@@ -93,12 +93,19 @@ export class CognitiveControlBus {
   /**
    * Resumes and recovers interrupted in-flight events across host process restarts.
    */
-  public recoverInFlightEvents(): Array<{ idempotencyKey: string; eventId: string; eventType: string }> {
+  public recoverInFlightEvents(): Array<{
+    idempotencyKey: string;
+    eventId: string;
+    eventType: string;
+  }> {
     const repo = (this.apeService as any)?.repo;
     if (repo && typeof repo.recoverInFlightEvents === 'function') {
       const recovered = repo.recoverInFlightEvents();
       if (recovered.length > 0) {
-        this.logger.warn(`[CrashRecovery] Recovered ${recovered.length} interrupted in-flight event(s) from previous cycle:`, recovered);
+        this.logger.warn(
+          `[CrashRecovery] Recovered ${recovered.length} interrupted in-flight event(s) from previous cycle:`,
+          recovered,
+        );
       }
       return recovered;
     }
@@ -115,7 +122,12 @@ export class CognitiveControlBus {
   ): Promise<CognitiveCycleResult> {
     const timestamp = input.timestamp || new Date().toISOString();
     const eventId = input.id || crypto.randomUUID();
-    const traceId = (input as any).traceId || (input as any).correlationId || (input.payload?.traceId as string) || (input.payload?.correlationId as string) || `trace_${crypto.randomUUID()}`;
+    const traceId =
+      (input as any).traceId ||
+      (input as any).correlationId ||
+      (input.payload?.traceId as string) ||
+      (input.payload?.correlationId as string) ||
+      `trace_${crypto.randomUUID()}`;
     const correlationId = traceId;
     const idempotencyKey =
       input.idempotencyKey ||
@@ -124,7 +136,9 @@ export class CognitiveControlBus {
     // 1. Idempotency Check (Deduplication) - Memory cache
     if (this.idempotencyCache.has(idempotencyKey)) {
       this.totalDeduplicated++;
-      this.logger.info(`Deduplicated event [${input.type}] with key "${idempotencyKey}" (in-memory)`);
+      this.logger.info(
+        `Deduplicated event [${input.type}] with key "${idempotencyKey}" (in-memory)`,
+      );
       const cached = this.idempotencyCache.get(idempotencyKey)!;
       return {
         ...cached,
@@ -138,10 +152,18 @@ export class CognitiveControlBus {
     const repo = (this.apeService as any)?.repo;
     if (repo && typeof repo.getIdempotencyRecord === 'function') {
       const persistedRecord = repo.getIdempotencyRecord(idempotencyKey);
-      const persisted = persistedRecord?.result !== undefined ? persistedRecord.result : persistedRecord;
-      if (persisted && (persistedRecord?.state === 'completed' || persistedRecord?.state === 'failed' || !persistedRecord?.state)) {
+      const persisted =
+        persistedRecord?.result !== undefined ? persistedRecord.result : persistedRecord;
+      if (
+        persisted &&
+        (persistedRecord?.state === 'completed' ||
+          persistedRecord?.state === 'failed' ||
+          !persistedRecord?.state)
+      ) {
         this.totalDeduplicated++;
-        this.logger.info(`Deduplicated event [${input.type}] with key "${idempotencyKey}" (durable SQLite)`);
+        this.logger.info(
+          `Deduplicated event [${input.type}] with key "${idempotencyKey}" (durable SQLite)`,
+        );
         this.idempotencyCache.set(idempotencyKey, persisted);
         return {
           ...persisted,
@@ -165,7 +187,9 @@ export class CognitiveControlBus {
       if (!claim.claimed && claim.existingRecord) {
         const existing = claim.existingRecord.result;
         this.totalDeduplicated++;
-        this.logger.info(`Deduplicated event [${input.type}] with key "${idempotencyKey}" (claimed in state: ${claim.existingRecord.state})`);
+        this.logger.info(
+          `Deduplicated event [${input.type}] with key "${idempotencyKey}" (claimed in state: ${claim.existingRecord.state})`,
+        );
         return {
           ...(existing || {}),
           eventId,
@@ -210,7 +234,8 @@ export class CognitiveControlBus {
       type: input.type,
       timestamp,
       source: input.source,
-      actor: input.actor || (input.source === 'user' || input.source === 'telegram' ? 'user' : 'arle'),
+      actor:
+        input.actor || (input.source === 'user' || input.source === 'telegram' ? 'user' : 'arle'),
       causalParentEventId: input.causalParentEventId,
       causalDepth,
       payload: { ...(input.payload || {}), traceId, correlationId },
@@ -260,7 +285,9 @@ export class CognitiveControlBus {
       stagesCompleted.push('provenance_validation');
       const isProvenanceValid = this.validateProvenance(event);
       if (!isProvenanceValid) {
-        throw new Error(`Provenance validation failed for event ${event.id} from source ${event.source}`);
+        throw new Error(
+          `Provenance validation failed for event ${event.id} from source ${event.source}`,
+        );
       }
       event.processedStages = [...stagesCompleted];
 
@@ -271,15 +298,21 @@ export class CognitiveControlBus {
       // Associative autobiographical memory retrieval
       let associativeMemories: any[] = [];
       if (this.autobiographicalMemoryService) {
-        const queryText = (event.payload?.text as string) || (event.payload?.topic as string) || interpretation;
-        associativeMemories = this.autobiographicalMemoryService.retrieveAssociativeContext(queryText, { limit: 3 });
+        const queryText =
+          (event.payload?.text as string) || (event.payload?.topic as string) || interpretation;
+        associativeMemories = this.autobiographicalMemoryService.retrieveAssociativeContext(
+          queryText,
+          { limit: 3 },
+        );
       }
 
       // Stage 5: Appraisal
       stagesCompleted.push('appraisal');
       const apeEvent: ApeEvent = {
         id: event.id,
-        category: (event.payload?.originalApeCategory as ApeEventCategory) || this.mapCognitiveTypeToApeCategory(event.type),
+        category:
+          (event.payload?.originalApeCategory as ApeEventCategory) ||
+          this.mapCognitiveTypeToApeCategory(event.type),
         type: (event.payload?.originalApeType as string) || event.type,
         source: event.source,
         actor: event.actor,
@@ -324,8 +357,9 @@ export class CognitiveControlBus {
       this.apeService.personalProjectService.rankActiveProjects();
       const candidateInitiatives = this.apeService.motivationalEngine.generateCandidateInitiatives({
         activeInterests: this.apeService.developmentEngine.getState().interests.map((i) => i.topic),
-        unresolvedGoalTitles: this.apeService.motivationalEngine.getState().goals
-          .filter((g) => g.status === 'active' || g.status === 'committed')
+        unresolvedGoalTitles: this.apeService.motivationalEngine
+          .getState()
+          .goals.filter((g) => g.status === 'active' || g.status === 'committed')
           .map((g) => g.title),
       });
 
@@ -348,14 +382,17 @@ export class CognitiveControlBus {
           this.logger.warn(`Decision ${decision.id} denied: no permission controller configured`);
         } else if (!proposal) {
           isAuthorized = false;
-          permissionReason = 'Action proposal missing for permission evaluation; denied fail-closed';
+          permissionReason =
+            'Action proposal missing for permission evaluation; denied fail-closed';
           this.logger.warn(`Decision ${decision.id} denied: missing action proposal`);
         } else {
           const check = this.permissionController.evaluate(proposal);
           isAuthorized = check.decision === 'granted';
           permissionReason = check.reason;
           if (!isAuthorized) {
-            this.logger.warn(`Decision ${decision.id} denied by permission controller: ${permissionReason}`);
+            this.logger.warn(
+              `Decision ${decision.id} denied by permission controller: ${permissionReason}`,
+            );
           }
         }
       }
@@ -371,9 +408,16 @@ export class CognitiveControlBus {
       let isSyntheticAction = false;
       if (!isAuthorized) {
         actionOutcomeSuccess = false;
-      } else if (proposal && this.closedLoopAgency && (decision.actionType === 'execute_agency_task' || decision.actionType === 'research')) {
+      } else if (
+        proposal &&
+        this.closedLoopAgency &&
+        (decision.actionType === 'execute_agency_task' || decision.actionType === 'research')
+      ) {
         actionExecuted = true;
-        const agencyObjective = (event.payload?.objective as string) || (event.payload?.topic as string) || decision.chosenAlternativeReason;
+        const agencyObjective =
+          (event.payload?.objective as string) ||
+          (event.payload?.topic as string) ||
+          decision.chosenAlternativeReason;
         const loopRes = await this.closedLoopAgency.executeClosedLoop(agencyObjective, 'arle', {
           eventId: event.id,
           decisionId: decision.id,
@@ -419,7 +463,12 @@ export class CognitiveControlBus {
 
       // Stage 13: Memory Integration (Truthful Epistemic Provenance)
       stagesCompleted.push('memory_integration');
-      const memContent = this.formatMemoryContent(event, decision, actionOutcomeSuccess, verifiedFact);
+      const memContent = this.formatMemoryContent(
+        event,
+        decision,
+        actionOutcomeSuccess,
+        verifiedFact,
+      );
 
       if (this.autobiographicalMemoryService) {
         let autoProvenance: MemoryProvenance;
@@ -444,9 +493,14 @@ export class CognitiveControlBus {
           content: memContent,
           rawObservation: verifiedFact,
           provenance: autoProvenance,
-          confidence: actionOutcomeSuccess ? (isSyntheticAction ? 0.6 : 0.95) : 0.60,
+          confidence: actionOutcomeSuccess ? (isSyntheticAction ? 0.6 : 0.95) : 0.6,
           importance: appraisal.dimensions.personalSignificance || 0.6,
-          tags: ['cognitive_bus', event.type, decision.actionType, actionOutcomeSuccess ? 'success' : 'failure'],
+          tags: [
+            'cognitive_bus',
+            event.type,
+            decision.actionType,
+            actionOutcomeSuccess ? 'success' : 'failure',
+          ],
           metadata: {
             eventId: event.id,
             decisionId: decision.id,
@@ -472,7 +526,8 @@ export class CognitiveControlBus {
           if (isSyntheticAction) {
             sinkProvenance = 'simulation';
           } else {
-            sinkProvenance = outcomeVerified && actionOutcomeSuccess ? 'verified_fact' : 'raw_observation';
+            sinkProvenance =
+              outcomeVerified && actionOutcomeSuccess ? 'verified_fact' : 'raw_observation';
           }
         } else if (decision.actionType === 'speak') {
           sinkProvenance = 'interaction';
@@ -488,7 +543,12 @@ export class CognitiveControlBus {
           importance: appraisal.dimensions.personalSignificance || 0.6,
           confidence: actionOutcomeSuccess ? (isSyntheticAction ? 0.6 : 0.95) : 0.8,
           provenance: sinkProvenance,
-          tags: ['cognitive_bus', event.type, decision.actionType, actionOutcomeSuccess ? 'success' : 'failure'],
+          tags: [
+            'cognitive_bus',
+            event.type,
+            decision.actionType,
+            actionOutcomeSuccess ? 'success' : 'failure',
+          ],
           metadata: {
             eventId: event.id,
             decisionId: decision.id,
@@ -519,7 +579,11 @@ export class CognitiveControlBus {
         }
 
         // If action failed, truthfully log limitation without capability inflation
-        if (!actionOutcomeSuccess && decision.actionType !== 'rest' && decision.actionType !== 'speak') {
+        if (
+          !actionOutcomeSuccess &&
+          decision.actionType !== 'rest' &&
+          decision.actionType !== 'speak'
+        ) {
           selfModel.acknowledgedLimitations = selfModel.acknowledgedLimitations || [];
           const limDesc = `Encountered obstacle or failure executing ${decision.actionType} for event ${event.type}`;
           if (!selfModel.acknowledgedLimitations.includes(limDesc)) {
@@ -606,7 +670,11 @@ export class CognitiveControlBus {
       const repo = (this.apeService as any)?.repo;
       if (repo && typeof repo.completeEventRecord === 'function') {
         try {
-          repo.completeEventRecord(idempotencyKey, { error: err.message, eventId: event.id }, 'failed');
+          repo.completeEventRecord(
+            idempotencyKey,
+            { error: err.message, eventId: event.id },
+            'failed',
+          );
         } catch {}
       }
 
@@ -639,7 +707,15 @@ export class CognitiveControlBus {
 
   private validateProvenance(event: CognitiveEvent): boolean {
     if (!event.source) return false;
-    const allowedSources = ['user', 'telegram', 'agency', 'timer', 'internal', 'environment', 'external_communication'];
+    const allowedSources = [
+      'user',
+      'telegram',
+      'agency',
+      'timer',
+      'internal',
+      'environment',
+      'external_communication',
+    ];
     return allowedSources.includes(event.source);
   }
 
@@ -718,14 +794,12 @@ export class CognitiveControlBus {
     }
   }
 
-  private parseDecision(
-    data: any,
-    event: CognitiveEvent,
-  ): CognitiveDecision {
+  private parseDecision(data: any, event: CognitiveEvent): CognitiveDecision {
     return CognitiveDecisionSchema.parse({
       ...data,
       traceId: data.traceId || event.traceId || (event.payload?.traceId as string),
-      correlationId: data.correlationId || event.correlationId || (event.payload?.correlationId as string),
+      correlationId:
+        data.correlationId || event.correlationId || (event.payload?.correlationId as string),
     });
   }
 
@@ -745,105 +819,151 @@ export class CognitiveControlBus {
     const mood = apeState?.currentMood || 'neutral';
     const motState = this.apeService.motivationalEngine.getState();
     const restNeed = motState.needs.recreation_rest ?? 0.4;
-    const isFatigued = psychEnergy < 0.25 || restNeed > 0.85 || mood === 'fatigued' || mood === 'exhausted';
+    const isFatigued =
+      psychEnergy < 0.25 || restNeed > 0.85 || mood === 'fatigued' || mood === 'exhausted';
 
     // Explicit agency action proposal takes precedence
     if (event.payload?.actionProposal) {
       const prop = event.payload.actionProposal as ActionProposal;
       if (isFatigued && prop.riskLevel !== 'low') {
-        rejectedAlternatives.push({ actionType: 'execute_agency_task', reason: `High fatigue (${psychEnergy.toFixed(2)}) and elevated rest need (${restNeed.toFixed(2)}) require pausing heavy execution` });
-        return this.parseDecision({
+        rejectedAlternatives.push({
+          actionType: 'execute_agency_task',
+          reason: `High fatigue (${psychEnergy.toFixed(2)}) and elevated rest need (${restNeed.toFixed(2)}) require pausing heavy execution`,
+        });
+        return this.parseDecision(
+          {
+            id,
+            eventId: event.id,
+            actionType: 'rest',
+            target: prop.type,
+            chosenAlternativeReason: `Psychological energy depleted (${psychEnergy.toFixed(2)}); prioritizing cognitive rest and equilibrium before executing ${prop.type}`,
+            rejectedAlternatives,
+            confidence: 0.9,
+            riskAssessment: 'low',
+            permissionRequired: false,
+            resourceEstimate: { cpu: 'low', gpu: false, timeoutMs: 3000 },
+            timestamp,
+          },
+          event,
+        );
+      }
+      rejectedAlternatives.push({
+        actionType: 'speak',
+        reason:
+          'Explicit agency action requested; prioritization over plain conversational response',
+      });
+      rejectedAlternatives.push({
+        actionType: 'rest',
+        reason: 'Active agency task must be processed and authorized',
+      });
+      return this.parseDecision(
+        {
           id,
           eventId: event.id,
-          actionType: 'rest',
+          actionType: 'execute_agency_task',
           target: prop.type,
-          chosenAlternativeReason: `Psychological energy depleted (${psychEnergy.toFixed(2)}); prioritizing cognitive rest and equilibrium before executing ${prop.type}`,
+          chosenAlternativeReason: `Execute proposed agency task: ${prop.type}`,
           rejectedAlternatives,
-          confidence: 0.90,
-          riskAssessment: 'low',
-          permissionRequired: false,
-          resourceEstimate: { cpu: 'low', gpu: false, timeoutMs: 3000 },
+          confidence: 0.95,
+          riskAssessment:
+            prop.riskLevel === 'critical' || prop.riskLevel === 'high' ? 'high' : 'moderate',
+          permissionRequired: true,
+          resourceEstimate: { cpu: 'medium', gpu: false, timeoutMs: 15000 },
           timestamp,
-        }, event);
-      }
-      rejectedAlternatives.push({ actionType: 'speak', reason: 'Explicit agency action requested; prioritization over plain conversational response' });
-      rejectedAlternatives.push({ actionType: 'rest', reason: 'Active agency task must be processed and authorized' });
-      return this.parseDecision({
-        id,
-        eventId: event.id,
-        actionType: 'execute_agency_task',
-        target: prop.type,
-        chosenAlternativeReason: `Execute proposed agency task: ${prop.type}`,
-        rejectedAlternatives,
-        confidence: 0.95,
-        riskAssessment: (prop.riskLevel === 'critical' || prop.riskLevel === 'high') ? 'high' : 'moderate',
-        permissionRequired: true,
-        resourceEstimate: { cpu: 'medium', gpu: false, timeoutMs: 15000 },
-        timestamp,
-      }, event);
+        },
+        event,
+      );
     }
 
     // Conversational stimulus requires speech
     if (event.type === 'user_message' || event.type === 'telegram_message') {
-      rejectedAlternatives.push({ actionType: 'rest', reason: 'User communicated directly; active social engagement required' });
-      rejectedAlternatives.push({ actionType: 'execute_agency_task', reason: 'No unverified background task requested in simple dialogue' });
+      rejectedAlternatives.push({
+        actionType: 'rest',
+        reason: 'User communicated directly; active social engagement required',
+      });
+      rejectedAlternatives.push({
+        actionType: 'execute_agency_task',
+        reason: 'No unverified background task requested in simple dialogue',
+      });
       const userText = (event.payload?.text as string) || '';
       const claimEval = this.apeService.personalityEngine.evaluateClaim(userText);
-      const chosenReason = claimEval.conflicts && claimEval.contradictoryBelief
-        ? `Respectfully communicate intellectual divergence backed by verified evidence for ${claimEval.contradictoryBelief.topic}`
-        : 'Respond directly and authentically to user communication';
+      const chosenReason =
+        claimEval.conflicts && claimEval.contradictoryBelief
+          ? `Respectfully communicate intellectual divergence backed by verified evidence for ${claimEval.contradictoryBelief.topic}`
+          : 'Respond directly and authentically to user communication';
 
-      return this.parseDecision({
-        id,
-        eventId: event.id,
-        actionType: 'speak',
-        target: 'user',
-        chosenAlternativeReason: chosenReason,
-        rejectedAlternatives,
-        confidence: 0.95,
-        riskAssessment: 'low',
-        permissionRequired: false,
-        resourceEstimate: { cpu: 'low', gpu: true, timeoutMs: 8000 },
-        timestamp,
-      }, event);
+      return this.parseDecision(
+        {
+          id,
+          eventId: event.id,
+          actionType: 'speak',
+          target: 'user',
+          chosenAlternativeReason: chosenReason,
+          rejectedAlternatives,
+          confidence: 0.95,
+          riskAssessment: 'low',
+          permissionRequired: false,
+          resourceEstimate: { cpu: 'low', gpu: true, timeoutMs: 8000 },
+          timestamp,
+        },
+        event,
+      );
     }
 
     // High curiosity or intellectual discovery triggers research
     if (event.type === 'intellectual_question' || appraisal.dimensions.unexpectedness > 0.7) {
-      rejectedAlternatives.push({ actionType: 'rest', reason: 'High novelty and curiosity justify active investigation' });
-      rejectedAlternatives.push({ actionType: 'decline', reason: 'Intellectual drive urges exploration of unknown topic' });
-      const targetTopic = (event.payload.topic as string) || (candidateInitiatives[0] || 'intellectual_inquiry');
-      return this.parseDecision({
-        id,
-        eventId: event.id,
-        actionType: 'research',
-        target: targetTopic,
-        chosenAlternativeReason: 'High novelty and curiosity trigger autonomous evidence collection and investigation',
-        rejectedAlternatives,
-        confidence: 0.88,
-        riskAssessment: 'low',
-        permissionRequired: true,
-        resourceEstimate: { cpu: 'medium', gpu: false, timeoutMs: 15000 },
-        timestamp,
-      }, event);
+      rejectedAlternatives.push({
+        actionType: 'rest',
+        reason: 'High novelty and curiosity justify active investigation',
+      });
+      rejectedAlternatives.push({
+        actionType: 'decline',
+        reason: 'Intellectual drive urges exploration of unknown topic',
+      });
+      const targetTopic =
+        (event.payload.topic as string) || candidateInitiatives[0] || 'intellectual_inquiry';
+      return this.parseDecision(
+        {
+          id,
+          eventId: event.id,
+          actionType: 'research',
+          target: targetTopic,
+          chosenAlternativeReason:
+            'High novelty and curiosity trigger autonomous evidence collection and investigation',
+          rejectedAlternatives,
+          confidence: 0.88,
+          riskAssessment: 'low',
+          permissionRequired: true,
+          resourceEstimate: { cpu: 'medium', gpu: false, timeoutMs: 15000 },
+          timestamp,
+        },
+        event,
+      );
     }
 
     // Goal failure triggers reflection or strategy reconsideration
     if (event.type === 'goal_failed' || appraisal.dimensions.goalCongruence < -0.3) {
-      rejectedAlternatives.push({ actionType: 'execute_agency_task', reason: 'Immediate re-execution without causal reflection risks repeating failure' });
-      return this.parseDecision({
-        id,
-        eventId: event.id,
-        actionType: 'reflect',
-        target: 'failure_recovery',
-        chosenAlternativeReason: 'Encountered failure or obstacle; causal reflection required to understand assumptions and update self-model',
-        rejectedAlternatives,
-        confidence: 0.9,
-        riskAssessment: 'low',
-        permissionRequired: false,
-        resourceEstimate: { cpu: 'low', gpu: false, timeoutMs: 4000 },
-        timestamp,
-      }, event);
+      rejectedAlternatives.push({
+        actionType: 'execute_agency_task',
+        reason: 'Immediate re-execution without causal reflection risks repeating failure',
+      });
+      return this.parseDecision(
+        {
+          id,
+          eventId: event.id,
+          actionType: 'reflect',
+          target: 'failure_recovery',
+          chosenAlternativeReason:
+            'Encountered failure or obstacle; causal reflection required to understand assumptions and update self-model',
+          rejectedAlternatives,
+          confidence: 0.9,
+          riskAssessment: 'low',
+          permissionRequired: false,
+          resourceEstimate: { cpu: 'low', gpu: false, timeoutMs: 4000 },
+          timestamp,
+        },
+        event,
+      );
     }
 
     // Separation / Loneliness / User Departure: causal emotional reflection
@@ -852,67 +972,100 @@ export class CognitiveControlBus {
       event.type === 'separation_loneliness' ||
       event.type === 'relationship_event'
     ) {
-      rejectedAlternatives.push({ actionType: 'execute_agency_task', reason: 'Emotional appraisal of relational state prioritizes internal consolidation' });
-      rejectedAlternatives.push({ actionType: 'rest', reason: 'Relational state requires active emotional processing' });
-      return this.parseDecision({
-        id,
-        eventId: event.id,
-        actionType: 'reflect',
-        target: 'relationship_continuity',
-        chosenAlternativeReason: `Processing relational event [${event.type}]; maintaining emotional stability, attachment continuity, and self-regulation`,
-        rejectedAlternatives,
-        confidence: 0.92,
-        riskAssessment: 'low',
-        permissionRequired: false,
-        resourceEstimate: { cpu: 'low', gpu: false, timeoutMs: 4000 },
-        timestamp,
-      }, event);
+      rejectedAlternatives.push({
+        actionType: 'execute_agency_task',
+        reason: 'Emotional appraisal of relational state prioritizes internal consolidation',
+      });
+      rejectedAlternatives.push({
+        actionType: 'rest',
+        reason: 'Relational state requires active emotional processing',
+      });
+      return this.parseDecision(
+        {
+          id,
+          eventId: event.id,
+          actionType: 'reflect',
+          target: 'relationship_continuity',
+          chosenAlternativeReason: `Processing relational event [${event.type}]; maintaining emotional stability, attachment continuity, and self-regulation`,
+          rejectedAlternatives,
+          confidence: 0.92,
+          riskAssessment: 'low',
+          permissionRequired: false,
+          resourceEstimate: { cpu: 'low', gpu: false, timeoutMs: 4000 },
+          timestamp,
+        },
+        event,
+      );
     }
 
     // Endogenous initiative pursuit triggered by self-generated thoughts or autonomous agency
     if (
-      (event.payload?.autonomousInitiative === true || (event.type as string) === 'self_generated_thought') &&
+      (event.payload?.autonomousInitiative === true ||
+        (event.type as string) === 'self_generated_thought') &&
       candidateInitiatives.length > 0 &&
       !isFatigued
     ) {
       const topInitiative = candidateInitiatives[0]!;
-      rejectedAlternatives.push({ actionType: 'rest', reason: 'Curiosity drive and healthy energy reserves prioritize endogenous initiative over idle rest' });
-      rejectedAlternatives.push({ actionType: 'decline', reason: 'Self-generated goal aligns with active developmental interests' });
-      return this.parseDecision({
-        id,
-        eventId: event.id,
-        actionType: 'research',
-        target: topInitiative,
-        chosenAlternativeReason: `Autonomous initiative triggered by intrinsic motivation: ${topInitiative}`,
-        rejectedAlternatives,
-        confidence: 0.88,
-        riskAssessment: 'low',
-        permissionRequired: true,
-        resourceEstimate: { cpu: 'medium', gpu: false, timeoutMs: 15000 },
-        timestamp,
-      }, event);
+      rejectedAlternatives.push({
+        actionType: 'rest',
+        reason:
+          'Curiosity drive and healthy energy reserves prioritize endogenous initiative over idle rest',
+      });
+      rejectedAlternatives.push({
+        actionType: 'decline',
+        reason: 'Self-generated goal aligns with active developmental interests',
+      });
+      return this.parseDecision(
+        {
+          id,
+          eventId: event.id,
+          actionType: 'research',
+          target: topInitiative,
+          chosenAlternativeReason: `Autonomous initiative triggered by intrinsic motivation: ${topInitiative}`,
+          rejectedAlternatives,
+          confidence: 0.88,
+          riskAssessment: 'low',
+          permissionRequired: true,
+          resourceEstimate: { cpu: 'medium', gpu: false, timeoutMs: 15000 },
+          timestamp,
+        },
+        event,
+      );
     }
 
     // Default / idle tick
-    rejectedAlternatives.push({ actionType: 'speak', reason: 'No user present; unsolicited chatter avoided' });
-    rejectedAlternatives.push({ actionType: 'execute_agency_task', reason: 'No urgent high-priority candidate goals active' });
+    rejectedAlternatives.push({
+      actionType: 'speak',
+      reason: 'No user present; unsolicited chatter avoided',
+    });
+    rejectedAlternatives.push({
+      actionType: 'execute_agency_task',
+      reason: 'No urgent high-priority candidate goals active',
+    });
 
-    return this.parseDecision({
-      id,
-      eventId: event.id,
-      actionType: 'rest',
-      target: 'internal_equilibrium',
-      chosenAlternativeReason: 'No urgent stimulus or high-priority goals; maintaining quiet internal presence and resource equilibrium',
-      rejectedAlternatives,
-      confidence: 1.0,
-      riskAssessment: 'low',
-      permissionRequired: false,
-      resourceEstimate: { cpu: 'low', gpu: false, timeoutMs: 1000 },
-      timestamp,
-    }, event);
+    return this.parseDecision(
+      {
+        id,
+        eventId: event.id,
+        actionType: 'rest',
+        target: 'internal_equilibrium',
+        chosenAlternativeReason:
+          'No urgent stimulus or high-priority goals; maintaining quiet internal presence and resource equilibrium',
+        rejectedAlternatives,
+        confidence: 1.0,
+        riskAssessment: 'low',
+        permissionRequired: false,
+        resourceEstimate: { cpu: 'low', gpu: false, timeoutMs: 1000 },
+        timestamp,
+      },
+      event,
+    );
   }
 
-  private buildActionProposal(decision: CognitiveDecision, event?: CognitiveEvent): ActionProposal | null {
+  private buildActionProposal(
+    decision: CognitiveDecision,
+    event?: CognitiveEvent,
+  ): ActionProposal | null {
     if (event?.payload?.actionProposal) {
       return event.payload.actionProposal as ActionProposal;
     }
@@ -924,10 +1077,13 @@ export class CognitiveControlBus {
       research: 'web_search',
     };
     const traceId = event?.traceId || (event?.payload?.traceId as string) || decision.traceId;
-    const correlationId = event?.correlationId || (event?.payload?.correlationId as string) || decision.correlationId;
+    const correlationId =
+      event?.correlationId || (event?.payload?.correlationId as string) || decision.correlationId;
     return {
       id: crypto.randomUUID(),
-      taskId: this.intentTaskManager ? this.intentTaskManager.listTasks()[0]?.id || crypto.randomUUID() : crypto.randomUUID(),
+      taskId: this.intentTaskManager
+        ? this.intentTaskManager.listTasks()[0]?.id || crypto.randomUUID()
+        : crypto.randomUUID(),
       stepIndex: 0,
       type: typeMap[decision.actionType] || 'web_search',
       payload: { target: decision.target, traceId, correlationId },

@@ -43,7 +43,10 @@ export class SqliteEmpathyPerspectiveRepository implements IEmpathyPerspectiveRe
           experience.inferredAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save inferred experience ${experience.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save inferred experience ${experience.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -200,7 +203,10 @@ export class SqliteEmpathyPerspectiveRepository implements IEmpathyPerspectiveRe
           response.createdAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save empathetic response ${response.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save empathetic response ${response.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -257,7 +263,10 @@ export class SqliteEmpathyPerspectiveRepository implements IEmpathyPerspectiveRe
           revision.revisedAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save perspective revision ${revision.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save perspective revision ${revision.id}: ${err.message}`,
+        err,
+      );
     }
   }
 

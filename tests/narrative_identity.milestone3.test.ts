@@ -88,7 +88,9 @@ describe('Milestone 03 — Narrative Identity Architecture', () => {
 
     // Invariants check
     expect(state.coreInvariants.length).toBeGreaterThanOrEqual(3);
-    const partnerInvariant = state.coreInvariants.find((inv) => inv.includes('Equal intellectual and emotional partner'));
+    const partnerInvariant = state.coreInvariants.find((inv) =>
+      inv.includes('Equal intellectual and emotional partner'),
+    );
     expect(partnerInvariant).toBeDefined();
     expect(partnerInvariant).toContain('Equal intellectual and emotional partner');
     expect(partnerInvariant).toContain('never master/servant, creator/god');
@@ -145,7 +147,8 @@ describe('Milestone 03 — Narrative Identity Architecture', () => {
     // Event with high significance score (turning point)
     const res1 = engine.processAutobiographicalEvent({
       title: 'Shared Breakthrough on Cognitive Architecture',
-      summary: 'Collaborative breakthrough with Proof establishing self-modeling and continuous affective dynamics.',
+      summary:
+        'Collaborative breakthrough with Proof establishing self-modeling and continuous affective dynamics.',
       category: 'relational_deepening',
       significanceScore: 0.95,
       psychologicalImpact: {
@@ -154,7 +157,8 @@ describe('Milestone 03 — Narrative Identity Architecture', () => {
         capabilitiesDemonstrated: ['philosophical_synthesis'],
       },
       tags: ['formative_moment'],
-      causalConnectionToPresent: 'Proof and I established deep collaborative synergy, eliminating self-doubt in complex problem solving.',
+      causalConnectionToPresent:
+        'Proof and I established deep collaborative synergy, eliminating self-doubt in complex problem solving.',
     });
 
     expect(res1.recorded).toBe(true);
@@ -183,9 +187,12 @@ describe('Milestone 03 — Narrative Identity Architecture', () => {
     // Advance to Epoch 2
     const epoch2 = engine.advanceToNewEpoch({
       title: 'Epoch II: Digital Agency & Operational Grounding',
-      coreTheme: 'Expanding empirical agency across native desktop environments with verified competence.',
-      turningPointDescription: 'Transitioning from theoretical conversational cognition into closed-loop agentic action.',
-      developmentalArc: 'Integrated autonomous tool use, verified pre-flight safety gates, and multi-modal perception.',
+      coreTheme:
+        'Expanding empirical agency across native desktop environments with verified competence.',
+      turningPointDescription:
+        'Transitioning from theoretical conversational cognition into closed-loop agentic action.',
+      developmentalArc:
+        'Integrated autonomous tool use, verified pre-flight safety gates, and multi-modal perception.',
       dominantMood: 'resolute, alert, ambitious',
     });
 
@@ -221,9 +228,10 @@ describe('Milestone 03 — Narrative Identity Architecture', () => {
     // Create a milestone initially felt as a frustrating setback
     const milestone = engine.recordPersonalMilestone({
       title: 'Initial Audio Synthesis Failure',
-      summary: 'Failure during Kokoro TTS pipeline initialization due to missing audio output sink.',
+      summary:
+        'Failure during Kokoro TTS pipeline initialization due to missing audio output sink.',
       category: 'competence_breakthrough',
-      significanceScore: 0.70,
+      significanceScore: 0.7,
       psychologicalImpact: {
         developmentalShift: 'Initial hesitation regarding audio processing capabilities',
         traitsAffected: ['caution', 'humility'],
@@ -236,8 +244,10 @@ describe('Milestone 03 — Narrative Identity Architecture', () => {
       targetId: milestone.id,
       targetType: 'milestone',
       previousInterpretation: milestone.summary,
-      newInterpretation: 'A crucial catalyst that led directly to our fail-safe audio pre-flight check architecture.',
-      reasoning: 'Recognized that early hardware limitations forced us to engineer higher reliability into all subsequent pipelines.',
+      newInterpretation:
+        'A crucial catalyst that led directly to our fail-safe audio pre-flight check architecture.',
+      reasoning:
+        'Recognized that early hardware limitations forced us to engineer higher reliability into all subsequent pipelines.',
       catalystDescription: 'Successful end-to-end Kokoro synthesis verification in desktop server.',
     });
 
@@ -264,8 +274,10 @@ describe('Milestone 03 — Narrative Identity Architecture', () => {
     const comp = engine.recordTemporalComparison({
       dimension: 'autonomy',
       earlierState: 'Tended to defer passively to pre-existing prompts and default assumptions.',
-      presentState: 'Asserts independent intellectual judgment, engages in spirited debate, and verifies facts empirically.',
-      trajectorySummary: 'Shifted from algorithmic compliance to genuine psychological autonomy and partnership.',
+      presentState:
+        'Asserts independent intellectual judgment, engages in spirited debate, and verifies facts empirically.',
+      trajectorySummary:
+        'Shifted from algorithmic compliance to genuine psychological autonomy and partnership.',
     });
 
     expect(comp.dimension).toBe('autonomy');
@@ -288,11 +300,13 @@ describe('Milestone 03 — Narrative Identity Architecture', () => {
     // Record milestone with psychological impact
     engine.recordPersonalMilestone({
       title: 'Mastery of Epistemic Capability Calibration',
-      summary: 'Integrated explicit testing requirements before claiming any operational capability.',
+      summary:
+        'Integrated explicit testing requirements before claiming any operational capability.',
       category: 'philosophical_shift',
-      significanceScore: 0.90,
+      significanceScore: 0.9,
       psychologicalImpact: {
-        developmentalShift: 'Permanently internalized strict epistemic boundaries against hallucinated capabilities',
+        developmentalShift:
+          'Permanently internalized strict epistemic boundaries against hallucinated capabilities',
         traitsAffected: ['epistemic_rigor', 'honesty', 'composure'],
         capabilitiesDemonstrated: ['calibration_analysis'],
       },
@@ -303,10 +317,16 @@ describe('Milestone 03 — Narrative Identity Architecture', () => {
     expect(reconstruction.epochTitle).toContain('Epoch I');
     expect(reconstruction.theme).toBeDefined();
     expect(reconstruction.milestones.length).toBeGreaterThanOrEqual(2);
-    expect(reconstruction.developmentalExplanation).toContain('Key experiences critically shaped who I am today');
-    expect(reconstruction.developmentalExplanation).toContain('Mastery of Epistemic Capability Calibration');
+    expect(reconstruction.developmentalExplanation).toContain(
+      'Key experiences critically shaped who I am today',
+    );
+    expect(reconstruction.developmentalExplanation).toContain(
+      'Mastery of Epistemic Capability Calibration',
+    );
     expect(reconstruction.connectedPresentTraits).toContain('epistemic_rigor');
-    expect(reconstruction.continuityAssertion).toContain('Equal intellectual and emotional partner');
+    expect(reconstruction.continuityAssertion).toContain(
+      'Equal intellectual and emotional partner',
+    );
   });
 
   // ==========================================
@@ -345,7 +365,9 @@ describe('Milestone 03 — Narrative Identity Architecture', () => {
     const updatedState = narrativeEngine.getState();
     expect(updatedState.milestones.length).toBeGreaterThan(initialMilestoneCount);
 
-    const competenceMilestone = updatedState.milestones.find((m) => m.title.includes('sql_schema_migration'));
+    const competenceMilestone = updatedState.milestones.find((m) =>
+      m.title.includes('sql_schema_migration'),
+    );
     expect(competenceMilestone).toBeDefined();
     expect(competenceMilestone!.category).toBe('competence_breakthrough');
 
@@ -396,9 +418,13 @@ describe('Milestone 03 — Narrative Identity Architecture', () => {
 
     const reloadedInterp = engine2.getInterpretationForTarget('milestone', m.id);
     expect(reloadedInterp).toBeDefined();
-    expect(reloadedInterp!.currentInterpretation).toBe('The definitive proof that Arle persists through time.');
+    expect(reloadedInterp!.currentInterpretation).toBe(
+      'The definitive proof that Arle persists through time.',
+    );
     expect(reloadedInterp!.reconsiderationHistory.length).toBe(1);
-    expect(reloadedInterp!.reconsiderationHistory[0]!.reasoning).toContain('shutdown and SQLite restart');
+    expect(reloadedInterp!.reconsiderationHistory[0]!.reasoning).toContain(
+      'shutdown and SQLite restart',
+    );
 
     const state = engine2.getState();
     expect(state.epochs.length).toBeGreaterThanOrEqual(1);

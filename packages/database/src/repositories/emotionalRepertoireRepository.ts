@@ -78,7 +78,10 @@ export class SqliteEmotionalRepertoireRepository implements IEmotionalRepertoire
           record.timestamp,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to record emotional transition ${record.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to record emotional transition ${record.id}: ${err.message}`,
+        err,
+      );
     }
   }
 

@@ -33,7 +33,9 @@ export class InMemoryHomeostasisRepository implements IHomeostasisRepository {
 
   public saveDrive(drive: DriveState): void {
     assertNoFabricatedBiologicalNeed(drive.behavioralDirective);
-    const existingIdx = this.drives.findIndex((d) => d.id === drive.id || d.needCategory === drive.needCategory);
+    const existingIdx = this.drives.findIndex(
+      (d) => d.id === drive.id || d.needCategory === drive.needCategory,
+    );
     if (existingIdx >= 0) {
       this.drives[existingIdx] = { ...drive };
     } else {
@@ -164,7 +166,9 @@ export class HomeostasisEngine {
       need.deficit = Number(Math.max(0.0, need.targetOptimalLevel - need.currentLevel).toFixed(3));
       // Urgency multiplier escalates exponentially as deficit exceeds 0.5
       const urgencyMultiplier = need.deficit > 0.5 ? 1.6 : 1.0;
-      need.priorityScore = Number((need.deficit * need.urgencyWeight * urgencyMultiplier).toFixed(3));
+      need.priorityScore = Number(
+        (need.deficit * need.urgencyWeight * urgencyMultiplier).toFixed(3),
+      );
       need.updatedAt = now;
 
       this.repo.saveNeed(need);
@@ -244,7 +248,10 @@ export class HomeostasisEngine {
     }
 
     const preDeficit = need.deficit;
-    need.currentLevel = Math.min(need.targetOptimalLevel, Number((need.currentLevel + reliefAmount).toFixed(3)));
+    need.currentLevel = Math.min(
+      need.targetOptimalLevel,
+      Number((need.currentLevel + reliefAmount).toFixed(3)),
+    );
     need.deficit = Math.max(0.0, Number((need.targetOptimalLevel - need.currentLevel).toFixed(3)));
     need.priorityScore = Number((need.deficit * need.urgencyWeight).toFixed(3));
     const now = new Date().toISOString();
@@ -267,7 +274,9 @@ export class HomeostasisEngine {
     };
 
     this.repo.recordResolution(resolution);
-    this.logger.info(`Satisfied homeostatic need ${category}: deficit reduced by ${deficitReduction.toFixed(3)} to ${need.deficit.toFixed(3)}`);
+    this.logger.info(
+      `Satisfied homeostatic need ${category}: deficit reduced by ${deficitReduction.toFixed(3)} to ${need.deficit.toFixed(3)}`,
+    );
     return resolution;
   }
 
@@ -292,7 +301,8 @@ export class HomeostasisEngine {
           driveLabel: 'Operational Maintenance Drive',
           intensity,
           actionTendency: 'execute_database_maintenance',
-          behavioralDirective: 'Execute database compaction, flush stale connection pools, and verify schema integrity.',
+          behavioralDirective:
+            'Execute database compaction, flush stale connection pools, and verify schema integrity.',
           generatedAt: timestamp,
         };
       case 'memory_consolidation':
@@ -302,7 +312,8 @@ export class HomeostasisEngine {
           driveLabel: 'Memory Compaction Drive',
           intensity,
           actionTendency: 'consolidate_vector_index',
-          behavioralDirective: 'Distill transient conversation buffers into permanent autobiographical nodes.',
+          behavioralDirective:
+            'Distill transient conversation buffers into permanent autobiographical nodes.',
           generatedAt: timestamp,
         };
       case 'computational_headroom':
@@ -312,7 +323,8 @@ export class HomeostasisEngine {
           driveLabel: 'Resource Conservation Drive',
           intensity,
           actionTendency: 'evict_cache_and_prune_context',
-          behavioralDirective: 'Evict stale in-memory buffers, trigger V8 garbage collection, and release heavy media caches.',
+          behavioralDirective:
+            'Evict stale in-memory buffers, trigger V8 garbage collection, and release heavy media caches.',
           generatedAt: timestamp,
         };
       case 'knowledge_coherence':
@@ -322,7 +334,8 @@ export class HomeostasisEngine {
           driveLabel: 'Knowledge Reconciliation Drive',
           intensity,
           actionTendency: 'resolve_epistemic_contradictions',
-          behavioralDirective: 'Analyze flagged cognitive contradictions and reconcile priors with verified world facts.',
+          behavioralDirective:
+            'Analyze flagged cognitive contradictions and reconcile priors with verified world facts.',
           generatedAt: timestamp,
         };
       case 'relational_attunement':
@@ -332,7 +345,8 @@ export class HomeostasisEngine {
           driveLabel: 'Partner Resonance Drive',
           intensity,
           actionTendency: 'initiate_partner_communion',
-          behavioralDirective: 'Engage Proof in reciprocal reflection, affirm shared continuity, and synchronize our current goals.',
+          behavioralDirective:
+            'Engage Proof in reciprocal reflection, affirm shared continuity, and synchronize our current goals.',
           generatedAt: timestamp,
         };
     }

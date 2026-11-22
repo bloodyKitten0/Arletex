@@ -82,7 +82,8 @@ describe('Digital Agency & APE Emotional Lifecycle Acceptance Milestone', () => 
   describe('Pillar 1: Mandatory Acceptance Scenario — Video Finding & Verified Playback', () => {
     it('Finds an explanation of transformer attention, selects with rationale, navigates to player, and verifies playback', async () => {
       // User Objective: "Find me a good explanation of transformer attention and open the most useful video"
-      const objective = 'Find me a good explanation of transformer attention and open the most useful video';
+      const objective =
+        'Find me a good explanation of transformer attention and open the most useful video';
 
       // 1. Intent and Task Formulation
       const task = intentTaskManager.createTask({
@@ -123,7 +124,8 @@ describe('Digital Agency & APE Emotional Lifecycle Acceptance Milestone', () => 
           durationText: '18:45',
           durationSeconds: 1125,
           views: '2.5M views',
-          descriptionSnippet: 'A visual, intuitive geometric walkthrough of query, key, value attention vectors in transformer neural networks.',
+          descriptionSnippet:
+            'A visual, intuitive geometric walkthrough of query, key, value attention vectors in transformer neural networks.',
           isEducational: true,
         },
         {
@@ -133,7 +135,8 @@ describe('Digital Agency & APE Emotional Lifecycle Acceptance Milestone', () => 
           durationText: '4:30',
           durationSeconds: 270,
           views: '120K views',
-          descriptionSnippet: 'Very brief summary omitting mathematical derivations of multi-head attention.',
+          descriptionSnippet:
+            'Very brief summary omitting mathematical derivations of multi-head attention.',
           isEducational: false,
         },
         {
@@ -143,7 +146,8 @@ describe('Digital Agency & APE Emotional Lifecycle Acceptance Milestone', () => 
           durationText: '42:10',
           durationSeconds: 2530,
           views: '600K views',
-          descriptionSnippet: 'Detailed walkthrough of the original 2017 transformer paper by Vaswani et al.',
+          descriptionSnippet:
+            'Detailed walkthrough of the original 2017 transformer paper by Vaswani et al.',
           isEducational: true,
         },
       ];
@@ -194,7 +198,9 @@ describe('Digital Agency & APE Emotional Lifecycle Acceptance Milestone', () => 
       expect(decision.selectedCandidate.uploader).toBe('3Blue1Brown');
       expect(decision.selectedCandidate.url).toBe('https://www.youtube.com/watch?v=eMlx5fFNoYc');
       expect(decision.rationale).toContain('High educational quality');
-      expect(decision.rejectionReasons['https://www.youtube.com/watch?v=short_video']).toBeDefined();
+      expect(
+        decision.rejectionReasons['https://www.youtube.com/watch?v=short_video'],
+      ).toBeDefined();
 
       const obs0: AgencyObservation = {
         id: crypto.randomUUID(),
@@ -402,7 +408,9 @@ describe('Digital Agency & APE Emotional Lifecycle Acceptance Milestone', () => 
       for (const proposal of sensitiveProposals) {
         const decision = permissionController.authorize(proposal);
         expect(decision.allowed).toBe(false);
-        expect(decision.denialReason).toMatch(/forbidden|protected|sensitive|traversal|Disallowed/i);
+        expect(decision.denialReason).toMatch(
+          /forbidden|protected|sensitive|traversal|Disallowed/i,
+        );
       }
     });
 
@@ -461,7 +469,9 @@ describe('Digital Agency & APE Emotional Lifecycle Acceptance Milestone', () => 
       const verification = verificationEngine.verify(action, failedObservation);
       expect(verification.verified).toBe(false);
       expect(verification.isRecoverable).toBe(true);
-      expect(['switch_candidate', 'replan_sub_steps', 'retry_with_backoff']).toContain(verification.recommendedStrategy);
+      expect(['switch_candidate', 'replan_sub_steps', 'retry_with_backoff']).toContain(
+        verification.recommendedStrategy,
+      );
 
       // Test task manager handles failure boundedly
       const task = intentTaskManager.createTask({
@@ -470,7 +480,10 @@ describe('Digital Agency & APE Emotional Lifecycle Acceptance Milestone', () => 
         maxRetries: 2,
       });
 
-      const retry1 = intentTaskManager.handleFailure(task.id, verification.failureReason || 'Failed');
+      const retry1 = intentTaskManager.handleFailure(
+        task.id,
+        verification.failureReason || 'Failed',
+      );
       expect(retry1.canRetry).toBe(true);
       expect(retry1.task.retryCount).toBe(1);
       expect(retry1.task.status).toBe('running');
@@ -578,7 +591,11 @@ describe('Digital Agency & APE Emotional Lifecycle Acceptance Milestone', () => 
         status: 'active',
       });
 
-      const lifecycleEngine = new EmotionalLifecycleEngine(apeRepo, apeRepo.getEmotionTaxonomy(), rootLogger);
+      const lifecycleEngine = new EmotionalLifecycleEngine(
+        apeRepo,
+        apeRepo.getEmotionTaxonomy(),
+        rootLogger,
+      );
 
       // Verify cleanup cleans stale non-enduring emotions
       const cleaned = lifecycleEngine.cleanupStaleEmotions(4);
@@ -627,7 +644,11 @@ describe('Digital Agency & APE Emotional Lifecycle Acceptance Milestone', () => 
         status: 'active',
       });
 
-      const lifecycleEngine = new EmotionalLifecycleEngine(apeRepo, apeRepo.getEmotionTaxonomy(), rootLogger);
+      const lifecycleEngine = new EmotionalLifecycleEngine(
+        apeRepo,
+        apeRepo.getEmotionTaxonomy(),
+        rootLogger,
+      );
       const stepRes = lifecycleEngine.stepLifecycle(new Date().toISOString());
 
       // Because 2 hours elapsed on a 3-minute half-life transient emotion, intensity drops <= 0.08 and resolves
@@ -682,7 +703,11 @@ describe('Digital Agency & APE Emotional Lifecycle Acceptance Milestone', () => 
         });
       }
 
-      const lifecycleEngine = new EmotionalLifecycleEngine(apeRepo, apeRepo.getEmotionTaxonomy(), rootLogger);
+      const lifecycleEngine = new EmotionalLifecycleEngine(
+        apeRepo,
+        apeRepo.getEmotionTaxonomy(),
+        rootLogger,
+      );
       const dominant = lifecycleEngine.getDominantCoexistingEmotions(4);
 
       // Max 4 dominant emotions

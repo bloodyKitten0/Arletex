@@ -60,15 +60,16 @@ export class SqliteSimulationRepository implements ISimulationRepository {
           scenario.createdAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save simulation scenario ${scenario.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save simulation scenario ${scenario.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
   public getScenarioById(id: string): SimulationScenario | null {
     try {
-      const row = this.db
-        .prepare(`SELECT * FROM simulation_scenarios WHERE id = ?`)
-        .get(id) as any;
+      const row = this.db.prepare(`SELECT * FROM simulation_scenarios WHERE id = ?`).get(id) as any;
       if (!row) return null;
       return this.mapScenarioRow(row);
     } catch (err: any) {
@@ -145,7 +146,10 @@ export class SqliteSimulationRepository implements ISimulationRepository {
           evaluation.evaluatedAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save alternative decision evaluation ${evaluation.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save alternative decision evaluation ${evaluation.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -157,7 +161,10 @@ export class SqliteSimulationRepository implements ISimulationRepository {
       if (!row) return null;
       return this.mapDecisionRow(row);
     } catch (err: any) {
-      throw new DatabaseError(`Failed to get alternative decision evaluation ${id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to get alternative decision evaluation ${id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -168,7 +175,10 @@ export class SqliteSimulationRepository implements ISimulationRepository {
         .all(limit) as any[];
       return rows.map((r) => this.mapDecisionRow(r));
     } catch (err: any) {
-      throw new DatabaseError(`Failed to list alternative decision evaluations: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to list alternative decision evaluations: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -176,7 +186,10 @@ export class SqliteSimulationRepository implements ISimulationRepository {
     try {
       this.db.prepare(`DELETE FROM alternative_decisions WHERE id = ?`).run(id);
     } catch (err: any) {
-      throw new DatabaseError(`Failed to delete alternative decision evaluation ${id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to delete alternative decision evaluation ${id}: ${err.message}`,
+        err,
+      );
     }
   }
 

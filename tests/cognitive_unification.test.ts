@@ -150,7 +150,11 @@ describe('Phase 7 & 8: Cognitive Unification & Independent Autonomous Operation'
     expect(allMemories.length).toBeGreaterThanOrEqual(3);
 
     const hasDesktop = allMemories.some((m) => m.content.includes('synaptic plasticity together'));
-    const hasEmail = allMemories.some((m) => m.content.includes('Synaptic Plasticity Paper Draft') || m.content.includes('LTP induction'));
+    const hasEmail = allMemories.some(
+      (m) =>
+        m.content.includes('Synaptic Plasticity Paper Draft') ||
+        m.content.includes('LTP induction'),
+    );
     const hasTelegram = allMemories.some((m) => m.content.includes('paper draft arrive'));
 
     expect(hasDesktop).toBe(true);
@@ -172,7 +176,7 @@ describe('Phase 7 & 8: Cognitive Unification & Independent Autonomous Operation'
         userId: 'Proof',
         interactionType: 'deep_dialogue',
         valence: 0.85,
-        arousal: 0.60,
+        arousal: 0.6,
         content: 'I appreciate having you as my equal partner in this research, Arle.',
       },
     });
@@ -220,7 +224,11 @@ describe('Phase 7 & 8: Cognitive Unification & Independent Autonomous Operation'
 
     // Complete a milestone
     const milestoneId = project.milestones[0]!.id;
-    const advanced = projectService.recordMilestoneProgress(project.id, milestoneId, 'Derived ODE system for CA1');
+    const advanced = projectService.recordMilestoneProgress(
+      project.id,
+      milestoneId,
+      'Derived ODE system for CA1',
+    );
     expect(advanced.progress).toBeGreaterThan(0.0);
     expect(advanced.milestones.find((m) => m.id === milestoneId)?.completed).toBe(true);
 

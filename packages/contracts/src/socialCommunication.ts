@@ -79,7 +79,9 @@ export const TurnTakingStateSchema = z.object({
   floorStatus: z.enum(['held', 'yielded', 'open', 'interrupted']),
   pacingLatencyMs: z.number().min(0),
   interruptionDetected: z.boolean(),
-  repairStrategy: z.enum(['clarify', 'apologize', 'rephrase', 'reclaim_floor', 'yield_floor']).optional(),
+  repairStrategy: z
+    .enum(['clarify', 'apologize', 'rephrase', 'reclaim_floor', 'yield_floor'])
+    .optional(),
   turnCount: z.number().min(0),
 });
 export type TurnTakingState = z.infer<typeof TurnTakingStateSchema>;
@@ -93,13 +95,13 @@ export const PragmaticAnalysisSchema = z.object({
   hasIndirectMeaning: z.boolean(),
   speechActType: SpeechActTypeSchema,
   sarcasmDetected: z.boolean(),
-  sarcasmConfidence: z.number().min(0.0).max(0.90), // Capped at 0.90 - pragmatics cannot have 1.0 psychic certainty
+  sarcasmConfidence: z.number().min(0.0).max(0.9), // Capped at 0.90 - pragmatics cannot have 1.0 psychic certainty
   sarcasmIntent: SarcasmIntentSchema,
   humorDetected: z.boolean(),
   humorStyle: HumorStyleSchema,
   nonverbalCues: z.array(NonverbalCueSchema),
   contextualAppropriateness: z.number().min(0.0).max(1.0),
-  confidence: z.number().min(0.0).max(0.90), // Capped at 0.90 to account for pragmatic ambiguity
+  confidence: z.number().min(0.0).max(0.9), // Capped at 0.90 to account for pragmatic ambiguity
   timestamp: z.string(),
 });
 export type PragmaticAnalysis = z.infer<typeof PragmaticAnalysisSchema>;
@@ -107,21 +109,33 @@ export type PragmaticAnalysis = z.infer<typeof PragmaticAnalysisSchema>;
 export const AudienceAdaptationProfileSchema = z.object({
   targetAudienceId: z.string().min(1),
   socialDistance: SocialDistanceSchema,
-  adaptedRegister: z.enum(['intimate_playful', 'candid_warm', 'intellectual_collaborative', 'formal_courteous']),
+  adaptedRegister: z.enum([
+    'intimate_playful',
+    'candid_warm',
+    'intellectual_collaborative',
+    'formal_courteous',
+  ]),
   expressiveIdentityPreserved: z.literal(true), // Invariant: must ALWAYS be true
   appliedConventions: z.array(z.string()),
-  politenessStrategy: z.enum(['bald_on_record', 'positive_politeness', 'negative_politeness', 'off_record']),
+  politenessStrategy: z.enum([
+    'bald_on_record',
+    'positive_politeness',
+    'negative_politeness',
+    'off_record',
+  ]),
 });
 export type AudienceAdaptationProfile = z.infer<typeof AudienceAdaptationProfileSchema>;
 
 export const AnalyzePragmaticsRequestSchema = z.object({
   utterance: z.string().min(1),
   speakerId: z.string().min(1),
-  context: z.object({
-    priorTopic: z.string().optional(),
-    socialDistance: SocialDistanceSchema.optional(),
-    responseLatencyMs: z.number().min(0).optional(),
-  }).optional(),
+  context: z
+    .object({
+      priorTopic: z.string().optional(),
+      socialDistance: SocialDistanceSchema.optional(),
+      responseLatencyMs: z.number().min(0).optional(),
+    })
+    .optional(),
 });
 export type AnalyzePragmaticsRequest = z.infer<typeof AnalyzePragmaticsRequestSchema>;
 

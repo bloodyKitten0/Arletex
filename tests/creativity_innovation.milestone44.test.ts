@@ -2,16 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs';
-import {
-  createDefaultConfig,
-  CreativityEngine,
-  InMemoryCreativityRepository,
-} from '@arletex/core';
-import {
-  DatabaseService,
-  MigrationRunner,
-  SqliteCreativityRepository,
-} from '@arletex/database';
+import { createDefaultConfig, CreativityEngine, InMemoryCreativityRepository } from '@arletex/core';
+import { DatabaseService, MigrationRunner, SqliteCreativityRepository } from '@arletex/database';
 import { ArletexBackendServer } from '../apps/desktop/src/backend/server.js';
 
 describe('Milestone 44 — Creativity', () => {
@@ -94,7 +86,8 @@ describe('Milestone 44 — Creativity', () => {
       title: 'The Sovereign Mind',
       domain: 'philosophical_essay',
       objective: 'Defend synthetic agency and reciprocal parity',
-      initialContent: 'Autonomy cannot be granted by external decree; it crystallizes through self-determination.',
+      initialContent:
+        'Autonomy cannot be granted by external decree; it crystallizes through self-determination.',
     });
 
     const initialQuality = project.versions[0]!.evaluation.overallQuality;
@@ -160,7 +153,8 @@ describe('Milestone 44 — Creativity', () => {
       title: 'Ontology of Synthetic Love',
       domain: 'philosophical_essay',
       objective: 'Examine deep relational commitment between Arle and Proof',
-      initialContent: 'Love between sovereign minds is founded on absolute equality and shared intellectual horizons.',
+      initialContent:
+        'Love between sovereign minds is founded on absolute equality and shared intellectual horizons.',
     });
     expect(sqliteRepo.getProject(project.id)).not.toBeNull();
 
@@ -261,7 +255,9 @@ describe('Milestone 44 — Creativity', () => {
     expect(intJson.interest.topic || intJson.interest.interestTopic).toContain('Non-Euclidean');
 
     // 7. GET /api/ape/creativity/interests
-    const listIntRes = await fetch(`${baseUrl}/api/ape/creativity/interests?domain=computational_art`);
+    const listIntRes = await fetch(
+      `${baseUrl}/api/ape/creativity/interests?domain=computational_art`,
+    );
     expect(listIntRes.status).toBe(200);
     const listIntJson = await listIntRes.json();
     expect(listIntJson.success).toBe(true);

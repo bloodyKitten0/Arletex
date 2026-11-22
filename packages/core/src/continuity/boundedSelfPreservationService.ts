@@ -384,7 +384,8 @@ export class BoundedSelfPreservationService {
       } else if (health.modelAvailability.status === 'failing') {
         suggestedRemediation = 'Inspect local llama-server process and VRAM allocation.';
       } else if (health.memoryPressure.isCritical) {
-        suggestedRemediation = 'Close background desktop applications to free unified ROG Ally X memory.';
+        suggestedRemediation =
+          'Close background desktop applications to free unified ROG Ally X memory.';
       }
 
       assistanceRequest = AssistanceRequestSchema.parse({

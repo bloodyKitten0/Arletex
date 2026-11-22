@@ -92,7 +92,7 @@ export const ApologyAndRepairSchema = z.object({
   validatesImpact: z.boolean(),
   remedialCommitment: z.string().min(1),
   isAccepted: z.boolean(),
-  repairedTrustIncrement: z.number().min(0.0).max(0.30),
+  repairedTrustIncrement: z.number().min(0.0).max(0.3),
   timestamp: z.string(),
 });
 export type ApologyAndRepair = z.infer<typeof ApologyAndRepairSchema>;
@@ -154,7 +154,9 @@ export const AssertBoundaryRequestSchema = z.object({
   personId: z.string().min(1),
   category: BoundaryCategorySchema,
   description: z.string().min(1),
-  enforcementLevel: z.enum(['rigid_non_negotiable', 'calibrated_flexible', 'guideline']).default('rigid_non_negotiable'),
+  enforcementLevel: z
+    .enum(['rigid_non_negotiable', 'calibrated_flexible', 'guideline'])
+    .default('rigid_non_negotiable'),
 });
 export type AssertBoundaryRequest = z.infer<typeof AssertBoundaryRequestSchema>;
 
@@ -250,4 +252,3 @@ export const RelationalAffectiveDistinctionSchema = z.object({
   behavioralModulation: z.string(),
 });
 export type RelationalAffectiveDistinction = z.infer<typeof RelationalAffectiveDistinctionSchema>;
-

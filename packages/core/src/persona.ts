@@ -114,5 +114,3 @@ Rules:
 2. No conversational fluff, no greetings, no introductory pleasantries ("Sure, here is..."), and no generic disclaimers.
 3. Include brief, razor-sharp technical explanations and comments only where necessary for clarity.
 4. Directly deliver the solution.`;
-
-

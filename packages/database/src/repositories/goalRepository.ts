@@ -64,9 +64,7 @@ export class SqliteSelfGeneratedGoalRepository implements ISelfGeneratedGoalRepo
 
   public getGoalById(id: string): SelfGeneratedGoal | null {
     try {
-      const row = this.db
-        .prepare(`SELECT * FROM self_generated_goals WHERE id = ?`)
-        .get(id) as any;
+      const row = this.db.prepare(`SELECT * FROM self_generated_goals WHERE id = ?`).get(id) as any;
       if (!row) return null;
       return this.mapGoalRow(row);
     } catch (err: any) {
@@ -149,7 +147,9 @@ export class SqliteSelfGeneratedGoalRepository implements ISelfGeneratedGoalRepo
     try {
       if (generatedGoalId) {
         const rows = this.db
-          .prepare(`SELECT * FROM goal_generation_triggers WHERE generated_goal_id = ? ORDER BY created_at DESC`)
+          .prepare(
+            `SELECT * FROM goal_generation_triggers WHERE generated_goal_id = ? ORDER BY created_at DESC`,
+          )
           .all(generatedGoalId) as any[];
         return rows.map((r) => this.mapTriggerRow(r));
       }
@@ -176,9 +176,16 @@ export class SqliteSelfGeneratedGoalRepository implements ISelfGeneratedGoalRepo
       priority: Number(row.priority),
       status: row.status as SelfGeneratedGoalStatus,
       urgency: row.urgency !== undefined && row.urgency !== null ? Number(row.urgency) : 0.5,
-      uncertainty: row.uncertainty !== undefined && row.uncertainty !== null ? Number(row.uncertainty) : 0.5,
-      expectedValue: row.expected_value !== undefined && row.expected_value !== null ? Number(row.expected_value) : 0.7,
-      resourceCost: row.resource_cost !== undefined && row.resource_cost !== null ? Number(row.resource_cost) : 0.3,
+      uncertainty:
+        row.uncertainty !== undefined && row.uncertainty !== null ? Number(row.uncertainty) : 0.5,
+      expectedValue:
+        row.expected_value !== undefined && row.expected_value !== null
+          ? Number(row.expected_value)
+          : 0.7,
+      resourceCost:
+        row.resource_cost !== undefined && row.resource_cost !== null
+          ? Number(row.resource_cost)
+          : 0.3,
       successCriteria: JSON.parse(row.success_criteria_json || '[]'),
       estimatedEffortHours: Number(row.estimated_effort_hours),
       modificationsHistory: JSON.parse(row.modifications_history_json || '[]'),

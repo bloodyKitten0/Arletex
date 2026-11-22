@@ -1,11 +1,6 @@
 import { z } from 'zod';
 
-export const AutonomyLevelSchema = z.enum([
-  '1_develop',
-  '2_initiate',
-  '3_modify',
-  '4_evolve',
-]);
+export const AutonomyLevelSchema = z.enum(['1_develop', '2_initiate', '3_modify', '4_evolve']);
 export type AutonomyLevel = z.infer<typeof AutonomyLevelSchema>;
 
 export const AutonomyLevelDefinitionSchema = z.object({

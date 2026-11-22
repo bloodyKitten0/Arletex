@@ -75,7 +75,9 @@ describe('Milestone 13 — Learning and Adaptation', () => {
       outcome: 'success',
       outcomeDetails: 'Code compiled with zero errors across all workspaces',
       rewardScore: 0.85,
-      lessonsLearned: ['Always use nullish coalescing (??) fallback when indexing arrays under noUncheckedIndexedAccess'],
+      lessonsLearned: [
+        'Always use nullish coalescing (??) fallback when indexing arrays under noUncheckedIndexedAccess',
+      ],
     });
 
     expect(exp.id).toBeDefined();
@@ -103,7 +105,9 @@ describe('Milestone 13 — Learning and Adaptation', () => {
       outcome: 'success',
       outcomeDetails: 'Issue quickly localized to concurrent race condition',
       rewardScore: 0.75,
-      lessonsLearned: ['Correlating trace timestamps across distributed processes accelerates triage'],
+      lessonsLearned: [
+        'Correlating trace timestamps across distributed processes accelerates triage',
+      ],
     });
     expect(obsExp.channel).toBe('observation');
 
@@ -112,7 +116,8 @@ describe('Milestone 13 — Learning and Adaptation', () => {
       channel: 'instruction',
       domain: 'relationship_protocol',
       context: 'Proof communicating communication preference',
-      actionTaken: 'Proof instructed: provide concise technical decisions first, elaboration only on request',
+      actionTaken:
+        'Proof instructed: provide concise technical decisions first, elaboration only on request',
       outcome: 'success',
       outcomeDetails: 'Communication was aligned and direct',
       rewardScore: 0.9,
@@ -250,7 +255,10 @@ describe('Milestone 13 — Learning and Adaptation', () => {
     const rules = learningRepo.listRules({ domain: 'database_tuning' });
     const baseRule = rules[0]!;
 
-    const generalized = learningEngine.generalizeRule(baseRule.id, ['in_memory_cache', 'search_engine']);
+    const generalized = learningEngine.generalizeRule(baseRule.id, [
+      'in_memory_cache',
+      'search_engine',
+    ]);
     expect(generalized.isGeneralization).toBe(true);
     expect(generalized.transferDomains).toContain('in_memory_cache');
     expect(generalized.transferDomains).toContain('search_engine');
@@ -399,6 +407,8 @@ describe('Milestone 13 — Learning and Adaptation', () => {
     const apeService = (server as any).apeService as ApeService;
     const promptContext = apeService.formatApePromptContext();
     expect(promptContext).toContain('Learning & Continuous Adaptation:');
-    expect(promptContext).toContain('Continuous behavioral adaptation grounded in direct experience and feedback');
+    expect(promptContext).toContain(
+      'Continuous behavioral adaptation grounded in direct experience and feedback',
+    );
   });
 });

@@ -45,7 +45,8 @@ export class OpenAICompatibleAdapter implements IInferenceProvider {
     } = {},
   ) {
     this.providerType = options.providerType || 'openai_compatible';
-    this.name = options.name || (this.providerType === 'vllm' ? 'vLLM Engine' : 'OpenAI-Compatible Engine');
+    this.name =
+      options.name || (this.providerType === 'vllm' ? 'vLLM Engine' : 'OpenAI-Compatible Engine');
     this.apiKey = options.apiKey || process.env['OPENAI_API_KEY'];
 
     this.config = InferenceConfigSchema.parse({
@@ -145,9 +146,10 @@ export class OpenAICompatibleAdapter implements IInferenceProvider {
       top_p: effectiveConfig.topP ?? 0.9,
       max_tokens: effectiveConfig.maxTokens ?? 2048,
       stream: true,
-      stop: effectiveConfig.stopSequences && effectiveConfig.stopSequences.length > 0
-        ? effectiveConfig.stopSequences
-        : undefined,
+      stop:
+        effectiveConfig.stopSequences && effectiveConfig.stopSequences.length > 0
+          ? effectiveConfig.stopSequences
+          : undefined,
     };
 
     const headers: Record<string, string> = {
@@ -193,7 +195,10 @@ export class OpenAICompatibleAdapter implements IInferenceProvider {
     }
 
     if (!response.body) {
-      throw new ModelUnavailableError(effectiveConfig.serverUrl, new Error('Response body is empty'));
+      throw new ModelUnavailableError(
+        effectiveConfig.serverUrl,
+        new Error('Response body is empty'),
+      );
     }
 
     let fullContent = '';

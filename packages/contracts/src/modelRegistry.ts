@@ -54,10 +54,12 @@ export const ModelComparisonSchema = z.object({
   candidateB: ModelDefinitionSchema,
   winnerId: z.string(),
   selectionReason: z.string(),
-  comparisons: z.record(z.object({
-    candidateAValue: z.number(),
-    candidateBValue: z.number(),
-    advantage: z.enum(['candidateA', 'candidateB', 'tie']),
-  })),
+  comparisons: z.record(
+    z.object({
+      candidateAValue: z.number(),
+      candidateBValue: z.number(),
+      advantage: z.enum(['candidateA', 'candidateB', 'tie']),
+    }),
+  ),
 });
 export type ModelComparison = z.infer<typeof ModelComparisonSchema>;

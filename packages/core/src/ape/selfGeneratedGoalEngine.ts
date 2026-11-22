@@ -93,7 +93,9 @@ export class InMemorySelfGeneratedGoalRepository implements ISelfGeneratedGoalRe
     createdAt: string;
   }> {
     if (generatedGoalId) {
-      return this.triggers.filter((t) => t.generatedGoalId === generatedGoalId).map((t) => ({ ...t }));
+      return this.triggers
+        .filter((t) => t.generatedGoalId === generatedGoalId)
+        .map((t) => ({ ...t }));
     }
     return this.triggers.map((t) => ({ ...t }));
   }
@@ -127,12 +129,14 @@ export class SelfGeneratedGoalEngine {
     const goal: SelfGeneratedGoal = {
       id,
       title: `Explore depth in: ${params.interestTopic}`,
-      description: params.rationale || `Autonomous interest pursuit regarding ${params.interestTopic}`,
+      description:
+        params.rationale || `Autonomous interest pursuit regarding ${params.interestTopic}`,
       origin: 'interest',
       originParty: 'arle',
       originAudit: {
         sourceType: 'internal_spark',
-        userInvolvementRationale: 'Self-directed intrinsic interest emergence without user assignment',
+        userInvolvementRationale:
+          'Self-directed intrinsic interest emergence without user assignment',
       },
       parentGoalId: undefined,
       subGoalIds: [],
@@ -141,7 +145,9 @@ export class SelfGeneratedGoalEngine {
       urgency: params.urgency ?? 0.5,
       uncertainty: 0.6,
       expectedValue: params.expectedValue ?? 0.75,
-      resourceCost: params.estimatedEffortHours ? Math.min(1.0, params.estimatedEffortHours / 10) : 0.3,
+      resourceCost: params.estimatedEffortHours
+        ? Math.min(1.0, params.estimatedEffortHours / 10)
+        : 0.3,
       successCriteria: [
         `Acquire coherent conceptual model of ${params.interestTopic}`,
         `Integrate key findings into semantic memory`,
@@ -293,7 +299,8 @@ export class SelfGeneratedGoalEngine {
       originParty: 'arle',
       originAudit: {
         sourceType: 'need_deficit',
-        userInvolvementRationale: 'Autonomous self-monitoring detected internal capability bottleneck',
+        userInvolvementRationale:
+          'Autonomous self-monitoring detected internal capability bottleneck',
       },
       parentGoalId: undefined,
       subGoalIds: [],
@@ -708,7 +715,8 @@ export class SelfGeneratedGoalEngine {
   ): { parent: SelfGeneratedGoal; subGoals: SelfGeneratedGoal[] } {
     const parent = this.repo.getGoalById(parentGoalId);
     if (!parent) throw new Error(`Parent goal ${parentGoalId} not found.`);
-    if (subGoalParams.length === 0) throw new Error('Decomposition requires at least one sub-goal.');
+    if (subGoalParams.length === 0)
+      throw new Error('Decomposition requires at least one sub-goal.');
 
     const now = new Date().toISOString();
     const createdSubGoals: SelfGeneratedGoal[] = [];
@@ -774,16 +782,19 @@ export class SelfGeneratedGoalEngine {
     // Weight factors for multi-criteria arbitration:
     // composite = priority*0.35 + expectedValue*0.25 + urgency*0.20 + uncertainty*0.10 - resourceCost*0.20
     const scored = goals.map((goal) => {
-      const resourcePenalty = (goal.resourceCost ?? 0.3) * (0.2 + fatigue * 0.4 + (throttled ? 0.3 : 0.0));
+      const resourcePenalty =
+        (goal.resourceCost ?? 0.3) * (0.2 + fatigue * 0.4 + (throttled ? 0.3 : 0.0));
       const riskOrStressPenalty = stress > 0.6 && goal.origin === 'ambition' ? 0.2 : 0.0;
 
       const baseScore =
         (goal.priority ?? 0.5) * 0.35 +
         (goal.expectedValue ?? 0.7) * 0.25 +
-        (goal.urgency ?? 0.5) * 0.20 +
-        (goal.uncertainty ?? 0.5) * 0.10;
+        (goal.urgency ?? 0.5) * 0.2 +
+        (goal.uncertainty ?? 0.5) * 0.1;
 
-      const rankScore = Number(Math.max(0.0, Math.min(1.0, baseScore - resourcePenalty - riskOrStressPenalty)).toFixed(4));
+      const rankScore = Number(
+        Math.max(0.0, Math.min(1.0, baseScore - resourcePenalty - riskOrStressPenalty)).toFixed(4),
+      );
       const justification = `Rank ${rankScore}: priority=${goal.priority}, EV=${goal.expectedValue}, urgency=${goal.urgency}, costPenalty=${resourcePenalty.toFixed(2)}`;
 
       return { goal, rankScore, justification };

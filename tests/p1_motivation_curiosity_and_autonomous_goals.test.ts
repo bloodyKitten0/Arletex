@@ -3,11 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
-import {
-  DatabaseService,
-  MigrationRunner,
-  ApeRepository,
-} from '@arletex/database';
+import { DatabaseService, MigrationRunner, ApeRepository } from '@arletex/database';
 import type Database from 'better-sqlite3';
 import {
   ApeService,
@@ -230,7 +226,8 @@ describe('Priority 1.3 — Motivation, Curiosity & Autonomous Interest Formation
     it('Scenario A: Need/Deficit driven goal generation from runtime telemetry bottleneck', () => {
       const telemetryBottleneck = {
         capability: 'subagent_context_orchestration',
-        errorPattern: 'Context window compression latency exceeding 450ms under heavy memory retrieval',
+        errorPattern:
+          'Context window compression latency exceeding 450ms under heavy memory retrieval',
       };
 
       const goals = goalEngine.synthesizeAutonomousGoalsFromState({
@@ -244,7 +241,9 @@ describe('Priority 1.3 — Motivation, Curiosity & Autonomous Interest Formation
       expect(goal.originAudit?.sourceType).toBe('need_deficit');
       expect(goal.title).toContain(telemetryBottleneck.capability);
       expect(goal.description).toContain(telemetryBottleneck.errorPattern);
-      expect(goal.successCriteria.some((sc) => sc.includes(telemetryBottleneck.errorPattern))).toBe(true);
+      expect(goal.successCriteria.some((sc) => sc.includes(telemetryBottleneck.errorPattern))).toBe(
+        true,
+      );
 
       // Verify trigger audit trail is durably stored
       const triggers = goalEngine.listTriggers(goal.id);
@@ -297,7 +296,8 @@ describe('Priority 1.3 — Motivation, Curiosity & Autonomous Interest Formation
     it('Scenario D: Emergent opportunity recognition driven goal generation', () => {
       const opportunity = goalEngine.recognizeOpportunity({
         opportunityType: 'system_low_power_idle',
-        eventDescription: 'ROG Ally X plugged into 65W AC power with battery at 98% and CPU idle > 10m',
+        eventDescription:
+          'ROG Ally X plugged into 65W AC power with battery at 98% and CPU idle > 10m',
         estimatedValue: 0.85,
       });
 
@@ -361,8 +361,14 @@ describe('Priority 1.3 — Motivation, Curiosity & Autonomous Interest Formation
       });
 
       const decomposition = goalEngine.decomposeGoal(parentGoal.id, [
-        { title: 'Inspect ext-foreign-toplevel Wayland protocol', description: 'Analyze protocol XML' },
-        { title: 'Benchmark virtual-keyboard-v1 socket latency', description: 'Measure ydotool uinput delay' },
+        {
+          title: 'Inspect ext-foreign-toplevel Wayland protocol',
+          description: 'Analyze protocol XML',
+        },
+        {
+          title: 'Benchmark virtual-keyboard-v1 socket latency',
+          description: 'Measure ydotool uinput delay',
+        },
       ]);
 
       expect(decomposition.parent.status).toBe('in_progress');
@@ -378,7 +384,10 @@ describe('Priority 1.3 — Motivation, Curiosity & Autonomous Interest Formation
       });
 
       // Pause goal due to resource constraint
-      const paused = goalEngine.pauseGoal(goal.id, 'Thermal throttle detected: CPU package reached 85C');
+      const paused = goalEngine.pauseGoal(
+        goal.id,
+        'Thermal throttle detected: CPU package reached 85C',
+      );
       expect(paused.status).toBe('paused');
       expect(paused.pauseReason).toContain('Thermal throttle detected');
       expect(paused.pausedAt).toBeDefined();
@@ -387,7 +396,9 @@ describe('Priority 1.3 — Motivation, Curiosity & Autonomous Interest Formation
       const resumed = goalEngine.resumeGoal(goal.id, 'Thermal normalized to 58C');
       expect(resumed.status).toBe('active');
       expect(resumed.pauseReason).toBeUndefined();
-      expect(resumed.modificationsHistory.some((m) => m.reason.includes('Thermal normalized'))).toBe(true);
+      expect(
+        resumed.modificationsHistory.some((m) => m.reason.includes('Thermal normalized')),
+      ).toBe(true);
     });
 
     it('rejects or abandons a goal when empirical evidence invalidates the objective', () => {
@@ -396,7 +407,10 @@ describe('Priority 1.3 — Motivation, Curiosity & Autonomous Interest Formation
       });
 
       // Rejection with mandatory reason
-      const rejected = goalEngine.rejectGoal(goal.id, 'Target device is ASUS ROG Ally X on Bazzite Linux; macOS CoreAudio is out of scope.');
+      const rejected = goalEngine.rejectGoal(
+        goal.id,
+        'Target device is ASUS ROG Ally X on Bazzite Linux; macOS CoreAudio is out of scope.',
+      );
       expect(rejected.status).toBe('rejected');
       expect(rejected.rejectionReason).toContain('Target device is ASUS ROG Ally X');
       expect(rejected.rejectedAt).toBeDefined();
@@ -428,7 +442,9 @@ describe('Priority 1.3 — Motivation, Curiosity & Autonomous Interest Formation
       expect(modified.modificationsHistory.length).toBe(1);
       expect(modified.modificationsHistory[0]!.previousPriority).toBe(0.5);
       expect(modified.modificationsHistory[0]!.newPriority).toBe(0.9);
-      expect(modified.modificationsHistory[0]!.reason).toContain('urgent focus on storage reliability');
+      expect(modified.modificationsHistory[0]!.reason).toContain(
+        'urgent focus on storage reliability',
+      );
     });
 
     it('successfully completes a goal and timestamps completion', () => {
@@ -454,8 +470,12 @@ describe('Priority 1.3 — Motivation, Curiosity & Autonomous Interest Formation
         lastUserInteractionTime = Date.now();
       }
 
-      function evaluateAutonomousPermissibility(currentTime: number): { permitted: boolean; idleSeconds: number } {
-        const idleSeconds = lastUserInteractionTime === 0 ? 999999 : (currentTime - lastUserInteractionTime) / 1000;
+      function evaluateAutonomousPermissibility(currentTime: number): {
+        permitted: boolean;
+        idleSeconds: number;
+      } {
+        const idleSeconds =
+          lastUserInteractionTime === 0 ? 999999 : (currentTime - lastUserInteractionTime) / 1000;
         const permitted = idleSeconds >= 15;
         return { permitted, idleSeconds };
       }

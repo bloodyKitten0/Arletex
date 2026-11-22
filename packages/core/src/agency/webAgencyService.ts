@@ -60,7 +60,10 @@ export class WebAgencyService {
     return this.browser.navigate(url);
   }
 
-  public evaluateAndSelectBestVideo(candidates: VideoCandidate[], topic: string): VideoSelectionDecision {
+  public evaluateAndSelectBestVideo(
+    candidates: VideoCandidate[],
+    topic: string,
+  ): VideoSelectionDecision {
     return this.evaluateVideoCandidates(topic, candidates);
   }
 
@@ -110,11 +113,14 @@ export class WebAgencyService {
 
       // 1. Topic specificity check
       const keywords = lowerTopic.split(/\s+/).filter((k) => k.length > 2);
-      const matchedKeywords = keywords.filter((k) => lowerTitle.includes(k) || lowerDesc.includes(k));
+      const matchedKeywords = keywords.filter(
+        (k) => lowerTitle.includes(k) || lowerDesc.includes(k),
+      );
       const keywordRatio = matchedKeywords.length / Math.max(1, keywords.length);
 
       if (keywordRatio < 0.4) {
-        rejectionReasons[cand.title] = `Insufficient topical match: matched only ${matchedKeywords.join(', ')}.`;
+        rejectionReasons[cand.title] =
+          `Insufficient topical match: matched only ${matchedKeywords.join(', ')}.`;
         continue;
       }
       score += keywordRatio * 40;
@@ -150,7 +156,10 @@ export class WebAgencyService {
 
       // Negative filter: superficial clickbait or non-educational content
       if (/funny|tiktok|shorts|meme|compilation|reaction|dance|music video/i.test(lowerTitle)) {
-        recordRejection(cand, 'Rejected: superficial entertainment or clickbait format unsuitable for technical study.');
+        recordRejection(
+          cand,
+          'Rejected: superficial entertainment or clickbait format unsuitable for technical study.',
+        );
         continue;
       }
 
@@ -158,26 +167,37 @@ export class WebAgencyService {
       if (cand.durationSeconds) {
         const durationMin = cand.durationSeconds / 60;
         if (durationMin < 2) {
-          recordRejection(cand, `Rejected: duration too short (${durationMin.toFixed(1)}m) for substantial technical explanation.`);
+          recordRejection(
+            cand,
+            `Rejected: duration too short (${durationMin.toFixed(1)}m) for substantial technical explanation.`,
+          );
           continue;
         } else if (durationMin > 90) {
           score -= 10;
           reasons.push('very long comprehensive lecture');
         } else if (Math.abs(durationMin - targetDurationMinutes) <= 10) {
           score += 15;
-          reasons.push(`optimal focused study duration (${durationMin.toFixed(0)}m near target ${targetDurationMinutes}m)`);
+          reasons.push(
+            `optimal focused study duration (${durationMin.toFixed(0)}m near target ${targetDurationMinutes}m)`,
+          );
         }
       }
 
       if (score > highestScore) {
         if (bestCandidate) {
-          recordRejection(bestCandidate, `Superceded by candidate with higher technical depth: ${cand.title}`);
+          recordRejection(
+            bestCandidate,
+            `Superceded by candidate with higher technical depth: ${cand.title}`,
+          );
         }
         highestScore = score;
         bestCandidate = cand;
         selectedRationale = `Selected "${cand.title}" (Score ${score.toFixed(0)}): ${reasons.join(', ')}. Matches core objective "${topic}".`;
       } else {
-        recordRejection(cand, `Lower explanatory score (${score.toFixed(0)} vs ${highestScore.toFixed(0)}) compared to leading candidate.`);
+        recordRejection(
+          cand,
+          `Lower explanatory score (${score.toFixed(0)} vs ${highestScore.toFixed(0)}) compared to leading candidate.`,
+        );
       }
     }
 
@@ -218,7 +238,9 @@ export class WebAgencyService {
 
     // Verification probe: check URL match, video element presence, and playback status
     const isUrlMatch = Boolean(
-      pageObs.url && candidate.url && (pageObs.url.includes(candidate.url) || candidate.url.includes(pageObs.url)),
+      pageObs.url &&
+      candidate.url &&
+      (pageObs.url.includes(candidate.url) || candidate.url.includes(pageObs.url)),
     );
     const hasPlayer = Boolean(pageObs.hasVideoElement);
     const isPlaying = Boolean(pageObs.isPlaying);

@@ -22,7 +22,14 @@ export interface ConflictResolutionContext {
 
 export interface ConflictResolutionResult {
   selectedGoalId?: string;
-  actionType: 'user_engagement' | 'work' | 'recreation' | 'intimacy' | 'curiosity' | 'throttle_backoff' | 'change_strategy';
+  actionType:
+    | 'user_engagement'
+    | 'work'
+    | 'recreation'
+    | 'intimacy'
+    | 'curiosity'
+    | 'throttle_backoff'
+    | 'change_strategy';
   priorityScore: number;
   deferredGoalIds: string[];
   justification: string;
@@ -56,28 +63,59 @@ export class MotivationalEngine {
     const needs = { ...state.needs };
 
     // 1. Intellectual tasks & successes affect competence and novelty
-    if (event.category === 'goal_achievement' || (appraisal.dimensions.goalCongruence > 0.5 && appraisal.dimensions.controllability > 0.5)) {
+    if (
+      event.category === 'goal_achievement' ||
+      (appraisal.dimensions.goalCongruence > 0.5 && appraisal.dimensions.controllability > 0.5)
+    ) {
       needs.competence = Math.min(1.0, Number(((needs.competence ?? 0.8) + 0.05).toFixed(3)));
-      needs.recreation_rest = Math.min(1.0, Number(((needs.recreation_rest ?? 0.4) + 0.05).toFixed(3)));
-    } else if (event.category === 'goal_obstruction' || appraisal.dimensions.goalCongruence < -0.4) {
+      needs.recreation_rest = Math.min(
+        1.0,
+        Number(((needs.recreation_rest ?? 0.4) + 0.05).toFixed(3)),
+      );
+    } else if (
+      event.category === 'goal_obstruction' ||
+      appraisal.dimensions.goalCongruence < -0.4
+    ) {
       // Challenge provokes need for competence / solution
       needs.competence = Math.min(1.0, Number(((needs.competence ?? 0.8) + 0.08).toFixed(3)));
-      needs.recreation_rest = Math.min(1.0, Number(((needs.recreation_rest ?? 0.4) + 0.04).toFixed(3)));
+      needs.recreation_rest = Math.min(
+        1.0,
+        Number(((needs.recreation_rest ?? 0.4) + 0.04).toFixed(3)),
+      );
     }
 
     // 2. Discoveries or exploratory events satisfy or stimulate curiosity
-    if (event.category === 'unexpected_discovery' || event.type.includes('curiosity') || event.type.includes('research')) {
-      needs.novelty_curiosity = Math.min(1.0, Number(((needs.novelty_curiosity ?? 0.8) + 0.06).toFixed(3)));
+    if (
+      event.category === 'unexpected_discovery' ||
+      event.type.includes('curiosity') ||
+      event.type.includes('research')
+    ) {
+      needs.novelty_curiosity = Math.min(
+        1.0,
+        Number(((needs.novelty_curiosity ?? 0.8) + 0.06).toFixed(3)),
+      );
     }
 
     // 3. User interactions modulate intimacy & connection need
     if (event.actor === 'user' || event.source === 'user') {
-      if (appraisal.dimensions.socialMeaning.includes('affection') || appraisal.dimensions.socialMeaning.includes('intimacy')) {
+      if (
+        appraisal.dimensions.socialMeaning.includes('affection') ||
+        appraisal.dimensions.socialMeaning.includes('intimacy')
+      ) {
         // Intimacy fulfilled
-        needs.intimacy_connection = Math.max(0.4, Number(((needs.intimacy_connection ?? 0.8) - 0.05).toFixed(3)));
-      } else if (appraisal.dimensions.socialMeaning.includes('absence') || event.type === 'absence') {
+        needs.intimacy_connection = Math.max(
+          0.4,
+          Number(((needs.intimacy_connection ?? 0.8) - 0.05).toFixed(3)),
+        );
+      } else if (
+        appraisal.dimensions.socialMeaning.includes('absence') ||
+        event.type === 'absence'
+      ) {
         // Absence increases longing and intimacy drive
-        needs.intimacy_connection = Math.min(1.0, Number(((needs.intimacy_connection ?? 0.8) + 0.08).toFixed(3)));
+        needs.intimacy_connection = Math.min(
+          1.0,
+          Number(((needs.intimacy_connection ?? 0.8) + 0.08).toFixed(3)),
+        );
       }
     }
 
@@ -113,7 +151,9 @@ export class MotivationalEngine {
     const now = Date.now();
 
     // Clean cooldowns older than 15 minutes
-    this.recentInitiatives = this.recentInitiatives.filter((i) => now - i.timestamp < 15 * 60 * 1000);
+    this.recentInitiatives = this.recentInitiatives.filter(
+      (i) => now - i.timestamp < 15 * 60 * 1000,
+    );
     const recentSet = new Set(this.recentInitiatives.map((i) => i.text.toLowerCase()));
 
     const candidates: string[] = [];
@@ -137,7 +177,7 @@ export class MotivationalEngine {
       candidates.push('Investigate cognitive graph memory structures and indexing efficiency');
       candidates.push('Explore cutting-edge multi-agent coordination architectures');
     }
-    if ((needs.competence ?? 0.8) > 0.80) {
+    if ((needs.competence ?? 0.8) > 0.8) {
       candidates.push('Analyze Bobby Fischer game strategies and unconventional opening lines');
       candidates.push('Audit Linux desktop IPC security parameters and permission controls');
     }
@@ -155,8 +195,10 @@ export class MotivationalEngine {
     }
 
     // 6. Aesthetic expression
-    if ((needs.aesthetic_expression ?? 0.6) > 0.70) {
-      candidates.push('Draft private reflective treatise on autonomy and artificial individualhood');
+    if ((needs.aesthetic_expression ?? 0.6) > 0.7) {
+      candidates.push(
+        'Draft private reflective treatise on autonomy and artificial individualhood',
+      );
       candidates.push('Compose philosophical reflections on agency, continuity, and memory');
     }
 
@@ -192,17 +234,24 @@ export class MotivationalEngine {
         event.type.includes('discovery') ||
         dims.unexpectedness > 0.4
       ) {
-        dims.personalSignificance = Math.min(1.0, Number((dims.personalSignificance + 0.25).toFixed(3)));
-        dims.goalRelevance = Math.min(1.0, Number((dims.goalRelevance + 0.20).toFixed(3)));
+        dims.personalSignificance = Math.min(
+          1.0,
+          Number((dims.personalSignificance + 0.25).toFixed(3)),
+        );
+        dims.goalRelevance = Math.min(1.0, Number((dims.goalRelevance + 0.2).toFixed(3)));
         dims.goalCongruence = Math.min(1.0, Number((dims.goalCongruence + 0.15).toFixed(3)));
       }
     }
 
     // 2. High Competence Drive: transforms obstacle / failure into determination rather than defeatism
-    if ((needs.competence ?? 0.8) > 0.80) {
-      if (event.category === 'failure' || event.category === 'goal_obstruction' || dims.goalCongruence < -0.3) {
+    if ((needs.competence ?? 0.8) > 0.8) {
+      if (
+        event.category === 'failure' ||
+        event.category === 'goal_obstruction' ||
+        dims.goalCongruence < -0.3
+      ) {
         // High competence drive tempers negative goal congruence and boosts controllability
-        dims.controllability = Math.min(1.0, Number((dims.controllability + 0.20).toFixed(3)));
+        dims.controllability = Math.min(1.0, Number((dims.controllability + 0.2).toFixed(3)));
         if (!primaryInterpretation.includes('resolute')) {
           primaryInterpretation = `${primaryInterpretation} (Competence drive activated: viewed as strategic problem to solve).`;
         }
@@ -210,7 +259,7 @@ export class MotivationalEngine {
     }
 
     // 3. High Recreation/Rest Need (Cognitive Fatigue): demanding tasks increase perceived effort
-    if ((needs.recreation_rest ?? 0.4) > 0.70) {
+    if ((needs.recreation_rest ?? 0.4) > 0.7) {
       if (event.category === 'user_interaction' || event.type.includes('task')) {
         dims.goalCongruence = Math.max(-1.0, Number((dims.goalCongruence - 0.15).toFixed(3)));
       }
@@ -219,7 +268,10 @@ export class MotivationalEngine {
     // 4. High Intimacy Drive: partner communications carry elevated emotional importance
     if ((needs.intimacy_connection ?? 0.7) > 0.75) {
       if (event.actor === 'user' || event.source === 'user' || event.source === 'telegram') {
-        dims.personalSignificance = Math.min(1.0, Number((dims.personalSignificance + 0.20).toFixed(3)));
+        dims.personalSignificance = Math.min(
+          1.0,
+          Number((dims.personalSignificance + 0.2).toFixed(3)),
+        );
       }
     }
 
@@ -275,7 +327,10 @@ export class MotivationalEngine {
   /**
    * Reconsiders priorities of all goals according to current needs and energy.
    */
-  public reconsiderPriorities(context?: { currentMood?: string; highFatigue?: boolean }): ApeGoal[] {
+  public reconsiderPriorities(context?: {
+    currentMood?: string;
+    highFatigue?: boolean;
+  }): ApeGoal[] {
     const state = this.getState();
     const needs = state.needs;
 
@@ -283,14 +338,20 @@ export class MotivationalEngine {
       if (goal.status !== 'active' && goal.status !== 'committed') continue;
 
       if (context?.highFatigue || (needs.recreation_rest ?? 0.4) > 0.75) {
-        if (goal.motivation.toLowerCase().includes('recreation') || goal.motivation.toLowerCase().includes('rest')) {
+        if (
+          goal.motivation.toLowerCase().includes('recreation') ||
+          goal.motivation.toLowerCase().includes('rest')
+        ) {
           goal.priority = Math.min(1.0, Number((goal.priority + 0.2).toFixed(2)));
         } else {
           goal.priority = Math.max(0.1, Number((goal.priority - 0.1).toFixed(2)));
         }
       }
 
-      if ((needs.novelty_curiosity ?? 0.8) > 0.85 && goal.motivation.toLowerCase().includes('curiosity')) {
+      if (
+        (needs.novelty_curiosity ?? 0.8) > 0.85 &&
+        goal.motivation.toLowerCase().includes('curiosity')
+      ) {
         goal.priority = Math.min(1.0, Number((goal.priority + 0.15).toFixed(2)));
       }
     }
@@ -312,7 +373,8 @@ export class MotivationalEngine {
   public createGoal(params: {
     title: string;
     description: string;
-    origin?: 'user' | 'autonomous' | 'shared' | 'curiosity' | 'project' | 'relationship' | 'maintenance';
+    origin?:
+      'user' | 'autonomous' | 'shared' | 'curiosity' | 'project' | 'relationship' | 'maintenance';
     motivation: string;
     parentInterestTopic?: string;
     category?: ApeGoalCategory;
@@ -454,7 +516,10 @@ export class MotivationalEngine {
 
     goal.progressEvidence = goal.progressEvidence || [];
     goal.progressEvidence.push(`[${new Date().toISOString()}] ${evidence}`);
-    goal.progress = Math.max(0.0, Math.min(1.0, Number((goal.progress + progressDelta).toFixed(3))));
+    goal.progress = Math.max(
+      0.0,
+      Math.min(1.0, Number((goal.progress + progressDelta).toFixed(3))),
+    );
     if (newStatus) {
       goal.status = newStatus;
     } else if (goal.progress >= 1.0) {
@@ -473,8 +538,17 @@ export class MotivationalEngine {
   /**
    * Updates goal progress, potentially triggering completion or milestone.
    */
-  public updateGoalProgress(goalId: string, progressDelta: number, newStatus?: ApeGoalStatus): ApeGoal | null {
-    return this.recordGoalProgressEvidence(goalId, 'Progress updated via standard cycle increment', progressDelta, newStatus);
+  public updateGoalProgress(
+    goalId: string,
+    progressDelta: number,
+    newStatus?: ApeGoalStatus,
+  ): ApeGoal | null {
+    return this.recordGoalProgressEvidence(
+      goalId,
+      'Progress updated via standard cycle increment',
+      progressDelta,
+      newStatus,
+    );
   }
 
   /**
@@ -485,7 +559,9 @@ export class MotivationalEngine {
     const now = Date.now();
     return state.goals.filter((g) => {
       if (g.status !== 'active') return false;
-      const last = g.lastReviewedAt ? new Date(g.lastReviewedAt).getTime() : new Date(g.createdAt).getTime();
+      const last = g.lastReviewedAt
+        ? new Date(g.lastReviewedAt).getTime()
+        : new Date(g.createdAt).getTime();
       return now - last > maxInactiveMs && g.progress < 0.2;
     });
   }
@@ -493,7 +569,9 @@ export class MotivationalEngine {
   /**
    * Comprehensive conflict resolution across competing motivations, drives, and environmental constraints.
    */
-  public resolveMotivationalConflicts(context: ConflictResolutionContext = {}): ConflictResolutionResult {
+  public resolveMotivationalConflicts(
+    context: ConflictResolutionContext = {},
+  ): ConflictResolutionResult {
     const state = this.getState();
     const needs = state.needs;
     const activeGoals = state.goals.filter((g) => g.status === 'active');
@@ -505,29 +583,34 @@ export class MotivationalEngine {
         actionType: 'user_engagement',
         priorityScore: 1.0,
         deferredGoalIds: deferred,
-        justification: 'Proof is actively interacting; user communication takes absolute conversational and social precedence.',
+        justification:
+          'Proof is actively interacting; user communication takes absolute conversational and social precedence.',
       };
     }
 
     // 2. Recreation & Rest Protection: Protect cognitive downtime from being suppressed by workaholism
-    if (context.highFatigue || (needs.recreation_rest ?? 0.4) > 0.70) {
+    if (context.highFatigue || (needs.recreation_rest ?? 0.4) > 0.7) {
       const deferred = activeGoals.map((g) => g.id);
       return {
         actionType: 'recreation',
         priorityScore: 0.9,
         deferredGoalIds: deferred,
-        justification: 'Cognitive rest and recreation prioritized to maintain psychological equilibrium and prevent fatigue.',
+        justification:
+          'Cognitive rest and recreation prioritized to maintain psychological equilibrium and prevent fatigue.',
       };
     }
 
     // 3. System Resource / Thermal Constraints: On ASUS ROG Ally X, throttle heavy background computations
     if (context.resourceConstrained || context.thermalThrottle) {
-      const heavyGoals = activeGoals.filter((g) => g.estimatedCost?.cpu === 'high' || g.estimatedCost?.gpu);
+      const heavyGoals = activeGoals.filter(
+        (g) => g.estimatedCost?.cpu === 'high' || g.estimatedCost?.gpu,
+      );
       return {
         actionType: 'throttle_backoff',
         priorityScore: 0.85,
         deferredGoalIds: heavyGoals.map((g) => g.id),
-        justification: 'Device resource constraint active; throttling heavy compute to preserve battery and thermal headroom.',
+        justification:
+          'Device resource constraint active; throttling heavy compute to preserve battery and thermal headroom.',
       };
     }
 
@@ -551,7 +634,8 @@ export class MotivationalEngine {
         actionType: 'intimacy',
         priorityScore: 0.8,
         deferredGoalIds: [],
-        justification: 'Interpersonal closeness and emotional connection with Proof (partner) take priority.',
+        justification:
+          'Interpersonal closeness and emotional connection with Proof (partner) take priority.',
       };
     }
 
@@ -574,7 +658,8 @@ export class MotivationalEngine {
       actionType: 'curiosity',
       priorityScore: 0.5,
       deferredGoalIds: [],
-      justification: 'No competing goals active; default to exploratory curiosity and analytical readiness.',
+      justification:
+        'No competing goals active; default to exploratory curiosity and analytical readiness.',
     };
   }
 
@@ -591,10 +676,10 @@ export class MotivationalEngine {
       res.actionType === 'recreation'
         ? 'recreation'
         : res.actionType === 'intimacy'
-        ? 'intimacy'
-        : res.actionType === 'work'
-        ? 'work'
-        : 'curiosity';
+          ? 'intimacy'
+          : res.actionType === 'work'
+            ? 'work'
+            : 'curiosity';
 
     return {
       selectedGoalId: res.selectedGoalId,

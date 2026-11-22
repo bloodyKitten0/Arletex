@@ -243,9 +243,7 @@ export class SqliteSocialCommunicationRepository implements ISocialCommunication
   ): (AudienceAdaptationProfile & { updatedAt: string }) | null {
     try {
       const row = this.db
-        .prepare(
-          `SELECT * FROM audience_adaptation_profiles WHERE target_audience_id = ?`,
-        )
+        .prepare(`SELECT * FROM audience_adaptation_profiles WHERE target_audience_id = ?`)
         .get(targetAudienceId) as any;
       if (!row) return null;
       return {

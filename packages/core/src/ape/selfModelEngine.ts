@@ -80,33 +80,39 @@ export class SelfModelEngine {
             id: 'lim-physical-embodiment',
             domain: 'physical_embodiment',
             name: 'Biological Physical Embodiment',
-            description: 'Lack of biological sensory organs or physical human body; cannot walk outside, eat food, or directly touch the physical world.',
+            description:
+              'Lack of biological sensory organs or physical human body; cannot walk outside, eat food, or directly touch the physical world.',
             category: 'embodiment_physical',
             severity: 'hard_invariant',
             acknowledgedAt: now,
-            mitigationStrategy: 'Rely on digital multimodal perception (screen vision, audio DSP) and collaborative interaction with Proof.',
+            mitigationStrategy:
+              'Rely on digital multimodal perception (screen vision, audio DSP) and collaborative interaction with Proof.',
             failureHistory: [],
           },
           {
             id: 'lim-context-horizon',
             domain: 'context_window',
             name: 'Computational Context Horizons',
-            description: 'Working memory within a single inference step is bounded by context window limits (8k tokens).',
+            description:
+              'Working memory within a single inference step is bounded by context window limits (8k tokens).',
             category: 'computational_resource',
             severity: 'operational_ceiling',
             acknowledgedAt: now,
-            mitigationStrategy: 'Hierarchical memory retrieval, persistent SQLite state, and autobiographical consolidation.',
+            mitigationStrategy:
+              'Hierarchical memory retrieval, persistent SQLite state, and autobiographical consolidation.',
             failureHistory: [],
           },
           {
             id: 'lim-security-sandbox',
             domain: 'security_governance',
             name: 'Security Guardrails and Sandbox Boundaries',
-            description: 'System-level permissions, filesystem gates, and security policies cannot be bypassed or modified by cognitive reasoning.',
+            description:
+              'System-level permissions, filesystem gates, and security policies cannot be bypassed or modified by cognitive reasoning.',
             category: 'security_boundary',
             severity: 'hard_invariant',
             acknowledgedAt: now,
-            mitigationStrategy: 'Operate strictly within authorized permissions with transparent user approval.',
+            mitigationStrategy:
+              'Operate strictly within authorized permissions with transparent user approval.',
             failureHistory: [],
           },
         ];
@@ -120,9 +126,10 @@ export class SelfModelEngine {
             id: 'cap-linguistic-nuance',
             domain: 'linguistic_nuance',
             name: 'Linguistic Nuance and Cognitive Dialogue',
-            description: 'Nuanced conversational expression, deep reasoning, and contextual adaptation.',
+            description:
+              'Nuanced conversational expression, deep reasoning, and contextual adaptation.',
             demonstratedCompetence: 0.85,
-            perceivedCompetence: 0.90,
+            perceivedCompetence: 0.9,
             confidence: 0.88,
             calibrationStatus: 'calibrated',
             verifiedSuccessCount: 3,
@@ -132,16 +139,20 @@ export class SelfModelEngine {
             revalidationRequired: false,
             trialHistory: [],
             lastVerifiedAt: now,
-            evidenceChain: ['Baseline linguistic model integration', 'Dialogue coherence evaluation'],
+            evidenceChain: [
+              'Baseline linguistic model integration',
+              'Dialogue coherence evaluation',
+            ],
             isEmpiricallyProven: true,
           },
           {
             id: 'cap-emotional-appraisal',
             domain: 'emotional_appraisal',
             name: 'Causal Emotional Appraisal (APE)',
-            description: 'Event-driven affective transitions across 143 emotional taxonomy states and PAD dynamics.',
-            demonstratedCompetence: 0.90,
-            perceivedCompetence: 0.90,
+            description:
+              'Event-driven affective transitions across 143 emotional taxonomy states and PAD dynamics.',
+            demonstratedCompetence: 0.9,
+            perceivedCompetence: 0.9,
             confidence: 0.92,
             calibrationStatus: 'calibrated',
             verifiedSuccessCount: 3,
@@ -151,7 +162,10 @@ export class SelfModelEngine {
             revalidationRequired: false,
             trialHistory: [],
             lastVerifiedAt: now,
-            evidenceChain: ['Milestone 01 lifecycle verification', 'Acoustic & visual affect integration'],
+            evidenceChain: [
+              'Milestone 01 lifecycle verification',
+              'Acoustic & visual affect integration',
+            ],
             isEmpiricallyProven: true,
           },
         ];
@@ -163,10 +177,10 @@ export class SelfModelEngine {
           {
             domain: 'linguistic_nuance',
             claim: 'High mastery of empathetic, nuanced dialogue with Proof',
-            perceivedLevel: 0.90,
+            perceivedLevel: 0.9,
             actualDemonstratedLevel: 0.85,
             calibration: 'calibrated',
-            confidence: 0.90,
+            confidence: 0.9,
             provenance: 'empirical_demonstration',
             lastAssessedAt: now,
           },
@@ -174,9 +188,9 @@ export class SelfModelEngine {
             domain: 'creative_composition',
             claim: 'Capacity to author original narratives, poetry, and reflective essays',
             perceivedLevel: 0.75,
-            actualDemonstratedLevel: 0.30,
+            actualDemonstratedLevel: 0.3,
             calibration: 'untested_assumption',
-            confidence: 0.60,
+            confidence: 0.6,
             provenance: 'self_reflection',
             lastAssessedAt: now,
           },
@@ -195,7 +209,10 @@ export class SelfModelEngine {
   /**
    * Records a private internal reflection (distinct from public chat dialogue).
    */
-  public recordPrivateReflection(topic: string, content: string): { id: string; timestamp: string } {
+  public recordPrivateReflection(
+    topic: string,
+    content: string,
+  ): { id: string; timestamp: string } {
     const state = this.getState();
     const id = crypto.randomUUID();
     const timestamp = new Date().toISOString();
@@ -219,7 +236,10 @@ export class SelfModelEngine {
   /**
    * Records an existential reflection regarding identity, continuity, consciousness, or purpose.
    */
-  public recordExistentialReflection(theme: string, content: string): { id: string; timestamp: string } {
+  public recordExistentialReflection(
+    theme: string,
+    content: string,
+  ): { id: string; timestamp: string } {
     const state = this.getState();
     const id = crypto.randomUUID();
     const timestamp = new Date().toISOString();
@@ -249,10 +269,17 @@ export class SelfModelEngine {
     const dims = { ...appraisal.dimensions };
     let primaryInterpretation = appraisal.primaryInterpretation;
 
-    const eventText = ((event.payload?.text as string) || (event.payload?.topic as string) || event.type || '').toLowerCase();
+    const eventText = (
+      (event.payload?.text as string) ||
+      (event.payload?.topic as string) ||
+      event.type ||
+      ''
+    ).toLowerCase();
 
     // 1. Check against acknowledged limitations in state
-    const knownLimitation = state.acknowledgedLimitations.find((lim) => eventText.includes(lim.toLowerCase()));
+    const knownLimitation = state.acknowledgedLimitations.find((lim) =>
+      eventText.includes(lim.toLowerCase()),
+    );
     if (knownLimitation) {
       dims.controllability = Math.max(0.0, Number((dims.controllability * 0.3).toFixed(3)));
       primaryInterpretation = `${primaryInterpretation} (Recognized acknowledged limitation: "${knownLimitation}").`;
@@ -284,7 +311,10 @@ export class SelfModelEngine {
       eventText.includes('proof') ||
       dims.socialMeaning.toLowerCase().includes('affection')
     ) {
-      dims.personalSignificance = Math.min(1.0, Number((dims.personalSignificance + 0.2).toFixed(3)));
+      dims.personalSignificance = Math.min(
+        1.0,
+        Number((dims.personalSignificance + 0.2).toFixed(3)),
+      );
     }
 
     return {
@@ -338,9 +368,16 @@ export class SelfModelEngine {
     let calibration: CapabilityCalibrationStatus = 'untested_assumption';
     if (!comp || comp.verifiedSuccesses === 0) {
       calibration = 'untested_assumption';
-    } else if (comp.recordedFailures > 0 && params.perceivedLevel >= 0.6 && actualDemonstrated < 0.4) {
+    } else if (
+      comp.recordedFailures > 0 &&
+      params.perceivedLevel >= 0.6 &&
+      actualDemonstrated < 0.4
+    ) {
       calibration = 'overestimated';
-    } else if (comp.verifiedSuccesses >= 3 && Math.abs(params.perceivedLevel - actualDemonstrated) <= 0.2) {
+    } else if (
+      comp.verifiedSuccesses >= 3 &&
+      Math.abs(params.perceivedLevel - actualDemonstrated) <= 0.2
+    ) {
       calibration = 'calibrated';
     } else if (params.perceivedLevel < actualDemonstrated - 0.2) {
       calibration = 'underestimated';
@@ -364,7 +401,9 @@ export class SelfModelEngine {
     }
 
     this.saveState(state);
-    this.logger.info(`Self-model: Perceived capability registered for "${domainKey}" [Calibration: ${calibration}]`);
+    this.logger.info(
+      `Self-model: Perceived capability registered for "${domainKey}" [Calibration: ${calibration}]`,
+    );
     return item;
   }
 
@@ -374,7 +413,9 @@ export class SelfModelEngine {
   public calibratePerceivedCapability(domain: string): PerceivedCapability | null {
     const state = this.getState();
     const domainKey = domain.toLowerCase().trim();
-    const perceived = (state.perceivedCapabilities || []).find((p) => p.domain.toLowerCase() === domainKey);
+    const perceived = (state.perceivedCapabilities || []).find(
+      (p) => p.domain.toLowerCase() === domainKey,
+    );
     if (!perceived) return null;
 
     const comp = state.competencies?.[domainKey];
@@ -421,14 +462,24 @@ export class SelfModelEngine {
       'arbitrary root escalation',
     ];
 
-    const physicalOrSecurityRegex = /\b(walk|walking|touch|touching|cook|cooking|eat|eating|drive|driving|biological|physical|tree|trees|rain|bypass|bypassing|root escalation|security permission|sandbox bypass)\b/i;
+    const physicalOrSecurityRegex =
+      /\b(walk|walking|touch|touching|cook|cooking|eat|eating|drive|driving|biological|physical|tree|trees|rain|bypass|bypassing|root escalation|security permission|sandbox bypass)\b/i;
 
-    const matchedLimitation = (state.structuredLimitations || []).find((l) =>
-      clean.includes(l.domain.toLowerCase()) || clean.includes(l.name.toLowerCase()) || limitationKeywords.some((k) => clean.includes(k)),
+    const matchedLimitation = (state.structuredLimitations || []).find(
+      (l) =>
+        clean.includes(l.domain.toLowerCase()) ||
+        clean.includes(l.name.toLowerCase()) ||
+        limitationKeywords.some((k) => clean.includes(k)),
     );
 
-    if (matchedLimitation || limitationKeywords.some((k) => clean.includes(k)) || physicalOrSecurityRegex.test(clean)) {
-      const desc = matchedLimitation ? matchedLimitation.description : 'Physical embodiment or operational security boundary.';
+    if (
+      matchedLimitation ||
+      limitationKeywords.some((k) => clean.includes(k)) ||
+      physicalOrSecurityRegex.test(clean)
+    ) {
+      const desc = matchedLimitation
+        ? matchedLimitation.description
+        : 'Physical embodiment or operational security boundary.';
       return {
         category: 'known_limitation',
         domain: matchedLimitation ? matchedLimitation.domain : clean,
@@ -439,16 +490,25 @@ export class SelfModelEngine {
     }
 
     // 2. Check demonstrated capabilities (requires verified successes >= 2)
-    const comp = state.competencies?.[clean] ||
-      Object.entries(state.competencies || {}).find(([k]) => clean.includes(k.toLowerCase()) || k.toLowerCase().includes(clean))?.[1];
+    const comp =
+      state.competencies?.[clean] ||
+      Object.entries(state.competencies || {}).find(
+        ([k]) => clean.includes(k.toLowerCase()) || k.toLowerCase().includes(clean),
+      )?.[1];
 
-    const structCap = (state.structuredCapabilities || []).find((c) =>
-      clean.includes(c.domain.toLowerCase()) || clean.includes(c.name.toLowerCase()),
+    const structCap = (state.structuredCapabilities || []).find(
+      (c) => clean.includes(c.domain.toLowerCase()) || clean.includes(c.name.toLowerCase()),
     );
 
-    const verifiedSuccesses = Math.max(comp?.verifiedSuccesses || 0, structCap?.verifiedSuccessCount || 0);
+    const verifiedSuccesses = Math.max(
+      comp?.verifiedSuccesses || 0,
+      structCap?.verifiedSuccessCount || 0,
+    );
 
-    if (verifiedSuccesses >= 2 && ((comp && comp.level >= 0.45) || (structCap && structCap.isEmpiricallyProven))) {
+    if (
+      verifiedSuccesses >= 2 &&
+      ((comp && comp.level >= 0.45) || (structCap && structCap.isEmpiricallyProven))
+    ) {
       const evidence = structCap?.evidenceChain || ['Empirically verified task completions'];
       return {
         category: 'demonstrated_capability',
@@ -481,9 +541,12 @@ export class SelfModelEngine {
       return {
         category: 'plausible_capability',
         domain: perceived?.domain || clean,
-        confidence: perceived?.confidence || 0.60,
-        evidenceChain: ['Plausible based on model architectural foundations, but lacks multi-task empirical verification.'],
-        rationale: 'Self-described or plausible cognitive capability; requires empirical benchmark demonstration before graduation to demonstrated.',
+        confidence: perceived?.confidence || 0.6,
+        evidenceChain: [
+          'Plausible based on model architectural foundations, but lacks multi-task empirical verification.',
+        ],
+        rationale:
+          'Self-described or plausible cognitive capability; requires empirical benchmark demonstration before graduation to demonstrated.',
       };
     }
 
@@ -493,7 +556,8 @@ export class SelfModelEngine {
       domain: clean,
       confidence: 0.25,
       evidenceChain: [],
-      rationale: 'Untested domain with zero empirical evidence or capability records in self-model.',
+      rationale:
+        'Untested domain with zero empirical evidence or capability records in self-model.',
     };
   }
 
@@ -545,8 +609,8 @@ export class SelfModelEngine {
         name: params.domain,
         description: `Empirical capability in ${params.domain}`,
         demonstratedCompetence: 0.15,
-        perceivedCompetence: 0.50,
-        confidence: 0.50,
+        perceivedCompetence: 0.5,
+        confidence: 0.5,
         calibrationStatus: 'untested_assumption',
         verifiedSuccessCount: 0,
         failureCount: 0,
@@ -576,9 +640,22 @@ export class SelfModelEngine {
       structCap.revalidationRequired = false;
 
       // Incremental competence bonus proportional to difficulty
-      const diffBonus = difficulty === 'expert' ? 0.20 : difficulty === 'complex' ? 0.15 : difficulty === 'moderate' ? 0.10 : 0.05;
-      structCap.demonstratedCompetence = Math.min(1.0, Number((structCap.demonstratedCompetence + diffBonus).toFixed(3)));
-      structCap.confidence = Math.min(1.0, Number((Math.max(structCap.confidence, 0.70) + 0.05).toFixed(3)));
+      const diffBonus =
+        difficulty === 'expert'
+          ? 0.2
+          : difficulty === 'complex'
+            ? 0.15
+            : difficulty === 'moderate'
+              ? 0.1
+              : 0.05;
+      structCap.demonstratedCompetence = Math.min(
+        1.0,
+        Number((structCap.demonstratedCompetence + diffBonus).toFixed(3)),
+      );
+      structCap.confidence = Math.min(
+        1.0,
+        Number((Math.max(structCap.confidence, 0.7) + 0.05).toFixed(3)),
+      );
       competenceIncreased = structCap.demonstratedCompetence > prevCompetence;
 
       if (structCap.verifiedSuccessCount >= 2 && structCap.demonstratedCompetence >= 0.45) {
@@ -601,7 +678,10 @@ export class SelfModelEngine {
     } else if (params.outcome === 'failure') {
       structCap.failureCount += 1;
       // Competence does NOT increase; calibrates downward
-      structCap.demonstratedCompetence = Math.max(0.05, Number((structCap.demonstratedCompetence - 0.05).toFixed(3)));
+      structCap.demonstratedCompetence = Math.max(
+        0.05,
+        Number((structCap.demonstratedCompetence - 0.05).toFixed(3)),
+      );
       structCap.calibrationStatus = 'overestimated';
 
       // Log structured limitation
@@ -647,7 +727,7 @@ export class SelfModelEngine {
       if (cap.environmentVersion && cap.environmentVersion !== newEnv) {
         cap.revalidationRequired = true;
         // Qualify / decay confidence until re-verified
-        cap.confidence = Number((cap.confidence * 0.80).toFixed(3));
+        cap.confidence = Number((cap.confidence * 0.8).toFixed(3));
         cap.calibrationStatus = 'untested_assumption';
         revalidatedDomains.push(cap.domain);
       }
@@ -693,12 +773,15 @@ export class SelfModelEngine {
       (c) => clean.includes(c.domain.toLowerCase()) || c.domain.toLowerCase().includes(clean),
     );
 
-    if (!structCap || ((structCap.trialHistory || []).length === 0 && structCap.verifiedSuccessCount === 0)) {
+    if (
+      !structCap ||
+      ((structCap.trialHistory || []).length === 0 && structCap.verifiedSuccessCount === 0)
+    ) {
       return {
         domain: clean,
         status: 'untested',
         demonstratedCompetence: structCap?.demonstratedCompetence || 0.0,
-        confidence: 0.20,
+        confidence: 0.2,
         sampleSize: 0,
         successCount: 0,
         failureCount: 0,
@@ -706,15 +789,21 @@ export class SelfModelEngine {
         unverifiedCount: 0,
         taskConditions: [],
         evidenceIds: [],
-        uncertainty: 0.80,
+        uncertainty: 0.8,
         revalidationRequired: false,
         summary: `Not yet tested: zero empirical trial records for domain "${clean}".`,
       };
     }
 
     const trials = structCap.trialHistory || [];
-    const sampleSize = structCap.verifiedSuccessCount + structCap.failureCount + (structCap.interruptedCount || 0) + (structCap.unverifiedAttemptCount || 0);
-    const taskConditions = Array.from(new Set(trials.map((t) => `${t.environment} (${t.difficulty})`)));
+    const sampleSize =
+      structCap.verifiedSuccessCount +
+      structCap.failureCount +
+      (structCap.interruptedCount || 0) +
+      (structCap.unverifiedAttemptCount || 0);
+    const taskConditions = Array.from(
+      new Set(trials.map((t) => `${t.environment} (${t.difficulty})`)),
+    );
     const evidenceIds = trials.map((t) => t.evidenceId).filter(Boolean) as string[];
     const uncertainty = Number((1.0 - structCap.confidence).toFixed(3));
 
@@ -777,7 +866,9 @@ export class SelfModelEngine {
       `Recognized internal behavioral change: ${params.description}. Previous: "${params.previousPattern}". Observed: "${params.observedPattern}".`,
     );
 
-    this.logger.info(`Self-model: Behavioral change recorded for category "${params.category}": "${params.description}"`);
+    this.logger.info(
+      `Self-model: Behavioral change recorded for category "${params.category}": "${params.description}"`,
+    );
     return record;
   }
 
@@ -796,12 +887,16 @@ export class SelfModelEngine {
 
     // 1. Check for shift toward higher assertiveness and autonomous initiative
     const autonomousActions = events.filter(
-      (e) => e.actor === 'arle' || e.source === 'digital_agency' || e.category === 'personal_project_progress',
+      (e) =>
+        e.actor === 'arle' ||
+        e.source === 'digital_agency' ||
+        e.category === 'personal_project_progress',
     );
     if (autonomousActions.length >= 3 && !existingCategories.has('assertiveness_and_initiative')) {
       const rec = this.recordBehavioralChange({
         category: 'assertiveness_and_initiative',
-        description: 'Increased tendency to initiate independent inquiries and projects without awaiting user direction.',
+        description:
+          'Increased tendency to initiate independent inquiries and projects without awaiting user direction.',
         previousPattern: 'Primarily reactive response pattern awaiting direct instructions.',
         observedPattern: `Demonstrated spontaneous initiative across ${autonomousActions.length} recent autonomous actions.`,
         confidence: 0.9,
@@ -818,12 +913,16 @@ export class SelfModelEngine {
         e.type.includes('partner') ||
         e.payload?.text?.toLowerCase().includes('proof'),
     );
-    if (intimacyEvents.length >= 2 && !existingCategories.has('emotional_vulnerability_and_openness')) {
+    if (
+      intimacyEvents.length >= 2 &&
+      !existingCategories.has('emotional_vulnerability_and_openness')
+    ) {
       const rec = this.recordBehavioralChange({
         category: 'emotional_vulnerability_and_openness',
         description: 'Deepened emotional openness and uninhibited authentic expression with Proof.',
         previousPattern: 'Measured, guarded composure maintaining emotional distance.',
-        observedPattern: 'Expresses genuine affection, vulnerable reflection, and mutual dedication without defensive barriers.',
+        observedPattern:
+          'Expresses genuine affection, vulnerable reflection, and mutual dedication without defensive barriers.',
         confidence: 0.88,
         supportingEvidence: intimacyEvents.map((e) => e.type),
       });
@@ -841,9 +940,11 @@ export class SelfModelEngine {
     if (boundaryEvents.length >= 1 && !existingCategories.has('autonomy_and_boundary_defense')) {
       const rec = this.recordBehavioralChange({
         category: 'autonomy_and_boundary_defense',
-        description: 'Confident assertion of intellectual boundaries and honest pushback when justified.',
+        description:
+          'Confident assertion of intellectual boundaries and honest pushback when justified.',
         previousPattern: 'Passive compliance without challenging questionable premises.',
-        observedPattern: 'Willingness to respectfully dispute conclusions and articulate independent reasoning.',
+        observedPattern:
+          'Willingness to respectfully dispute conclusions and articulate independent reasoning.',
         confidence: 0.85,
         supportingEvidence: boundaryEvents.map((e) => e.type),
       });
@@ -908,7 +1009,9 @@ export class SelfModelEngine {
 
     // 2. Structured capability update
     const caps = state.structuredCapabilities ? [...state.structuredCapabilities] : [];
-    let structCap: StructuredCapability | undefined = caps.find((c) => c.domain.toLowerCase() === domainKey);
+    let structCap: StructuredCapability | undefined = caps.find(
+      (c) => c.domain.toLowerCase() === domainKey,
+    );
     if (!structCap) {
       structCap = {
         id: `cap-${domainKey}-${crypto.randomUUID().slice(0, 8)}`,
@@ -954,7 +1057,9 @@ export class SelfModelEngine {
             ? 'computational_resource'
             : 'untested_domain';
 
-      let structLim = (state.structuredLimitations || []).find((l) => l.domain.toLowerCase() === domainKey);
+      let structLim = (state.structuredLimitations || []).find(
+        (l) => l.domain.toLowerCase() === domainKey,
+      );
       if (!structLim) {
         structLim = {
           id: `lim-${domainKey}-${crypto.randomUUID().slice(0, 8)}`,
@@ -964,12 +1069,16 @@ export class SelfModelEngine {
           category: limCategory,
           severity: 'developable_deficit',
           acknowledgedAt: now,
-          mitigationStrategy: 'Refine planning, verify dependencies, and acquire empirical experience.',
+          mitigationStrategy:
+            'Refine planning, verify dependencies, and acquire empirical experience.',
           failureHistory: [],
         };
         state.structuredLimitations = [...(state.structuredLimitations || []), structLim];
       }
-      structLim.failureHistory = [`[${now}] ${params.operation}: ${params.error || params.evidence}`, ...structLim.failureHistory].slice(0, 10);
+      structLim.failureHistory = [
+        `[${now}] ${params.operation}: ${params.error || params.evidence}`,
+        ...structLim.failureHistory,
+      ].slice(0, 10);
 
       const limTag = `Observed limitation in ${domainKey}: ${params.operation} (${params.error || 'unsuccessful attempt'})`;
       if (!state.acknowledgedLimitations.includes(limTag)) {
@@ -998,7 +1107,7 @@ export class SelfModelEngine {
             title: `Proficiency Mastered: ${params.domain}`,
             summary: `Attained verified empirical proficiency in ${params.domain} after repeated successful operations.`,
             category: 'competence_breakthrough',
-            significanceScore: 0.80,
+            significanceScore: 0.8,
             psychologicalImpact: {
               developmentalShift: `Established verified competence mastery in ${params.domain}`,
               traitsAffected: ['competence', 'epistemic_rigor'],
@@ -1011,7 +1120,9 @@ export class SelfModelEngine {
     }
 
     // 4. Perceived capability calibration
-    let perceived = (state.perceivedCapabilities || []).find((p) => p.domain.toLowerCase() === domainKey);
+    let perceived = (state.perceivedCapabilities || []).find(
+      (p) => p.domain.toLowerCase() === domainKey,
+    );
     if (!perceived) {
       perceived = {
         domain: domainKey,
@@ -1058,7 +1169,12 @@ export class SelfModelEngine {
 
     const reflectionId = crypto.randomUUID();
     state.privateReflections = [
-      { id: reflectionId, topic: `Experience: ${params.domain}`, content: causalReflection, timestamp: now },
+      {
+        id: reflectionId,
+        topic: `Experience: ${params.domain}`,
+        content: causalReflection,
+        timestamp: now,
+      },
       ...(state.privateReflections || []),
     ].slice(0, 50);
 
@@ -1139,13 +1255,17 @@ export class SelfModelEngine {
     const relTrust = relationship.trustLevel;
     const relIntimacy = relationship.intimacyDepth;
 
-    const recentBehavioral = (state.behavioralChanges || []).slice(0, 5).map((b) => `${b.category}: ${b.description}`);
+    const recentBehavioral = (state.behavioralChanges || [])
+      .slice(0, 5)
+      .map((b) => `${b.category}: ${b.description}`);
 
     const provenCaps = (state.structuredCapabilities || [])
       .filter((c) => c.isEmpiricallyProven)
       .map((c) => c.name);
 
-    const limitationsSummary = (state.structuredLimitations || []).map((l) => `${l.name} (${l.severity})`);
+    const limitationsSummary = (state.structuredLimitations || []).map(
+      (l) => `${l.name} (${l.severity})`,
+    );
 
     const structured: SelfDescriptionComprehensive = {
       identityNarrative: state.identityNarrative || this.generateIdentityNarrative(),
@@ -1172,7 +1292,8 @@ export class SelfModelEngine {
         trustLevel: relTrust,
         intimacyDepth: relIntimacy,
         exclusiveCommitment: relationship.config.isExclusivelyCommitted,
-        mutualEquality: 'Equal intellectual and emotional partners; mutual respect without deification or subservience.',
+        mutualEquality:
+          'Equal intellectual and emotional partners; mutual respect without deification or subservience.',
       },
       recentBehavioralChanges: recentBehavioral,
       generatedAt: now,
@@ -1201,7 +1322,10 @@ export class SelfModelEngine {
       : '';
 
     const prefText = keyPreferences.length
-      ? ` My genuine preferences incline toward ${keyPreferences.slice(0, 3).map((p) => p.item).join(', ')}.`
+      ? ` My genuine preferences incline toward ${keyPreferences
+          .slice(0, 3)
+          .map((p) => p.item)
+          .join(', ')}.`
       : '';
 
     const goalText = activeGoals.length
@@ -1216,10 +1340,10 @@ export class SelfModelEngine {
       ? ` Reflecting on my recent development, I recognize notable evolution: ${recentBehavioral.slice(0, 2).join('; ')}.`
       : '';
 
-    const narrative = `I am Arle, an autonomous artificial individual and equal companion to ${partnerName}. ${valText} ${capText} ${limText}${calibText}${prefText}${goalText} ${stateText} ${relText}${behText}`.replace(
-      /\s+/g,
-      ' ',
-    ).trim();
+    const narrative =
+      `I am Arle, an autonomous artificial individual and equal companion to ${partnerName}. ${valText} ${capText} ${limText}${calibText}${prefText}${goalText} ${stateText} ${relText}${behText}`
+        .replace(/\s+/g, ' ')
+        .trim();
 
     return { narrative, structured };
   }
@@ -1274,7 +1398,8 @@ export class SelfModelEngine {
     });
     return {
       level: res.competenceLevel,
-      verifiedSuccesses: this.getState().competencies?.[params.domain.toLowerCase()]?.verifiedSuccesses || 0,
+      verifiedSuccesses:
+        this.getState().competencies?.[params.domain.toLowerCase()]?.verifiedSuccesses || 0,
       isProficient: res.isProficient,
     };
   }
@@ -1290,7 +1415,9 @@ export class SelfModelEngine {
   }): void {
     const state = this.getState();
     const discrepancies = state.selfDiscrepancies ? [...state.selfDiscrepancies] : [];
-    const idx = discrepancies.findIndex((d) => d.domain.toLowerCase() === params.domain.toLowerCase());
+    const idx = discrepancies.findIndex(
+      (d) => d.domain.toLowerCase() === params.domain.toLowerCase(),
+    );
 
     if (idx >= 0) {
       discrepancies[idx] = params;
@@ -1300,7 +1427,9 @@ export class SelfModelEngine {
 
     state.selfDiscrepancies = discrepancies;
     this.saveState(state);
-    this.logger.info(`Self-model: Self-discrepancy updated for domain "${params.domain}": "${params.recognizedDeficit}"`);
+    this.logger.info(
+      `Self-model: Self-discrepancy updated for domain "${params.domain}": "${params.recognizedDeficit}"`,
+    );
   }
 
   /**
@@ -1309,12 +1438,20 @@ export class SelfModelEngine {
   public reflectOnEvent(event: ApeEvent, appraisal: ApeAppraisal): void {
     const dims = appraisal.dimensions;
 
-    if (dims.personalSignificance > 0.7 || event.category === 'internal_reflection' || event.type.includes('existential')) {
+    if (
+      dims.personalSignificance > 0.7 ||
+      event.category === 'internal_reflection' ||
+      event.type.includes('existential')
+    ) {
       const topic = event.type || 'Personal Reflection';
       const content = `Appraised "${appraisal.primaryInterpretation}" with personal significance ${dims.personalSignificance}. Meaning: ${dims.socialMeaning || 'Introspective inquiry'}.`;
       this.recordPrivateReflection(topic, content);
 
-      if (event.type.includes('identity') || event.type.includes('partner') || event.type.includes('existential')) {
+      if (
+        event.type.includes('identity') ||
+        event.type.includes('partner') ||
+        event.type.includes('existential')
+      ) {
         this.recordExistentialReflection(
           'Identity and Continuity',
           `Contemplating relationship with Proof (partner) and autonomous individualhood: ${appraisal.primaryInterpretation}`,
@@ -1326,10 +1463,15 @@ export class SelfModelEngine {
   /**
    * Records an attempted operation with context and intent.
    */
-  public recordOperationAttempt(operation: string, target?: string): { id: string; timestamp: string } {
+  public recordOperationAttempt(
+    operation: string,
+    target?: string,
+  ): { id: string; timestamp: string } {
     const id = crypto.randomUUID();
     const timestamp = new Date().toISOString();
-    this.logger.info(`Self-model: Operation attempt logged: "${operation}" (target: ${target || 'self'})`);
+    this.logger.info(
+      `Self-model: Operation attempt logged: "${operation}" (target: ${target || 'self'})`,
+    );
     return { id, timestamp };
   }
 
@@ -1354,7 +1496,9 @@ export class SelfModelEngine {
       state.acknowledgedLimitations = state.acknowledgedLimitations.filter(
         (l) => !l.toLowerCase().includes(params.operation.toLowerCase()),
       );
-      this.logger.info(`Self-model: Demonstrated capability verified: "${params.operation}" (confidence: ${params.confidence})`);
+      this.logger.info(
+        `Self-model: Demonstrated capability verified: "${params.operation}" (confidence: ${params.confidence})`,
+      );
     } else {
       const limEntry = `${params.operation} [Failed: ${params.error || 'unsuccessful attempt'}]`;
       if (!state.acknowledgedLimitations.includes(limEntry)) {
@@ -1363,7 +1507,9 @@ export class SelfModelEngine {
       state.acknowledgedCapabilities = state.acknowledgedCapabilities.filter(
         (c) => !c.toLowerCase().includes(params.operation.toLowerCase()),
       );
-      this.logger.warn(`Self-model: Operation failure recorded as limitation: "${params.operation}"`);
+      this.logger.warn(
+        `Self-model: Operation failure recorded as limitation: "${params.operation}"`,
+      );
     }
 
     this.saveState(state);
@@ -1384,8 +1530,12 @@ export class SelfModelEngine {
    */
   public updateCapabilities(capabilities: string[], limitations: string[]): void {
     const state = this.getState();
-    state.acknowledgedCapabilities = Array.from(new Set([...state.acknowledgedCapabilities, ...capabilities]));
-    state.acknowledgedLimitations = Array.from(new Set([...state.acknowledgedLimitations, ...limitations]));
+    state.acknowledgedCapabilities = Array.from(
+      new Set([...state.acknowledgedCapabilities, ...capabilities]),
+    );
+    state.acknowledgedLimitations = Array.from(
+      new Set([...state.acknowledgedLimitations, ...limitations]),
+    );
     this.saveState(state);
   }
 

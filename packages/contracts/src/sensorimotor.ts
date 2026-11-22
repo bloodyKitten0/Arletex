@@ -128,7 +128,8 @@ export function assertActionGroundingIntegrity(
   if (verification.status === 'unverified' && verification.isVerified) {
     return {
       valid: false,
-      error: 'Epistemic violation: Action cannot be marked isVerified=true while verification.status is unverified.',
+      error:
+        'Epistemic violation: Action cannot be marked isVerified=true while verification.status is unverified.',
     };
   }
   if (
@@ -137,7 +138,8 @@ export function assertActionGroundingIntegrity(
   ) {
     return {
       valid: false,
-      error: 'Epistemic violation: Claiming success on an unverified or failed action is prohibited.',
+      error:
+        'Epistemic violation: Claiming success on an unverified or failed action is prohibited.',
     };
   }
   return { valid: true };

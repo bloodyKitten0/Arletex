@@ -12,11 +12,7 @@ import {
   DeliberationEngine,
   InMemoryDeliberationRepository,
 } from '@arletex/core';
-import {
-  DatabaseService,
-  MigrationRunner,
-  SqliteDeliberationRepository,
-} from '@arletex/database';
+import { DatabaseService, MigrationRunner, SqliteDeliberationRepository } from '@arletex/database';
 import { ArletexBackendServer } from '../apps/desktop/src/backend/server.js';
 
 describe('Milestone 23 — Deliberation and Internal Conflict', () => {
@@ -87,7 +83,11 @@ describe('Milestone 23 — Deliberation and Internal Conflict', () => {
         opposedDesireIds: ['desire-stability'],
         immediateUtility: 0.9,
         longTermUtility: 0.2,
-        riskAssessment: { riskLevel: 'medium', riskScore: 0.45, failureMode: 'May exhaust memory buffers' },
+        riskAssessment: {
+          riskLevel: 'medium',
+          riskScore: 0.45,
+          failureMode: 'May exhaust memory buffers',
+        },
         ethicalAlignmentScore: 0.8,
         overallScore: 0.0,
       },
@@ -99,14 +99,19 @@ describe('Milestone 23 — Deliberation and Internal Conflict', () => {
         opposedDesireIds: [],
         immediateUtility: 0.6,
         longTermUtility: 0.88,
-        riskAssessment: { riskLevel: 'low', riskScore: 0.1, failureMode: 'Slightly slower initial discovery rate' },
+        riskAssessment: {
+          riskLevel: 'low',
+          riskScore: 0.1,
+          failureMode: 'Slightly slower initial discovery rate',
+        },
         ethicalAlignmentScore: 0.95,
         overallScore: 0.0,
       },
     ];
 
     const conflict = engine.createConflict({
-      contextDescription: 'Resource allocation dilemma between unconstrained curiosity and partner milestone readiness',
+      contextDescription:
+        'Resource allocation dilemma between unconstrained curiosity and partner milestone readiness',
       competingDesires: desires,
       alternatives,
     });
@@ -151,7 +156,11 @@ describe('Milestone 23 — Deliberation and Internal Conflict', () => {
         opposedDesireIds: ['desire-integrity'],
         immediateUtility: 0.7,
         longTermUtility: -0.8,
-        riskAssessment: { riskLevel: 'high', riskScore: 0.85, failureMode: 'May introduce silent monorepo regressions' },
+        riskAssessment: {
+          riskLevel: 'high',
+          riskScore: 0.85,
+          failureMode: 'May introduce silent monorepo regressions',
+        },
         ethicalAlignmentScore: 0.2,
         overallScore: 0.0,
       },
@@ -287,7 +296,11 @@ describe('Milestone 23 — Deliberation and Internal Conflict', () => {
         opposedDesireIds: ['d-option-b'],
         immediateUtility: 0.6,
         longTermUtility: 0.7,
-        riskAssessment: { riskLevel: 'low', riskScore: 0.15, failureMode: 'Actor messaging overhead' },
+        riskAssessment: {
+          riskLevel: 'low',
+          riskScore: 0.15,
+          failureMode: 'Actor messaging overhead',
+        },
         ethicalAlignmentScore: 0.85,
         overallScore: 0.0,
       },
@@ -384,11 +397,14 @@ describe('Milestone 23 — Deliberation and Internal Conflict', () => {
       actualOutcomeSummary: 'Selected path verified with 100% test success and zero memory leaks.',
       outcomeUtility: 0.95,
       experiencedRegretScore: 0.02,
-      retrospectiveInsight: 'Partner alignment and long-term utility maximization yielded superior stability.',
+      retrospectiveInsight:
+        'Partner alignment and long-term utility maximization yielded superior stability.',
     });
 
     expect(reassessed.postDecisionReassessment).toBeDefined();
-    expect(reassessed.postDecisionReassessment?.actualOutcomeSummary).toContain('100% test success');
+    expect(reassessed.postDecisionReassessment?.actualOutcomeSummary).toContain(
+      '100% test success',
+    );
     expect(reassessed.postDecisionReassessment?.experiencedRegretScore).toBe(0.02);
   });
 
@@ -419,8 +435,26 @@ describe('Milestone 23 — Deliberation and Internal Conflict', () => {
   // 7. Negative Invariant: Resolved Conflict Integrity
   it('should enforce non-empty justification and resolvedAt on resolved conflicts', () => {
     const desires: ConflictingDesire[] = [
-      { id: 'd1', title: 'D1', source: 'curiosity', motivationalForce: 0.5, timeHorizon: 'immediate', riskScore: 0.1, ethicalWeight: 0.5, associatedValues: [] },
-      { id: 'd2', title: 'D2', source: 'partner_alignment', motivationalForce: 0.5, timeHorizon: 'immediate', riskScore: 0.1, ethicalWeight: 0.5, associatedValues: [] },
+      {
+        id: 'd1',
+        title: 'D1',
+        source: 'curiosity',
+        motivationalForce: 0.5,
+        timeHorizon: 'immediate',
+        riskScore: 0.1,
+        ethicalWeight: 0.5,
+        associatedValues: [],
+      },
+      {
+        id: 'd2',
+        title: 'D2',
+        source: 'partner_alignment',
+        motivationalForce: 0.5,
+        timeHorizon: 'immediate',
+        riskScore: 0.1,
+        ethicalWeight: 0.5,
+        associatedValues: [],
+      },
     ];
     const alts: DeliberationAlternative[] = [
       {
@@ -457,8 +491,26 @@ describe('Milestone 23 — Deliberation and Internal Conflict', () => {
     const dbEngine = new DeliberationEngine({ repository: sqliteRepo });
 
     const desires: ConflictingDesire[] = [
-      { id: 'd1', title: 'Immediate Optimization', source: 'immediate_urge', motivationalForce: 0.7, timeHorizon: 'immediate', riskScore: 0.2, ethicalWeight: 0.8, associatedValues: [] },
-      { id: 'd2', title: 'Long-term Robustness', source: 'long_term_goal', motivationalForce: 0.85, timeHorizon: 'long_term', riskScore: 0.1, ethicalWeight: 0.95, associatedValues: [] },
+      {
+        id: 'd1',
+        title: 'Immediate Optimization',
+        source: 'immediate_urge',
+        motivationalForce: 0.7,
+        timeHorizon: 'immediate',
+        riskScore: 0.2,
+        ethicalWeight: 0.8,
+        associatedValues: [],
+      },
+      {
+        id: 'd2',
+        title: 'Long-term Robustness',
+        source: 'long_term_goal',
+        motivationalForce: 0.85,
+        timeHorizon: 'long_term',
+        riskScore: 0.1,
+        ethicalWeight: 0.95,
+        associatedValues: [],
+      },
     ];
     const alts: DeliberationAlternative[] = [
       {
@@ -527,8 +579,26 @@ describe('Milestone 23 — Deliberation and Internal Conflict', () => {
 
     // 1. Create conflict via POST /api/ape/deliberation/conflicts
     const desires: ConflictingDesire[] = [
-      { id: 'd-rest-1', title: 'Local Speed', source: 'immediate_urge', motivationalForce: 0.6, timeHorizon: 'immediate', riskScore: 0.3, ethicalWeight: 0.7, associatedValues: [] },
-      { id: 'd-rest-2', title: 'Global Alignment', source: 'partner_alignment', motivationalForce: 0.9, timeHorizon: 'long_term', riskScore: 0.05, ethicalWeight: 0.98, associatedValues: [] },
+      {
+        id: 'd-rest-1',
+        title: 'Local Speed',
+        source: 'immediate_urge',
+        motivationalForce: 0.6,
+        timeHorizon: 'immediate',
+        riskScore: 0.3,
+        ethicalWeight: 0.7,
+        associatedValues: [],
+      },
+      {
+        id: 'd-rest-2',
+        title: 'Global Alignment',
+        source: 'partner_alignment',
+        motivationalForce: 0.9,
+        timeHorizon: 'long_term',
+        riskScore: 0.05,
+        ethicalWeight: 0.98,
+        associatedValues: [],
+      },
     ];
     const alts: DeliberationAlternative[] = [
       {

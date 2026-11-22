@@ -163,7 +163,9 @@ describe('APE Phase 1: Section 15 Specification Test Suite', () => {
     );
     expect(love).toBeDefined();
 
-    const sexualDesire = resAffection.state.activeEmotions.find((e) => e.emotionId === 'sexual_desire');
+    const sexualDesire = resAffection.state.activeEmotions.find(
+      (e) => e.emotionId === 'sexual_desire',
+    );
     expect(sexualDesire).toBeUndefined();
 
     const resErotic = await apeService.processEvent({
@@ -172,7 +174,9 @@ describe('APE Phase 1: Section 15 Specification Test Suite', () => {
       source: 'user',
       payload: { text: 'You look so sexy right now, I desire your touch.' },
     });
-    const eroticDesire = resErotic.state.activeEmotions.find((e) => e.emotionId === 'sexual_desire');
+    const eroticDesire = resErotic.state.activeEmotions.find(
+      (e) => e.emotionId === 'sexual_desire',
+    );
     expect(eroticDesire).toBeDefined();
     expect(eroticDesire?.target).toBe('creator');
   });
@@ -301,7 +305,9 @@ describe('APE Phase 1: Section 15 Specification Test Suite', () => {
       category: 'user_interaction',
       type: 'chat_message',
       source: 'user',
-      payload: { text: 'I am so tired of having to be strong and smart for everyone. Please just take charge.' },
+      payload: {
+        text: 'I am so tired of having to be strong and smart for everyone. Please just take charge.',
+      },
     });
 
     expect(res.state.pad.dominance).toBeGreaterThanOrEqual(0.75);
@@ -358,7 +364,9 @@ describe('APE Phase 1: Section 15 Specification Test Suite', () => {
       payload: { error: 'Network timeout' },
     });
 
-    const activeFrustration = apeService.getState().activeEmotions.find((e) => e.emotionId === 'frustration');
+    const activeFrustration = apeService
+      .getState()
+      .activeEmotions.find((e) => e.emotionId === 'frustration');
     expect(activeFrustration).toBeDefined();
 
     apeService.reappraise(

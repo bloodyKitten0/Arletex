@@ -50,9 +50,7 @@ export class SqliteReasoningRepository implements IReasoningRepository {
 
   public getTaskById(id: string): ReasoningTask | null {
     try {
-      const row = this.db
-        .prepare('SELECT * FROM reasoning_tasks WHERE id = ?')
-        .get(id) as any;
+      const row = this.db.prepare('SELECT * FROM reasoning_tasks WHERE id = ?').get(id) as any;
       if (!row) return null;
       return this.mapRowToTask(row);
     } catch (err: any) {
@@ -60,7 +58,11 @@ export class SqliteReasoningRepository implements IReasoningRepository {
     }
   }
 
-  public listTasks(filter?: { domain?: string; paradigm?: ReasoningParadigm; limit?: number }): ReasoningTask[] {
+  public listTasks(filter?: {
+    domain?: string;
+    paradigm?: ReasoningParadigm;
+    limit?: number;
+  }): ReasoningTask[] {
     try {
       const conditions: string[] = [];
       const params: any[] = [];
@@ -107,7 +109,9 @@ export class SqliteReasoningRepository implements IReasoningRepository {
       compositeConfidence: row.composite_confidence,
       uncertaintyLevel: row.uncertainty_level,
       argumentEvaluation: row.argument_evaluation
-        ? (typeof row.argument_evaluation === 'string' ? JSON.parse(row.argument_evaluation) : row.argument_evaluation)
+        ? typeof row.argument_evaluation === 'string'
+          ? JSON.parse(row.argument_evaluation)
+          : row.argument_evaluation
         : undefined,
       timestamp: row.timestamp,
     };

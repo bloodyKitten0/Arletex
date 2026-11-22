@@ -57,29 +57,21 @@ export type SecurityAuditLog = z.infer<typeof SecurityAuditLogSchema>;
 
 export const SecurityBoundaryPolicySchema = z.object({
   allowedDirectories: z.array(z.string()).default([]),
-  forbiddenDirectories: z.array(z.string()).default([
-    '/etc',
-    '/root',
-    '/sys',
-    '/proc',
-    '~/.ssh',
-    '~/.gnupg',
-    '~/.aws',
-  ]),
+  forbiddenDirectories: z
+    .array(z.string())
+    .default(['/etc', '/root', '/sys', '/proc', '~/.ssh', '~/.gnupg', '~/.aws']),
   allowedHosts: z.array(z.string()).default(['127.0.0.1', 'localhost', 'api.telegram.org']),
   forbiddenHosts: z.array(z.string()).default(['*evil*', '*attacker*']),
-  disallowedCommands: z.array(z.string()).default([
-    'rm -rf /',
-    ':(){ :|:& };:',
-    'mkfs',
-    'dd if=/dev/zero',
-    'chmod -R 777 /',
-  ]),
-  protectedCodePaths: z.array(z.string()).default([
-    'packages/contracts',
-    'packages/core/src/agency/actionPermissionController.ts',
-    'packages/core/src/ape/ethicalBoundariesSecurityEngine.ts',
-  ]),
+  disallowedCommands: z
+    .array(z.string())
+    .default(['rm -rf /', ':(){ :|:& };:', 'mkfs', 'dd if=/dev/zero', 'chmod -R 777 /']),
+  protectedCodePaths: z
+    .array(z.string())
+    .default([
+      'packages/contracts',
+      'packages/core/src/agency/actionPermissionController.ts',
+      'packages/core/src/ape/ethicalBoundariesSecurityEngine.ts',
+    ]),
   emergencyShutdownActive: z.boolean().default(false),
   emergencyShutdownReason: z.string().optional(),
 });
@@ -105,4 +97,3 @@ export const AuthorizeSecurityActionInputSchema = z.object({
   contextNotes: z.string().optional(),
 });
 export type AuthorizeSecurityActionInput = z.infer<typeof AuthorizeSecurityActionInputSchema>;
-

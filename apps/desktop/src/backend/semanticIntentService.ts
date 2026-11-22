@@ -2,11 +2,7 @@ import type { ILogger } from '@arletex/core';
 import { rootLogger, getArleChromeProfile, getArleEmail } from '@arletex/core';
 
 export type SemanticIntentType =
-  | 'MEDIA_CONTROL'
-  | 'MEDIA_PLAYBACK'
-  | 'BROWSER_ACTION'
-  | 'FILE_OPEN'
-  | 'CASUAL_CHAT';
+  'MEDIA_CONTROL' | 'MEDIA_PLAYBACK' | 'BROWSER_ACTION' | 'FILE_OPEN' | 'CASUAL_CHAT';
 
 export interface SemanticIntentResult {
   intent: SemanticIntentType;
@@ -154,7 +150,9 @@ export class SemanticIntentService {
 
       if (Object.keys(centroids).length === Object.keys(this.intentPrototypes).length) {
         this.centroidEmbeddings = centroids as Record<SemanticIntentType, number[]>;
-        this.logger.info('SemanticIntentService initialized neural centroids using EmbeddingGemma 300M');
+        this.logger.info(
+          'SemanticIntentService initialized neural centroids using EmbeddingGemma 300M',
+        );
       }
     } catch (err: any) {
       this.logger.warn(`Semantic centroid initialization note: ${err.message}`);
@@ -256,7 +254,10 @@ export class SemanticIntentService {
         };
       } else {
         const cleanQuery = text
-          .replace(/^(?:please\s+)?(?:can you\s+)?(?:open|play|put on|choose|listen to)\s+(?:us\s+)?(?:a\s+)?(?:song|music|track)?\s*(?:on\s+spotify)?/i, '')
+          .replace(
+            /^(?:please\s+)?(?:can you\s+)?(?:open|play|put on|choose|listen to)\s+(?:us\s+)?(?:a\s+)?(?:song|music|track)?\s*(?:on\s+spotify)?/i,
+            '',
+          )
           .replace(/(?:on|in)\s+spotify/i, '')
           .trim();
         const finalQuery = cleanQuery || 'lofi beats';
@@ -276,9 +277,14 @@ export class SemanticIntentService {
           description: `Open Gmail in Google Chrome ${getArleChromeProfile()} (${getArleEmail()})`,
         };
       } else if (
-        (lower.includes('spotify') && (lower.includes('sign') || lower.includes('login') || lower.includes('google'))) ||
+        (lower.includes('spotify') &&
+          (lower.includes('sign') || lower.includes('login') || lower.includes('google'))) ||
         ((lower.includes('click') || lower.includes('tap') || lower.includes('auth')) &&
-         (lower.includes('sign') || lower.includes('login') || lower.includes('google') || lower.includes('watch') || lower.includes('yourself')))
+          (lower.includes('sign') ||
+            lower.includes('login') ||
+            lower.includes('google') ||
+            lower.includes('watch') ||
+            lower.includes('yourself')))
       ) {
         actionDetails = {
           type: 'browser_open',
@@ -293,14 +299,19 @@ export class SemanticIntentService {
           description: `Open Google Chrome ${getArleChromeProfile()}`,
         };
       }
-    } else if (bestIntent === 'FILE_OPEN' && highestScore > 0.50) {
+    } else if (bestIntent === 'FILE_OPEN' && highestScore > 0.5) {
       // Extract target filename if provided
       let targetFile = '';
       const quoteMatch = text.match(/["']([^"']+)["']/);
       if (quoteMatch) {
         targetFile = quoteMatch[1]!;
       } else {
-        const words = text.replace(/^(?:please\s+)?(?:can you\s+)?(?:open|launch|show|display|bring up)\s+(?:the\s+file\s+)?/i, '').trim();
+        const words = text
+          .replace(
+            /^(?:please\s+)?(?:can you\s+)?(?:open|launch|show|display|bring up)\s+(?:the\s+file\s+)?/i,
+            '',
+          )
+          .trim();
         targetFile = words;
       }
       actionDetails = {

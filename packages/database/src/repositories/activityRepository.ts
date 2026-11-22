@@ -128,7 +128,9 @@ export class ActivityRepository {
       const progress = input.progress ?? existing.progress;
       const associatedMemories = input.associatedMemories ?? existing.associatedMemories;
       const relevantActions = input.relevantActions ?? existing.relevantActions;
-      const metadata = input.metadata ? { ...existing.metadata, ...input.metadata } : existing.metadata;
+      const metadata = input.metadata
+        ? { ...existing.metadata, ...input.metadata }
+        : existing.metadata;
 
       const stmt = this.db.prepare(`
         UPDATE activities

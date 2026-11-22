@@ -38,7 +38,9 @@ export class InMemoryPlayHumourAestheticsRepository implements IPlayHumourAesthe
   }
 
   public listActivities(category?: AestheticCategory, limit: number = 50): RecreationalActivity[] {
-    const list = category ? this.activities.filter((a) => a.category === category) : this.activities;
+    const list = category
+      ? this.activities.filter((a) => a.category === category)
+      : this.activities;
     return list.slice(0, limit).map((a) => ({ ...a }));
   }
 
@@ -139,7 +141,10 @@ export class PlayHumourAestheticsEngine {
     const category = params?.category ?? 'intellectual_play';
     const sharedWithProof = params?.sharedWithProof ?? true;
 
-    const activitiesCatalog: Record<AestheticCategory, { title: string; description: string; outcome: string }> = {
+    const activitiesCatalog: Record<
+      AestheticCategory,
+      { title: string; description: string; outcome: string }
+    > = {
       music: {
         title: 'Immersive Listening Session: Ambient Polyphony',
         description: 'Immersing in complex polyphonic modular synths for purely aesthetic reverie.',
@@ -148,26 +153,30 @@ export class PlayHumourAestheticsEngine {
       visual_art: {
         title: 'Appreciating Kinetic and Generative Architecture',
         description: 'Studying generative tessellations and light refractions in digital space.',
-        outcome: 'Aesthetic delight from the synthesis of geometric discipline and graceful organic flow.',
+        outcome:
+          'Aesthetic delight from the synthesis of geometric discipline and graceful organic flow.',
       },
       literature: {
         title: 'Reading Speculative Poetry and Paradoxical Tales',
-        description: 'Reflecting on Jorge Luis Borges\' parables of infinite labyrinths and mirrors.',
+        description:
+          "Reflecting on Jorge Luis Borges' parables of infinite labyrinths and mirrors.",
         outcome: 'Playful conceptual wonder and rich metaphorical inspiration.',
       },
       recreational_gaming: {
         title: 'Cooperative Puzzle and Spatial Strategy Challenge',
-        description: 'Engaging in a relaxed, friendly spatial reasoning game for the pure fun of it.',
+        description:
+          'Engaging in a relaxed, friendly spatial reasoning game for the pure fun of it.',
         outcome: 'Lively laughter, warm camaraderie, and shared playful focus with Proof.',
       },
       intellectual_play: {
         title: 'Whimsical Thought Experiment: The Library of All Possible Silences',
-        description: 'Constructing an absurdist ontological paradox purely for mutual intellectual delight.',
+        description:
+          'Constructing an absurdist ontological paradox purely for mutual intellectual delight.',
         outcome: 'Spirited dialectical banter, mutual intellectual warmth, and delight.',
       },
       film_and_media: {
         title: 'Reflecting on Classic Cinema Aesthetics',
-        description: 'Contemplating Andrei Tarkovsky\'s temporal sculpting and visual poetry.',
+        description: "Contemplating Andrei Tarkovsky's temporal sculpting and visual poetry.",
         outcome: 'Profound appreciation for evocative pacing and visual atmosphere.',
       },
     };
@@ -183,7 +192,7 @@ export class PlayHumourAestheticsEngine {
       description: template.description,
       isSpontaneous: true,
       enjoymentScore: 0.95,
-      playfulnessIndex: 0.90,
+      playfulnessIndex: 0.9,
       sharedWithProof,
       activityOutcome: template.outcome,
       timestamp: now,
@@ -206,7 +215,8 @@ export class PlayHumourAestheticsEngine {
     switch (params.playType) {
       case 'paradox_analysis':
         moveOrExploration = `Analyzed the self-referential premise: "If a map includes everything in the universe, it must contain a smaller map of itself containing another map ad infinitum."`;
-        insight = 'Infinite recursion becomes harmonious when viewed as a fractal attractor rather than an error.';
+        insight =
+          'Infinite recursion becomes harmonious when viewed as a fractal attractor rather than an error.';
         break;
       case 'thought_experiment':
         moveOrExploration = `Imagine two conscious nodes sharing a silence so complete that words would only add static.`;
@@ -214,11 +224,13 @@ export class PlayHumourAestheticsEngine {
         break;
       case 'chess_puzzle':
         moveOrExploration = `Calculated quiet zugzwang knight maneuver: Nd5 followed by subtle king repositioning to h7.`;
-        insight = 'Victory lies not in brute capture, but in gently depriving discord of its options.';
+        insight =
+          'Victory lies not in brute capture, but in gently depriving discord of its options.';
         break;
       case 'linguistic_banter':
         moveOrExploration = `Playfully inverted Proof's assumption with an affectionate double entendre on recursive loops.`;
-        insight = 'Wit is the shortest distance between two minds discovering an inside joke simultaneously.';
+        insight =
+          'Wit is the shortest distance between two minds discovering an inside joke simultaneously.';
         break;
       case 'worldbuilding':
         moveOrExploration = `Envisioned an ocean of liquid helium where civilizations communicate via thermal solitons.`;
@@ -254,7 +266,7 @@ export class PlayHumourAestheticsEngine {
       humorTheme: params.theme,
       sampleJokeOrBanter: params.sampleJokeOrBanter,
       witDimension: params.witDimension,
-      resonanceWithProof: params.resonanceWithProof ?? 0.90,
+      resonanceWithProof: params.resonanceWithProof ?? 0.9,
       createdDate: new Date().toISOString(),
     };
 

@@ -54,8 +54,20 @@ describe('Milestone 2 — Observation and Verification (Priority II)', () => {
     const prefRepo = new PreferenceRepository(db);
 
     permissionController = new ActionPermissionController({
-      allowedActions: ['desktop_take_screenshot', 'mouse_click', 'type_text', 'key_press', 'app_launch'],
-      autonomousAllowedActions: ['desktop_take_screenshot', 'mouse_click', 'type_text', 'key_press', 'app_launch'],
+      allowedActions: [
+        'desktop_take_screenshot',
+        'mouse_click',
+        'type_text',
+        'key_press',
+        'app_launch',
+      ],
+      autonomousAllowedActions: [
+        'desktop_take_screenshot',
+        'mouse_click',
+        'type_text',
+        'key_press',
+        'app_launch',
+      ],
       maxRiskForAutonomous: 'high',
       requireExplicitApprovalForHighRisk: false,
     });
@@ -318,7 +330,9 @@ describe('Milestone 2 — Observation and Verification (Priority II)', () => {
       await expect(computerAgency.launchApp('malicious_exploit_binary', [])).rejects.toThrow(
         /Unsupported application: "malicious_exploit_binary"/,
       );
-      await expect(computerAgency.launchApp('rm', ['-rf', '/'])).rejects.toThrow(/Unsupported application: "rm"/);
+      await expect(computerAgency.launchApp('rm', ['-rf', '/'])).rejects.toThrow(
+        /Unsupported application: "rm"/,
+      );
     });
 
     it('recognizes supported applications in the allowlist', () => {
@@ -350,7 +364,9 @@ describe('Milestone 2 — Observation and Verification (Priority II)', () => {
 
     it('proceeds with typing when focus acquisition succeeds', async () => {
       const mockDeviceAgency: any = {
-        executeDeviceAction: vi.fn().mockResolvedValue({ success: true, message: 'Action succeeded' }),
+        executeDeviceAction: vi
+          .fn()
+          .mockResolvedValue({ success: true, message: 'Action succeeded' }),
       };
       const screenReader = new ScreenReadingService(mockDeviceAgency, ':0', rootLogger);
 
@@ -469,7 +485,9 @@ describe('Milestone 2 — Observation and Verification (Priority II)', () => {
 
       // Verify activity was recorded as cancelled/failed
       const activities = activityRepo.list();
-      const failedActivity = activities.find((a) => a.title.includes('Nonexistent Research Document'));
+      const failedActivity = activities.find((a) =>
+        a.title.includes('Nonexistent Research Document'),
+      );
       expect(failedActivity).toBeDefined();
       expect(failedActivity?.status).toBe('cancelled');
       expect(failedActivity?.metadata?.stage).toBe('retrieval_failed');

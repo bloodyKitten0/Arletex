@@ -81,7 +81,8 @@ export class OllamaAdapter implements IInferenceProvider {
       }
 
       const data = (await response.json()) as { models?: Array<{ name: string }> };
-      const modelLoaded = data.models && data.models.length > 0 ? data.models[0]?.name || null : null;
+      const modelLoaded =
+        data.models && data.models.length > 0 ? data.models[0]?.name || null : null;
 
       return {
         status: 'connected',
@@ -185,7 +186,10 @@ export class OllamaAdapter implements IInferenceProvider {
     }
 
     if (!response.body) {
-      throw new ModelUnavailableError(effectiveConfig.serverUrl, new Error('Response body is empty'));
+      throw new ModelUnavailableError(
+        effectiveConfig.serverUrl,
+        new Error('Response body is empty'),
+      );
     }
 
     const reader = response.body.getReader();

@@ -60,7 +60,10 @@ export class MultiSystemMemoryRepository implements IMultiSystemMemoryRepository
           entry.lastRetrievedAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to create multi-system memory entry ${entry.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to create multi-system memory entry ${entry.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -129,7 +132,10 @@ export class MultiSystemMemoryRepository implements IMultiSystemMemoryRepository
     try {
       this.db.prepare('DELETE FROM multi_system_memory_entries WHERE id = ?').run(id);
     } catch (err: any) {
-      throw new DatabaseError(`Failed to delete multi-system memory entry ${id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to delete multi-system memory entry ${id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -160,7 +166,10 @@ export class MultiSystemMemoryRepository implements IMultiSystemMemoryRepository
           new Date().toISOString(),
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to record memory contradiction ${contradiction.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to record memory contradiction ${contradiction.id}: ${err.message}`,
+        err,
+      );
     }
   }
 

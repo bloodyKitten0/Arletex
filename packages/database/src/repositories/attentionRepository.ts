@@ -54,7 +54,10 @@ export class AttentionRepository implements IAttentionRepository {
           new Date().toISOString(),
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save attentional focus state ${state.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save attentional focus state ${state.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -105,7 +108,10 @@ export class AttentionRepository implements IAttentionRepository {
           new Date().toISOString(),
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to record attention switch event ${event.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to record attention switch event ${event.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -161,7 +167,10 @@ export class AttentionRepository implements IAttentionRepository {
           new Date().toISOString(),
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to record stimulus evaluation ${stimulus.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to record stimulus evaluation ${stimulus.id}: ${err.message}`,
+        err,
+      );
     }
   }
 

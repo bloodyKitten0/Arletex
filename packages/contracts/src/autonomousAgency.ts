@@ -51,7 +51,9 @@ export const AutonomousActivityRecordSchema = z.object({
   type: AutonomousActivityTypeSchema,
   title: z.string().min(1),
   description: z.string().min(1),
-  permissionLevel: z.enum(['granted_by_policy', 'interactive_consent']).default('granted_by_policy'),
+  permissionLevel: z
+    .enum(['granted_by_policy', 'interactive_consent'])
+    .default('granted_by_policy'),
   targetResource: z.string().min(1),
   parameters: z.record(z.unknown()).default({}),
   executionResult: z

@@ -1,11 +1,6 @@
 import { z } from 'zod';
 
-export const PredictionTypeSchema = z.enum([
-  'event',
-  'consequence',
-  'behavior',
-  'obstacle',
-]);
+export const PredictionTypeSchema = z.enum(['event', 'consequence', 'behavior', 'obstacle']);
 export type PredictionType = z.infer<typeof PredictionTypeSchema>;
 
 export const PredictionStatusSchema = z.enum([
@@ -77,18 +72,28 @@ export function assertPredictionIntegrity(prediction: CognitivePrediction): void
   }
 
   if (prediction.predictedProbability < 0 || prediction.predictedProbability > 1) {
-    throw new Error(`Invalid predictedProbability ${prediction.predictedProbability}: must be in range [0, 1].`);
+    throw new Error(
+      `Invalid predictedProbability ${prediction.predictedProbability}: must be in range [0, 1].`,
+    );
   }
 
   if (prediction.confidence < 0 || prediction.confidence > 1) {
     throw new Error(`Invalid confidence ${prediction.confidence}: must be in range [0, 1].`);
   }
 
-  if (prediction.predictionError !== undefined && (prediction.predictionError < 0 || prediction.predictionError > 1)) {
-    throw new Error(`Invalid predictionError ${prediction.predictionError}: must be in range [0, 1].`);
+  if (
+    prediction.predictionError !== undefined &&
+    (prediction.predictionError < 0 || prediction.predictionError > 1)
+  ) {
+    throw new Error(
+      `Invalid predictionError ${prediction.predictionError}: must be in range [0, 1].`,
+    );
   }
 
-  if (prediction.brierScore !== undefined && (prediction.brierScore < 0 || prediction.brierScore > 1)) {
+  if (
+    prediction.brierScore !== undefined &&
+    (prediction.brierScore < 0 || prediction.brierScore > 1)
+  ) {
     throw new Error(`Invalid brierScore ${prediction.brierScore}: must be in range [0, 1].`);
   }
 }

@@ -72,7 +72,9 @@ describe('Milestone 46 — Offline Cognitive Activity and Consolidation', () => 
 
     expect(completed.status).toBe('completed');
     expect(completed.progress).toBe(1.0);
-    expect(completed.insights).toContain('Formulated Kripke-style epistemic accessibility relations.');
+    expect(completed.insights).toContain(
+      'Formulated Kripke-style epistemic accessibility relations.',
+    );
     expect(completed.resultingArtifacts).toContain('notes/modal_epistemic_frame.md');
   });
 
@@ -87,7 +89,9 @@ describe('Milestone 46 — Offline Cognitive Activity and Consolidation', () => 
         title: 'Random thought entry',
         rationale: 'Just feeling reflective today without any real goal',
       }),
-    ).toThrow(/Background cognition must be grounded in real goals, projects, questions, or identified simulations/);
+    ).toThrow(
+      /Background cognition must be grounded in real goals, projects, questions, or identified simulations/,
+    );
   });
 
   it('3. Explicitly labels and identifies internal simulations', () => {
@@ -170,7 +174,9 @@ describe('Milestone 46 — Offline Cognitive Activity and Consolidation', () => 
     expect(result.consolidationSummary).toBeDefined();
     expect(result.executedActivities.length).toBeGreaterThanOrEqual(1);
 
-    const goalActivity = result.executedActivities.find((a) => a.activityType === 'project_monitoring');
+    const goalActivity = result.executedActivities.find(
+      (a) => a.activityType === 'project_monitoring',
+    );
     expect(goalActivity).toBeDefined();
     expect(goalActivity?.sourceGoalId).toBe('goal_arch_v2');
   });
@@ -195,7 +201,9 @@ describe('Milestone 46 — Offline Cognitive Activity and Consolidation', () => 
     expect(retrieved).not.toBeNull();
     expect(retrieved?.status).toBe('completed');
     expect(retrieved?.sourceProjectId).toBe('proj_epistemic_net');
-    expect(retrieved?.insights).toContain('Mapped network convergence criteria across sovereign peers.');
+    expect(retrieved?.insights).toContain(
+      'Mapped network convergence criteria across sovereign peers.',
+    );
 
     const run = engine.runConsolidationCycle();
     const runs = sqliteRepo.listConsolidationRuns();

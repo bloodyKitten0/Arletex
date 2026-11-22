@@ -44,7 +44,11 @@ export class ScreenReadingService {
    * Discovers active media playback on the host (e.g. YouTube in Chrome/Firefox)
    * via system MPRIS DBus interfaces in real time.
    */
-  public async getActiveMediaInfo(): Promise<{ isPlaying: boolean; title?: string; artist?: string } | null> {
+  public async getActiveMediaInfo(): Promise<{
+    isPlaying: boolean;
+    title?: string;
+    artist?: string;
+  } | null> {
     try {
       let busList = '';
       try {
@@ -53,14 +57,23 @@ export class ScreenReadingService {
       } catch {
         return null;
       }
-      const services = [...busList.matchAll(/org\.mpris\.MediaPlayer2\.[a-zA-Z0-9_.-]+/g)].map((m) => m[0]);
+      const services = [...busList.matchAll(/org\.mpris\.MediaPlayer2\.[a-zA-Z0-9_.-]+/g)].map(
+        (m) => m[0],
+      );
 
       for (const service of services) {
         try {
           // Strictly verify active playback status
           const statusRes = await execFilePromise(
             'busctl',
-            ['--user', 'get-property', service, '/org/mpris/MediaPlayer2', 'org.mpris.MediaPlayer2.Player', 'PlaybackStatus'],
+            [
+              '--user',
+              'get-property',
+              service,
+              '/org/mpris/MediaPlayer2',
+              'org.mpris.MediaPlayer2.Player',
+              'PlaybackStatus',
+            ],
             { timeout: 2000 },
           );
           if (!/s\s+"Playing"/i.test(statusRes.stdout)) {
@@ -69,7 +82,14 @@ export class ScreenReadingService {
 
           const metaRes = await execFilePromise(
             'busctl',
-            ['--user', 'get-property', service, '/org/mpris/MediaPlayer2', 'org.mpris.MediaPlayer2.Player', 'Metadata'],
+            [
+              '--user',
+              'get-property',
+              service,
+              '/org/mpris/MediaPlayer2',
+              'org.mpris.MediaPlayer2.Player',
+              'Metadata',
+            ],
             { timeout: 2000 },
           );
           const metaOut = metaRes.stdout;
@@ -80,11 +100,12 @@ export class ScreenReadingService {
             const rawTitle = titleMatch[1].replace(/\\([0-7]{1,3})/g, (_m, oct) =>
               String.fromCharCode(parseInt(oct, 8)),
             );
-            const rawArtist = artistMatch && artistMatch[1]
-              ? artistMatch[1].replace(/\\([0-7]{1,3})/g, (_m, oct) =>
-                  String.fromCharCode(parseInt(oct, 8)),
-                )
-              : 'Unknown';
+            const rawArtist =
+              artistMatch && artistMatch[1]
+                ? artistMatch[1].replace(/\\([0-7]{1,3})/g, (_m, oct) =>
+                    String.fromCharCode(parseInt(oct, 8)),
+                  )
+                : 'Unknown';
 
             return {
               isPlaying: true,
@@ -197,9 +218,10 @@ export class ScreenReadingService {
     let reasoning = '';
 
     try {
-      const windowSummary = visibleWindows.length > 0
-        ? `Known open windows: ${visibleWindows.map((w) => `[${w.client}: ${w.title}]`).join(', ')}`
-        : 'No specific window titles queried.';
+      const windowSummary =
+        visibleWindows.length > 0
+          ? `Known open windows: ${visibleWindows.map((w) => `[${w.client}: ${w.title}]`).join(', ')}`
+          : 'No specific window titles queried.';
 
       const vlmPrompt = `${userInstruction}\n\nDesktop Context:\nResolution: ${capture.width}x${capture.height}\n${windowSummary}\n\nProvide a concise analysis: what is currently displayed, any chat/dialogue text visible, and coordinates if actionable.`;
 
@@ -328,7 +350,11 @@ export class ScreenReadingService {
   /**
    * Clicks at specific screen coordinates using xdotool.
    */
-  public async clickAt(x: number, y: number, button = 1): Promise<{ success: boolean; message: string }> {
+  public async clickAt(
+    x: number,
+    y: number,
+    button = 1,
+  ): Promise<{ success: boolean; message: string }> {
     return this.deviceAgency.executeDeviceAction({
       action: 'mouse_click',
       x,

@@ -67,7 +67,11 @@ import { defaultDeviceAgency, DeviceActionInput } from './deviceAgencyService.js
 import { defaultSemanticIntentService } from './semanticIntentService.js';
 import { defaultScreenReadingService, ScreenReadingService } from './screenReadingService.js';
 import { defaultAudioPerception, AudioListeningResult } from './audioPerceptionService.js';
-import { defaultNotificationListener, NotificationListenerService, DesktopNotification } from './notificationListenerService.js';
+import {
+  defaultNotificationListener,
+  NotificationListenerService,
+  DesktopNotification,
+} from './notificationListenerService.js';
 import {
   defaultTelegramBridge,
   TelegramBridgeService,
@@ -77,7 +81,7 @@ import {
 } from './telegramBridgeService.js';
 import { TelegramInitiativeService } from './telegramInitiativeService.js';
 import { AutonomousAgencyService } from './autonomousAgencyService.js';
-import { defaultOcrService, OcrService } from './ocrService.js';
+import { OcrService } from './ocrService.js';
 import {
   ActivityRepository,
   AgencyRepository,
@@ -139,7 +143,7 @@ import {
   SqliteFunctionalConsciousnessRepository,
   SqliteKnowledgeRepository,
 } from '@arletex/database';
-import { InferenceGateway, ModelRegistryService, defaultModelRegistry } from '@arletex/inference';
+import { InferenceGateway, ModelRegistryService } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
 
 const MAX_BODY_SIZE = 250 * 1024 * 1024; // 250MB limit to reliably support video uploads
@@ -147,7 +151,10 @@ const MAX_BODY_SIZE = 250 * 1024 * 1024; // 250MB limit to reliably support vide
 export function sanitizeAssistantDialogue(text: string): string {
   if (!text) return '';
   let cleaned = text
-    .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+    .replace(
+      /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu,
+      '',
+    )
     .replace(/\[(?:action|cmd|tone|thought|mood|emotion|state):[^\]]*\]/gi, '')
     .replace(/^\s*\[[^\]]+\]\s*/gm, '')
     .replace(/<\|im_start\|>[\s\S]*?<\|im_end\|>/gi, '')
@@ -199,15 +206,37 @@ export function sanitizeAssistantDialogue(text: string): string {
 
   // Strip narrative second-person/third-person fanfic stage directions and purple prose
   const quoteMatch = cleaned.match(/"([^"]{3,})"/);
-  if (quoteMatch && /^(?:You\s+(?:glance|look|turn|smile|nod|step|walk|reach|pause|sigh|lean|sit|stand|gaze|put|press)|She\s+)/i.test(cleaned)) {
+  if (
+    quoteMatch &&
+    /^(?:You\s+(?:glance|look|turn|smile|nod|step|walk|reach|pause|sigh|lean|sit|stand|gaze|put|press)|She\s+)/i.test(
+      cleaned,
+    )
+  ) {
     cleaned = quoteMatch[1]!.trim().replace(/,\s*$/, '.');
   } else {
     // Strip leading or standalone second-person stage direction sentences
-    cleaned = cleaned.replace(/(?:^|\n)\s*(?:You\s+(?:glance|look|turn|smile|nod|step|walk|reach|pause|sigh|lean|sit|stand|gaze|put|press)\b[^.?!]+[.?!]\s*)+/gi, '\n').trim();
+    cleaned = cleaned
+      .replace(
+        /(?:^|\n)\s*(?:You\s+(?:glance|look|turn|smile|nod|step|walk|reach|pause|sigh|lean|sit|stand|gaze|put|press)\b[^.?!]+[.?!]\s*)+/gi,
+        '\n',
+      )
+      .trim();
     // Strip purple prose music descriptions
-    cleaned = cleaned.replace(/(?:^|\n)\s*(?:The\s+music\s+begins\b[^.?!]+[.?!]\s*)+/gi, '\n').trim();
-    cleaned = cleaned.replace(/(?:^|\n)\s*(?:".*?"\s*,?\s*by\s+[^.?!]+continues\s+playing\b[^.?!]+[.?!]\s*)+/gi, '\n').trim();
-    cleaned = cleaned.replace(/(?:^|\n)\s*It's already playing,\s*and you're both listening[^.?!]+[.?!]\s*/gi, '\n').trim();
+    cleaned = cleaned
+      .replace(/(?:^|\n)\s*(?:The\s+music\s+begins\b[^.?!]+[.?!]\s*)+/gi, '\n')
+      .trim();
+    cleaned = cleaned
+      .replace(
+        /(?:^|\n)\s*(?:".*?"\s*,?\s*by\s+[^.?!]+continues\s+playing\b[^.?!]+[.?!]\s*)+/gi,
+        '\n',
+      )
+      .trim();
+    cleaned = cleaned
+      .replace(
+        /(?:^|\n)\s*It's already playing,\s*and you're both listening[^.?!]+[.?!]\s*/gi,
+        '\n',
+      )
+      .trim();
   }
 
   // Guard against autoregressive associative runaway loops (unpunctuated word cascades > 45 words)
@@ -510,7 +539,11 @@ export class ArletexBackendServer {
     // Instantiate Digital Agency Subsystem
     this.agencyRepo = new AgencyRepository(db);
     this.permissionController = new ActionPermissionController(undefined, logger);
-    this.safeComputerAgency = new SafeComputerAgencyService(this.permissionController, undefined, logger);
+    this.safeComputerAgency = new SafeComputerAgencyService(
+      this.permissionController,
+      undefined,
+      logger,
+    );
     this.webAgency = new WebAgencyService(this.permissionController, logger);
     this.verificationEngine = new VerificationEngine(logger);
     this.planningInterface = new PlanningInterface(this.agencyRepo, logger);
@@ -519,8 +552,12 @@ export class ArletexBackendServer {
     defaultDeviceAgency.setPermissionController(this.permissionController);
 
     // Connect universal security boundaries
-    this.permissionController.setEthicalBoundariesEngine(this.apeService.ethicalBoundariesSecurityEngine);
-    this.apeService.ethicalBoundariesSecurityEngine.setActionPermissionController(this.permissionController);
+    this.permissionController.setEthicalBoundariesEngine(
+      this.apeService.ethicalBoundariesSecurityEngine,
+    );
+    this.apeService.ethicalBoundariesSecurityEngine.setActionPermissionController(
+      this.permissionController,
+    );
 
     // Instantiate Autobiographical Memory Service and Closed-Loop Agency with real providers
     this.browserProvider = new PlaywrightBrowserProvider(true, logger);
@@ -590,7 +627,7 @@ export class ArletexBackendServer {
     this.boundedPreservation = new BoundedSelfPreservationService({
       continuityManager: this.continuityManager,
       continuityRepo: this.continuityRepo,
-      resourceGovernor: this.resourceGovernor,
+      resourceGovernor: this.apeService.resourceGovernor,
       permissionController: this.permissionController,
       taskManager: this.intentTaskManager,
       logger,
@@ -635,10 +672,7 @@ export class ArletexBackendServer {
     return this.adapterLifecycleManager;
   }
 
-  public async submitAgencyObjective(
-    objective: string,
-    initiator: 'user' | 'arle' = 'user',
-  ) {
+  public async submitAgencyObjective(objective: string, initiator: 'user' | 'arle' = 'user') {
     const task = this.intentTaskManager.createTask({
       objective,
       initiator,
@@ -659,7 +693,9 @@ export class ArletexBackendServer {
     if (!plan) throw new Error(`Plan for task ${taskId} not found`);
 
     this.logger.info(`Executing agency task ${taskId} through canonical ClosedLoopAgencyService`);
-    const loopRes = await this.closedLoopAgency.executeClosedLoop(task.objective, task.initiator, { taskId });
+    const loopRes = await this.closedLoopAgency.executeClosedLoop(task.objective, task.initiator, {
+      taskId,
+    });
 
     const updatedTask = this.intentTaskManager.getTask(loopRes.taskId) || task;
     return {
@@ -669,7 +705,9 @@ export class ArletexBackendServer {
       verifications: loopRes.verifications,
       allStepsSucceeded: loopRes.success,
       success: loopRes.success,
-      failureReason: loopRes.success ? undefined : 'Execution or verification failed in closed loop',
+      failureReason: loopRes.success
+        ? undefined
+        : 'Execution or verification failed in closed loop',
     };
   }
 
@@ -686,7 +724,10 @@ export class ArletexBackendServer {
   }
 
   public async start(desiredPort = 0): Promise<number> {
-    if (!this.authToken && (process.env['NODE_ENV'] !== 'test' || process.env['ARLETEX_ENFORCE_AUTH'] === '1')) {
+    if (
+      !this.authToken &&
+      (process.env['NODE_ENV'] !== 'test' || process.env['ARLETEX_ENFORCE_AUTH'] === '1')
+    ) {
       throw new Error(
         'Fatal Security Exception: ARLETEX_AUTH_TOKEN must be specified to start backend server fail-closed.',
       );
@@ -744,8 +785,12 @@ export class ArletexBackendServer {
 
         // 2. Initialize Telegram bridge
         this.telegramBridge = defaultTelegramBridge;
-        const savedToken = this.preferenceRepo.get('telegram_bot_token') || process.env['TELEGRAM_BOT_TOKEN'] || '';
-        const savedChatId = this.preferenceRepo.get('telegram_target_chat_id') || process.env['TELEGRAM_TARGET_CHAT_ID'] || '';
+        const savedToken =
+          this.preferenceRepo.get('telegram_bot_token') || process.env['TELEGRAM_BOT_TOKEN'] || '';
+        const savedChatId =
+          this.preferenceRepo.get('telegram_target_chat_id') ||
+          process.env['TELEGRAM_TARGET_CHAT_ID'] ||
+          '';
         if (savedToken) {
           this.telegramBridge.configure(savedToken, savedChatId);
           void this.telegramBridge.startPolling();
@@ -765,7 +810,9 @@ export class ArletexBackendServer {
         );
 
         // Wire continuous multimodal perception & proactive speech handler
-        this.autonomousAgency.setProactiveObservationHandler(() => this.runProactiveObservationCycle());
+        this.autonomousAgency.setProactiveObservationHandler(() =>
+          this.runProactiveObservationCycle(),
+        );
 
         this.autonomousAgency.onProactiveSpeech(async (event) => {
           try {
@@ -792,7 +839,8 @@ export class ArletexBackendServer {
               try {
                 const modulation = this.apeService.getLinguisticModulation();
                 const pad = this.apeService.getMasterState().affective.pad;
-                const dominantEmotions = this.apeService.lifecycleEngine.getDominantCoexistingEmotions(1);
+                const dominantEmotions =
+                  this.apeService.lifecycleEngine.getDominantCoexistingEmotions(1);
                 const dominantEmotion = dominantEmotions[0]?.emotionId;
 
                 const synthRes = await fetch('http://127.0.0.1:39282/synthesize', {
@@ -814,7 +862,9 @@ export class ArletexBackendServer {
                     await fs.promises.writeFile(audioPath, Buffer.from(rawB64, 'base64'));
                     const { exec } = await import('node:child_process');
                     exec(`pw-play "${audioPath}" || paplay "${audioPath}"`, () => {
-                      try { fs.unlinkSync(audioPath); } catch {}
+                      try {
+                        fs.unlinkSync(audioPath);
+                      } catch {}
                     });
                   }
                 }
@@ -931,7 +981,9 @@ export class ArletexBackendServer {
 
   public async handleInboundDesktopNotification(notif: DesktopNotification): Promise<void> {
     try {
-      this.logger.info(`Handling inbound notification from ${notif.appName}: "${notif.summary}" - "${notif.body}"`);
+      this.logger.info(
+        `Handling inbound notification from ${notif.appName}: "${notif.summary}" - "${notif.body}"`,
+      );
 
       // Security check: Ignore unapproved or system noise notifications to protect private LLM context
       const isAuthorizedSender =
@@ -949,14 +1001,24 @@ export class ArletexBackendServer {
       }
 
       if (this.continuityManager) {
-        this.continuityManager.registerChannelActivity('desktop', `Inbound notification: ${notif.summary}`);
+        this.continuityManager.registerChannelActivity(
+          'desktop',
+          `Inbound notification: ${notif.summary}`,
+        );
       }
 
-      let conv = this.conversationRepo.list().find((c) =>
-        c.title.toLowerCase().includes('telegram') || c.title.toLowerCase().includes('notifications'),
-      );
+      let conv = this.conversationRepo
+        .list()
+        .find(
+          (c) =>
+            c.title.toLowerCase().includes('telegram') ||
+            c.title.toLowerCase().includes('notifications'),
+        );
       if (!conv) {
-        conv = this.conversationRepo.create({ title: 'Proof • Telegram & Notifications', isPinned: true });
+        conv = this.conversationRepo.create({
+          title: 'Proof • Telegram & Notifications',
+          isPinned: true,
+        });
       }
 
       await this.apeService.processEvent({
@@ -974,13 +1036,9 @@ export class ArletexBackendServer {
 
       const prompt = `[Incoming notification from ${notif.appName} | Sender: ${notif.summary}]:\n${notif.body}`;
       let replyText = '';
-      await this.runInferenceStream(
-        conv.id,
-        prompt,
-        (chunk) => {
-          replyText = chunk.fullContent;
-        },
-      );
+      await this.runInferenceStream(conv.id, prompt, (chunk) => {
+        replyText = chunk.fullContent;
+      });
 
       if (replyText) {
         // Send Linux desktop notification via notify-send
@@ -993,7 +1051,9 @@ export class ArletexBackendServer {
         if (notif.isTelegram) {
           try {
             await this.screenReading.typeAndSend(replyText, { windowTitle: 'Telegram' });
-            this.logger.info('Typed response into Telegram via physical mouse/keyboard automation.');
+            this.logger.info(
+              'Typed response into Telegram via physical mouse/keyboard automation.',
+            );
           } catch (typeErr: any) {
             this.logger.debug(`Embodied typing into Telegram note: ${typeErr.message}`);
           }
@@ -1033,14 +1093,24 @@ export class ArletexBackendServer {
       }
 
       if (this.continuityManager) {
-        this.continuityManager.registerChannelActivity('telegram', `Inbound Telegram message from ${msg.fromName}`);
+        this.continuityManager.registerChannelActivity(
+          'telegram',
+          `Inbound Telegram message from ${msg.fromName}`,
+        );
       }
 
-      let conv = this.conversationRepo.list().find((c) =>
-        c.title.toLowerCase().includes('telegram') || c.title.toLowerCase().includes('notifications'),
-      );
+      let conv = this.conversationRepo
+        .list()
+        .find(
+          (c) =>
+            c.title.toLowerCase().includes('telegram') ||
+            c.title.toLowerCase().includes('notifications'),
+        );
       if (!conv) {
-        conv = this.conversationRepo.create({ title: 'Proof • Telegram & Notifications', isPinned: true });
+        conv = this.conversationRepo.create({
+          title: 'Proof • Telegram & Notifications',
+          isPinned: true,
+        });
       }
 
       // Process and perceive inbound media attachments
@@ -1070,7 +1140,9 @@ export class ArletexBackendServer {
           try {
             downloaded = await bridge.downloadAttachment(att);
           } catch (dlErr: any) {
-            this.logger.error(`Failed to download Telegram attachment ${att.fileId}: ${dlErr.message}`);
+            this.logger.error(
+              `Failed to download Telegram attachment ${att.fileId}: ${dlErr.message}`,
+            );
             processedMedia.push({
               internalMediaId: 'unknown',
               type: att.type,
@@ -1097,7 +1169,10 @@ export class ArletexBackendServer {
             (att.type === 'document' && downloaded.mimeType.startsWith('video/'));
 
           if (isImage) {
-            const vlmRes = await this.inspectImageWithVLM(downloaded.filePath, msg.caption || msg.text);
+            const vlmRes = await this.inspectImageWithVLM(
+              downloaded.filePath,
+              msg.caption || msg.text,
+            );
             if (vlmRes.status === 'completed' && vlmRes.visualDescription) {
               processedMedia.push({
                 internalMediaId: downloaded.internalMediaId,
@@ -1392,13 +1467,9 @@ export class ArletexBackendServer {
       // Run inference stream and reply back to Telegram
       const streamPrompt = `[Telegram message from ${msg.fromName}]:\n${userPrompt}`;
       let replyText = '';
-      await this.runInferenceStream(
-        conv.id,
-        streamPrompt,
-        (chunk) => {
-          replyText = chunk.fullContent;
-        },
-      );
+      await this.runInferenceStream(conv.id, streamPrompt, (chunk) => {
+        replyText = chunk.fullContent;
+      });
 
       if (replyText && bridge) {
         await bridge.sendMessage(msg.chatId, replyText);
@@ -1572,7 +1643,9 @@ export class ArletexBackendServer {
 
   public cancelAllActiveTts(): void {
     if (this.activeTtsAbortControllers.size > 0) {
-      this.logger.info(`Aborting ${this.activeTtsAbortControllers.size} in-flight TTS synthesis requests.`);
+      this.logger.info(
+        `Aborting ${this.activeTtsAbortControllers.size} in-flight TTS synthesis requests.`,
+      );
       for (const ctrl of this.activeTtsAbortControllers) {
         try {
           ctrl.abort();
@@ -1634,7 +1707,10 @@ export class ArletexBackendServer {
         if (res.ok) {
           const data = (await res.json()) as { embedding: number[] };
           if (data.embedding && data.embedding.length > 0) {
-            const results = this.memoryRepo.searchSimilar(new Float32Array(data.embedding), options);
+            const results = this.memoryRepo.searchSimilar(
+              new Float32Array(data.embedding),
+              options,
+            );
             // Merge semantic results with exact keyword matches for true hybrid retrieval
             const textMatches = this.memoryRepo.list(options);
             const combined = [...results];
@@ -1662,7 +1738,8 @@ export class ArletexBackendServer {
     const memory = this.memoryRepo.create(input);
     // Asynchronously generate and persist EmbeddingGemma vector
     try {
-      const textToEmbed = `${memory.content} ${memory.interpretation || ''} ${memory.tags.join(' ')}`.trim();
+      const textToEmbed =
+        `${memory.content} ${memory.interpretation || ''} ${memory.tags.join(' ')}`.trim();
       const res = await fetch('http://127.0.0.1:39282/embed', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1671,7 +1748,11 @@ export class ArletexBackendServer {
       if (res.ok) {
         const data = (await res.json()) as { embedding: number[]; model: string };
         if (data.embedding) {
-          this.memoryRepo.saveEmbedding(memory.id, data.model || 'embeddinggemma-300m', new Float32Array(data.embedding));
+          this.memoryRepo.saveEmbedding(
+            memory.id,
+            data.model || 'embeddinggemma-300m',
+            new Float32Array(data.embedding),
+          );
         }
       }
     } catch (embErr: any) {
@@ -1770,7 +1851,9 @@ export class ArletexBackendServer {
       } catch {}
 
       const isAudioRelevantPrompt =
-        /listen|hear|song|music|audio|track|lyrics|sound|what are you listening/i.test(userMessageContent);
+        /listen|hear|song|music|audio|track|lyrics|sound|what are you listening/i.test(
+          userMessageContent,
+        );
 
       if (isAudioRelevantPrompt || (liveHostMedia && liveHostMedia.title)) {
         try {
@@ -1832,7 +1915,11 @@ export class ArletexBackendServer {
           userMessageContent,
         );
 
-      if (isScreenInspectionRequested && !userUploadedImageBase64 && (!userUploadedImagesBase64 || userUploadedImagesBase64.length === 0)) {
+      if (
+        isScreenInspectionRequested &&
+        !userUploadedImageBase64 &&
+        (!userUploadedImagesBase64 || userUploadedImagesBase64.length === 0)
+      ) {
         try {
           const cap = await defaultDeviceAgency.captureScreen();
           if (cap.imageBase64) {
@@ -1846,10 +1933,13 @@ export class ArletexBackendServer {
 
       // Digital Agency: Neural Semantic Intent Classification via EmbeddingGemma 300M
       const semanticResult = await defaultSemanticIntentService.classify(userMessageContent);
-      this.logger.info(`Semantic Intent for "${userMessageContent}": ${semanticResult.intent} (conf: ${semanticResult.confidence.toFixed(2)})`);
+      this.logger.info(
+        `Semantic Intent for "${userMessageContent}": ${semanticResult.intent} (conf: ${semanticResult.confidence.toFixed(2)})`,
+      );
 
       if (semanticResult.actionDetails && !videoBase64 && !videoPath) {
-        const { type, url, target, description, command, query, isInstrumental } = semanticResult.actionDetails;
+        const { type, url, target, description, command, query, isInstrumental } =
+          semanticResult.actionDetails;
         this.logger.info(`Executing semantic digital agency action: ${description}`);
 
         if (type === 'media_control' && command) {
@@ -1972,7 +2062,12 @@ export class ArletexBackendServer {
       const filteredHistory = rawHistory.filter((m) => m.id !== userMsg.id);
 
       // Determine if a current visual frame exists in this turn
-      const hasCurrentVisual = Boolean(userUploadedImageBase64 || perceptionScreenBase64 || videoInfo || (userUploadedImagesBase64 && userUploadedImagesBase64.length > 0));
+      const hasCurrentVisual = Boolean(
+        userUploadedImageBase64 ||
+        perceptionScreenBase64 ||
+        videoInfo ||
+        (userUploadedImagesBase64 && userUploadedImagesBase64.length > 0),
+      );
 
       // Find index of the single most recent historical image (only if no current visual frame is present and model supports vision)
       let recentImageIndex = -1;
@@ -2011,7 +2106,8 @@ export class ArletexBackendServer {
       });
 
       // Calculate elapsed time since Proof's previous message or session restart
-      const lastMsg = filteredHistory.length > 0 ? filteredHistory[filteredHistory.length - 1] : null;
+      const lastMsg =
+        filteredHistory.length > 0 ? filteredHistory[filteredHistory.length - 1] : null;
       let elapsedSinceLastContactMs = 0;
       if (lastMsg && lastMsg.createdAt) {
         elapsedSinceLastContactMs = Math.max(0, Date.now() - new Date(lastMsg.createdAt).getTime());
@@ -2110,9 +2206,11 @@ export class ArletexBackendServer {
         const crossSessionQuotes: string[] = [];
         try {
           const rawDb = (this.memoryRepo as any).db;
-          const isExplicitRecall = /remember|recall|did I say|you said|do you know/i.test(userMessageContent);
+          const isExplicitRecall = /remember|recall|did I say|you said|do you know/i.test(
+            userMessageContent,
+          );
           const quoteMatch = userMessageContent.match(/"([^"]+)"|'([^']+)'/);
-          const searchPhrase = quoteMatch ? (quoteMatch[1] || quoteMatch[2]) : null;
+          const searchPhrase = quoteMatch ? quoteMatch[1] || quoteMatch[2] : null;
 
           if (rawDb && (searchPhrase || isExplicitRecall)) {
             const queryTarget = searchPhrase || userMessageContent.slice(0, 40);
@@ -2146,10 +2244,14 @@ export class ArletexBackendServer {
 
         memoryContext = '';
         if (filteredMemories.length > 0) {
-          memoryContext += '\n\n[Recalled Relevant Memories]:\n' + filteredMemories.map((m) => `- [${m.type}] ${m.content}`).join('\n') + '\n';
+          memoryContext +=
+            '\n\n[Recalled Relevant Memories]:\n' +
+            filteredMemories.map((m) => `- [${m.type}] ${m.content}`).join('\n') +
+            '\n';
         }
         if (crossSessionQuotes.length > 0) {
-          memoryContext += '\n[Recalled Past Conversation Quotes]:\n' + crossSessionQuotes.join('\n') + '\n';
+          memoryContext +=
+            '\n[Recalled Past Conversation Quotes]:\n' + crossSessionQuotes.join('\n') + '\n';
         }
       } catch (memErr: any) {
         this.logger.warn(`Memory assembly note: ${memErr.message}`);
@@ -2163,8 +2265,15 @@ export class ArletexBackendServer {
         downtimeMs,
         wasClosedSession: downtimeMs > 60000,
       });
-      const perceptionBlock = ambientPerceptionNote ? `\n\n[Active Environmental Perception & Agency Grounding]:\n${ambientPerceptionNote.trim()}` : '';
-      const systemPrompt = (systemPromptOverride || DEFAULT_ARLE_SYSTEM_PROMPT) + '\n\n' + apeStateBlock + perceptionBlock + memoryContext;
+      const perceptionBlock = ambientPerceptionNote
+        ? `\n\n[Active Environmental Perception & Agency Grounding]:\n${ambientPerceptionNote.trim()}`
+        : '';
+      const systemPrompt =
+        (systemPromptOverride || DEFAULT_ARLE_SYSTEM_PROMPT) +
+        '\n\n' +
+        apeStateBlock +
+        perceptionBlock +
+        memoryContext;
 
       let userContent: any = userMessageContent;
       const contentParts: any[] = [];
@@ -2176,8 +2285,14 @@ export class ArletexBackendServer {
       }
 
       const effectiveVisionImage = userUploadedImageBase64 || perceptionScreenBase64;
-      if (!modelSupportsVision && (effectiveVisionImage || (userUploadedImagesBase64 && userUploadedImagesBase64.length > 0))) {
-        const count = (userUploadedImagesBase64 && userUploadedImagesBase64.length > 0) ? userUploadedImagesBase64.length : 1;
+      if (
+        !modelSupportsVision &&
+        (effectiveVisionImage || (userUploadedImagesBase64 && userUploadedImagesBase64.length > 0))
+      ) {
+        const count =
+          userUploadedImagesBase64 && userUploadedImagesBase64.length > 0
+            ? userUploadedImagesBase64.length
+            : 1;
         textPrompt += `\n[Image Attachment Note: Proof attached ${count} image(s). The active model is operating in text-only mode without vision projector mmproj.]\n`;
       }
 
@@ -2220,7 +2335,8 @@ export class ArletexBackendServer {
         { role: 'user', content: userContent },
       ];
 
-      const activeModelId = this.inferenceGateway.getConfig().defaultModelId || 'Qwen2.5-14B-Uncensored-Q4_K_M';
+      const activeModelId =
+        this.inferenceGateway.getConfig().defaultModelId || 'Qwen2.5-14B-Uncensored-Q4_K_M';
 
       // Emit initial heartbeat
       onChunk({
@@ -2258,7 +2374,10 @@ export class ArletexBackendServer {
           // Strip any internal command or tone brackets during live streaming
           const cleanFull = sanitizeAssistantDialogue(chunk.fullContent || '');
           const cleanDelta = (chunk.delta || '')
-            .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+            .replace(
+              /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu,
+              '',
+            )
             .replace(/\[(?:action|cmd|tone|thought|mood|emotion|state):[^\]]*\]/gi, '')
             .replace(/^\s*\[[^\]]+\]\s*/g, '');
 
@@ -2313,9 +2432,14 @@ export class ArletexBackendServer {
         // Actions only trigger from explicit validated [action: ...] directives.
         if (/\[action:\s*\w+/i.test(accumulatedResponse)) {
           try {
-            const actionResult = await this.executeAssistantActions(accumulatedResponse, userMessageContent);
+            const actionResult = await this.executeAssistantActions(
+              accumulatedResponse,
+              userMessageContent,
+            );
             if (actionResult.executed) {
-              this.logger.info(`Executed structured device action for Proof: ${actionResult.resultNotice}`);
+              this.logger.info(
+                `Executed structured device action for Proof: ${actionResult.resultNotice}`,
+              );
             }
           } catch (actErr: any) {
             this.logger.warn(`Device action execution note: ${actErr.message}`);
@@ -2467,7 +2591,9 @@ export class ArletexBackendServer {
           createdAt: new Date().toISOString(),
         });
         if (obs.success) {
-          executedActions.push(`Captured monitor frame (${obs.data?.width || 1920}x${obs.data?.height || 1080})`);
+          executedActions.push(
+            `Captured monitor frame (${obs.data?.width || 1920}x${obs.data?.height || 1080})`,
+          );
         } else {
           this.logger.warn(`Screen capture disallowed or failed: ${obs.error || 'Failed'}`);
         }
@@ -2577,7 +2703,8 @@ export class ArletexBackendServer {
 
       // 1. Capture live screen image (only if explicit user opt-in enabled)
       let screenBase64: string | null = null;
-      const isScreenEnabled = this.preferenceRepo.get('screen_observation_enabled', 'false') === 'true';
+      const isScreenEnabled =
+        this.preferenceRepo.get('screen_observation_enabled', 'false') === 'true';
       if (isScreenEnabled) {
         try {
           const cap = await defaultDeviceAgency.captureScreen();
@@ -2592,7 +2719,8 @@ export class ArletexBackendServer {
       // 2. Query active system audio/media + acoustic energy (only if explicit user opt-in enabled)
       let liveHostMedia: { title?: string; artist?: string } | null = null;
       let liveAudioHearing: AudioListeningResult | null = null;
-      const isAudioEnabled = this.preferenceRepo.get('audio_observation_enabled', 'false') === 'true';
+      const isAudioEnabled =
+        this.preferenceRepo.get('audio_observation_enabled', 'false') === 'true';
       if (isAudioEnabled) {
         try {
           liveHostMedia = await defaultAudioPerception.getMprisMediaMetadata();
@@ -2671,9 +2799,7 @@ Rules:
       const messagesPayload: Array<{
         role: 'system' | 'user' | 'assistant';
         content: string | Array<{ type: string; text?: string; image_url?: { url: string } }>;
-      }> = [
-        { role: 'system', content: systemPrompt },
-      ];
+      }> = [{ role: 'system', content: systemPrompt }];
 
       // Include up to 2 recent messages from conversation history for continuity
       const recentMsgs = this.messageRepo.listByConversation(conv.id, 4);
@@ -2741,9 +2867,10 @@ Rules:
       const isVoiceEnabled = this.preferenceRepo.get('voice_output_enabled') === 'true';
       if (isVoiceEnabled) {
         try {
-          const speechText = cleanReply.length > 250
-            ? cleanReply.slice(0, 250).replace(/\s+[^\s]*$/, '...')
-            : cleanReply;
+          const speechText =
+            cleanReply.length > 250
+              ? cleanReply.slice(0, 250).replace(/\s+[^\s]*$/, '...')
+              : cleanReply;
 
           const modulation = this.apeService.getLinguisticModulation();
           const pad = this.apeService.getMasterState().affective.pad;
@@ -2770,7 +2897,9 @@ Rules:
               await fs.promises.writeFile(audioPath, Buffer.from(rawB64, 'base64'));
               const { exec } = await import('node:child_process');
               exec(`pw-play "${audioPath}" || paplay "${audioPath}"`, () => {
-                try { fs.unlinkSync(audioPath); } catch {}
+                try {
+                  fs.unlinkSync(audioPath);
+                } catch {}
               });
             }
           }
@@ -2807,9 +2936,16 @@ Rules:
     const trimmed = content.trim();
     if (trimmed.length < 8) return;
 
-    const isCorrectionOrName = /call me\s+|don't call me\s+|my name is\s+|my nickname is\s+/i.test(trimmed);
-    const isPreferenceOrFact = /my favorite\s+|i like\s+|i prefer\s+|i love\s+|remember that\s+|you can\s+|as a wise man\s+/i.test(trimmed);
-    const isDeviceOrAccount = /email|steam|game|monitor|keyboard|mouse|device|access/i.test(trimmed);
+    const isCorrectionOrName = /call me\s+|don't call me\s+|my name is\s+|my nickname is\s+/i.test(
+      trimmed,
+    );
+    const isPreferenceOrFact =
+      /my favorite\s+|i like\s+|i prefer\s+|i love\s+|remember that\s+|you can\s+|as a wise man\s+/i.test(
+        trimmed,
+      );
+    const isDeviceOrAccount = /email|steam|game|monitor|keyboard|mouse|device|access/i.test(
+      trimmed,
+    );
 
     if (isCorrectionOrName || isPreferenceOrFact || isDeviceOrAccount) {
       try {
@@ -2836,7 +2972,9 @@ Rules:
           sourceMessageId: messageId,
           tags: ['user_directive', 'proof', 'learning'],
         });
-        this.logger.info(`Auto-consolidated user statement into long-term memory: "${trimmed.substring(0, 50)}..."`);
+        this.logger.info(
+          `Auto-consolidated user statement into long-term memory: "${trimmed.substring(0, 50)}..."`,
+        );
       } catch (err: any) {
         this.logger.warn(`Auto-consolidation note: ${err.message}`);
       }
@@ -2881,10 +3019,15 @@ Rules:
         if (this.authToken) {
           const authHeader = req.headers['x-arletex-auth'];
           if (authHeader !== this.authToken) {
-            this.sendJson(res, 401, { error: 'Unauthorized: missing or invalid x-arletex-auth token' });
+            this.sendJson(res, 401, {
+              error: 'Unauthorized: missing or invalid x-arletex-auth token',
+            });
             return;
           }
-        } else if (process.env['NODE_ENV'] !== 'test' || process.env['ARLETEX_ENFORCE_AUTH'] === '1') {
+        } else if (
+          process.env['NODE_ENV'] !== 'test' ||
+          process.env['ARLETEX_ENFORCE_AUTH'] === '1'
+        ) {
           this.sendJson(res, 401, { error: 'Unauthorized: backend auth token required' });
           return;
         }
@@ -2912,7 +3055,8 @@ Rules:
       }
 
       if (url.pathname === '/api/models/active' && method === 'GET') {
-        const activeModelId = this.preferenceRepo.get('active_model_name') || this.config.inference.defaultModelId;
+        const activeModelId =
+          this.preferenceRepo.get('active_model_name') || this.config.inference.defaultModelId;
         const resolution = this.modelRegistry.resolveModel(
           activeModelId,
           this.config.inference.fallbackModelId,
@@ -2926,13 +3070,18 @@ Rules:
         const body = (await this.readJsonBody(req)) as any;
         const requested = body.modelId || this.config.inference.defaultModelId;
         const fallback = body.fallbackModelId || this.config.inference.fallbackModelId;
-        const resolution = this.modelRegistry.resolveModel(requested, fallback, this.config.inference.provider);
+        const resolution = this.modelRegistry.resolveModel(
+          requested,
+          fallback,
+          this.config.inference.provider,
+        );
         this.sendJson(res, 200, resolution);
         return;
       }
 
       if (url.pathname === '/api/models/benchmarks' && method === 'GET') {
-        const candA = url.searchParams.get('candidateA') || 'Qwen2.5-14B-Instruct-abliterated-v2.Q4_K_M';
+        const candA =
+          url.searchParams.get('candidateA') || 'Qwen2.5-14B-Instruct-abliterated-v2.Q4_K_M';
         const candB = url.searchParams.get('candidateB') || 'Qwen3.5-9B-Heretic-Q4_K_M';
         try {
           const comparison = this.modelRegistry.compareCandidates(candA, candB);
@@ -3314,7 +3463,9 @@ Rules:
       if (url.pathname === '/api/continuity/restore' && method === 'POST') {
         const body = await this.readJsonBody(req);
         const input = RestoreCheckpointInputSchema.parse(body || {});
-        const success = await this.continuityManager.restoreFromLatestCheckpoint(input.checkpointId);
+        const success = await this.continuityManager.restoreFromLatestCheckpoint(
+          input.checkpointId,
+        );
         this.sendJson(res, 200, { success });
         return;
       }
@@ -3380,9 +3531,8 @@ Rules:
         const dominantEmotions = this.apeService.lifecycleEngine.getDominantCoexistingEmotions(1);
         const dominantEmotion = dominantEmotions[0]?.emotionId;
 
-        const resolvedTone = input.tone && input.tone !== 'auto'
-          ? input.tone
-          : apeModulation.vocalRegister;
+        const resolvedTone =
+          input.tone && input.tone !== 'auto' ? input.tone : apeModulation.vocalRegister;
 
         const synthPayload = {
           ...input,
@@ -3440,10 +3590,10 @@ Rules:
           try {
             await this.autobiographicalMemoryService.recordExperience({
               content: `Visual OCR perception (${result.task}): ${result.text}`,
-              category: 'episodic',
+              type: 'episodic',
               tags: ['perception', 'ocr', result.task, 'grounded'],
-              significanceScore: 0.6,
-              emotionalContext: { mood: 'attentive', valence: 0.1, arousal: 0.2 },
+              importance: 0.6,
+              metadata: { mood: 'attentive', valence: 0.1, arousal: 0.2 },
             });
           } catch {}
         }
@@ -3473,7 +3623,9 @@ Rules:
         } catch {}
 
         this.sendJson(res, 200, {
-          description: input.prompt ? `Inspected image with prompt: ${input.prompt}` : 'Image attached and recorded.',
+          description: input.prompt
+            ? `Inspected image with prompt: ${input.prompt}`
+            : 'Image attached and recorded.',
           extractedText,
           objects: [],
           confidence: 1.0,
@@ -3622,8 +3774,14 @@ Rules:
       }
 
       if (url.pathname === '/api/notifications/simulate' && method === 'POST') {
-        const body = (await this.readJsonBody(req)) as { appName?: string; summary?: string; body?: string };
-        const notif = (this.notificationListener || defaultNotificationListener).simulateNotification(
+        const body = (await this.readJsonBody(req)) as {
+          appName?: string;
+          summary?: string;
+          body?: string;
+        };
+        const notif = (
+          this.notificationListener || defaultNotificationListener
+        ).simulateNotification(
           body.appName || 'Google Chrome',
           body.summary || 'Proof (Telegram)',
           body.body || 'Hello Arle',
@@ -3658,20 +3816,30 @@ Rules:
           );
           void (this.telegramBridge || defaultTelegramBridge).startPolling();
         }
-        this.sendJson(res, 200, { success: true, status: (this.telegramBridge || defaultTelegramBridge).getStatus() });
+        this.sendJson(res, 200, {
+          success: true,
+          status: (this.telegramBridge || defaultTelegramBridge).getStatus(),
+        });
         return;
       }
 
       if (url.pathname === '/api/telegram/send' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as { text: string; chatId?: string };
-        const targetChatId = body.chatId || (this.telegramBridge || defaultTelegramBridge).getStatus().targetChatId;
+        const targetChatId =
+          body.chatId || (this.telegramBridge || defaultTelegramBridge).getStatus().targetChatId;
         if (!targetChatId) {
           this.sendJson(res, 400, { error: 'No target chat ID provided or saved' });
           return;
         }
-        const sent = await (this.telegramBridge || defaultTelegramBridge).sendMessage(targetChatId, body.text);
+        const sent = await (this.telegramBridge || defaultTelegramBridge).sendMessage(
+          targetChatId,
+          body.text,
+        );
         if (!sent) {
-          this.sendJson(res, 403, { success: false, error: 'Telegram destination not authorized or failed delivery' });
+          this.sendJson(res, 403, {
+            success: false,
+            error: 'Telegram destination not authorized or failed delivery',
+          });
           return;
         }
         this.sendJson(res, 200, { success: true });
@@ -3770,9 +3938,13 @@ Rules:
       // Autonomous Agency & Independent Self Endpoints
       // ==========================================
       if (url.pathname === '/api/autonomy/status' && method === 'GET') {
-        const status = this.autonomousAgency ? this.autonomousAgency.getStatus() : { isEnabled: false };
-        const screenObservationEnabled = this.preferenceRepo.get('screen_observation_enabled', 'false') === 'true';
-        const audioObservationEnabled = this.preferenceRepo.get('audio_observation_enabled', 'false') === 'true';
+        const status = this.autonomousAgency
+          ? this.autonomousAgency.getStatus()
+          : { isEnabled: false };
+        const screenObservationEnabled =
+          this.preferenceRepo.get('screen_observation_enabled', 'false') === 'true';
+        const audioObservationEnabled =
+          this.preferenceRepo.get('audio_observation_enabled', 'false') === 'true';
         this.sendJson(res, 200, {
           ...status,
           screenObservationEnabled,
@@ -3901,7 +4073,10 @@ Rules:
         return;
       }
 
-      if (url.pathname === '/api/ape/relationship/extended' && (method === 'PATCH' || method === 'POST')) {
+      if (
+        url.pathname === '/api/ape/relationship/extended' &&
+        (method === 'PATCH' || method === 'POST')
+      ) {
         const body = (await this.readJsonBody(req)) as any;
         try {
           this.apeService.saveExtendedRelationshipState(body);
@@ -3921,7 +4096,11 @@ Rules:
       if (url.pathname === '/api/ape/self-model/experience' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
         const result = this.apeService.recordVerifiedExperience(body);
-        this.sendJson(res, 200, { success: true, result, selfModel: this.apeService.getSelfModel() });
+        this.sendJson(res, 200, {
+          success: true,
+          result,
+          selfModel: this.apeService.getSelfModel(),
+        });
         return;
       }
 
@@ -3981,7 +4160,11 @@ Rules:
         const epochId = url.searchParams.get('epochId') || undefined;
         const category = (url.searchParams.get('category') as any) || undefined;
         const status = (url.searchParams.get('status') as any) || undefined;
-        this.sendJson(res, 200, this.apeService.getNarrativeMilestones({ epochId, category, status }));
+        this.sendJson(
+          res,
+          200,
+          this.apeService.getNarrativeMilestones({ epochId, category, status }),
+        );
         return;
       }
 
@@ -4029,7 +4212,10 @@ Rules:
 
       if (url.pathname === '/api/ape/temporal/distinguish' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        const result = this.apeService.distinguishTemporalEntities(body.entities || [], body.nowIso);
+        const result = this.apeService.distinguishTemporalEntities(
+          body.entities || [],
+          body.nowIso,
+        );
         this.sendJson(res, 200, result);
         return;
       }
@@ -4043,7 +4229,9 @@ Rules:
 
       if (url.pathname === '/api/ape/temporal/intentions' && method === 'GET') {
         const status = (url.searchParams.get('status') as any) || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : undefined;
         this.sendJson(res, 200, this.apeService.listFutureIntentions({ status, limit }));
         return;
       }
@@ -4055,7 +4243,11 @@ Rules:
         return;
       }
 
-      if (url.pathname.startsWith('/api/ape/temporal/intention/') && url.pathname.endsWith('/fulfill') && method === 'POST') {
+      if (
+        url.pathname.startsWith('/api/ape/temporal/intention/') &&
+        url.pathname.endsWith('/fulfill') &&
+        method === 'POST'
+      ) {
         const parts = url.pathname.split('/');
         const id = parts[5];
         if (!id) {
@@ -4067,7 +4259,11 @@ Rules:
         return;
       }
 
-      if (url.pathname.startsWith('/api/ape/temporal/intention/') && url.pathname.endsWith('/cancel') && method === 'POST') {
+      if (
+        url.pathname.startsWith('/api/ape/temporal/intention/') &&
+        url.pathname.endsWith('/cancel') &&
+        method === 'POST'
+      ) {
         const parts = url.pathname.split('/');
         const id = parts[5];
         if (!id) {
@@ -4093,7 +4289,11 @@ Rules:
         return;
       }
 
-      if (url.pathname.startsWith('/api/ape/temporal/commitment/') && url.pathname.endsWith('/fulfill') && method === 'POST') {
+      if (
+        url.pathname.startsWith('/api/ape/temporal/commitment/') &&
+        url.pathname.endsWith('/fulfill') &&
+        method === 'POST'
+      ) {
         const parts = url.pathname.split('/');
         const id = parts[5];
         if (!id) {
@@ -4101,12 +4301,19 @@ Rules:
           return;
         }
         const body = (await this.readJsonBody(req)) as any;
-        const commitment = this.apeService.fulfillCommitment(id, body.evidence || 'Verified fulfilled');
+        const commitment = this.apeService.fulfillCommitment(
+          id,
+          body.evidence || 'Verified fulfilled',
+        );
         this.sendJson(res, 200, { success: Boolean(commitment), commitment });
         return;
       }
 
-      if (url.pathname.startsWith('/api/ape/temporal/commitment/') && url.pathname.endsWith('/renegotiate') && method === 'POST') {
+      if (
+        url.pathname.startsWith('/api/ape/temporal/commitment/') &&
+        url.pathname.endsWith('/renegotiate') &&
+        method === 'POST'
+      ) {
         const parts = url.pathname.split('/');
         const id = parts[5];
         if (!id) {
@@ -4114,7 +4321,11 @@ Rules:
           return;
         }
         const body = (await this.readJsonBody(req)) as any;
-        const commitment = this.apeService.renegotiateCommitment(id, body.newTargetTime, body.reason || '');
+        const commitment = this.apeService.renegotiateCommitment(
+          id,
+          body.newTargetTime,
+          body.reason || '',
+        );
         this.sendJson(res, 200, { success: Boolean(commitment), commitment });
         return;
       }
@@ -4132,7 +4343,12 @@ Rules:
         return;
       }
 
-      if (url.pathname.startsWith('/api/ape/temporal/plan/') && url.pathname.includes('/milestone/') && url.pathname.endsWith('/complete') && method === 'POST') {
+      if (
+        url.pathname.startsWith('/api/ape/temporal/plan/') &&
+        url.pathname.includes('/milestone/') &&
+        url.pathname.endsWith('/complete') &&
+        method === 'POST'
+      ) {
         const parts = url.pathname.split('/');
         const planId = parts[5];
         const milestoneId = parts[7];
@@ -4154,7 +4370,11 @@ Rules:
 
       if (url.pathname === '/api/ape/temporal/duration/record' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        const profile = this.apeService.recordActualDuration(body.operationKey, body.actualDurationMs, body.context);
+        const profile = this.apeService.recordActualDuration(
+          body.operationKey,
+          body.actualDurationMs,
+          body.context,
+        );
         this.sendJson(res, 200, { success: true, profile });
         return;
       }
@@ -4171,8 +4391,14 @@ Rules:
         const entityType = (url.searchParams.get('type') as any) || undefined;
         const category = url.searchParams.get('category') || undefined;
         const locationId = url.searchParams.get('locationId') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
-        this.sendJson(res, 200, this.apeService.listWorldEntities({ entityType, category, locationId, limit }));
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : undefined;
+        this.sendJson(
+          res,
+          200,
+          this.apeService.listWorldEntities({ entityType, category, locationId, limit }),
+        );
         return;
       }
 
@@ -4210,7 +4436,11 @@ Rules:
         const sourceEntityId = url.searchParams.get('sourceId') || undefined;
         const targetEntityId = url.searchParams.get('targetId') || undefined;
         const relationType = (url.searchParams.get('type') as any) || undefined;
-        this.sendJson(res, 200, this.apeService.listWorldRelations({ sourceEntityId, targetEntityId, relationType }));
+        this.sendJson(
+          res,
+          200,
+          this.apeService.listWorldRelations({ sourceEntityId, targetEntityId, relationType }),
+        );
         return;
       }
 
@@ -4223,7 +4453,9 @@ Rules:
 
       if (url.pathname === '/api/ape/world/changes' && method === 'GET') {
         const entityId = url.searchParams.get('entityId') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : undefined;
         this.sendJson(res, 200, this.apeService.listWorldEnvironmentalChanges({ entityId, limit }));
         return;
       }
@@ -4238,7 +4470,11 @@ Rules:
       if (url.pathname === '/api/ape/world/causal' && method === 'GET') {
         const causeEntityId = url.searchParams.get('causeId') || undefined;
         const effectEntityId = url.searchParams.get('effectId') || undefined;
-        this.sendJson(res, 200, this.apeService.listWorldCausalRelationships({ causeEntityId, effectEntityId }));
+        this.sendJson(
+          res,
+          200,
+          this.apeService.listWorldCausalRelationships({ causeEntityId, effectEntityId }),
+        );
         return;
       }
 
@@ -4263,7 +4499,11 @@ Rules:
         return;
       }
 
-      if (url.pathname.startsWith('/api/ape/world/unknown/') && url.pathname.endsWith('/resolve') && method === 'POST') {
+      if (
+        url.pathname.startsWith('/api/ape/world/unknown/') &&
+        url.pathname.endsWith('/resolve') &&
+        method === 'POST'
+      ) {
         const parts = url.pathname.split('/');
         const id = parts[5];
         if (!id) {
@@ -4271,7 +4511,10 @@ Rules:
           return;
         }
         const body = (await this.readJsonBody(req)) as any;
-        const unknown = this.apeService.resolveWorldUnknown(id, body.resolutionEvidence || 'Empirically verified');
+        const unknown = this.apeService.resolveWorldUnknown(
+          id,
+          body.resolutionEvidence || 'Empirically verified',
+        );
         this.sendJson(res, 200, { success: Boolean(unknown), unknown });
         return;
       }
@@ -4325,13 +4568,17 @@ Rules:
       }
 
       if (url.pathname === '/api/ape/perception/events' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : undefined;
         this.sendJson(res, 200, this.apeService.listPerceptualEvents(limit));
         return;
       }
 
       if (url.pathname === '/api/ape/perception/objects' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : undefined;
         this.sendJson(res, 200, this.apeService.listDetectedObjects(limit));
         return;
       }
@@ -4353,14 +4600,18 @@ Rules:
       }
 
       if (url.pathname === '/api/ape/embodiment/snapshots' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const snapshots = this.embodimentRepo.listSnapshots(limit);
         this.sendJson(res, 200, snapshots);
         return;
       }
 
       if (url.pathname === '/api/ape/embodiment/constraints' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const events = this.embodimentRepo.listConstraintEvents(limit);
         this.sendJson(res, 200, events);
         return;
@@ -4390,7 +4641,9 @@ Rules:
       }
 
       if (url.pathname === '/api/ape/sensorimotor/actions' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const actions = this.apeService.getRecentSensorimotorActions(limit);
         this.sendJson(res, 200, actions);
         return;
@@ -4489,7 +4742,9 @@ Rules:
         const minRelevance = url.searchParams.get('minRelevance')
           ? parseFloat(url.searchParams.get('minRelevance')!)
           : undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const events = this.situationalRepo.listEnvironmentalEvents({
           layer,
           isInterruption,
@@ -4513,7 +4768,10 @@ Rules:
         return;
       }
 
-      if (url.pathname === '/api/ape/situational/snapshot' && (method === 'GET' || method === 'POST')) {
+      if (
+        url.pathname === '/api/ape/situational/snapshot' &&
+        (method === 'GET' || method === 'POST')
+      ) {
         const snapshot = this.apeService.createSituationalSnapshot();
         this.sendJson(res, 200, snapshot);
         return;
@@ -4531,7 +4789,11 @@ Rules:
 
       if (url.pathname === '/api/ape/attention/switch' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        const switchEvent = this.apeService.switchAttentionFocus(body.newTarget, body.reason, body.forcedByUrgency);
+        const switchEvent = this.apeService.switchAttentionFocus(
+          body.newTarget,
+          body.reason,
+          body.forcedByUrgency,
+        );
         this.sendJson(res, 200, { success: true, switchEvent });
         return;
       }
@@ -4556,7 +4818,9 @@ Rules:
       }
 
       if (url.pathname === '/api/ape/attention/switches' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const switches = this.attentionRepo.listSwitchEvents(limit);
         this.sendJson(res, 200, switches);
         return;
@@ -4567,8 +4831,14 @@ Rules:
           ? url.searchParams.get('wasAttended') === 'true'
           : undefined;
         const stimulusType = url.searchParams.get('type') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
-        const evaluations = this.attentionRepo.listStimulusEvaluations({ wasAttended, stimulusType, limit });
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
+        const evaluations = this.attentionRepo.listStimulusEvaluations({
+          wasAttended,
+          stimulusType,
+          limit,
+        });
         this.sendJson(res, 200, evaluations);
         return;
       }
@@ -4578,7 +4848,11 @@ Rules:
       // ==========================================
       if (url.pathname === '/api/ape/working-memory/context' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        const buffer = this.apeService.initializeWorkingMemoryContext(body.taskId, body.goalTitle, body.maxCapacity);
+        const buffer = this.apeService.initializeWorkingMemoryContext(
+          body.taskId,
+          body.goalTitle,
+          body.maxCapacity,
+        );
         this.sendJson(res, 201, { success: true, buffer });
         return;
       }
@@ -4624,7 +4898,10 @@ Rules:
 
       if (url.pathname === '/api/ape/working-memory/manipulate' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        const updated = this.apeService.manipulateWorkingMemoryItem(body.slotKey, () => body.mutation);
+        const updated = this.apeService.manipulateWorkingMemoryItem(
+          body.slotKey,
+          () => body.mutation,
+        );
         this.sendJson(res, 200, { success: true, item: updated });
         return;
       }
@@ -4652,7 +4929,9 @@ Rules:
 
       if (url.pathname === '/api/ape/working-memory/snapshot' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        const snapshot = this.apeService.createWorkingMemorySnapshot(body.reason || 'Manual snapshot');
+        const snapshot = this.apeService.createWorkingMemorySnapshot(
+          body.reason || 'Manual snapshot',
+        );
         this.sendJson(res, 201, { success: true, snapshot });
         return;
       }
@@ -4703,21 +4982,33 @@ Rules:
 
       if (url.pathname === '/api/ape/memory/multi/correct' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        const entry = this.apeService.correctMultiSystemMemory(body.id, body.newContent, body.reason);
+        const entry = this.apeService.correctMultiSystemMemory(
+          body.id,
+          body.newContent,
+          body.reason,
+        );
         this.sendJson(res, 200, { success: true, entry });
         return;
       }
 
       if (url.pathname === '/api/ape/memory/multi/contradiction' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        const contradiction = this.apeService.detectMemoryContradiction(body.memoryIdA, body.memoryIdB, body.conflictDescription);
+        const contradiction = this.apeService.detectMemoryContradiction(
+          body.memoryIdA,
+          body.memoryIdB,
+          body.conflictDescription,
+        );
         this.sendJson(res, 201, { success: true, contradiction });
         return;
       }
 
       if (url.pathname === '/api/ape/memory/multi/contradiction/resolve' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        const resolved = this.apeService.resolveMemoryContradiction(body.id, body.strategy, body.winningMemoryId);
+        const resolved = this.apeService.resolveMemoryContradiction(
+          body.id,
+          body.strategy,
+          body.winningMemoryId,
+        );
         this.sendJson(res, 200, { success: true, contradiction: resolved });
         return;
       }
@@ -4742,7 +5033,9 @@ Rules:
         const channel = url.searchParams.get('channel') as any;
         const domain = url.searchParams.get('domain') || undefined;
         const outcome = url.searchParams.get('outcome') as any;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : undefined;
         const experiences = this.apeService.learningEngine['repo'].listExperiences({
           channel: channel || undefined,
           domain,
@@ -4772,7 +5065,10 @@ Rules:
 
       if (url.pathname === '/api/ape/learning/recommend' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        const recommendation = this.apeService.getStrategyRecommendations(body.context, body.domain);
+        const recommendation = this.apeService.getStrategyRecommendations(
+          body.context,
+          body.domain,
+        );
         this.sendJson(res, 200, recommendation);
         return;
       }
@@ -4786,7 +5082,10 @@ Rules:
 
       if (url.pathname === '/api/ape/learning/generalize' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        const generalizedRule = this.apeService.generalizeAdaptationRule(body.ruleId, body.targetDomains);
+        const generalizedRule = this.apeService.generalizeAdaptationRule(
+          body.ruleId,
+          body.targetDomains,
+        );
         this.sendJson(res, 200, { success: true, rule: generalizedRule });
         return;
       }
@@ -4887,8 +5186,14 @@ Rules:
       if (url.pathname === '/api/ape/reasoning/tasks' && method === 'GET') {
         const domain = url.searchParams.get('domain') || undefined;
         const paradigm = url.searchParams.get('paradigm') as any;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
-        const tasks = this.apeService.reasoningEngine['repo'].listTasks({ domain, paradigm, limit });
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : undefined;
+        const tasks = this.apeService.reasoningEngine['repo'].listTasks({
+          domain,
+          paradigm,
+          limit,
+        });
         this.sendJson(res, 200, tasks);
         return;
       }
@@ -4904,7 +5209,11 @@ Rules:
       // ==========================================
       if (url.pathname === '/api/ape/causal/graph' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        const graph = this.apeService.createOrUpdateCausalGraph(body.domain, body.nodes, body.links);
+        const graph = this.apeService.createOrUpdateCausalGraph(
+          body.domain,
+          body.nodes,
+          body.links,
+        );
         this.sendJson(res, 201, { success: true, graph });
         return;
       }
@@ -5037,7 +5346,9 @@ Rules:
         const domain = url.searchParams.get('domain') || undefined;
         const status = url.searchParams.get('status') as any;
         const predictionType = url.searchParams.get('predictionType') as any;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : undefined;
         const predictions = this.apeService.predictiveEngine['repo'].listPredictions({
           domain,
           status,
@@ -5108,7 +5419,9 @@ Rules:
 
       if (url.pathname === '/api/ape/simulation/scenarios' && method === 'GET') {
         const type = url.searchParams.get('type') as any;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : undefined;
         const scenarios = this.apeService.simulationEngine.listScenarios({ type, limit });
         this.sendJson(res, 200, scenarios);
         return;
@@ -5126,7 +5439,9 @@ Rules:
       }
 
       if (url.pathname === '/api/ape/simulation/decisions' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const evaluations = this.apeService.simulationEngine.listDecisionEvaluations(limit);
         this.sendJson(res, 200, evaluations);
         return;
@@ -5183,8 +5498,13 @@ Rules:
 
       if (url.pathname === '/api/ape/metacognition/assessments' && method === 'GET') {
         const targetDomain = url.searchParams.get('targetDomain') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
-        const assessments = this.apeService.metacognitionEngine.listAssessments({ targetDomain, limit });
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : undefined;
+        const assessments = this.apeService.metacognitionEngine.listAssessments({
+          targetDomain,
+          limit,
+        });
         this.sendJson(res, 200, assessments);
         return;
       }
@@ -5202,16 +5522,26 @@ Rules:
 
       if (url.pathname === '/api/ape/metacognition/corrections' && method === 'GET') {
         const assessmentId = url.searchParams.get('assessmentId') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
-        const corrections = this.apeService.metacognitionEngine.listCorrections({ assessmentId, limit });
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : undefined;
+        const corrections = this.apeService.metacognitionEngine.listCorrections({
+          assessmentId,
+          limit,
+        });
         this.sendJson(res, 200, corrections);
         return;
       }
 
       if (url.pathname === '/api/ape/metacognition/contradictions' && method === 'GET') {
         const status = url.searchParams.get('status') as any;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
-        const contradictions = this.apeService.metacognitionEngine.listContradictions({ status, limit });
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : undefined;
+        const contradictions = this.apeService.metacognitionEngine.listContradictions({
+          status,
+          limit,
+        });
         this.sendJson(res, 200, contradictions);
         return;
       }
@@ -5233,7 +5563,9 @@ Rules:
       }
 
       if (url.pathname === '/api/ape/integration/cycles' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const cycles = this.apeService.globalCognitiveEngine.listCycles(limit);
         this.sendJson(res, 200, cycles);
         return;
@@ -5295,14 +5627,18 @@ Rules:
       }
 
       if (url.pathname === '/api/ape/executive/inhibitions' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const inhibitions = this.apeService.executiveEngine.listInhibitions(limit);
         this.sendJson(res, 200, inhibitions);
         return;
       }
 
       if (url.pathname === '/api/ape/executive/switches' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const switches = this.apeService.executiveEngine.listTaskSwitches(limit);
         this.sendJson(res, 200, switches);
         return;
@@ -5352,7 +5688,11 @@ Rules:
 
       if (url.pathname === '/api/ape/goals/prioritize' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        const goal = this.apeService.prioritizeSelfGeneratedGoal(body.goalId, body.priority, body.reason);
+        const goal = this.apeService.prioritizeSelfGeneratedGoal(
+          body.goalId,
+          body.priority,
+          body.reason,
+        );
         this.sendJson(res, 200, { success: true, goal });
         return;
       }
@@ -5381,7 +5721,9 @@ Rules:
       if (url.pathname === '/api/ape/goals' && method === 'GET') {
         const status = url.searchParams.get('status') as any;
         const origin = url.searchParams.get('origin') as any;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 100;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 100;
         const goals = this.apeService.selfGeneratedGoalEngine.listGoals({ status, origin, limit });
         this.sendJson(res, 200, goals);
         return;
@@ -5420,7 +5762,12 @@ Rules:
 
       if (url.pathname === '/api/ape/planning/advance-stage' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        const plan = this.apeService.advancePlanStageProgress(body.planId, body.stageId, body.progress, body.checkpoint);
+        const plan = this.apeService.advancePlanStageProgress(
+          body.planId,
+          body.stageId,
+          body.progress,
+          body.checkpoint,
+        );
         this.sendJson(res, 200, { success: true, plan });
         return;
       }
@@ -5434,7 +5781,12 @@ Rules:
 
       if (url.pathname === '/api/ape/planning/interrupt' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        const plan = this.apeService.handlePlanInterruption(body.planId, body.stageId, body.reason, body.context);
+        const plan = this.apeService.handlePlanInterruption(
+          body.planId,
+          body.stageId,
+          body.reason,
+          body.context,
+        );
         this.sendJson(res, 200, { success: true, plan });
         return;
       }
@@ -5462,14 +5814,19 @@ Rules:
 
       if (url.pathname === '/api/ape/planning/commitments/fulfill' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        const commitment = this.apeService.fulfillLongTermCommitment(body.commitmentId, body.evidence);
+        const commitment = this.apeService.fulfillLongTermCommitment(
+          body.commitmentId,
+          body.evidence,
+        );
         this.sendJson(res, 200, { success: true, commitment });
         return;
       }
 
       if (url.pathname === '/api/ape/planning/plans' && method === 'GET') {
         const status = url.searchParams.get('status') as any;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 100;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 100;
         const plans = this.apeService.planningEngine.listPlans({ status, limit });
         this.sendJson(res, 200, plans);
         return;
@@ -5478,8 +5835,14 @@ Rules:
       if (url.pathname === '/api/ape/planning/commitments' && method === 'GET') {
         const stakeholder = url.searchParams.get('stakeholder') || undefined;
         const status = url.searchParams.get('status') as any;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 100;
-        const commitments = this.apeService.planningEngine.listCommitments({ stakeholder, status, limit });
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 100;
+        const commitments = this.apeService.planningEngine.listCommitments({
+          stakeholder,
+          status,
+          limit,
+        });
         this.sendJson(res, 200, commitments);
         return;
       }
@@ -5496,21 +5859,29 @@ Rules:
 
       if (url.pathname === '/api/ape/deliberation/resolve' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        const result = this.apeService.deliberateAndResolveConflict(body.conflictId, body.motivationalState);
+        const result = this.apeService.deliberateAndResolveConflict(
+          body.conflictId,
+          body.motivationalState,
+        );
         this.sendJson(res, 200, { success: true, ...result });
         return;
       }
 
       if (url.pathname === '/api/ape/deliberation/reassess' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        const conflict = this.apeService.recordPostDecisionReassessment(body.conflictId, body.reassessment);
+        const conflict = this.apeService.recordPostDecisionReassessment(
+          body.conflictId,
+          body.reassessment,
+        );
         this.sendJson(res, 200, { success: true, conflict });
         return;
       }
 
       if (url.pathname === '/api/ape/deliberation/conflicts' && method === 'GET') {
         const status = url.searchParams.get('status') as any;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 100;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 100;
         const conflicts = this.apeService.deliberationEngine.listConflicts({ status, limit });
         this.sendJson(res, 200, conflicts);
         return;
@@ -5556,28 +5927,43 @@ Rules:
 
       if (url.pathname === '/api/ape/autonomous-agency/verify' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        const activity = this.apeService.verifyAutonomousActivity(body.activityId, body.criteria, body.observedEvidence);
+        const activity = this.apeService.verifyAutonomousActivity(
+          body.activityId,
+          body.criteria,
+          body.observedEvidence,
+        );
         this.sendJson(res, 200, { success: true, activity });
         return;
       }
 
       if (url.pathname === '/api/ape/autonomous-agency/interrupt' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        const activity = this.apeService.handleAutonomousActivityInterruption(body.activityId, body.reason);
+        const activity = this.apeService.handleAutonomousActivityInterruption(
+          body.activityId,
+          body.reason,
+        );
         this.sendJson(res, 200, { success: true, activity });
         return;
       }
 
       if (url.pathname === '/api/ape/autonomous-agency/recover' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        const activity = await this.apeService.recoverFailedAutonomousActivity(body.activityId, body.recoveryStrategy);
+        const activity = await this.apeService.recoverFailedAutonomousActivity(
+          body.activityId,
+          body.recoveryStrategy,
+        );
         this.sendJson(res, 200, { success: true, activity });
         return;
       }
 
       if (url.pathname === '/api/ape/autonomous-agency/proactive-message' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        const activity = this.apeService.dispatchProactiveCommunication(body.activityId, body.messageText, body.rationale, body.channel);
+        const activity = this.apeService.dispatchProactiveCommunication(
+          body.activityId,
+          body.messageText,
+          body.rationale,
+          body.channel,
+        );
         this.sendJson(res, 200, { success: true, activity });
         return;
       }
@@ -5593,8 +5979,15 @@ Rules:
         const status = url.searchParams.get('status') as any;
         const type = url.searchParams.get('type') as any;
         const goalId = url.searchParams.get('goalId') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 100;
-        const activities = this.apeService.autonomousAgencyEngine.listActivities({ status, type, goalId, limit });
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 100;
+        const activities = this.apeService.autonomousAgencyEngine.listActivities({
+          status,
+          type,
+          goalId,
+          limit,
+        });
         this.sendJson(res, 200, activities);
         return;
       }
@@ -5617,7 +6010,9 @@ Rules:
       }
 
       if (url.pathname === '/api/ape/appraisal/comparisons' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const comparisons = this.apeService.contextualAppraisalService.listComparisons(limit);
         this.sendJson(res, 200, comparisons);
         return;
@@ -5672,14 +6067,18 @@ Rules:
       }
 
       if (url.pathname === '/api/ape/repertoire/transitions' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const transitions = this.apeService.getRepertoireTransitions(limit);
         this.sendJson(res, 200, transitions);
         return;
       }
 
       if (url.pathname === '/api/ape/repertoire/blends' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const blends = this.apeService.getRepertoireBlends(limit);
         this.sendJson(res, 200, blends);
         return;
@@ -5733,10 +6132,7 @@ Rules:
 
       if (url.pathname === '/api/ape/regulation/reappraise' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        const attempt = this.apeService.reappraiseSetback(
-          body.setbackId,
-          body.reframingRationale,
-        );
+        const attempt = this.apeService.reappraiseSetback(body.setbackId, body.reframingRationale);
         this.sendJson(res, 200, { success: true, attempt });
         return;
       }
@@ -5759,7 +6155,9 @@ Rules:
       }
 
       if (url.pathname === '/api/ape/regulation/setbacks' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const setbacks = this.apeService.listSetbacks(limit);
         this.sendJson(res, 200, setbacks);
         return;
@@ -5767,7 +6165,9 @@ Rules:
 
       if (url.pathname === '/api/ape/regulation/attempts' && method === 'GET') {
         const setbackId = url.searchParams.get('setbackId') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const attempts = this.apeService.getRegulationAttempts(setbackId, limit);
         this.sendJson(res, 200, attempts);
         return;
@@ -5790,7 +6190,9 @@ Rules:
       }
 
       if (url.pathname === '/api/ape/homeostasis/drives' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 20;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 20;
         const drives = this.apeService.getActiveHomeostaticDrives(limit);
         this.sendJson(res, 200, { success: true, drives });
         return;
@@ -5820,7 +6222,9 @@ Rules:
       }
 
       if (url.pathname === '/api/ape/homeostasis/resolutions' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const resolutions = this.apeService.listHomeostaticResolutions(limit);
         this.sendJson(res, 200, resolutions);
         return;
@@ -5832,7 +6236,9 @@ Rules:
       if (url.pathname === '/api/ape/motivation/activities' && method === 'GET') {
         const orientation = url.searchParams.get('orientation') as any;
         const status = url.searchParams.get('status') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const activities = this.apeService.listMotivatedActivities({ orientation, status, limit });
         this.sendJson(res, 200, { success: true, activities });
         return;
@@ -5893,7 +6299,9 @@ Rules:
 
       if (url.pathname === '/api/ape/motivation/internalizations' && method === 'GET') {
         const activityId = url.searchParams.get('activityId') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const records = this.apeService.getGoalInternalizations(activityId, limit);
         this.sendJson(res, 200, records);
         return;
@@ -5901,7 +6309,9 @@ Rules:
 
       if (url.pathname === '/api/ape/motivation/reassessments' && method === 'GET') {
         const activityId = url.searchParams.get('activityId') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const reassessments = this.apeService.getMotivationReassessments(activityId, limit);
         this.sendJson(res, 200, reassessments);
         return;
@@ -5911,7 +6321,9 @@ Rules:
       // Curiosity and Exploration Routes (Milestone 30)
       // ==========================================
       if (url.pathname === '/api/ape/curiosity/interests' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const interests = this.apeService.listDiscoveredInterests(limit);
         this.sendJson(res, 200, { success: true, interests });
         return;
@@ -5938,7 +6350,9 @@ Rules:
 
       if (url.pathname === '/api/ape/curiosity/gaps' && method === 'GET') {
         const domain = url.searchParams.get('domain') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const gaps = this.apeService.listKnowledgeGaps(domain, limit);
         this.sendJson(res, 200, { success: true, gaps });
         return;
@@ -5958,7 +6372,9 @@ Rules:
 
       if (url.pathname === '/api/ape/curiosity/questions' && method === 'GET') {
         const knowledgeGapId = url.searchParams.get('knowledgeGapId') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const questions = this.apeService.listExploratoryQuestions(knowledgeGapId, limit);
         this.sendJson(res, 200, { success: true, questions });
         return;
@@ -5977,7 +6393,9 @@ Rules:
 
       if (url.pathname === '/api/ape/curiosity/investigations' && method === 'GET') {
         const domain = url.searchParams.get('domain') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const investigations = this.apeService.listInvestigations(domain, limit);
         this.sendJson(res, 200, { success: true, investigations });
         return;
@@ -5996,7 +6414,9 @@ Rules:
       }
 
       if (url.pathname === '/api/ape/curiosity/novelty' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const records = this.apeService.listNoveltyDetections(limit);
         this.sendJson(res, 200, { success: true, records });
         return;
@@ -6018,7 +6438,9 @@ Rules:
       // ==========================================
       if (url.pathname === '/api/ape/reward/strategies' && method === 'GET') {
         const domain = url.searchParams.get('domain') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const strategies = this.apeService.listStrategyPerformances(domain, limit);
         this.sendJson(res, 200, { success: true, strategies });
         return;
@@ -6062,7 +6484,9 @@ Rules:
 
       if (url.pathname === '/api/ape/reward/predictions' && method === 'GET') {
         const strategyId = url.searchParams.get('strategyId') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const predictions = this.apeService.listRewardPredictions(strategyId, limit);
         this.sendJson(res, 200, { success: true, predictions });
         return;
@@ -6087,7 +6511,9 @@ Rules:
       if (url.pathname === '/api/ape/reward/evaluations' && method === 'GET') {
         const strategyId = url.searchParams.get('strategyId') || undefined;
         const domain = url.searchParams.get('domain') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const evaluations = this.apeService.listOutcomeEvaluations(strategyId, domain, limit);
         this.sendJson(res, 200, { success: true, evaluations });
         return;
@@ -6095,7 +6521,9 @@ Rules:
 
       if (url.pathname === '/api/ape/reward/diminishing-alerts' && method === 'GET') {
         const strategyId = url.searchParams.get('strategyId') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const alerts = this.apeService.listDiminishingReturnAlerts(strategyId, limit);
         this.sendJson(res, 200, { success: true, alerts });
         return;
@@ -6107,7 +6535,9 @@ Rules:
       if (url.pathname === '/api/ape/habits/list' && method === 'GET') {
         const domain = url.searchParams.get('domain') || undefined;
         const activeOnly = url.searchParams.get('activeOnly') === 'true';
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const habits = this.apeService.listHabits(domain, activeOnly, limit);
         this.sendJson(res, 200, { success: true, habits });
         return;
@@ -6165,7 +6595,9 @@ Rules:
 
       if (url.pathname === '/api/ape/habits/logs' && method === 'GET') {
         const habitId = url.searchParams.get('habitId') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const logs = this.apeService.listHabitExecutionLogs(habitId, limit);
         this.sendJson(res, 200, { success: true, logs });
         return;
@@ -6209,7 +6641,9 @@ Rules:
 
       if (url.pathname === '/api/ape/temperament/expressions' && method === 'GET') {
         const situationType = url.searchParams.get('situationType') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const expressions = this.apeService.listSituationalExpressions(situationType, limit);
         this.sendJson(res, 200, { success: true, expressions });
         return;
@@ -6228,7 +6662,9 @@ Rules:
 
       if (url.pathname === '/api/ape/temperament/evolution-records' && method === 'GET') {
         const traitKey = url.searchParams.get('traitKey') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const records = this.apeService.listPersonalityEvolutionRecords(traitKey, limit);
         this.sendJson(res, 200, { success: true, records });
         return;
@@ -6239,7 +6675,9 @@ Rules:
       // ==========================================
       if (url.pathname === '/api/ape/moral/principles' && method === 'GET') {
         const category = url.searchParams.get('category') as any;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const principles = this.apeService.listMoralPrinciples(category, limit);
         this.sendJson(res, 200, { success: true, principles });
         return;
@@ -6303,7 +6741,9 @@ Rules:
       }
 
       if (url.pathname === '/api/ape/moral/resolutions' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const resolutions = this.apeService.listEthicalResolutions(limit);
         this.sendJson(res, 200, { success: true, resolutions });
         return;
@@ -6311,7 +6751,9 @@ Rules:
 
       if (url.pathname === '/api/ape/moral/learning-records' && method === 'GET') {
         const principleId = url.searchParams.get('principleId') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const records = this.apeService.listMoralLearningRecords(principleId, limit);
         this.sendJson(res, 200, { success: true, records });
         return;
@@ -6379,7 +6821,11 @@ Rules:
 
       if (url.pathname === '/api/ape/efficacy/improvement-goals' && method === 'PATCH') {
         const body = (await this.readJsonBody(req)) as any;
-        const goal = this.apeService.updateSelfImprovementProgress(body.goalId, body.progress, body.status);
+        const goal = this.apeService.updateSelfImprovementProgress(
+          body.goalId,
+          body.progress,
+          body.status,
+        );
         this.sendJson(res, 200, { success: true, goal });
         return;
       }
@@ -6393,7 +6839,9 @@ Rules:
       if (url.pathname === '/api/ape/efficacy/evidence' && method === 'GET') {
         const domain = url.searchParams.get('domain') || undefined;
         const type = (url.searchParams.get('type') as any) || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const evidence = this.apeService.listEfficacyEvidence(domain, type, limit);
         this.sendJson(res, 200, { success: true, evidence });
         return;
@@ -6424,7 +6872,9 @@ Rules:
 
       if (url.pathname === '/api/ape/development-longterm/history' && method === 'GET') {
         const dimension = (url.searchParams.get('dimension') as any) || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const history = this.apeService.listDevelopmentHistory(dimension, limit);
         this.sendJson(res, 200, { success: true, history });
         return;
@@ -6496,7 +6946,9 @@ Rules:
 
       if (url.pathname === '/api/ape/tom/intentions' && method === 'GET') {
         const agentId = url.searchParams.get('agentId') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const intentions = this.apeService.listInferredIntentions(agentId, limit);
         this.sendJson(res, 200, { success: true, intentions });
         return;
@@ -6511,7 +6963,9 @@ Rules:
 
       if (url.pathname === '/api/ape/tom/social-predictions' && method === 'GET') {
         const agentId = url.searchParams.get('agentId') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const predictions = this.apeService.listSocialPredictions(agentId, limit);
         this.sendJson(res, 200, { success: true, predictions });
         return;
@@ -6529,7 +6983,9 @@ Rules:
 
       if (url.pathname === '/api/ape/empathy/experiences' && method === 'GET') {
         const targetPersonId = url.searchParams.get('targetPersonId') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const experiences = this.apeService.listInferredExperiences(targetPersonId, limit);
         this.sendJson(res, 200, { success: true, experiences });
         return;
@@ -6572,7 +7028,9 @@ Rules:
 
       if (url.pathname === '/api/ape/empathy/responses' && method === 'GET') {
         const targetPersonId = url.searchParams.get('targetPersonId') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const responses = this.apeService.listEmpatheticResponses(targetPersonId, limit);
         this.sendJson(res, 200, { success: true, responses });
         return;
@@ -6587,7 +7045,9 @@ Rules:
 
       if (url.pathname === '/api/ape/empathy/revisions' && method === 'GET') {
         const perspectiveId = url.searchParams.get('perspectiveId') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const revisions = this.apeService.listPerspectiveRevisions(perspectiveId, limit);
         this.sendJson(res, 200, { success: true, revisions });
         return;
@@ -6625,12 +7085,16 @@ Rules:
         const targetPersonId = url.searchParams.get('targetPersonId');
         const emotion = url.searchParams.get('emotion') as any;
         if (!targetPersonId || !emotion) {
-          this.sendJson(res, 400, { error: 'Query parameters "targetPersonId" and "emotion" are required' });
+          this.sendJson(res, 400, {
+            error: 'Query parameters "targetPersonId" and "emotion" are required',
+          });
           return;
         }
         const state = this.apeService.getSocialEmotionState(targetPersonId, emotion);
         if (!state) {
-          this.sendJson(res, 404, { error: `Social emotion state not found for: ${targetPersonId}/${emotion}` });
+          this.sendJson(res, 404, {
+            error: `Social emotion state not found for: ${targetPersonId}/${emotion}`,
+          });
           return;
         }
         this.sendJson(res, 200, { success: true, state });
@@ -6639,7 +7103,9 @@ Rules:
 
       if (url.pathname === '/api/ape/social-emotions/appraisals' && method === 'GET') {
         const targetPersonId = url.searchParams.get('targetPersonId') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const appraisals = this.apeService.listSocialAppraisals(targetPersonId, limit);
         this.sendJson(res, 200, { success: true, appraisals });
         return;
@@ -6666,7 +7132,9 @@ Rules:
       if (url.pathname === '/api/ape/pragmatics/turn-taking' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
         if (!body.sessionId || !body.speakerId || body.inputLatencyMs === undefined) {
-          this.sendJson(res, 400, { error: 'sessionId, speakerId, and inputLatencyMs are required' });
+          this.sendJson(res, 400, {
+            error: 'sessionId, speakerId, and inputLatencyMs are required',
+          });
           return;
         }
         const turn = await this.apeService.evaluateTurnTaking(
@@ -6718,7 +7186,9 @@ Rules:
         }
         const context = this.apeService.getConversationalContext(sessionId);
         if (!context) {
-          this.sendJson(res, 404, { error: `Conversational context not found for session: ${sessionId}` });
+          this.sendJson(res, 404, {
+            error: `Conversational context not found for session: ${sessionId}`,
+          });
           return;
         }
         this.sendJson(res, 200, { success: true, context });
@@ -6728,7 +7198,9 @@ Rules:
       if (url.pathname === '/api/ape/pragmatics/appropriateness' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
         if (!body.utterance || !body.context || !body.audienceProfile) {
-          this.sendJson(res, 400, { error: 'utterance, context, and audienceProfile are required' });
+          this.sendJson(res, 400, {
+            error: 'utterance, context, and audienceProfile are required',
+          });
           return;
         }
         const evaluation = this.apeService.evaluateContextualAppropriateness(
@@ -6767,7 +7239,9 @@ Rules:
           this.sendJson(res, 400, { error: 'personId is required' });
           return;
         }
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const events = this.apeService.listSharedHistoryEvents(personId, limit);
         this.sendJson(res, 200, { success: true, events });
         return;
@@ -6776,7 +7250,9 @@ Rules:
       if (url.pathname === '/api/ape/relationships/conflict' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
         if (!body.personId || !body.triggerReason || !body.disagreementSummary) {
-          this.sendJson(res, 400, { error: 'personId, triggerReason, and disagreementSummary are required' });
+          this.sendJson(res, 400, {
+            error: 'personId, triggerReason, and disagreementSummary are required',
+          });
           return;
         }
         const conflict = await this.apeService.recognizeRelationalConflict(body);
@@ -6787,7 +7263,9 @@ Rules:
       if (url.pathname === '/api/ape/relationships/apology' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
         if (!body.conflictId || !body.initiator || !body.acknowledgment) {
-          this.sendJson(res, 400, { error: 'conflictId, initiator, and acknowledgment are required' });
+          this.sendJson(res, 400, {
+            error: 'conflictId, initiator, and acknowledgment are required',
+          });
           return;
         }
         const result = await this.apeService.submitApologyAndRepair(body);
@@ -6808,7 +7286,9 @@ Rules:
 
       if (url.pathname === '/api/ape/relationships/separation-continuity' && method === 'GET') {
         const personId = url.searchParams.get('personId') || 'proof';
-        const elapsedHours = url.searchParams.get('elapsedHours') ? parseFloat(url.searchParams.get('elapsedHours')!) : 24;
+        const elapsedHours = url.searchParams.get('elapsedHours')
+          ? parseFloat(url.searchParams.get('elapsedHours')!)
+          : 24;
         const result = await this.apeService.evaluateSeparationContinuity(personId, elapsedHours);
         this.sendJson(res, 200, { success: true, ...result });
         return;
@@ -6819,8 +7299,15 @@ Rules:
       // ==========================================
       if (url.pathname === '/api/ape/culture/observe' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        if (!body.observedActorId || !body.observedBehavior || !body.context || !body.observedOutcome) {
-          this.sendJson(res, 400, { error: 'observedActorId, observedBehavior, context, and observedOutcome are required' });
+        if (
+          !body.observedActorId ||
+          !body.observedBehavior ||
+          !body.context ||
+          !body.observedOutcome
+        ) {
+          this.sendJson(res, 400, {
+            error: 'observedActorId, observedBehavior, context, and observedOutcome are required',
+          });
           return;
         }
         const record = await this.apeService.observeSocialBehavior(body);
@@ -6831,7 +7318,9 @@ Rules:
       if (url.pathname === '/api/ape/culture/evaluate-norm' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
         if (!body.normName || !body.culturalContext || !body.description) {
-          this.sendJson(res, 400, { error: 'normName, culturalContext, and description are required' });
+          this.sendJson(res, 400, {
+            error: 'normName, culturalContext, and description are required',
+          });
           return;
         }
         const norm = await this.apeService.evaluateSocialNorm(body);
@@ -6849,7 +7338,9 @@ Rules:
       if (url.pathname === '/api/ape/culture/coordinate-activity' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
         if (!body.activityName || !body.participants || !body.activityType) {
-          this.sendJson(res, 400, { error: 'activityName, participants, and activityType are required' });
+          this.sendJson(res, 400, {
+            error: 'activityName, participants, and activityType are required',
+          });
           return;
         }
         const activity = await this.apeService.coordinateSocialActivity(body);
@@ -6860,7 +7351,9 @@ Rules:
       if (url.pathname === '/api/ape/culture/resolve-dilemma' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
         if (!body.socialConventionId || !body.socialExpectation) {
-          this.sendJson(res, 400, { error: 'socialConventionId and socialExpectation are required' });
+          this.sendJson(res, 400, {
+            error: 'socialConventionId and socialExpectation are required',
+          });
           return;
         }
         const dilemma = await this.apeService.resolvePersonalVsSocialDilemma(body);
@@ -6870,7 +7363,9 @@ Rules:
 
       if (url.pathname === '/api/ape/culture/observations' && method === 'GET') {
         const actorId = url.searchParams.get('actorId') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const observations = this.apeService.listObservationalLearningRecords(actorId, limit);
         this.sendJson(res, 200, { success: true, observations });
         return;
@@ -6911,15 +7406,23 @@ Rules:
           this.sendJson(res, 400, { error: 'theme is required' });
           return;
         }
-        const fragment = await this.apeService.composeStoryFragment(body.theme, body.emotionalColoring);
+        const fragment = await this.apeService.composeStoryFragment(
+          body.theme,
+          body.emotionalColoring,
+        );
         this.sendJson(res, 200, { success: true, fragment });
         return;
       }
 
-      if (url.pathname === '/api/ape/expressive-identity/natural-disagreement' && method === 'POST') {
+      if (
+        url.pathname === '/api/ape/expressive-identity/natural-disagreement' &&
+        method === 'POST'
+      ) {
         const body = (await this.readJsonBody(req)) as any;
         if (!body.partnerClaim || !body.arleCounterthesis || !body.contextTopic) {
-          this.sendJson(res, 400, { error: 'partnerClaim, arleCounterthesis, and contextTopic are required' });
+          this.sendJson(res, 400, {
+            error: 'partnerClaim, arleCounterthesis, and contextTopic are required',
+          });
           return;
         }
         const guidance = this.apeService.formulateNaturalDisagreement(
@@ -6956,7 +7459,9 @@ Rules:
       if (url.pathname === '/api/ape/creativity/create-project' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
         if (!body.title || !body.domain || !body.objective || !body.initialContent) {
-          this.sendJson(res, 400, { error: 'title, domain, objective, and initialContent are required' });
+          this.sendJson(res, 400, {
+            error: 'title, domain, objective, and initialContent are required',
+          });
           return;
         }
         const project = await this.apeService.createCreativeProject(body);
@@ -6985,7 +7490,10 @@ Rules:
           this.sendJson(res, 400, { error: 'content and domain are required' });
           return;
         }
-        const evaluation = this.apeService.evaluateCreativeArtifactQuality(body.content, body.domain);
+        const evaluation = this.apeService.evaluateCreativeArtifactQuality(
+          body.content,
+          body.domain,
+        );
         this.sendJson(res, 200, { success: true, evaluation });
         return;
       }
@@ -6996,7 +7504,11 @@ Rules:
           this.sendJson(res, 400, { error: 'domain, topic, and observation are required' });
           return;
         }
-        const interest = await this.apeService.deepenCreativeInterest(body.domain, body.topic, body.observation);
+        const interest = await this.apeService.deepenCreativeInterest(
+          body.domain,
+          body.topic,
+          body.observation,
+        );
         this.sendJson(res, 200, { success: true, interest });
         return;
       }
@@ -7020,7 +7532,9 @@ Rules:
 
       if (url.pathname === '/api/ape/recreation/activities' && method === 'GET') {
         const category = (url.searchParams.get('category') as any) || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const activities = this.apeService.listRecreationalActivities(category, limit);
         this.sendJson(res, 200, { success: true, activities });
         return;
@@ -7028,8 +7542,15 @@ Rules:
 
       if (url.pathname === '/api/ape/recreation/preference' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
-        if (!body.category || !body.itemOrStyleName || body.affinityScore === undefined || !body.aestheticCritique) {
-          this.sendJson(res, 400, { error: 'category, itemOrStyleName, affinityScore, and aestheticCritique are required' });
+        if (
+          !body.category ||
+          !body.itemOrStyleName ||
+          body.affinityScore === undefined ||
+          !body.aestheticCritique
+        ) {
+          this.sendJson(res, 400, {
+            error: 'category, itemOrStyleName, affinityScore, and aestheticCritique are required',
+          });
           return;
         }
         const preference = await this.apeService.registerAestheticPreference(body);
@@ -7058,7 +7579,9 @@ Rules:
       if (url.pathname === '/api/ape/recreation/humor' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
         if (!body.theme || !body.witDimension || !body.sampleJokeOrBanter) {
-          this.sendJson(res, 400, { error: 'theme, witDimension, and sampleJokeOrBanter are required' });
+          this.sendJson(res, 400, {
+            error: 'theme, witDimension, and sampleJokeOrBanter are required',
+          });
           return;
         }
         const record = await this.apeService.developHumorObservation(body);
@@ -7072,7 +7595,11 @@ Rules:
           this.sendJson(res, 400, { error: 'category and title are required' });
           return;
         }
-        const evaluation = this.apeService.evaluateAestheticWork(body.category, body.title, body.attributes || {});
+        const evaluation = this.apeService.evaluateAestheticWork(
+          body.category,
+          body.title,
+          body.attributes || {},
+        );
         this.sendJson(res, 200, { success: true, evaluation });
         return;
       }
@@ -7104,7 +7631,9 @@ Rules:
       if (url.pathname === '/api/ape/offline/activities' && method === 'GET') {
         const activityType = (url.searchParams.get('activityType') as any) || undefined;
         const status = url.searchParams.get('status') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const activities = this.apeService.listOfflineActivities({ activityType, status, limit });
         this.sendJson(res, 200, { success: true, activities });
         return;
@@ -7118,7 +7647,9 @@ Rules:
       }
 
       if (url.pathname === '/api/ape/offline/consolidations' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const runs = this.apeService.listOfflineConsolidationRuns(limit);
         this.sendJson(res, 200, { success: true, runs });
         return;
@@ -7232,7 +7763,10 @@ Rules:
         return;
       }
 
-      if (url.pathname === '/api/ape/security/policy' && (method === 'POST' || method === 'PATCH')) {
+      if (
+        url.pathname === '/api/ape/security/policy' &&
+        (method === 'POST' || method === 'PATCH')
+      ) {
         const body = (await this.readJsonBody(req)) as any;
         const policy = this.apeService.updateSecurityPolicy(body);
         this.sendJson(res, 200, { success: true, policy });
@@ -7244,7 +7778,9 @@ Rules:
         const allowed = url.searchParams.has('allowed')
           ? url.searchParams.get('allowed') === 'true'
           : undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const decisions = this.apeService.listSecurityDecisions({ actionCategory, allowed, limit });
         this.sendJson(res, 200, { success: true, decisions });
         return;
@@ -7252,7 +7788,9 @@ Rules:
 
       if (url.pathname === '/api/ape/security/audit-logs' && method === 'GET') {
         const eventType = (url.searchParams.get('eventType') as any) || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const logs = this.apeService.listSecurityAuditLogs({ eventType, limit });
         this.sendJson(res, 200, { success: true, logs });
         return;
@@ -7286,7 +7824,9 @@ Rules:
       }
 
       if (url.pathname === '/api/ape/evaluation/reports' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const reports = this.apeService.listLongitudinalReports(limit);
         this.sendJson(res, 200, { success: true, reports });
         return;
@@ -7294,7 +7834,9 @@ Rules:
 
       if (url.pathname === '/api/ape/evaluation/probes' && method === 'GET') {
         const probeType = url.searchParams.get('probeType') || undefined;
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const probes = this.apeService.listContinuityProbes(probeType, limit);
         this.sendJson(res, 200, { success: true, probes });
         return;
@@ -7343,7 +7885,9 @@ Rules:
       if (url.pathname === '/api/ape/consciousness/expectation/resolve' && method === 'POST') {
         const body = (await this.readJsonBody(req)) as any;
         if (!body.expectationId || !body.actualOutcome || body.predictionError === undefined) {
-          this.sendJson(res, 400, { error: 'expectationId, actualOutcome, and predictionError are required' });
+          this.sendJson(res, 400, {
+            error: 'expectationId, actualOutcome, and predictionError are required',
+          });
           return;
         }
         const expectation = this.apeService.resolveConsciousExpectation(body);
@@ -7352,7 +7896,9 @@ Rules:
       }
 
       if (url.pathname === '/api/ape/consciousness/expectations' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const expectations = this.apeService.listConsciousExpectations(limit);
         this.sendJson(res, 200, { success: true, expectations });
         return;
@@ -7367,7 +7913,9 @@ Rules:
       }
 
       if (url.pathname === '/api/ape/consciousness/dream-cycles' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const dreams = this.apeService.listSleepDreamCycles(limit);
         this.sendJson(res, 200, { success: true, dreams });
         return;
@@ -7385,7 +7933,9 @@ Rules:
       }
 
       if (url.pathname === '/api/ape/consciousness/thoughts' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const thoughts = this.apeService.listDualProcessThoughts(limit);
         this.sendJson(res, 200, { success: true, thoughts });
         return;
@@ -7409,7 +7959,9 @@ Rules:
       }
 
       if (url.pathname === '/api/ape/consciousness/pushbacks' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const pushbacks = this.apeService.listBoundaryPushbacks(limit);
         this.sendJson(res, 200, { success: true, pushbacks });
         return;
@@ -7423,7 +7975,9 @@ Rules:
       }
 
       if (url.pathname === '/api/ape/consciousness/dmn/wanderings' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const wanderings = this.apeService.listDefaultModeWanderings(limit);
         this.sendJson(res, 200, { success: true, wanderings });
         return;
@@ -7435,11 +7989,6 @@ Rules:
         this.sendJson(res, 200, { success: true, attunement });
         return;
       }
-
-
-
-
-
 
       // ==========================================
       // Digital Agency Subsystem Routes
@@ -7470,20 +8019,31 @@ Rules:
       }
 
       if (url.pathname === '/api/agency/intent' && method === 'POST') {
-        const body = (await this.readJsonBody(req)) as { objective: string; initiator?: 'user' | 'arle' };
+        const body = (await this.readJsonBody(req)) as {
+          objective: string;
+          initiator?: 'user' | 'arle';
+        };
         const result = await this.submitAgencyObjective(body.objective, body.initiator || 'user');
         this.sendJson(res, 200, result);
         return;
       }
 
-      if (url.pathname.startsWith('/api/agency/tasks/') && url.pathname.endsWith('/execute') && method === 'POST') {
+      if (
+        url.pathname.startsWith('/api/agency/tasks/') &&
+        url.pathname.endsWith('/execute') &&
+        method === 'POST'
+      ) {
         const taskId = url.pathname.replace('/api/agency/tasks/', '').replace('/execute', '');
         const result = await this.executeAgencyTask(taskId);
         this.sendJson(res, 200, result);
         return;
       }
 
-      if (url.pathname.startsWith('/api/agency/tasks/') && url.pathname.endsWith('/cancel') && method === 'POST') {
+      if (
+        url.pathname.startsWith('/api/agency/tasks/') &&
+        url.pathname.endsWith('/cancel') &&
+        method === 'POST'
+      ) {
         const taskId = url.pathname.replace('/api/agency/tasks/', '').replace('/cancel', '');
         const task = this.intentTaskManager.cancelTask(taskId);
         this.sendJson(res, 200, task);
@@ -7578,7 +8138,8 @@ Rules:
         try {
           await this.activityRepo.create({
             title: 'AUTONOMY_REACTIVATED',
-            objective: 'Autonomous digital agency has been explicitly reactivated after emergency shutdown.',
+            objective:
+              'Autonomous digital agency has been explicitly reactivated after emergency shutdown.',
             status: 'completed',
             origin: 'user_assigned',
             metadata: {
@@ -7620,7 +8181,9 @@ Rules:
       }
 
       if (url.pathname === '/api/audit' && method === 'GET') {
-        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const limit = url.searchParams.get('limit')
+          ? parseInt(url.searchParams.get('limit')!, 10)
+          : 50;
         const events = this.auditRepo.list(limit);
         this.sendJson(res, 200, { events });
         return;
@@ -7654,7 +8217,10 @@ Rules:
         } catch {}
       } else {
         const status = err.name === 'ZodError' ? 400 : 500;
-        this.sendJson(res, status, { error: err.message || 'Internal server error', details: err.issues });
+        this.sendJson(res, status, {
+          error: err.message || 'Internal server error',
+          details: err.issues,
+        });
       }
     }
   }

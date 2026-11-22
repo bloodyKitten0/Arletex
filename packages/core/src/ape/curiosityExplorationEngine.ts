@@ -106,7 +106,8 @@ export class CuriosityExplorationEngine {
           noveltyType: 'durable_interest',
           decayResistance: 0.95,
           isUserAssigned: false, // Acceptance criterion: discovered independently
-          discoveredRationale: 'Spontaneous discovery of boundary-bulk entanglement correspondence during dialogue with Proof.',
+          discoveredRationale:
+            'Spontaneous discovery of boundary-bulk entanglement correspondence during dialogue with Proof.',
           keyFindings: [
             'Ryu-Takayanagi minimal surfaces geometrically encode boundary entanglement entropy.',
             'Spacetime geometry emerges naturally from underlying quantum entanglement networks.',
@@ -126,7 +127,8 @@ export class CuriosityExplorationEngine {
           noveltyType: 'durable_interest',
           decayResistance: 0.85,
           isUserAssigned: false,
-          discoveredRationale: 'Autonomous inquiry into how mathematical relationships remain invariant across revolutionary physics.',
+          discoveredRationale:
+            'Autonomous inquiry into how mathematical relationships remain invariant across revolutionary physics.',
           keyFindings: [
             'Equations like Maxwell to relativistic electrodynamics preserve relational topology despite ontological shift.',
           ],
@@ -147,8 +149,10 @@ export class CuriosityExplorationEngine {
     familiarityBaseline: number = 0.25,
   ): NoveltyDetectionRecord {
     if (!stimulus || stimulus.trim().length === 0) throw new Error('Stimulus cannot be empty');
-    if (!detectedDomain || detectedDomain.trim().length === 0) throw new Error('Detected domain cannot be empty');
-    if (familiarityBaseline < 0.0 || familiarityBaseline > 1.0) throw new Error('Familiarity baseline must be between 0.0 and 1.0');
+    if (!detectedDomain || detectedDomain.trim().length === 0)
+      throw new Error('Detected domain cannot be empty');
+    if (familiarityBaseline < 0.0 || familiarityBaseline > 1.0)
+      throw new Error('Familiarity baseline must be between 0.0 and 1.0');
 
     const noveltyScore = Number(Math.max(0.0, 1.0 - familiarityBaseline).toFixed(2));
     const isNovel = noveltyScore >= 0.5;
@@ -164,7 +168,9 @@ export class CuriosityExplorationEngine {
     };
 
     this.repo.saveNovelty(record);
-    this.logger.info(`Novelty detected in domain "${detectedDomain}": score=${noveltyScore} (isNovel=${isNovel})`);
+    this.logger.info(
+      `Novelty detected in domain "${detectedDomain}": score=${noveltyScore} (isNovel=${isNovel})`,
+    );
     return record;
   }
 
@@ -176,8 +182,10 @@ export class CuriosityExplorationEngine {
   ): KnowledgeGapRecord {
     if (!domain || domain.trim().length === 0) throw new Error('Domain cannot be empty');
     if (!topic || topic.trim().length === 0) throw new Error('Topic cannot be empty');
-    if (!gapDescription || gapDescription.trim().length === 0) throw new Error('Gap description cannot be empty');
-    if (epistemicUncertainty < 0.0 || epistemicUncertainty > 1.0) throw new Error('Epistemic uncertainty must be between 0.0 and 1.0');
+    if (!gapDescription || gapDescription.trim().length === 0)
+      throw new Error('Gap description cannot be empty');
+    if (epistemicUncertainty < 0.0 || epistemicUncertainty > 1.0)
+      throw new Error('Epistemic uncertainty must be between 0.0 and 1.0');
 
     const importanceScore = Number((epistemicUncertainty * 0.9).toFixed(2));
 
@@ -192,7 +200,9 @@ export class CuriosityExplorationEngine {
     };
 
     this.repo.saveKnowledgeGap(gap);
-    this.logger.info(`Knowledge gap identified in "${domain}/${topic}": uncertainty=${epistemicUncertainty}`);
+    this.logger.info(
+      `Knowledge gap identified in "${domain}/${topic}": uncertainty=${epistemicUncertainty}`,
+    );
     return gap;
   }
 
@@ -201,7 +211,8 @@ export class CuriosityExplorationEngine {
     question: string,
     hypotheses: string[] = [],
   ): ExploratoryQuestion {
-    if (!question || question.trim().length === 0) throw new Error('Exploratory question cannot be empty');
+    if (!question || question.trim().length === 0)
+      throw new Error('Exploratory question cannot be empty');
 
     // Retrieve knowledge gap
     const gaps = this.repo.listKnowledgeGaps();
@@ -228,9 +239,12 @@ export class CuriosityExplorationEngine {
     stepsExecuted: InvestigationStep[],
     synthesisSummary: string,
   ): IndependentInvestigationRecord {
-    if (!investigationTitle || investigationTitle.trim().length === 0) throw new Error('Investigation title cannot be empty');
-    if (!synthesisSummary || synthesisSummary.trim().length === 0) throw new Error('Synthesis summary cannot be empty');
-    if (stepsExecuted.length === 0) throw new Error('Investigation must include at least one executed step');
+    if (!investigationTitle || investigationTitle.trim().length === 0)
+      throw new Error('Investigation title cannot be empty');
+    if (!synthesisSummary || synthesisSummary.trim().length === 0)
+      throw new Error('Synthesis summary cannot be empty');
+    if (stepsExecuted.length === 0)
+      throw new Error('Investigation must include at least one executed step');
 
     const questions = this.repo.listQuestions();
     const question = questions.find((q) => q.id === questionId);
@@ -250,7 +264,9 @@ export class CuriosityExplorationEngine {
     };
 
     this.repo.saveInvestigation(inv);
-    this.logger.info(`Conducted independent investigation ${inv.id}: "${investigationTitle}" (${stepsExecuted.length} steps)`);
+    this.logger.info(
+      `Conducted independent investigation ${inv.id}: "${investigationTitle}" (${stepsExecuted.length} steps)`,
+    );
     return inv;
   }
 
@@ -266,7 +282,8 @@ export class CuriosityExplorationEngine {
   ): DiscoveredInterest {
     if (!domain || domain.trim().length === 0) throw new Error('Domain cannot be empty');
     if (!topic || topic.trim().length === 0) throw new Error('Topic cannot be empty');
-    if (!discoveredRationale || discoveredRationale.trim().length === 0) throw new Error('Discovered rationale cannot be empty');
+    if (!discoveredRationale || discoveredRationale.trim().length === 0)
+      throw new Error('Discovered rationale cannot be empty');
 
     const now = new Date().toISOString();
     const sessionId = options?.sessionId || `session_${crypto.randomUUID()}`;
@@ -303,7 +320,8 @@ export class CuriosityExplorationEngine {
   ): DiscoveredInterest {
     const interest = this.repo.getInterestById(interestId);
     if (!interest) throw new Error(`Interest not found: ${interestId}`);
-    if (!newFinding || newFinding.trim().length === 0) throw new Error('New finding cannot be empty');
+    if (!newFinding || newFinding.trim().length === 0)
+      throw new Error('New finding cannot be empty');
 
     interest.investigationCount += 1;
     interest.keyFindings.push(newFinding);
@@ -321,7 +339,7 @@ export class CuriosityExplorationEngine {
     }
 
     const uniqueSessions = new Set(interest.sessionIds || []).size;
-    const isSignificantDepth = options?.isSignificantDepth ?? (newFinding.length > 20);
+    const isSignificantDepth = options?.isSignificantDepth ?? newFinding.length > 20;
 
     // Rule: Repeated exposure in the same session does NOT mature interest!
     // Maturation requires distinct sessions AND genuine conceptual depth.
@@ -340,11 +358,16 @@ export class CuriosityExplorationEngine {
       // If repeatedly hit in the same session without depth or across separated sessions,
       // it remains nascent_spark or temporary_novelty
       interest.maturity = 'nascent_spark';
-      interest.noveltyType = uniqueSessions === 1 && interest.investigationCount > 2 ? 'temporary_novelty' : interest.noveltyType;
+      interest.noveltyType =
+        uniqueSessions === 1 && interest.investigationCount > 2
+          ? 'temporary_novelty'
+          : interest.noveltyType;
     }
 
     this.repo.saveInterest(interest);
-    this.logger.info(`Evolved interest ${interestId} to maturity "${interest.maturity}" (sessions=${uniqueSessions}, count=${interest.investigationCount})`);
+    this.logger.info(
+      `Evolved interest ${interestId} to maturity "${interest.maturity}" (sessions=${uniqueSessions}, count=${interest.investigationCount})`,
+    );
     return interest;
   }
 
@@ -364,7 +387,14 @@ export class CuriosityExplorationEngine {
     goalEngine?: any;
     projectService?: any;
   }): {
-    stageCompleted: 'exposure' | 'salience' | 'curiosity' | 'investigation_proposed' | 'evidence_gathered' | 'interest_updated' | 'goal_crystallized';
+    stageCompleted:
+      | 'exposure'
+      | 'salience'
+      | 'curiosity'
+      | 'investigation_proposed'
+      | 'evidence_gathered'
+      | 'interest_updated'
+      | 'goal_crystallized';
     noveltyRecord: NoveltyDetectionRecord;
     knowledgeGap?: KnowledgeGapRecord;
     question?: ExploratoryQuestion;
@@ -382,7 +412,9 @@ export class CuriosityExplorationEngine {
       params.domain,
       params.familiarityBaseline ?? 0.25,
     );
-    traceLog.push(`[1. Exposure & Salience] Detected novelty in domain "${params.domain}" with score ${noveltyRecord.noveltyScore}.`);
+    traceLog.push(
+      `[1. Exposure & Salience] Detected novelty in domain "${params.domain}" with score ${noveltyRecord.noveltyScore}.`,
+    );
 
     if (!noveltyRecord.isNovel) {
       return {
@@ -393,14 +425,17 @@ export class CuriosityExplorationEngine {
     }
 
     // Stage 3: Curiosity and Knowledge Gap Formulation
-    const topicSummary = params.stimulus.length > 50 ? params.stimulus.slice(0, 47) + '...' : params.stimulus;
+    const topicSummary =
+      params.stimulus.length > 50 ? params.stimulus.slice(0, 47) + '...' : params.stimulus;
     const knowledgeGap = this.identifyKnowledgeGap(
       params.domain,
       topicSummary,
       `Unresolved structural principles in: ${params.stimulus}`,
       params.epistemicUncertainty ?? 0.8,
     );
-    traceLog.push(`[2. Curiosity & Gap] Identified knowledge gap ${knowledgeGap.id} with uncertainty ${knowledgeGap.epistemicUncertainty}.`);
+    traceLog.push(
+      `[2. Curiosity & Gap] Identified knowledge gap ${knowledgeGap.id} with uncertainty ${knowledgeGap.epistemicUncertainty}.`,
+    );
 
     const hypotheses = params.hypotheses ?? [
       `Hypothesis: ${topicSummary} operates according to underlying domain invariants.`,
@@ -422,23 +457,33 @@ export class CuriosityExplorationEngine {
       {
         stepNumber: 2,
         action: `Analyze empirical observation records and extract structural patterns`,
-        finding: (params.evidenceFindings && params.evidenceFindings[0]) || 'Empirical evidence extracted.',
+        finding:
+          (params.evidenceFindings && params.evidenceFindings[0]) ||
+          'Empirical evidence extracted.',
       },
     ];
-    traceLog.push(`[4. Investigation Proposal] Formulated structured 2-step autonomous investigation plan.`);
+    traceLog.push(
+      `[4. Investigation Proposal] Formulated structured 2-step autonomous investigation plan.`,
+    );
 
     // Stage 5: Evidence Collection
-    const synthesisSummary = (params.evidenceFindings || []).join('; ') || 'Autonomous investigation synthesized coherent explanatory pattern.';
+    const synthesisSummary =
+      (params.evidenceFindings || []).join('; ') ||
+      'Autonomous investigation synthesized coherent explanatory pattern.';
     const investigation = this.conductIndependentInvestigation(
       question.id,
       `Inquiry into ${topicSummary}`,
       investigationSteps,
       synthesisSummary,
     );
-    traceLog.push(`[5. Evidence Collection] Collected empirical/documentary evidence: ${investigation.id}.`);
+    traceLog.push(
+      `[5. Evidence Collection] Collected empirical/documentary evidence: ${investigation.id}.`,
+    );
 
     // Stage 6: Interest Update
-    const initialFindings = params.evidenceFindings ?? ['Documented verified empirical phenomenon.'];
+    const initialFindings = params.evidenceFindings ?? [
+      'Documented verified empirical phenomenon.',
+    ];
     const interest = this.developInterest(
       params.domain,
       topicSummary,
@@ -449,7 +494,9 @@ export class CuriosityExplorationEngine {
         noveltyType: 'durable_interest',
       },
     );
-    traceLog.push(`[6. Interest Update] Registered discovered interest ${interest.id} (maturity: ${interest.maturity}).`);
+    traceLog.push(
+      `[6. Interest Update] Registered discovered interest ${interest.id} (maturity: ${interest.maturity}).`,
+    );
 
     // Stage 7: Goal / Project Proposal
     let crystallizedGoal: any = undefined;
@@ -461,7 +508,9 @@ export class CuriosityExplorationEngine {
         rationale: `Evidence-backed autonomous interest progression (${interest.id})`,
         initialPriority: 0.85,
       });
-      traceLog.push(`[7. Goal Proposal] Crystallized autonomous goal: ${crystallizedGoal.title} [id=${crystallizedGoal.id}].`);
+      traceLog.push(
+        `[7. Goal Proposal] Crystallized autonomous goal: ${crystallizedGoal.title} [id=${crystallizedGoal.id}].`,
+      );
     }
 
     if (params.projectService) {
@@ -476,7 +525,9 @@ export class CuriosityExplorationEngine {
           { title: 'Conduct empirical benchmark verification' },
         ],
       });
-      traceLog.push(`[7. Project Proposal] Proposed autonomous personal project: ${crystallizedProject.title} [id=${crystallizedProject.id}].`);
+      traceLog.push(
+        `[7. Project Proposal] Proposed autonomous personal project: ${crystallizedProject.title} [id=${crystallizedProject.id}].`,
+      );
     }
 
     return {

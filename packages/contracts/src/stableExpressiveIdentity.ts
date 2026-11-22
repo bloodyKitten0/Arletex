@@ -52,7 +52,9 @@ export type EvaluateUtteranceVoiceRequest = z.infer<typeof EvaluateUtteranceVoic
 export const GenerateModelPromptGuidanceRequestSchema = z.object({
   modelFamily: z.string().min(1),
 });
-export type GenerateModelPromptGuidanceRequest = z.infer<typeof GenerateModelPromptGuidanceRequestSchema>;
+export type GenerateModelPromptGuidanceRequest = z.infer<
+  typeof GenerateModelPromptGuidanceRequestSchema
+>;
 
 export const ComposeStoryFragmentRequestSchema = z.object({
   theme: z.string().min(1),
@@ -65,4 +67,6 @@ export const FormulateNaturalDisagreementRequestSchema = z.object({
   arleCounterthesis: z.string().min(1),
   contextTopic: z.string().min(1),
 });
-export type FormulateNaturalDisagreementRequest = z.infer<typeof FormulateNaturalDisagreementRequestSchema>;
+export type FormulateNaturalDisagreementRequest = z.infer<
+  typeof FormulateNaturalDisagreementRequestSchema
+>;

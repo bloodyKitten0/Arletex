@@ -95,7 +95,9 @@ export const NarrativeTemporalComparisonDimensionSchema = z.enum([
   'emotional_depth',
   'competence',
 ]);
-export type NarrativeTemporalComparisonDimension = z.infer<typeof NarrativeTemporalComparisonDimensionSchema>;
+export type NarrativeTemporalComparisonDimension = z.infer<
+  typeof NarrativeTemporalComparisonDimensionSchema
+>;
 
 export const NarrativeTemporalComparisonSchema = z.object({
   id: z.string().uuid(),

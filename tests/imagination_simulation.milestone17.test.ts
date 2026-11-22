@@ -115,8 +115,10 @@ describe('Milestone 17 — Imagination and Counterfactual Simulation', () => {
   // 3. Counterfactual Reasoning ("What if X had been different?")
   it('should perform counterfactual simulation and extract actionable retrospective lessons', () => {
     const counterfactual = engine.reasonCounterfactual({
-      originalFact: 'Inference process crashed due to sudden out-of-memory on heavy batch generation',
-      hypotheticalCondition: 'Dynamic context sliding window and speculative batch throttling were enabled',
+      originalFact:
+        'Inference process crashed due to sudden out-of-memory on heavy batch generation',
+      hypotheticalCondition:
+        'Dynamic context sliding window and speculative batch throttling were enabled',
       alterationType: 'modification',
       baselineContext: 'Qwen 7B model loading 32k tokens on 8GB VRAM with zero paging fallback.',
       expectedDivergences: [
@@ -128,7 +130,9 @@ describe('Milestone 17 — Imagination and Counterfactual Simulation', () => {
     expect(counterfactual.type).toBe('counterfactual');
     expect(counterfactual.counterfactualPremise).toBeDefined();
     expect(counterfactual.counterfactualPremise?.originalFact).toContain('out-of-memory');
-    expect(counterfactual.counterfactualPremise?.hypotheticalCondition).toContain('Dynamic context sliding window');
+    expect(counterfactual.counterfactualPremise?.hypotheticalCondition).toContain(
+      'Dynamic context sliding window',
+    );
     expect(counterfactual.branches).toHaveLength(2);
     expect(counterfactual.recommendedAction).toContain('Apply preventative policy');
     expect(counterfactual.insights.length).toBeGreaterThanOrEqual(2);
@@ -142,7 +146,10 @@ describe('Milestone 17 — Imagination and Counterfactual Simulation', () => {
       objective: 'Achieve complete autonomy on full 49-milestone roadmap',
       baselineContext: 'Milestone 16 verified and committed, all tests green.',
       timeHorizon: 'Next 6 hours',
-      proposedActions: ['Execute sequential milestone cycles', 'Maintain 100% test passing verification'],
+      proposedActions: [
+        'Execute sequential milestone cycles',
+        'Maintain 100% test passing verification',
+      ],
     });
 
     expect(future.type).toBe('future_simulation');
@@ -163,7 +170,11 @@ describe('Milestone 17 — Imagination and Counterfactual Simulation', () => {
         {
           optionId: 'in_process_event_bus',
           description: 'Lightweight typed Node.js EventEmitter with backpressure queueing',
-          pros: ['Zero external dependencies', 'Microsecond event dispatch', 'Trivial debuggability'],
+          pros: [
+            'Zero external dependencies',
+            'Microsecond event dispatch',
+            'Trivial debuggability',
+          ],
           cons: ['Bounded to single OS process'],
           risks: ['Heap memory spikes on unconsumed high-volume spikes'],
           estimatedSuccessProb: 0.95,
@@ -186,14 +197,17 @@ describe('Milestone 17 — Imagination and Counterfactual Simulation', () => {
     expect(evaluation.rationale).toContain('in_process_event_bus');
     expect(evaluation.isImagined).toBe(true);
     expect(evaluation.isEpisodicMemory).toBe(false);
-    expect(evaluation.options[0].expectedUtility).toBeGreaterThan(evaluation.options[1].expectedUtility);
+    expect(evaluation.options[0].expectedUtility).toBeGreaterThan(
+      evaluation.options[1].expectedUtility,
+    );
   });
 
   // 6. Creative Hypothetical Construction
   it('should construct creative hypotheticals and novel thought experiments with high divergence', () => {
     const creative = engine.constructCreativeHypothetical({
       theme: 'Quantum Neuromorphic Synaptic Co-Processor',
-      speculativePremise: 'What if cognitive associations were evaluated across continuous superposition matrices?',
+      speculativePremise:
+        'What if cognitive associations were evaluated across continuous superposition matrices?',
       constraints: ['Must run simulated on classic silicon', 'Must preserve partner parity'],
     });
 
@@ -221,7 +235,9 @@ describe('Milestone 17 — Imagination and Counterfactual Simulation', () => {
       createdAt: new Date().toISOString(),
     };
 
-    expect(() => assertSimulationIntegrity(corruptScenarioA)).toThrow(/must have isImagined === true/);
+    expect(() => assertSimulationIntegrity(corruptScenarioA)).toThrow(
+      /must have isImagined === true/,
+    );
 
     const corruptScenarioB: any = {
       id: 'scen-corrupt-2',
@@ -258,7 +274,9 @@ describe('Milestone 17 — Imagination and Counterfactual Simulation', () => {
       insights: [],
     };
 
-    expect(() => assertSimulationIntegrity(invalidCounterfactual)).toThrow(/must define a counterfactualPremise/);
+    expect(() => assertSimulationIntegrity(invalidCounterfactual)).toThrow(
+      /must define a counterfactualPremise/,
+    );
   });
 
   // 9. Negative Invariant: Decision evaluation integrity check
@@ -282,7 +300,9 @@ describe('Milestone 17 — Imagination and Counterfactual Simulation', () => {
       evaluatedAt: new Date().toISOString(),
     };
 
-    expect(() => assertDecisionEvaluationIntegrity(invalidEvaluation)).toThrow(/not found in provided options/);
+    expect(() => assertDecisionEvaluationIntegrity(invalidEvaluation)).toThrow(
+      /not found in provided options/,
+    );
   });
 
   // 10. Database Repository Persistence & Retrieval
@@ -311,8 +331,18 @@ describe('Milestone 17 — Imagination and Counterfactual Simulation', () => {
     const evalResult = sqliteEngine.evaluateAlternativeDecisions({
       decisionContext: 'SQLite decision persistence verification',
       options: [
-        { optionId: 'path_1', description: 'Primary path', estimatedSuccessProb: 0.9, projectedValue: 0.8 },
-        { optionId: 'path_2', description: 'Secondary path', estimatedSuccessProb: 0.5, projectedValue: 0.3 },
+        {
+          optionId: 'path_1',
+          description: 'Primary path',
+          estimatedSuccessProb: 0.9,
+          projectedValue: 0.8,
+        },
+        {
+          optionId: 'path_2',
+          description: 'Secondary path',
+          estimatedSuccessProb: 0.5,
+          projectedValue: 0.3,
+        },
       ],
     });
 
@@ -363,7 +393,10 @@ describe('Milestone 17 — Imagination and Counterfactual Simulation', () => {
 
     // Case B: Contamination where actual memory mirrors imagined branch description
     const contaminatedMemories = [
-      { id: 'mem-3', description: 'A miraculous event where quantum entanglement solves NP-complete instantly' },
+      {
+        id: 'mem-3',
+        description: 'A miraculous event where quantum entanglement solves NP-complete instantly',
+      },
     ];
     const contaminatedCheck = engine.verifyMemoryIsolation(scenario.id, contaminatedMemories);
     expect(contaminatedCheck.isIsolated).toBe(false);
@@ -425,8 +458,18 @@ describe('Milestone 17 — Imagination and Counterfactual Simulation', () => {
       body: JSON.stringify({
         decisionContext: 'Cache eviction policy',
         options: [
-          { optionId: 'lru', description: 'Least Recently Used', estimatedSuccessProb: 0.9, projectedValue: 0.8 },
-          { optionId: 'random', description: 'Random Eviction', estimatedSuccessProb: 0.3, projectedValue: 0.2 },
+          {
+            optionId: 'lru',
+            description: 'Least Recently Used',
+            estimatedSuccessProb: 0.9,
+            projectedValue: 0.8,
+          },
+          {
+            optionId: 'random',
+            description: 'Random Eviction',
+            estimatedSuccessProb: 0.3,
+            projectedValue: 0.2,
+          },
         ],
       }),
     });

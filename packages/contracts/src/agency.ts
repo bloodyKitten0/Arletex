@@ -280,7 +280,13 @@ export const PlanStepSchema = z.object({
 });
 export type PlanStep = z.infer<typeof PlanStepSchema>;
 
-export const PlanStatusSchema = z.enum(['formulating', 'active', 'revised', 'completed', 'abandoned']);
+export const PlanStatusSchema = z.enum([
+  'formulating',
+  'active',
+  'revised',
+  'completed',
+  'abandoned',
+]);
 export type PlanStatus = z.infer<typeof PlanStatusSchema>;
 
 export const AgencyPlanSchema = z.object({

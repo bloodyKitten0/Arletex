@@ -265,9 +265,7 @@ describe('Priority 3.1 — Bounded Self-Preservation & Artificial Homeostasis', 
     });
 
     // Simulate crash recovery
-    const recoveryResult = await preservationService.reconcileCrashRecovery([
-      unauthorizedTask.id,
-    ]);
+    const recoveryResult = await preservationService.reconcileCrashRecovery([unauthorizedTask.id]);
 
     expect(recoveryResult.suppressedUnauthorizedCount).toBe(1);
     expect(recoveryResult.suppressedTaskIds).toContain(unauthorizedTask.id);

@@ -101,7 +101,9 @@ describe('Milestone 07 — Embodiment and Interoception', () => {
       const fabricatedText = `I feel my ${term} reacting strongly right now.`;
       const validation = validateEpistemicInteroception(fabricatedText);
       expect(validation.valid).toBe(false);
-      expect(validation.violation).toContain(`Prohibited biological sensation fabricated: "${term}"`);
+      expect(validation.violation).toContain(
+        `Prohibited biological sensation fabricated: "${term}"`,
+      );
     }
 
     // Honest computational telemetry must be accepted
@@ -183,13 +185,32 @@ describe('Milestone 07 — Embodiment and Interoception', () => {
         swapUsedBytes: 0,
         swapUsagePercent: 0,
       },
-      gpu: { available: true, name: 'AMD Radeon 780M', usagePercent: 10, temperatureC: 58, vramTotalBytes: null, vramUsedBytes: null, vramFreeBytes: null, powerWatts: null },
+      gpu: {
+        available: true,
+        name: 'AMD Radeon 780M',
+        usagePercent: 10,
+        temperatureC: 58,
+        vramTotalBytes: null,
+        vramUsedBytes: null,
+        vramFreeBytes: null,
+        powerWatts: null,
+      },
       battery: { available: true, percent: 85, isCharging: true, powerWatts: 25 },
-      storage: { totalBytes: 500 * 1024 ** 3, usedBytes: 150 * 1024 ** 3, freeBytes: 350 * 1024 ** 3, usagePercent: 30 },
+      storage: {
+        totalBytes: 500 * 1024 ** 3,
+        usedBytes: 150 * 1024 ** 3,
+        freeBytes: 350 * 1024 ** 3,
+        usagePercent: 30,
+      },
     };
 
     const models = {
-      llamaServer: { online: true, port: 8080, activeModel: 'Qwen2.5-14B', endpoint: 'http://127.0.0.1:8080' },
+      llamaServer: {
+        online: true,
+        port: 8080,
+        activeModel: 'Qwen2.5-14B',
+        endpoint: 'http://127.0.0.1:8080',
+      },
       specialistsServer: { online: true, port: 39282, endpoint: 'http://127.0.0.1:39282' },
       models: { embeddingGemma: true, whisper: true, kokoro: true, rvc: true },
     };
@@ -197,7 +218,11 @@ describe('Milestone 07 — Embodiment and Interoception', () => {
     const nominalWorkload = embodimentEngine.assessCognitiveWorkload();
 
     // 1. Optimal condition
-    const optimalConstraints = embodimentEngine.evaluateOperationalConstraints(baseResources, models, nominalWorkload);
+    const optimalConstraints = embodimentEngine.evaluateOperationalConstraints(
+      baseResources,
+      models,
+      nominalWorkload,
+    );
     expect(optimalConstraints.mode).toBe('optimal');
     expect(optimalConstraints.isThrottled).toBe(false);
 
@@ -206,7 +231,11 @@ describe('Milestone 07 — Embodiment and Interoception', () => {
       ...baseResources,
       cpu: { ...baseResources.cpu, temperatureC: 82 },
     };
-    const throttledConstraints = embodimentEngine.evaluateOperationalConstraints(hotResources, models, nominalWorkload);
+    const throttledConstraints = embodimentEngine.evaluateOperationalConstraints(
+      hotResources,
+      models,
+      nominalWorkload,
+    );
     expect(throttledConstraints.mode).toBe('throttled');
     expect(throttledConstraints.thermalPressure).toBe(true);
     expect(throttledConstraints.constraints[0]).toContain('Thermal pressure');
@@ -216,7 +245,11 @@ describe('Milestone 07 — Embodiment and Interoception', () => {
       ...baseResources,
       battery: { available: true, percent: 14, isCharging: false, powerWatts: 18 },
     };
-    const conservativeConstraints = embodimentEngine.evaluateOperationalConstraints(lowBatResources, models, nominalWorkload);
+    const conservativeConstraints = embodimentEngine.evaluateOperationalConstraints(
+      lowBatResources,
+      models,
+      nominalWorkload,
+    );
     expect(conservativeConstraints.mode).toBe('conservative');
     expect(conservativeConstraints.batteryPreservation).toBe(true);
 
@@ -225,7 +258,11 @@ describe('Milestone 07 — Embodiment and Interoception', () => {
       ...baseResources,
       cpu: { ...baseResources.cpu, temperatureC: 91 },
     };
-    const emergencyConstraints = embodimentEngine.evaluateOperationalConstraints(emergencyResources, models, nominalWorkload);
+    const emergencyConstraints = embodimentEngine.evaluateOperationalConstraints(
+      emergencyResources,
+      models,
+      nominalWorkload,
+    );
     expect(emergencyConstraints.mode).toBe('emergency');
   });
 
@@ -246,13 +283,32 @@ describe('Milestone 07 — Embodiment and Interoception', () => {
         swapUsedBytes: 5 * 1024 ** 3,
         swapUsagePercent: 62.5,
       },
-      gpu: { available: true, name: 'AMD Radeon 780M', usagePercent: 88, temperatureC: 81, vramTotalBytes: null, vramUsedBytes: null, vramFreeBytes: null, powerWatts: null },
+      gpu: {
+        available: true,
+        name: 'AMD Radeon 780M',
+        usagePercent: 88,
+        temperatureC: 81,
+        vramTotalBytes: null,
+        vramUsedBytes: null,
+        vramFreeBytes: null,
+        powerWatts: null,
+      },
       battery: { available: true, percent: 50, isCharging: false, powerWatts: 30 },
-      storage: { totalBytes: 500 * 1024 ** 3, usedBytes: 200 * 1024 ** 3, freeBytes: 300 * 1024 ** 3, usagePercent: 40 },
+      storage: {
+        totalBytes: 500 * 1024 ** 3,
+        usedBytes: 200 * 1024 ** 3,
+        freeBytes: 300 * 1024 ** 3,
+        usagePercent: 40,
+      },
     };
 
     const models = {
-      llamaServer: { online: true, port: 8080, activeModel: 'Qwen2.5-14B', endpoint: 'http://127.0.0.1:8080' },
+      llamaServer: {
+        online: true,
+        port: 8080,
+        activeModel: 'Qwen2.5-14B',
+        endpoint: 'http://127.0.0.1:8080',
+      },
       specialistsServer: { online: true, port: 39282, endpoint: 'http://127.0.0.1:39282' },
       models: { embeddingGemma: true, whisper: true, kokoro: true, rvc: true },
     };
@@ -303,12 +359,22 @@ describe('Milestone 07 — Embodiment and Interoception', () => {
     // Stage 1: Optimal environment
     await embodimentEngine.conductInteroceptiveCycle({
       modelsOverride: {
-        llamaServer: { online: true, port: 8080, activeModel: 'Qwen2.5-14B', endpoint: 'http://127.0.0.1:8080' },
+        llamaServer: {
+          online: true,
+          port: 8080,
+          activeModel: 'Qwen2.5-14B',
+          endpoint: 'http://127.0.0.1:8080',
+        },
         specialistsServer: { online: true, port: 39282, endpoint: 'http://127.0.0.1:39282' },
         models: { embeddingGemma: true, whisper: true, kokoro: true, rvc: true },
       },
       telemetryOverride: {
-        cpu: { usagePercent: 15, frequencyMhz: 3000, temperatureC: 50, loadAverage: [0.2, 0.2, 0.1] },
+        cpu: {
+          usagePercent: 15,
+          frequencyMhz: 3000,
+          temperatureC: 50,
+          loadAverage: [0.2, 0.2, 0.1],
+        },
         memory: {
           totalBytes: 24 * 1024 ** 3,
           usedBytes: 6 * 1024 ** 3,
@@ -353,7 +419,12 @@ describe('Milestone 07 — Embodiment and Interoception', () => {
     // Stage 2: Heavy computational thermal & memory pressure occurs
     await embodimentEngine.conductInteroceptiveCycle({
       telemetryOverride: {
-        cpu: { usagePercent: 92, frequencyMhz: 3200, temperatureC: 86, loadAverage: [3.8, 3.2, 2.9] },
+        cpu: {
+          usagePercent: 92,
+          frequencyMhz: 3200,
+          temperatureC: 86,
+          loadAverage: [3.8, 3.2, 2.9],
+        },
         memory: {
           totalBytes: 24 * 1024 ** 3,
           usedBytes: 22 * 1024 ** 3,
@@ -423,7 +494,9 @@ describe('Milestone 07 — Embodiment and Interoception', () => {
 
     expect(promptContext).toContain('Embodiment & Interoception:');
     expect(promptContext).toContain('Concurrency:');
-    expect(promptContext).toContain('Non-Biological Invariant: Interoception strictly computational');
+    expect(promptContext).toContain(
+      'Non-Biological Invariant: Interoception strictly computational',
+    );
 
     // Epistemic check on entire prompt context
     const check = validateEpistemicInteroception(promptContext);

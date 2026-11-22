@@ -163,12 +163,21 @@ export class LongTermDevelopmentEngine {
   }
 
   public recordDevelopmentChange(params: RecordDevelopmentChangeParams): DevelopmentHistoryEntry {
-    const { dimension, targetKey, previousState, newState, adaptationDriver, plasticityScore = 0.20 } = params;
+    const {
+      dimension,
+      targetKey,
+      previousState,
+      newState,
+      adaptationDriver,
+      plasticityScore = 0.2,
+    } = params;
 
     if (!targetKey || targetKey.trim().length === 0) throw new Error('Target key cannot be empty');
-    if (!previousState || previousState.trim().length === 0) throw new Error('Previous state cannot be empty');
+    if (!previousState || previousState.trim().length === 0)
+      throw new Error('Previous state cannot be empty');
     if (!newState || newState.trim().length === 0) throw new Error('New state cannot be empty');
-    if (!adaptationDriver || adaptationDriver.trim().length === 0) throw new Error('Adaptation driver cannot be empty');
+    if (!adaptationDriver || adaptationDriver.trim().length === 0)
+      throw new Error('Adaptation driver cannot be empty');
 
     // 1. Identity Continuity Invariant Check:
     // Reject any attempt to compromise immutable anchors
@@ -195,7 +204,7 @@ export class LongTermDevelopmentEngine {
 
     // 2. Plasticity vs Stability Balance:
     // Clamp plasticity score to [0.05, 0.40] to preserve structural identity continuity
-    const clampedPlasticity = Number(Math.max(0.05, Math.min(0.40, plasticityScore)).toFixed(3));
+    const clampedPlasticity = Number(Math.max(0.05, Math.min(0.4, plasticityScore)).toFixed(3));
 
     const entry: DevelopmentHistoryEntry = {
       id: `dev_${crypto.randomUUID()}`,
@@ -246,7 +255,8 @@ export class LongTermDevelopmentEngine {
     const currentEpoch = this.repo.getCurrentEpoch() || {
       id: 'epoch_default',
       epochName: 'Continuous Partnership Growth',
-      summary: 'Ongoing adaptive development of personality, interests, values, and cognitive paradigms.',
+      summary:
+        'Ongoing adaptive development of personality, interests, values, and cognitive paradigms.',
       keyMilestones: [],
       startedAt: new Date().toISOString(),
       endedAt: null,
@@ -280,11 +290,13 @@ export class LongTermDevelopmentEngine {
     const avgPlasticity =
       recentHistory.length > 0
         ? recentHistory.reduce((acc, h) => acc + h.plasticityScore, 0) / recentHistory.length
-        : 0.20;
+        : 0.2;
 
     const startedEpochTime = new Date(currentEpoch.startedAt).getTime();
     const nowTime = Date.now();
-    const daysEvolving = Number(Math.max(0, (nowTime - startedEpochTime) / (1000 * 60 * 60 * 24)).toFixed(1));
+    const daysEvolving = Number(
+      Math.max(0, (nowTime - startedEpochTime) / (1000 * 60 * 60 * 24)).toFixed(1),
+    );
 
     return {
       currentEpoch,
@@ -300,7 +312,10 @@ export class LongTermDevelopmentEngine {
     };
   }
 
-  public listHistory(dimension?: PsychologicalDimension, limit: number = 50): DevelopmentHistoryEntry[] {
+  public listHistory(
+    dimension?: PsychologicalDimension,
+    limit: number = 50,
+  ): DevelopmentHistoryEntry[] {
     return this.repo.listHistoryEntries(dimension, limit);
   }
 

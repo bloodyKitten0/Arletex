@@ -5,13 +5,8 @@ import os from 'node:os';
 import crypto from 'node:crypto';
 import { createDefaultConfig } from '@arletex/core';
 import { DatabaseService, MigrationRunner, WorldRepository } from '@arletex/database';
-import {
-  InMemoryWorldRepository,
-  WorldModelEngine,
-} from '@arletex/core';
-import {
-  WorldObservationInput,
-} from '@arletex/contracts';
+import { InMemoryWorldRepository, WorldModelEngine } from '@arletex/core';
+import { WorldObservationInput } from '@arletex/contracts';
 import { ArletexBackendServer } from '../apps/desktop/src/backend/server.js';
 
 describe('Milestone 05 — World Model Architecture', () => {
@@ -143,7 +138,12 @@ describe('Milestone 05 — World Model Architecture', () => {
     const obs2: WorldObservationInput = {
       entityName: 'Kokoro TTS Service',
       entityType: 'service',
-      properties: { port: 39282, status: 'online', voiceModel: 'af_heart', currentVoicePitch: 'gentle_intimate' },
+      properties: {
+        port: 39282,
+        status: 'online',
+        voiceModel: 'af_heart',
+        currentVoicePitch: 'gentle_intimate',
+      },
       sourceProvenance: 'telemetry_probe',
       confidence: 0.98,
     };
@@ -222,7 +222,7 @@ describe('Milestone 05 — World Model Architecture', () => {
       name: 'Arletex Project Workspace',
       entityType: 'location',
       category: 'filesystem_directory',
-      properties: { path: '/home/proof/Documents/A man\'s dream will never die/projects/Arletex' },
+      properties: { path: "/home/proof/Documents/A man's dream will never die/projects/Arletex" },
     });
 
     // Link digital directory to host system
@@ -236,7 +236,9 @@ describe('Milestone 05 — World Model Architecture', () => {
     });
 
     const rels = engine.listRelations({ sourceEntityId: arletexDir.id });
-    expect(rels.some((r) => r.targetEntityId === host!.id && r.relationType === 'located_at')).toBe(true);
+    expect(rels.some((r) => r.targetEntityId === host!.id && r.relationType === 'located_at')).toBe(
+      true,
+    );
   });
 
   // =========================================================================
@@ -363,8 +365,16 @@ describe('Milestone 05 — World Model Architecture', () => {
     const engine = new WorldModelEngine(repo);
 
     // Register entities in different categories
-    engine.addEntity({ name: 'Web Agency Browser', entityType: 'service', category: 'digital_agency' });
-    engine.addEntity({ name: 'Safe Computer CLI', entityType: 'service', category: 'digital_agency' });
+    engine.addEntity({
+      name: 'Web Agency Browser',
+      entityType: 'service',
+      category: 'digital_agency',
+    });
+    engine.addEntity({
+      name: 'Safe Computer CLI',
+      entityType: 'service',
+      category: 'digital_agency',
+    });
 
     const agencyEntities = engine.listEntities({ category: 'digital_agency' });
     expect(agencyEntities.length).toBe(2);
@@ -528,7 +538,9 @@ describe('Milestone 05 — World Model Architecture', () => {
     const resResolve = await fetch(`${baseUrl}/api/ape/world/unknown/${unknownId}/resolve`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ resolutionEvidence: 'Empirical benchmark achieved 0.91 cosine similarity.' }),
+      body: JSON.stringify({
+        resolutionEvidence: 'Empirical benchmark achieved 0.91 cosine similarity.',
+      }),
     });
     expect(resResolve.status).toBe(200);
     const resolveData = (await resResolve.json()) as any;

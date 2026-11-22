@@ -8,11 +8,7 @@ export const SimulationScenarioTypeSchema = z.enum([
 ]);
 export type SimulationScenarioType = z.infer<typeof SimulationScenarioTypeSchema>;
 
-export const CounterfactualAlterationTypeSchema = z.enum([
-  'negation',
-  'modification',
-  'addition',
-]);
+export const CounterfactualAlterationTypeSchema = z.enum(['negation', 'modification', 'addition']);
 export type CounterfactualAlterationType = z.infer<typeof CounterfactualAlterationTypeSchema>;
 
 export const CounterfactualPremiseSchema = z.object({
@@ -116,7 +112,9 @@ export function assertSimulationIntegrity(scenario: SimulationScenario): void {
       throw new Error(`Invalid branch probability ${branch.probability}: must be in range [0, 1].`);
     }
     if (branch.desirability < -1 || branch.desirability > 1) {
-      throw new Error(`Invalid branch desirability ${branch.desirability}: must be in range [-1, 1].`);
+      throw new Error(
+        `Invalid branch desirability ${branch.desirability}: must be in range [-1, 1].`,
+      );
     }
   }
 }
@@ -134,7 +132,9 @@ export function assertDecisionEvaluationIntegrity(evaluation: AlternativeDecisio
     );
   }
 
-  const optionExists = evaluation.options.some((opt) => opt.optionId === evaluation.selectedOptionId);
+  const optionExists = evaluation.options.some(
+    (opt) => opt.optionId === evaluation.selectedOptionId,
+  );
   if (!optionExists) {
     throw new Error(
       `Negative Invariant Violation: selectedOptionId '${evaluation.selectedOptionId}' not found in provided options.`,

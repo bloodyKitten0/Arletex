@@ -130,7 +130,9 @@ export class DeliberationEngine {
 
     assertDeliberationIntegrity(conflict);
     this.repo.saveConflict(conflict);
-    this.logger.info(`Recorded internal conflict ${id} with ${params.competingDesires.length} desires.`);
+    this.logger.info(
+      `Recorded internal conflict ${id} with ${params.competingDesires.length} desires.`,
+    );
     return conflict;
   }
 
@@ -160,14 +162,22 @@ export class DeliberationEngine {
     const pad = currentMotivationalState?.pad;
     const padValence = pad ? (pad.valence ?? pad.pleasure ?? 0.0) : 0.0;
     const padArousal = pad?.arousal ?? 0.0;
-    const hasAnxiety = activeEmotions.includes('anxiety') || (pad && padValence < -0.2 && padArousal > 0.3);
-    const hasCuriosity = activeEmotions.includes('curiosity') || (pad && padValence > 0.1 && padArousal > 0.2);
+    const hasAnxiety =
+      activeEmotions.includes('anxiety') || (pad && padValence < -0.2 && padArousal > 0.3);
+    const hasCuriosity =
+      activeEmotions.includes('curiosity') || (pad && padValence > 0.1 && padArousal > 0.2);
     const hasFatigue = activeEmotions.includes('fatigue') || fatigue > 0.5;
-    const hasAffection = activeEmotions.includes('affection') || activeEmotions.includes('gratitude') || (pad && padValence > 0.4);
-    const isThreatAlert = Boolean(currentMotivationalState?.threatAlert || activeEmotions.includes('protective_alert'));
+    const hasAffection =
+      activeEmotions.includes('affection') ||
+      activeEmotions.includes('gratitude') ||
+      (pad && padValence > 0.4);
+    const isThreatAlert = Boolean(
+      currentMotivationalState?.threatAlert || activeEmotions.includes('protective_alert'),
+    );
 
     // Risk Aversion: causally amplified by stress, anxiety, and threat alerts
-    const riskAversionMultiplier = 1.0 + stress * 0.8 + (hasAnxiety ? 0.6 : 0.0) + (isThreatAlert ? 1.0 : 0.0);
+    const riskAversionMultiplier =
+      1.0 + stress * 0.8 + (hasAnxiety ? 0.6 : 0.0) + (isThreatAlert ? 1.0 : 0.0);
 
     // Weight factors
     const longTermWeight = preferLongTerm ? 0.6 : 0.4;
@@ -216,7 +226,10 @@ export class DeliberationEngine {
       const partnerSynergy = supportsPartner ? trust * 0.2 + (hasAffection ? 0.15 : 0.0) : 0.0;
 
       const computedScore = Number(
-        ((baseUtility - riskPenalty - fatiguePenalty + curiosityBonus + partnerSynergy) * ethicalMultiplier).toFixed(4),
+        (
+          (baseUtility - riskPenalty - fatiguePenalty + curiosityBonus + partnerSynergy) *
+          ethicalMultiplier
+        ).toFixed(4),
       );
 
       return {
@@ -255,11 +268,14 @@ export class DeliberationEngine {
 
     // Resolve decisively with affective causal explanation
     const affectiveNotes: string[] = [];
-    if (stress > 0.3 || hasAnxiety) affectiveNotes.push(`elevated risk aversion (stress=${stress.toFixed(2)})`);
+    if (stress > 0.3 || hasAnxiety)
+      affectiveNotes.push(`elevated risk aversion (stress=${stress.toFixed(2)})`);
     if (hasCuriosity) affectiveNotes.push('curiosity exploratory incentive');
-    if (hasFatigue) affectiveNotes.push(`fatigue effort mitigation (fatigue=${fatigue.toFixed(2)})`);
+    if (hasFatigue)
+      affectiveNotes.push(`fatigue effort mitigation (fatigue=${fatigue.toFixed(2)})`);
     if (hasAffection) affectiveNotes.push('partner relational alignment priority');
-    const affectiveClause = affectiveNotes.length > 0 ? ` [Affective Modifiers: ${affectiveNotes.join(', ')}]` : '';
+    const affectiveClause =
+      affectiveNotes.length > 0 ? ` [Affective Modifiers: ${affectiveNotes.join(', ')}]` : '';
 
     const tradeOffAnalysis = {
       immediateGain: `Immediate utility rating of ${topAlt.immediateUtility} while keeping risk at ${topAlt.riskAssessment.riskScore} (${topAlt.riskAssessment.riskLevel}).`,
@@ -303,7 +319,9 @@ export class DeliberationEngine {
     if (!conflict) throw new Error(`Internal conflict ${conflictId} not found.`);
 
     if (conflict.status !== 'resolved') {
-      throw new Error(`Cannot record post-decision reassessment on unresolved conflict ${conflictId}.`);
+      throw new Error(
+        `Cannot record post-decision reassessment on unresolved conflict ${conflictId}.`,
+      );
     }
 
     const now = new Date().toISOString();

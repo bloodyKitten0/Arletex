@@ -82,11 +82,9 @@ export class FutureSelfEngine {
         'code_review',
         'prospective_evaluation',
       ],
-      risks: input.risks || [
-        'resource_exhaustion_on_rog_ally_x',
-        'unverified_external_web_claims',
-      ],
-      uncertainty: input.uncertainty !== undefined ? Math.max(0, Math.min(1, input.uncertainty)) : 0.25,
+      risks: input.risks || ['resource_exhaustion_on_rog_ally_x', 'unverified_external_web_claims'],
+      uncertainty:
+        input.uncertainty !== undefined ? Math.max(0, Math.min(1, input.uncertainty)) : 0.25,
       isSpeculative: true, // Negative Invariant: Speculative forecast
       isObservedFact: false, // Negative Invariant: Never stored as an observed fact
     };
@@ -113,7 +111,9 @@ export class FutureSelfEngine {
     }>,
   ): CandidateActionTrajectory[] {
     if (alternatives.length < 2) {
-      throw new Error('Prospective evaluation requires at least 2 alternative action trajectories.');
+      throw new Error(
+        'Prospective evaluation requires at least 2 alternative action trajectories.',
+      );
     }
     this.logger.debug(`[FutureSelf] Generating trajectories for context: ${decisionContext}`);
 

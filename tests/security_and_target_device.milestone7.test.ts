@@ -146,12 +146,21 @@ describe('Milestone 7 — Security and Target-Device Validation', () => {
         });
         expect(auth.allowed).toBe(false);
         expect(auth.decision).toBe('denied');
-        expect(auth.denialReason).toMatch(/positive authorized application allowlist|not in the permitted allowlist/i);
+        expect(auth.denialReason).toMatch(
+          /positive authorized application allowlist|not in the permitted allowlist/i,
+        );
       }
     });
 
     it('denies dangerous commands and shell metacharacter injection', () => {
-      const dangerousCmds = ['rm -rf /', 'sudo su', 'dd if=/dev/zero', 'bash -c "id"', 'sh exploit.sh', 'systemctl stop firewalld'];
+      const dangerousCmds = [
+        'rm -rf /',
+        'sudo su',
+        'dd if=/dev/zero',
+        'bash -c "id"',
+        'sh exploit.sh',
+        'systemctl stop firewalld',
+      ];
       for (const cmd of dangerousCmds) {
         const auth = permissionController.authorize({
           id: crypto.randomUUID(),
@@ -231,7 +240,9 @@ describe('Milestone 7 — Security and Target-Device Validation', () => {
       const auth = customController.authorize(collisionAction);
       expect(auth.allowed).toBe(false);
       expect(auth.decision).toBe('denied');
-      expect(auth.denialReason).toMatch(/outside pre-approved write directories|outside authorized directory boundaries/i);
+      expect(auth.denialReason).toMatch(
+        /outside pre-approved write directories|outside authorized directory boundaries/i,
+      );
     });
 
     it('detects and blocks symlink traversal escaping authorized roots', () => {
@@ -327,7 +338,11 @@ describe('Milestone 7 — Security and Target-Device Validation', () => {
     });
 
     it('rejects unsupported URL schemes (file://, gopher://, data:)', () => {
-      const invalidSchemes = ['file:///etc/passwd', 'gopher://example.com', 'data:text/html,malicious'];
+      const invalidSchemes = [
+        'file:///etc/passwd',
+        'gopher://example.com',
+        'data:text/html,malicious',
+      ];
       for (const url of invalidSchemes) {
         const auth = permissionController.authorize({
           id: crypto.randomUUID(),
@@ -400,12 +415,16 @@ describe('Milestone 7 — Security and Target-Device Validation', () => {
       const logs = auditRepo.list(50);
       expect(logs.length).toBeGreaterThanOrEqual(2);
 
-      const deniedLog = logs.find((l) => l.status === 'denied' && l.details.includes('22222222-2222-2222-2222-222222222222'));
+      const deniedLog = logs.find(
+        (l) => l.status === 'denied' && l.details.includes('22222222-2222-2222-2222-222222222222'),
+      );
       expect(deniedLog).toBeDefined();
       expect(deniedLog?.actor).toBe('ActionPermissionController');
-      expect(deniedLog?.details).toContain('Target host \'169.254.169.254\' is prohibited');
+      expect(deniedLog?.details).toContain("Target host '169.254.169.254' is prohibited");
 
-      const grantedLog = logs.find((l) => l.status === 'success' && l.details.includes('11111111-1111-1111-1111-111111111111'));
+      const grantedLog = logs.find(
+        (l) => l.status === 'success' && l.details.includes('11111111-1111-1111-1111-111111111111'),
+      );
       expect(grantedLog).toBeDefined();
     });
 
@@ -556,14 +575,16 @@ describe('Milestone 7 — Security and Target-Device Validation', () => {
 
       // Event must be logged in SQLite audit_logs
       const auditEntries = auditRepo.list(50);
-      const fsBlockedLog = auditEntries.find((l) => l.details.includes('/etc/shadow') || l.details.includes('forbidden'));
+      const fsBlockedLog = auditEntries.find(
+        (l) => l.details.includes('/etc/shadow') || l.details.includes('forbidden'),
+      );
       expect(fsBlockedLog).toBeDefined();
       expect(fsBlockedLog?.status).toBe('denied');
 
       // Task receives accurate denial result and no successful memory is recorded
       const autobiographicalMemories = memoryRepo.list({ type: 'autobiographical' });
-      const fabricatedSuccess = autobiographicalMemories.filter((m) =>
-        m.content.includes('/etc/shadow') && m.provenance === 'verified_fact',
+      const fabricatedSuccess = autobiographicalMemories.filter(
+        (m) => m.content.includes('/etc/shadow') && m.provenance === 'verified_fact',
       );
       expect(fabricatedSuccess.length).toBe(0);
 
@@ -632,7 +653,9 @@ describe('Milestone 7 — Security and Target-Device Validation', () => {
       expect(typeof hwValidation.cpuModel).toBe('string');
       expect(hwValidation.totalMemoryMb).toBeGreaterThan(0);
       expect(hwValidation.telemetryHonest).toBe(true);
-      expect(['15W_quiet', '25W_performance', '30W_turbo', 'unconstrained']).toContain(hwValidation.tdpProfile);
+      expect(['15W_quiet', '25W_performance', '30W_turbo', 'unconstrained']).toContain(
+        hwValidation.tdpProfile,
+      );
 
       // On actual target machine (ROG Ally X), memory exceeds 16GB threshold
       if (os.totalmem() > 16 * 1024 * 1024 * 1024) {

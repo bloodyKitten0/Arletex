@@ -34,7 +34,9 @@ export class EmergencyShutdownService {
   private lastReport: EmergencyShutdownReport | null = null;
 
   constructor(deps: EmergencyShutdownServiceDependencies) {
-    this.logger = deps.logger ? deps.logger.child('EmergencyShutdownService') : rootLogger.child('EmergencyShutdownService');
+    this.logger = deps.logger
+      ? deps.logger.child('EmergencyShutdownService')
+      : rootLogger.child('EmergencyShutdownService');
     this.permissionController = deps.permissionController;
     this.processSupervisor = deps.processSupervisor;
     this.taskManager = deps.taskManager;
@@ -46,7 +48,9 @@ export class EmergencyShutdownService {
   /**
    * Triggers system-wide emergency shutdown across all autonomous and process subsystems.
    */
-  public async executeShutdown(reason = 'Emergency shutdown initiated'): Promise<EmergencyShutdownReport> {
+  public async executeShutdown(
+    reason = 'Emergency shutdown initiated',
+  ): Promise<EmergencyShutdownReport> {
     const timestamp = new Date().toISOString();
     this.logger.warn(`Executing system-wide emergency shutdown. Reason: "${reason}"`);
 
@@ -82,8 +86,16 @@ export class EmergencyShutdownService {
       try {
         const tasks = this.taskManager.listTasks(undefined, 100);
         for (const task of tasks) {
-          if (task.status === 'running' || task.status === 'authorized' || task.status === 'awaiting_authorization') {
-            this.taskManager.transitionTask(task.id, 'cancelled', `Cancelled by emergency shutdown: ${reason}`);
+          if (
+            task.status === 'running' ||
+            task.status === 'authorized' ||
+            task.status === 'awaiting_authorization'
+          ) {
+            this.taskManager.transitionTask(
+              task.id,
+              'cancelled',
+              `Cancelled by emergency shutdown: ${reason}`,
+            );
             cancelledTasksCount++;
           }
         }
@@ -111,7 +123,13 @@ export class EmergencyShutdownService {
       unmanagedPids,
       cancelledTasksCount,
       autonomyDisabled: true,
-      revokedCapabilities: ['filesystem:write', 'process:exec', 'process:launch', 'network:web', 'desktop:input'],
+      revokedCapabilities: [
+        'filesystem:write',
+        'process:exec',
+        'process:launch',
+        'network:web',
+        'desktop:input',
+      ],
     };
 
     this.lastReport = report;
@@ -145,7 +163,11 @@ export class EmergencyShutdownService {
         this.auditRepo.log({
           actor: 'EmergencyShutdownService',
           action: 'reactivate_autonomy',
-          details: JSON.stringify({ tokenProvided: token.slice(0, 3) + '...', success: result.success, message: result.message }),
+          details: JSON.stringify({
+            tokenProvided: token.slice(0, 3) + '...',
+            success: result.success,
+            message: result.message,
+          }),
           status: result.success ? 'success' : 'denied',
           timestamp: new Date().toISOString(),
         });

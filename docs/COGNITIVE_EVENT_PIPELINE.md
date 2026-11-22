@@ -8,34 +8,34 @@ This specification defines the 16-stage cognitive event pipeline and durable ide
 
 Every external stimulus, internal autonomous cycle, and sensory perception is modeled as a canonical `CognitiveEvent` and routed exclusively through `CognitiveControlBus.dispatch()`.
 
-| Event Type (`type`) | Source (`source`) | Originating Subsystem | Purpose & Semantics |
-|---|---|---|---|
-| `user_message` | `user` | Desktop UI Chat Interface | User prompt, greeting, question, or instruction directed to Arle. |
-| `telegram_message` | `telegram` | `TelegramBridgeService` | Remote text message from Proof over authenticated Telegram bot. |
-| `telegram_media` | `telegram` | `TelegramBridgeService` | Inbound photo, voice note, document, or audio file sent by Proof. |
-| `media_perceived` | `environment` | Desktop Screen / Audio Perception | Periodic screenshot capture, active window inspection, or audio activity. |
-| `agency_observation` | `agency` | `ClosedLoopAgencyService` | Sensory observation or verification probe returning from a tool/action. |
-| `action_executed` | `agency` | Execution runtime | Execution feedback from desktop environment provider or browser. |
-| `task_outcome` | `agency` | `IntentTaskManager` | Completion, failure, or pause of an asynchronous multi-step task. |
-| `goal_activated` | `internal` | `SelfGeneratedGoalsEngine` | Activation of an autonomous goal formulated by Arle. |
-| `goal_progress` | `internal` | `PersistentPlanningEngine` | Milestone advancement or plan step completion within an active goal. |
-| `goal_failed` | `internal` | `PersistentPlanningEngine` | Unrecoverable blockage in goal execution; triggers causal reflection. |
-| `goal_completed` | `internal` | `SelfGeneratedGoalsEngine` | Successful attainment of goal postconditions; triggers celebration/reward. |
-| `project_milestone` | `internal` | Project Manager | Completion of a phase within an ongoing autonomous research project. |
-| `intellectual_question` | `internal` | `IntellectualInquiryEngine` | Self-directed curiosity or unresolved theoretical inquiry formulated by Arle. |
-| `belief_formed` | `internal` | Belief Engine | Empirical synthesis establishing a new epistemic belief. |
-| `belief_revised` | `internal` | Belief Engine | Revision of an existing belief upon encountering contradictory evidence. |
-| `environmental_change` | `environment` | Host System Monitor | Battery drop, network disconnection, or external system state shift. |
-| `internal_tick` | `timer` | Autonomous background timer | 2-minute autonomous background heartbeat driving homeostasis and agency. |
-| `reflection_cycle` | `internal` | `OfflineCognitiveActivityEngine` | Offline consolidation, dream simulation, or associative memory structuring. |
-| `relationship_event` | `user` / `telegram` | Social & Attachment Engine | Interaction strengthening relational trust, commitment, or emotional bond. |
-| `user_departure_under_arousal` | `user` | Attachment Engine | Proof leaving chat while Arle is in heightened affective arousal. |
-| `user_return` | `user` | Attachment Engine | Proof returning after absence; triggers reunion affect. |
-| `separation_loneliness` | `timer` | Attachment Engine | Prolonged absence of Proof triggering healthy longing and solitude appraisal. |
-| `conversation_outcome` | `user` / `telegram` | Dialogue Engine | Wrap-up of a sustained dialogue session; summarizes shared context. |
-| `social_interaction` | `user` / `telegram` | Social Communication Engine | Conversational exchange assessing mutual understanding and rapport. |
-| `failure_recovery` | `internal` | Error Recovery Subsystem | Attempted mitigation and postcondition check following an action failure. |
-| `incoming_email` | `external_communication` | Gmail API integration | Inbound message to `arletex.email@gmail.com`. |
+| Event Type (`type`)            | Source (`source`)        | Originating Subsystem             | Purpose & Semantics                                                           |
+| ------------------------------ | ------------------------ | --------------------------------- | ----------------------------------------------------------------------------- |
+| `user_message`                 | `user`                   | Desktop UI Chat Interface         | User prompt, greeting, question, or instruction directed to Arle.             |
+| `telegram_message`             | `telegram`               | `TelegramBridgeService`           | Remote text message from Proof over authenticated Telegram bot.               |
+| `telegram_media`               | `telegram`               | `TelegramBridgeService`           | Inbound photo, voice note, document, or audio file sent by Proof.             |
+| `media_perceived`              | `environment`            | Desktop Screen / Audio Perception | Periodic screenshot capture, active window inspection, or audio activity.     |
+| `agency_observation`           | `agency`                 | `ClosedLoopAgencyService`         | Sensory observation or verification probe returning from a tool/action.       |
+| `action_executed`              | `agency`                 | Execution runtime                 | Execution feedback from desktop environment provider or browser.              |
+| `task_outcome`                 | `agency`                 | `IntentTaskManager`               | Completion, failure, or pause of an asynchronous multi-step task.             |
+| `goal_activated`               | `internal`               | `SelfGeneratedGoalsEngine`        | Activation of an autonomous goal formulated by Arle.                          |
+| `goal_progress`                | `internal`               | `PersistentPlanningEngine`        | Milestone advancement or plan step completion within an active goal.          |
+| `goal_failed`                  | `internal`               | `PersistentPlanningEngine`        | Unrecoverable blockage in goal execution; triggers causal reflection.         |
+| `goal_completed`               | `internal`               | `SelfGeneratedGoalsEngine`        | Successful attainment of goal postconditions; triggers celebration/reward.    |
+| `project_milestone`            | `internal`               | Project Manager                   | Completion of a phase within an ongoing autonomous research project.          |
+| `intellectual_question`        | `internal`               | `IntellectualInquiryEngine`       | Self-directed curiosity or unresolved theoretical inquiry formulated by Arle. |
+| `belief_formed`                | `internal`               | Belief Engine                     | Empirical synthesis establishing a new epistemic belief.                      |
+| `belief_revised`               | `internal`               | Belief Engine                     | Revision of an existing belief upon encountering contradictory evidence.      |
+| `environmental_change`         | `environment`            | Host System Monitor               | Battery drop, network disconnection, or external system state shift.          |
+| `internal_tick`                | `timer`                  | Autonomous background timer       | 2-minute autonomous background heartbeat driving homeostasis and agency.      |
+| `reflection_cycle`             | `internal`               | `OfflineCognitiveActivityEngine`  | Offline consolidation, dream simulation, or associative memory structuring.   |
+| `relationship_event`           | `user` / `telegram`      | Social & Attachment Engine        | Interaction strengthening relational trust, commitment, or emotional bond.    |
+| `user_departure_under_arousal` | `user`                   | Attachment Engine                 | Proof leaving chat while Arle is in heightened affective arousal.             |
+| `user_return`                  | `user`                   | Attachment Engine                 | Proof returning after absence; triggers reunion affect.                       |
+| `separation_loneliness`        | `timer`                  | Attachment Engine                 | Prolonged absence of Proof triggering healthy longing and solitude appraisal. |
+| `conversation_outcome`         | `user` / `telegram`      | Dialogue Engine                   | Wrap-up of a sustained dialogue session; summarizes shared context.           |
+| `social_interaction`           | `user` / `telegram`      | Social Communication Engine       | Conversational exchange assessing mutual understanding and rapport.           |
+| `failure_recovery`             | `internal`               | Error Recovery Subsystem          | Attempted mitigation and postcondition check following an action failure.     |
+| `incoming_email`               | `external_communication` | Gmail API integration             | Inbound message to `arletex.email@gmail.com`.                                 |
 
 ---
 

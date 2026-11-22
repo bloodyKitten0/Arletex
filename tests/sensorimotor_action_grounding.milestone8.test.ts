@@ -106,9 +106,15 @@ describe('Milestone 08 — Sensorimotor and Action Grounding', () => {
       confidence: 0,
       isVerified: true,
     };
-    const check1 = assertActionGroundingIntegrity('Click send button', invalidUnverified, 'Dispatched click');
+    const check1 = assertActionGroundingIntegrity(
+      'Click send button',
+      invalidUnverified,
+      'Dispatched click',
+    );
     expect(check1.valid).toBe(false);
-    expect(check1.error).toContain('cannot be marked isVerified=true while verification.status is unverified');
+    expect(check1.error).toContain(
+      'cannot be marked isVerified=true while verification.status is unverified',
+    );
 
     // B. Claiming success when verification failed must be rejected
     const failedVerification: ActionOutcomeVerification = {
@@ -119,10 +125,17 @@ describe('Milestone 08 — Sensorimotor and Action Grounding', () => {
       confidence: 0.9,
       isVerified: true,
     };
-    const fraudulentClaim = 'Dispatched focus command and successfully achieved intended outcome without check.';
-    const check2 = assertActionGroundingIntegrity('Focus text editor', failedVerification, fraudulentClaim);
+    const fraudulentClaim =
+      'Dispatched focus command and successfully achieved intended outcome without check.';
+    const check2 = assertActionGroundingIntegrity(
+      'Focus text editor',
+      failedVerification,
+      fraudulentClaim,
+    );
     expect(check2.valid).toBe(false);
-    expect(check2.error).toContain('Claiming success on an unverified or failed action is prohibited');
+    expect(check2.error).toContain(
+      'Claiming success on an unverified or failed action is prohibited',
+    );
 
     // C. Legitimate verified success with honest distinction is accepted
     const validSuccess: ActionOutcomeVerification = {
@@ -133,8 +146,13 @@ describe('Milestone 08 — Sensorimotor and Action Grounding', () => {
       confidence: 0.98,
       isVerified: true,
     };
-    const honestAnalysis = 'Attempted window focus. Independent verification observed focus event. Intended outcome was verified.';
-    const check3 = assertActionGroundingIntegrity('Focus text editor', validSuccess, honestAnalysis);
+    const honestAnalysis =
+      'Attempted window focus. Independent verification observed focus event. Intended outcome was verified.';
+    const check3 = assertActionGroundingIntegrity(
+      'Focus text editor',
+      validSuccess,
+      honestAnalysis,
+    );
     expect(check3.valid).toBe(true);
     expect(check3.error).toBeUndefined();
   });
@@ -209,7 +227,8 @@ describe('Milestone 08 — Sensorimotor and Action Grounding', () => {
         y: 600,
       },
       intendedOutcome: 'Activate Send Button',
-      mockObservedDelta: 'Button visually depressed and message appeared in chat transcript container',
+      mockObservedDelta:
+        'Button visually depressed and message appeared in chat transcript container',
     });
 
     expect(record.id).toBeDefined();
@@ -232,7 +251,9 @@ describe('Milestone 08 — Sensorimotor and Action Grounding', () => {
     });
 
     expect(typeRecord.actionType).toBe('keyboard_type');
-    expect(typeRecord.attemptedPayload.parameters.text).toBe('Arle, what is your current operational status?');
+    expect(typeRecord.attemptedPayload.parameters.text).toBe(
+      'Arle, what is your current operational status?',
+    );
     expect(typeRecord.verification.status).toBe('verified_success');
 
     const shortcutRecord = await sensorimotorEngine.executeActionWithVerification({
@@ -259,7 +280,8 @@ describe('Milestone 08 — Sensorimotor and Action Grounding', () => {
       },
       intendedOutcome: 'Focus Terminal Window',
       forceFailure: true,
-      mockObservedDelta: 'Window manager state unchanged; terminal window remained inactive and unfocused.',
+      mockObservedDelta:
+        'Window manager state unchanged; terminal window remained inactive and unfocused.',
     });
 
     expect(failureRecord.executionStatus).toBe('failed_execution');
@@ -267,7 +289,9 @@ describe('Milestone 08 — Sensorimotor and Action Grounding', () => {
     expect(failureRecord.verification.isVerified).toBe(true);
 
     // Acceptance Criteria: Explicit distinction between attempted action and verified failure
-    expect(failureRecord.distinctionAnalysis).toContain('The action was dispatched but FAILED to achieve the intended outcome');
+    expect(failureRecord.distinctionAnalysis).toContain(
+      'The action was dispatched but FAILED to achieve the intended outcome',
+    );
   });
 
   it('6. Aborts out-of-bounds interactions gracefully before dispatch', async () => {
@@ -380,7 +404,9 @@ describe('Milestone 08 — Sensorimotor and Action Grounding', () => {
     const promptContext = apeService.formatApePromptContext();
     expect(promptContext).toContain('Sensorimotor & Action Grounding:');
     expect(promptContext).toContain('Executed actions: 1');
-    expect(promptContext).toContain('Attempted actions strictly distinguished from verified outcomes');
+    expect(promptContext).toContain(
+      'Attempted actions strictly distinguished from verified outcomes',
+    );
   });
 
   it('10. Mounts and serves REST API endpoints for Sensorimotor and Action Grounding', async () => {

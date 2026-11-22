@@ -65,7 +65,11 @@ export class MultimodalPerceptionEngine {
         confidence: 0.91,
         attributes: { shell: 'bash' },
       });
-    } else if (context.includes('web') || context.includes('browser') || context.includes('chrome')) {
+    } else if (
+      context.includes('web') ||
+      context.includes('browser') ||
+      context.includes('chrome')
+    ) {
       sceneType = 'web_browser_canvas';
       dominantColors = ['#ffffff', '#f2f4f8', '#1a73e8'];
       detectedObjects.push({
@@ -117,12 +121,17 @@ export class MultimodalPerceptionEngine {
         {
           inference: `Visual structure represents a ${sceneType.replace(/_/g, ' ')} with high visual clarity.`,
           confidence: 0.88,
-          basedOnObservations: [`Image resolution verified: ${width}x${height}px`, `Identified ${detectedObjects.length} visual object/component region(s)`],
+          basedOnObservations: [
+            `Image resolution verified: ${width}x${height}px`,
+            `Identified ${detectedObjects.length} visual object/component region(s)`,
+          ],
         },
       ],
       assumptions: [
         {
-          assumption: context ? `Context hint "${input.contextHint}" accurately reflects current user focus.` : 'Visual image represents current desktop foreground task.',
+          assumption: context
+            ? `Context hint "${input.contextHint}" accurately reflects current user focus.`
+            : 'Visual image represents current desktop foreground task.',
           confidence: 0.65,
           requiresVerification: true,
         },
@@ -138,7 +147,10 @@ export class MultimodalPerceptionEngine {
       detectedObjects,
       scene,
       interpretation,
-      rawFeatures: { mimeType: input.mimeType || 'image/png', byteLengthEstimate: (input.imageBase64?.length || 0) * 0.75 },
+      rawFeatures: {
+        mimeType: input.mimeType || 'image/png',
+        byteLengthEstimate: (input.imageBase64?.length || 0) * 0.75,
+      },
     };
   }
 
@@ -153,7 +165,8 @@ export class MultimodalPerceptionEngine {
 
     let rmsEnergy = 0.35;
     let spectralCentroidHz = 1450;
-    let acousticClass: 'silence' | 'gentle_ambient' | 'loud_spike' | 'chaotic_noise' = 'gentle_ambient';
+    let acousticClass: 'silence' | 'gentle_ambient' | 'loud_spike' | 'chaotic_noise' =
+      'gentle_ambient';
 
     if (input.contextHint?.includes('silent') || (!hasSpeech && duration < 1.0)) {
       rmsEnergy = 0.02;
@@ -203,7 +216,9 @@ export class MultimodalPerceptionEngine {
       directObservations: [
         `Acoustic duration: ${duration.toFixed(2)}s, Acoustic classification: ${acousticClass}`,
         `Measured RMS energy: ${rmsEnergy.toFixed(3)}, Spectral centroid: ${spectralCentroidHz}Hz`,
-        hasSpeech ? `Speech recognized via Whisper STT: "${transcript}" (Language: ${input.language || 'en'})` : 'No verbal speech detected in audio segment',
+        hasSpeech
+          ? `Speech recognized via Whisper STT: "${transcript}" (Language: ${input.language || 'en'})`
+          : 'No verbal speech detected in audio segment',
       ],
       groundedInferences: [
         {
@@ -211,7 +226,12 @@ export class MultimodalPerceptionEngine {
             ? 'Spoken input contains active verbal communication addressed to the system.'
             : `Acoustic environment is predominantly ${acousticClass.replace(/_/g, ' ')}.`,
           confidence: 0.9,
-          basedOnObservations: [`Acoustic duration: ${duration.toFixed(2)}s`, hasSpeech ? `Speech recognized via Whisper STT: "${transcript}"` : 'No verbal speech detected in audio segment'],
+          basedOnObservations: [
+            `Acoustic duration: ${duration.toFixed(2)}s`,
+            hasSpeech
+              ? `Speech recognized via Whisper STT: "${transcript}"`
+              : 'No verbal speech detected in audio segment',
+          ],
         },
       ],
       assumptions: [
@@ -295,7 +315,10 @@ export class MultimodalPerceptionEngine {
         label: 'Video Motion Track',
         category: 'temporal_stream',
         confidence: 0.91,
-        attributes: { durationSeconds: duration, sampleRateFps: (keyframesCount / duration).toFixed(1) },
+        attributes: {
+          durationSeconds: duration,
+          sampleRateFps: (keyframesCount / duration).toFixed(1),
+        },
       },
     ];
 
@@ -303,18 +326,25 @@ export class MultimodalPerceptionEngine {
       directObservations: [
         `Video duration verified: ${duration.toFixed(2)} seconds`,
         `Sampled ${keyframesCount} temporal keyframes with cross-frame continuity`,
-        transcript ? `Synchronized audio dialogue: "${transcript}"` : 'Video contains no transcribed verbal dialogue',
+        transcript
+          ? `Synchronized audio dialogue: "${transcript}"`
+          : 'Video contains no transcribed verbal dialogue',
       ],
       groundedInferences: [
         {
-          inference: 'Temporal stream represents contiguous audiovisual media playback or screen capture.',
+          inference:
+            'Temporal stream represents contiguous audiovisual media playback or screen capture.',
           confidence: 0.9,
-          basedOnObservations: [`Video duration verified: ${duration.toFixed(2)} seconds`, `Sampled ${keyframesCount} temporal keyframes with cross-frame continuity`],
+          basedOnObservations: [
+            `Video duration verified: ${duration.toFixed(2)} seconds`,
+            `Sampled ${keyframesCount} temporal keyframes with cross-frame continuity`,
+          ],
         },
       ],
       assumptions: [
         {
-          assumption: 'Sampled keyframes adequately capture all salient visual state transitions within the duration.',
+          assumption:
+            'Sampled keyframes adequately capture all salient visual state transitions within the duration.',
           confidence: 0.75,
           requiresVerification: false,
         },
@@ -389,14 +419,19 @@ export class MultimodalPerceptionEngine {
       ],
       groundedInferences: [
         {
-          inference: 'Proof is actively engaged in software architecture and automated testing inside Arletex.',
+          inference:
+            'Proof is actively engaged in software architecture and automated testing inside Arletex.',
           confidence: 0.94,
-          basedOnObservations: [`Currently focused window client: "${focusedTitle}"`, `Recognized ${textBlocks.length} text block(s) and ${interactiveHints.length} interactive control element(s)`],
+          basedOnObservations: [
+            `Currently focused window client: "${focusedTitle}"`,
+            `Recognized ${textBlocks.length} text block(s) and ${interactiveHints.length} interactive control element(s)`,
+          ],
         },
       ],
       assumptions: [
         {
-          assumption: 'Visible window stack accurately represents the immediate user task context without background obstruction.',
+          assumption:
+            'Visible window stack accurately represents the immediate user task context without background obstruction.',
           confidence: 0.8,
           requiresVerification: true,
         },
@@ -428,7 +463,12 @@ export class MultimodalPerceptionEngine {
     const now = new Date().toISOString();
     const modalities: PerceptionModality[] = [];
     const directObservations: string[] = [];
-    const assumptions: Array<{ assumption: string; confidence: number; isAssumption: true; requiresVerification: boolean }> = [];
+    const assumptions: Array<{
+      assumption: string;
+      confidence: number;
+      isAssumption: true;
+      requiresVerification: boolean;
+    }> = [];
     const detectedObjects: DetectedObject[] = [];
     const perceptualEvents: PerceptualEvent[] = [];
 
@@ -513,7 +553,10 @@ export class MultimodalPerceptionEngine {
           requiresVerification: a.requiresVerification ?? true,
         });
       }
-      for (const ev of [...(input.videoResult.visualEvents || []), ...(input.videoResult.audioEvents || [])]) {
+      for (const ev of [
+        ...(input.videoResult.visualEvents || []),
+        ...(input.videoResult.audioEvents || []),
+      ]) {
         perceptualEvents.push({
           id: ev.id,
           eventType: ev.eventType,
@@ -570,9 +613,13 @@ export class MultimodalPerceptionEngine {
     if (screenSummary) synthesisParts.push(`Screen: ${screenSummary}`);
     if (audioSummary) synthesisParts.push(`Audio: ${audioSummary}`);
     if (visualSummary) synthesisParts.push(`Visual: ${visualSummary}`);
-    synthesisParts.push(`Factual Observations: ${directObservations.length} verified sensory metrics.`);
+    synthesisParts.push(
+      `Factual Observations: ${directObservations.length} verified sensory metrics.`,
+    );
     if (assumptions.length > 0) {
-      synthesisParts.push(`Active Assumptions (${assumptions.length}): ${assumptions.map((a) => `"${a.assumption}" (${(a.confidence * 100).toFixed(0)}%)`).join('; ')}`);
+      synthesisParts.push(
+        `Active Assumptions (${assumptions.length}): ${assumptions.map((a) => `"${a.assumption}" (${(a.confidence * 100).toFixed(0)}%)`).join('; ')}`,
+      );
     }
 
     const frame: UnifiedMultimodalFrame = {
@@ -600,7 +647,11 @@ export class MultimodalPerceptionEngine {
         this.worldRepo.recordEnvironmentalChange({
           id: crypto.randomUUID(),
           changeType: 'multimodal_sensory_update',
-          newState: { modalities, sceneType: overallScene.sceneType, directObservationsCount: directObservations.length },
+          newState: {
+            modalities,
+            sceneType: overallScene.sceneType,
+            directObservationsCount: directObservations.length,
+          },
           observedAt: now,
           source: 'multimodal_perception_engine',
           description: `Ingested ${modalities.join('/')} perceptual frame in scene "${overallScene.sceneType}".`,
@@ -610,7 +661,9 @@ export class MultimodalPerceptionEngine {
       }
     }
 
-    this.logger.info(`Fused multimodal frame ${frame.id}: ${modalities.join('+')} [Scene: ${overallScene.sceneType}]`);
+    this.logger.info(
+      `Fused multimodal frame ${frame.id}: ${modalities.join('+')} [Scene: ${overallScene.sceneType}]`,
+    );
     return frame;
   }
 
@@ -652,12 +705,16 @@ export class InMemoryPerceptionRepository implements IPerceptionRepository {
   }
 
   public getLatestFrame(): UnifiedMultimodalFrame | null {
-    const list = Array.from(this.frames.values()).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+    const list = Array.from(this.frames.values()).sort((a, b) =>
+      b.timestamp.localeCompare(a.timestamp),
+    );
     return list[0] || null;
   }
 
   public listFrames(limit = 20): UnifiedMultimodalFrame[] {
-    const list = Array.from(this.frames.values()).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+    const list = Array.from(this.frames.values()).sort((a, b) =>
+      b.timestamp.localeCompare(a.timestamp),
+    );
     return list.slice(0, limit);
   }
 
@@ -687,9 +744,14 @@ export class InMemoryPerceptionRepository implements IPerceptionRepository {
     }
   }
 
-  public listDetectedObjects(filter?: { label?: string; category?: string; limit?: number }): DetectedObject[] {
+  public listDetectedObjects(filter?: {
+    label?: string;
+    category?: string;
+    limit?: number;
+  }): DetectedObject[] {
     let list = [...this.objects];
-    if (filter?.label) list = list.filter((o) => o.label.toLowerCase().includes(filter.label!.toLowerCase()));
+    if (filter?.label)
+      list = list.filter((o) => o.label.toLowerCase().includes(filter.label!.toLowerCase()));
     if (filter?.category) list = list.filter((o) => o.category === filter.category);
     if (filter?.limit) list = list.slice(0, filter.limit);
     return list;

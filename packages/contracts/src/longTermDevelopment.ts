@@ -58,4 +58,6 @@ export const PsychologicalDevelopmentOverviewSchema = z.object({
     daysEvolving: z.number().min(0),
   }),
 });
-export type PsychologicalDevelopmentOverview = z.infer<typeof PsychologicalDevelopmentOverviewSchema>;
+export type PsychologicalDevelopmentOverview = z.infer<
+  typeof PsychologicalDevelopmentOverviewSchema
+>;

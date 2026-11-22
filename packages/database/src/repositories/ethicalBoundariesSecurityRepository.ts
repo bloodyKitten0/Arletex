@@ -130,10 +130,7 @@ export class SqliteEthicalBoundariesSecurityRepository implements IEthicalBounda
           log.timestamp,
         );
     } catch (err: any) {
-      throw new DatabaseError(
-        `Failed to save security audit log ${log.id}: ${err.message}`,
-        err,
-      );
+      throw new DatabaseError(`Failed to save security audit log ${log.id}: ${err.message}`, err);
     }
   }
 

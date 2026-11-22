@@ -4,11 +4,7 @@ import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
 import { execSync } from 'node:child_process';
-import {
-  DesktopEnvironmentProvider,
-  VerificationEngine,
-  rootLogger,
-} from '@arletex/core';
+import { DesktopEnvironmentProvider, VerificationEngine, rootLogger } from '@arletex/core';
 import { AgencyObservation, ActionProposal } from '@arletex/contracts';
 
 describe('Priority 0 — Target Device & Wayland Runtime Validation (P0.4)', () => {
@@ -60,7 +56,12 @@ describe('Priority 0 — Target Device & Wayland Runtime Validation (P0.4)', () 
 
       // Check if common desktop applications are parsed correctly
       const appNames = apps.map((a) => a.name.toLowerCase());
-      expect(appNames.some((name) => name.includes('chrome') || name.includes('firefox') || name.includes('terminal'))).toBe(true);
+      expect(
+        appNames.some(
+          (name) =>
+            name.includes('chrome') || name.includes('firefox') || name.includes('terminal'),
+        ),
+      ).toBe(true);
     });
   });
 
@@ -96,7 +97,9 @@ describe('Priority 0 — Target Device & Wayland Runtime Validation (P0.4)', () 
       const result = verificationEngine.verify(action, syntheticObs);
       expect(result.verified).toBe(false);
       expect(result.status).toBe('partially_successful');
-      expect(result.failureReason).toContain('Synthetic test double observation cannot verify real browser navigation');
+      expect(result.failureReason).toContain(
+        'Synthetic test double observation cannot verify real browser navigation',
+      );
 
       // Case B: Genuine empirical verification observation
       const genuineObs: AgencyObservation = {

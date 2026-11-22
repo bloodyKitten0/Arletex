@@ -1,15 +1,34 @@
 {
   "name": "arletex-root",
-  "version": "0.8.0",
+  "version": "1.0.0",
+  "description": "Local-first desktop environment and host infrastructure for Arle, a persistent artificial individual.",
   "private": true,
   "license": "PolyForm-Noncommercial-1.0.0",
   "type": "module",
   "packageManager": "pnpm@12.18.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bloodyKitten0/Arletex.git"
+  },
+  "homepage": "https://github.com/bloodyKitten0/Arletex#readme",
+  "keywords": [
+    "artificial-individual",
+    "cognitive-architecture",
+    "local-ai",
+    "ape",
+    "desktop-agent",
+    "wayland",
+    "multimodal",
+    "bazzite",
+    "asus-rog-ally-x"
+  ],
   "scripts": {
     "arle": "./scripts/run-arletex.sh",
     "build:native": "cmake -B native/build -S native -DCMAKE_BUILD_TYPE=Release && cmake --build native/build -j4 && mkdir -p apps/desktop/src/backend/native && cp native/build/reflex_engine apps/desktop/src/backend/native/reflex_engine",
     "build": "pnpm run build:native && pnpm --filter \"@arletex/*\" run build",
     "typecheck": "pnpm --filter \"@arletex/*\" run typecheck",
+    "lint": "prettier --check \"**/*.{ts,tsx,js,json,md}\"",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "dev": "pnpm --filter @arletex/desktop dev",
@@ -19,6 +38,7 @@
   "devDependencies": {
     "@electron/rebuild": "^4.2.1",
     "@types/node": "^22.13.1",
+    "prettier": "^3.10.1",
     "rimraf": "^6.0.1",
     "typescript": "^5.7.3",
     "vitest": "^3.0.5"

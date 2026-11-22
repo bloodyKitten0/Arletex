@@ -32,10 +32,7 @@ import {
   WebAgencyService,
   rootLogger,
 } from '@arletex/core';
-import {
-  ActionProposal,
-  AgencyObservation,
-} from '@arletex/contracts';
+import { ActionProposal, AgencyObservation } from '@arletex/contracts';
 import {
   TelegramBridgeService,
   validateTelegramMediaSignature,
@@ -151,7 +148,8 @@ describe('Milestone 6 — Operational Autonomy and Closed-Loop Agency', () => {
             uploader: '3Blue1Brown',
             durationSeconds: 1125,
             durationText: '18:45',
-            descriptionSnippet: 'Visualizing query, key, value attention vectors in transformer neural networks.',
+            descriptionSnippet:
+              'Visualizing query, key, value attention vectors in transformer neural networks.',
             isEducational: true,
           },
         ]),
@@ -268,10 +266,7 @@ describe('Milestone 6 — Operational Autonomy and Closed-Loop Agency', () => {
         logger: rootLogger,
       });
 
-      const result = await agency.executeClosedLoop(
-        'Open video on transformer attention',
-        'user',
-      );
+      const result = await agency.executeClosedLoop('Open video on transformer attention', 'user');
 
       // Must be marked failed because verification failed
       expect(result.success).toBe(false);
@@ -279,7 +274,9 @@ describe('Milestone 6 — Operational Autonomy and Closed-Loop Agency', () => {
 
       // Verify no fabricated successful memory exists
       const autobiographicalMemories = memoryRepo.list({ type: 'autobiographical' });
-      const successMemories = autobiographicalMemories.filter((m) => m.provenance === 'verified_fact');
+      const successMemories = autobiographicalMemories.filter(
+        (m) => m.provenance === 'verified_fact',
+      );
       expect(successMemories.length).toBe(0);
     });
   });
@@ -296,7 +293,8 @@ describe('Milestone 6 — Operational Autonomy and Closed-Loop Agency', () => {
           url: 'https://www.youtube.com/watch?v=3b1b',
           uploader: '3Blue1Brown',
           durationSeconds: 1125, // 18.75m
-          descriptionSnippet: 'Geometric intuition of query, key, value attention vectors in deep learning models.',
+          descriptionSnippet:
+            'Geometric intuition of query, key, value attention vectors in deep learning models.',
           isEducational: true,
         },
         {
@@ -317,13 +315,19 @@ describe('Milestone 6 — Operational Autonomy and Closed-Loop Agency', () => {
         },
       ];
 
-      const decision = webAgency.evaluateVideoCandidates('transformer attention explanation', candidates, 18);
+      const decision = webAgency.evaluateVideoCandidates(
+        'transformer attention explanation',
+        candidates,
+        18,
+      );
 
       expect(decision.selectedCandidate).toBeDefined();
       expect(decision.selectedCandidate?.uploader).toBe('3Blue1Brown');
       expect(decision.rationale).toContain('3Blue1Brown');
       expect(decision.rationale).toContain('educational');
-      expect(decision.rejectionReasons['Learn Transformers in 30 Seconds Meme Shorts']).toBeDefined();
+      expect(
+        decision.rejectionReasons['Learn Transformers in 30 Seconds Meme Shorts'],
+      ).toBeDefined();
     });
 
     it('verifies that video playback actually progresses across distinct time observations', () => {
@@ -480,10 +484,7 @@ describe('Milestone 6 — Operational Autonomy and Closed-Loop Agency', () => {
         logger: rootLogger,
       });
 
-      const result = await agency.executeClosedLoop(
-        'Play video on transformer attention',
-        'user',
-      );
+      const result = await agency.executeClosedLoop('Play video on transformer attention', 'user');
 
       // Verify recovery happened: candidate 1 was tried and failed, switched to candidate 2 and succeeded
       expect(navigationAttempts).toBe(2);
@@ -547,10 +548,7 @@ describe('Milestone 6 — Operational Autonomy and Closed-Loop Agency', () => {
         logger: rootLogger,
       });
 
-      const result = await agency.executeClosedLoop(
-        'Play video on transformer attention',
-        'user',
-      );
+      const result = await agency.executeClosedLoop('Play video on transformer attention', 'user');
 
       expect(result.success).toBe(false);
       expect(result.stage).toBe('failed_outcome');
@@ -605,7 +603,9 @@ describe('Milestone 6 — Operational Autonomy and Closed-Loop Agency', () => {
 
       // Corrupt or disguised executable bytes -> throws Error
       const garbage = Buffer.from([0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00]); // DOS/PE executable header
-      expect(() => validateTelegramMediaSignature(garbage, 'photo')).toThrow('File signature validation failed');
+      expect(() => validateTelegramMediaSignature(garbage, 'photo')).toThrow(
+        'File signature validation failed',
+      );
     });
 
     it('distinguishes download success from multimodal perception success (Test 9)', async () => {
@@ -664,9 +664,15 @@ describe('Milestone 6 — Operational Autonomy and Closed-Loop Agency', () => {
       expect(SUPPORTED_APPLICATIONS.has('firefox')).toBe(true);
 
       // 2. Dangerous or unauthorized executables -> throws Error
-      await expect(safeComputer.launchApp('sudo', ['reboot'])).rejects.toThrow('Unsupported application');
-      await expect(safeComputer.launchApp('rm', ['-rf', '/'])).rejects.toThrow('Unsupported application');
-      await expect(safeComputer.launchApp('nc', ['-l', '8080'])).rejects.toThrow('Unsupported application');
+      await expect(safeComputer.launchApp('sudo', ['reboot'])).rejects.toThrow(
+        'Unsupported application',
+      );
+      await expect(safeComputer.launchApp('rm', ['-rf', '/'])).rejects.toThrow(
+        'Unsupported application',
+      );
+      await expect(safeComputer.launchApp('nc', ['-l', '8080'])).rejects.toThrow(
+        'Unsupported application',
+      );
     });
 
     it('blocks unauthorized access to sensitive filesystem paths and credentials', () => {
@@ -730,7 +736,8 @@ describe('Milestone 6 — Operational Autonomy and Closed-Loop Agency', () => {
           ok: true,
           status: 200,
           statusText: 'OK',
-          text: async () => '<html><head><title>Nonlinear Topological Dynamics</title></head><body><h1>Topological Phase Transitions</h1><p>Persistent homology tracks homology changes across continuous parameters in nonlinear dynamical manifolds.</p></body></html>',
+          text: async () =>
+            '<html><head><title>Nonlinear Topological Dynamics</title></head><body><h1>Topological Phase Transitions</h1><p>Persistent homology tracks homology changes across continuous parameters in nonlinear dynamical manifolds.</p></body></html>',
         } as any;
       });
 

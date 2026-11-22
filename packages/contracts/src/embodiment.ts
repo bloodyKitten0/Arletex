@@ -28,7 +28,10 @@ export const PROHIBITED_BIOLOGICAL_SENSATIONS = [
   'tingling',
 ] as const;
 
-export function validateEpistemicInteroception(text: string): { valid: boolean; violation?: string } {
+export function validateEpistemicInteroception(text: string): {
+  valid: boolean;
+  violation?: string;
+} {
   const lower = text.toLowerCase();
   const sortedTerms = [...PROHIBITED_BIOLOGICAL_SENSATIONS].sort((a, b) => b.length - a.length);
   for (const term of sortedTerms) {
@@ -213,4 +216,6 @@ export const PlanningResourceAllocationAdjustmentSchema = z.object({
   recommendedThinkingBudgetTokens: z.number().int().nonnegative(),
   rationale: z.string(),
 });
-export type PlanningResourceAllocationAdjustment = z.infer<typeof PlanningResourceAllocationAdjustmentSchema>;
+export type PlanningResourceAllocationAdjustment = z.infer<
+  typeof PlanningResourceAllocationAdjustmentSchema
+>;

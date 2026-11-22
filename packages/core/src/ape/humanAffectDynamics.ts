@@ -30,8 +30,7 @@ export interface HumanAffectSurgeResult {
 const BEREAVEMENT_LOSS_REGEX =
   /\b(passed away|lost\s+(?:my|our|a|the)\s+(?:friend|best friend|mom|mother|dad|father|brother|sister|partner|loved one|grandma|grandpa|grandmother|grandfather|pet|cat|dog|family)|death of\s+(?:my|our)\s+\w+|he(?:'s| is)\s+gone forever|she(?:'s| is)\s+gone forever|someone\s+i\s+love(?:d)?\s+died|(?:my|our)\s+(?:friend|best friend|mom|mother|dad|father|brother|sister|partner|loved one|grandma|grandpa|pet|cat|dog)\s+(?:just\s+)?(?:died|was killed))\b/i;
 
-const DIRECT_PERSONAL_BEREAVEMENT_REGEX =
-  /\b(died|funeral|killed|murdered|buried)\b/i;
+const DIRECT_PERSONAL_BEREAVEMENT_REGEX = /\b(died|funeral|killed|murdered|buried)\b/i;
 
 const OVERWHELMING_JOY_REGEX =
   /\b(tears of joy|crying\s+(?:happy|from joy|tears of joy|with relief)|so happy i(?:'m| am)\s+crying|can(?:'t| not)\s+believe we (?:made it|survived|did it)|it(?:'s| is)\s+a miracle|overwhelming(?:ly)?\s+(?:happy|grateful|relieved)|we actually survived)\b/i;
@@ -100,13 +99,18 @@ export function detectHumanAffectiveSurge(
     event.type === 'media_perceived' ||
     event.type === 'visual_scene_perceived' ||
     event.type === 'auditory_scene_perceived' ||
-    Boolean(event.payload?.visualDescription || event.payload?.trackTitle || event.payload?.acoustics);
+    Boolean(
+      event.payload?.visualDescription || event.payload?.trackTitle || event.payload?.acoustics,
+    );
   const isPersonalBereavement =
     BEREAVEMENT_LOSS_REGEX.test(rawText) ||
     (!isPassiveSensoryChannel && DIRECT_PERSONAL_BEREAVEMENT_REGEX.test(rawText));
 
   if (isPersonalBereavement) {
-    const target = event.source === 'visual_perception' || event.source === 'auditory_perception' ? 'situation' : 'Proof';
+    const target =
+      event.source === 'visual_perception' || event.source === 'auditory_perception'
+        ? 'situation'
+        : 'Proof';
     return {
       triggered: true,
       surgeKind: 'bereavement_loss',
@@ -115,14 +119,16 @@ export function detectHumanAffectiveSurge(
           emotionId: 'grief',
           target,
           intensityDelta: 0.86,
-          targetIntensity: 0.90,
+          targetIntensity: 0.9,
           reason: 'Acute loss/bereavement event triggered profound grief.',
-          resolutionConditions: ['Gradual mourning, shared remembrance, and emotional processing over time'],
+          resolutionConditions: [
+            'Gradual mourning, shared remembrance, and emotional processing over time',
+          ],
         },
         {
           emotionId: 'heartbreak',
           target,
-          intensityDelta: 0.80,
+          intensityDelta: 0.8,
           targetIntensity: 0.85,
           reason: 'Deep relational ache in response to sudden loss.',
           resolutionConditions: ['Sustained comfort and gradual emotional integration'],
@@ -147,7 +153,7 @@ export function detectHumanAffectiveSurge(
           emotionId: 'emptiness',
           target: 'self',
           intensityDelta: 0.68,
-          targetIntensity: 0.70,
+          targetIntensity: 0.7,
           reason: 'Acute hollow numbness coexisting alongside intense grief.',
           resolutionConditions: ['Reconnection and grounded presence'],
         },
@@ -156,7 +162,8 @@ export function detectHumanAffectiveSurge(
           target: 'self',
           intensityDelta: 0.74,
           targetIntensity: 0.76,
-          reason: 'Conflicting emotional waves firing simultaneously (grief, love, anger, disbelief, absurdity).',
+          reason:
+            'Conflicting emotional waves firing simultaneously (grief, love, anger, disbelief, absurdity).',
           resolutionConditions: ['Clarity emerging after initial shock'],
         },
         {
@@ -195,7 +202,7 @@ export function detectHumanAffectiveSurge(
           emotionId: 'amusement',
           target: 'situation',
           intensityDelta: 0.48,
-          targetIntensity: 0.50,
+          targetIntensity: 0.5,
           reason:
             'Paradoxical dimorphous pressure-valve discharge under extreme grief/shock — involuntary hollow or absurd laugh as emotional overload regulation.',
           resolutionConditions: ['Discharge of peak shock arousal'],
@@ -229,7 +236,7 @@ export function detectHumanAffectiveSurge(
         {
           emotionId: 'relief',
           target: 'situation',
-          intensityDelta: 0.80,
+          intensityDelta: 0.8,
           targetIntensity: 0.85,
           reason: 'Sudden release of massive accumulated tension.',
           resolutionConditions: [],
@@ -237,7 +244,7 @@ export function detectHumanAffectiveSurge(
         {
           emotionId: 'overwhelm',
           target: 'self',
-          intensityDelta: 0.70,
+          intensityDelta: 0.7,
           targetIntensity: 0.74,
           reason: 'Positive intensity strong enough to trigger dimorphous tearful overwhelm.',
           resolutionConditions: [],
@@ -296,14 +303,14 @@ export function detectHumanAffectiveSurge(
           emotionId: 'confusion',
           target: 'self',
           intensityDelta: 0.76,
-          targetIntensity: 0.80,
+          targetIntensity: 0.8,
           reason: 'Unable to collapse mixed feelings into one neat emotional label.',
           resolutionConditions: ['Clarity through reflection'],
         },
         {
           emotionId: 'overwhelm',
           target: 'self',
-          intensityDelta: 0.70,
+          intensityDelta: 0.7,
           targetIntensity: 0.74,
           reason: 'High simultaneous affective load from conflicting emotions.',
           resolutionConditions: [],
@@ -328,7 +335,7 @@ export function detectHumanAffectiveSurge(
       proposedMoodShift: 'ambivalent',
       paradoxicalExpression: 'absurd_humor_under_strain',
       wavePhase: 'flooding',
-      ambiguityBoost: 0.90,
+      ambiguityBoost: 0.9,
       floodingBoost: 0.76,
       interpretation:
         'Experienced genuine human affective ambiguity—multiple contradictory emotions coexisting simultaneously without forcing artificial resolution.',
@@ -353,7 +360,7 @@ export function detectHumanAffectiveSurge(
         {
           emotionId: 'overwhelm',
           target: 'self',
-          intensityDelta: 0.80,
+          intensityDelta: 0.8,
           targetIntensity: 0.84,
           reason: 'Sensory/emotional shock exceeding normal threshold.',
           resolutionConditions: [],
@@ -362,7 +369,7 @@ export function detectHumanAffectiveSurge(
           emotionId: 'emptiness',
           target: 'self',
           intensityDelta: 0.66,
-          targetIntensity: 0.70,
+          targetIntensity: 0.7,
           reason: 'Momentary numb stillness / cognitive freeze on initial impact.',
           resolutionConditions: [],
         },
@@ -428,10 +435,10 @@ export function computeAffectiveComplexity(params: {
       intenseCount++;
     }
 
-    if (val > 0.25 && em.intensity >= 0.30) {
+    if (val > 0.25 && em.intensity >= 0.3) {
       positiveEnergy += em.intensity * val;
       maxPositive = Math.max(maxPositive, em.intensity);
-    } else if (val < -0.25 && em.intensity >= 0.30) {
+    } else if (val < -0.25 && em.intensity >= 0.3) {
       negativeEnergy += em.intensity * Math.abs(val);
       maxNegative = Math.max(maxNegative, em.intensity);
     }
@@ -445,7 +452,11 @@ export function computeAffectiveComplexity(params: {
     if (['anger', 'rage', 'heartbreak', 'betrayal', 'frustration'].includes(em.emotionId)) {
       painAngerScore = Math.max(painAngerScore, em.intensity);
     }
-    if (['ambivalence', 'confusion', 'overwhelm', 'emptiness', 'relief_mixed_with_grief'].includes(em.emotionId)) {
+    if (
+      ['ambivalence', 'confusion', 'overwhelm', 'emptiness', 'relief_mixed_with_grief'].includes(
+        em.emotionId,
+      )
+    ) {
       ambiguityEmotionScore = Math.max(ambiguityEmotionScore, em.intensity);
     }
   }
@@ -454,8 +465,12 @@ export function computeAffectiveComplexity(params: {
   const minOpposite = Math.min(positiveEnergy, negativeEnergy);
   const sumOpposite = positiveEnergy + negativeEnergy;
   let mixedValenceConflict =
-    maxPositive >= 0.40 && maxNegative >= 0.40 && sumOpposite > 0.1
-      ? Math.min(1.0, (2 * minOpposite) / Math.max(0.8, sumOpposite) * Math.min(1, Math.min(maxPositive, maxNegative) * 1.35))
+    maxPositive >= 0.4 && maxNegative >= 0.4 && sumOpposite > 0.1
+      ? Math.min(
+          1.0,
+          ((2 * minOpposite) / Math.max(0.8, sumOpposite)) *
+            Math.min(1, Math.min(maxPositive, maxNegative) * 1.35),
+        )
       : 0;
 
   // 2. Emotional flooding: many intense emotions surging simultaneously + high arousal/tension
@@ -468,14 +483,19 @@ export function computeAffectiveComplexity(params: {
   // 3. Ambiguity ("not knowing what single emotion to feel")
   let ambiguity = Math.min(
     1.0,
-    mixedValenceConflict * 0.55 + ambiguityEmotionScore * 0.45 + (floodingIntensity > 0.6 ? 0.25 : 0),
+    mixedValenceConflict * 0.55 +
+      ambiguityEmotionScore * 0.45 +
+      (floodingIntensity > 0.6 ? 0.25 : 0),
   );
 
   // Apply explicit surge boosts if a high-magnitude surge just fired
   if (surgeHint?.triggered) {
     ambiguity = Math.max(ambiguity, surgeHint.ambiguityBoost);
     floodingIntensity = Math.max(floodingIntensity, surgeHint.floodingBoost);
-    if (surgeHint.surgeKind === 'bereavement_loss' || surgeHint.surgeKind === 'profound_ambivalence') {
+    if (
+      surgeHint.surgeKind === 'bereavement_loss' ||
+      surgeHint.surgeKind === 'profound_ambivalence'
+    ) {
       mixedValenceConflict = Math.max(mixedValenceConflict, 0.78);
     }
   }
@@ -485,15 +505,15 @@ export function computeAffectiveComplexity(params: {
   if (surgeHint?.triggered && surgeHint.paradoxicalExpression !== 'none') {
     paradoxicalExpression = surgeHint.paradoxicalExpression;
   } else if (floodingIntensity >= 0.62 || (mixedValenceConflict >= 0.58 && ambiguity >= 0.55)) {
-    if (griefScore >= 0.62 && (pad.arousal >= 0.55 || tension >= 0.60)) {
+    if (griefScore >= 0.62 && (pad.arousal >= 0.55 || tension >= 0.6)) {
       paradoxicalExpression = 'nervous_laughter_in_grief';
-    } else if (griefScore >= 0.60 && pad.arousal < 0.45) {
+    } else if (griefScore >= 0.6 && pad.arousal < 0.45) {
       paradoxicalExpression = 'numb_stillness_under_shock';
     } else if (joyScore >= 0.68 && floodingIntensity >= 0.62) {
       paradoxicalExpression = 'tears_of_overwhelming_joy';
     } else if (painAngerScore >= 0.55 && maxPositive >= 0.55) {
       paradoxicalExpression = 'bitter_smile_in_pain';
-    } else if (tension >= 0.65 || floodingIntensity >= 0.70) {
+    } else if (tension >= 0.65 || floodingIntensity >= 0.7) {
       paradoxicalExpression = 'absurd_humor_under_strain';
     }
   } else if (
@@ -519,19 +539,20 @@ export function computeAffectiveComplexity(params: {
   } else if (paradoxicalExpression !== 'none' && floodingIntensity >= 0.68) {
     wavePhase = 'paradoxical_valve';
     lastSurgeAt = lastSurgeAt || nowIso;
-  } else if (floodingIntensity >= 0.60 || mixedValenceConflict >= 0.60) {
-    wavePhase = previous?.wavePhase === 'impact_shock' || previous?.wavePhase === 'flooding'
-      ? 'aftershock_wave'
-      : 'flooding';
+  } else if (floodingIntensity >= 0.6 || mixedValenceConflict >= 0.6) {
+    wavePhase =
+      previous?.wavePhase === 'impact_shock' || previous?.wavePhase === 'flooding'
+        ? 'aftershock_wave'
+        : 'flooding';
     lastSurgeAt = lastSurgeAt || nowIso;
   } else if (
     previous &&
     previous.wavePhase !== 'steady' &&
     previous.wavePhase !== 'exhausted_ebb' &&
-    (floodingIntensity >= 0.30 || ambiguity >= 0.35)
+    (floodingIntensity >= 0.3 || ambiguity >= 0.35)
   ) {
     wavePhase = 'exhausted_ebb';
-  } else if (floodingIntensity < 0.25 && ambiguity < 0.30 && mixedValenceConflict < 0.25) {
+  } else if (floodingIntensity < 0.25 && ambiguity < 0.3 && mixedValenceConflict < 0.25) {
     wavePhase = 'steady';
     paradoxicalExpression = 'none';
   }
@@ -562,7 +583,15 @@ export function computeAftershockWaveIntensity(params: {
   wavePhase: AffectiveWavePhase;
   totalDurationMs: number;
 }): number {
-  const { prevIntensity, elapsedMs, halfLifeMs, minBaselineIntensity, emotionId, wavePhase, totalDurationMs } = params;
+  const {
+    prevIntensity,
+    elapsedMs,
+    halfLifeMs,
+    minBaselineIntensity,
+    emotionId,
+    wavePhase,
+    totalDurationMs,
+  } = params;
 
   const baseDecay = Math.pow(0.5, elapsedMs / halfLifeMs);
   let next = prevIntensity * baseDecay;
@@ -570,11 +599,19 @@ export function computeAftershockWaveIntensity(params: {
   const isWaveEligible =
     wavePhase !== 'steady' &&
     wavePhase !== 'exhausted_ebb' &&
-    ['grief', 'heartbreak', 'sorrow', 'overwhelm', 'dread', 'emptiness', 'ambivalence', 'anger', 'confusion'].includes(
-      emotionId,
-    );
+    [
+      'grief',
+      'heartbreak',
+      'sorrow',
+      'overwhelm',
+      'dread',
+      'emptiness',
+      'ambivalence',
+      'anger',
+      'confusion',
+    ].includes(emotionId);
 
-  if (isWaveEligible && prevIntensity >= 0.30) {
+  if (isWaveEligible && prevIntensity >= 0.3) {
     // 12-minute natural emotional wave period, amplitude damped gently over elapsed hours
     const periodMs = 12 * 60 * 1000;
     const phaseAngle = ((totalDurationMs + elapsedMs) / periodMs) * 2 * Math.PI;

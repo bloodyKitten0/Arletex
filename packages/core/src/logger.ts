@@ -123,13 +123,25 @@ export class Logger implements ILogger {
     const prefix = `[${entry.timestamp}] [${level.toUpperCase().padEnd(5)}] [${this.context}]${traceSegment}`;
 
     if (level === 'error') {
-      console.error(`${prefix} ${sanitizedMessage}`, sanitizedData !== undefined ? sanitizedData : '');
+      console.error(
+        `${prefix} ${sanitizedMessage}`,
+        sanitizedData !== undefined ? sanitizedData : '',
+      );
     } else if (level === 'warn') {
-      console.warn(`${prefix} ${sanitizedMessage}`, sanitizedData !== undefined ? sanitizedData : '');
+      console.warn(
+        `${prefix} ${sanitizedMessage}`,
+        sanitizedData !== undefined ? sanitizedData : '',
+      );
     } else if (level === 'debug') {
-      console.debug(`${prefix} ${sanitizedMessage}`, sanitizedData !== undefined ? sanitizedData : '');
+      console.debug(
+        `${prefix} ${sanitizedMessage}`,
+        sanitizedData !== undefined ? sanitizedData : '',
+      );
     } else {
-      console.log(`${prefix} ${sanitizedMessage}`, sanitizedData !== undefined ? sanitizedData : '');
+      console.log(
+        `${prefix} ${sanitizedMessage}`,
+        sanitizedData !== undefined ? sanitizedData : '',
+      );
     }
   }
 

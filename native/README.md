@@ -1,6 +1,7 @@
 # Arletex Native Reflex Engine (C++20 & CMake)
 
 The **Arletex Native Reflex Engine** provides hardware-level embodied agency for Arle directly on Linux:
+
 - **Ultra-fast Screen Vision:** XShm raw frame capture (<8 ms) and KWin Wayland frame inspection.
 - **Physical Mouse Dynamics:** Sub-millisecond clicks, double clicks, and natural cubic-eased cursor gliding across the desktop.
 - **Physical Keyboard Simulation:** Keystroke by keystroke hardware key events, modifiers (`Ctrl`, `Alt`, `Shift`), and key combinations (`Ctrl+L`, `Return`).

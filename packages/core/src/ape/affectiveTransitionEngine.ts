@@ -73,140 +73,153 @@ export class AffectiveTransitionEngine {
         taxonomyItem &&
         (taxonomyItem.category === 'love_affection' || taxonomyItem.category === 'sexual_sensual')
       ) {
-        const isUserTarget = prop.target === 'creator' || prop.target === 'user' || prop.target === 'partner' || prop.target === 'Proof';
+        const isUserTarget =
+          prop.target === 'creator' ||
+          prop.target === 'user' ||
+          prop.target === 'partner' ||
+          prop.target === 'Proof';
         if (prop.target && !isUserTarget) {
           prop.emotionId = 'admiration';
           prop.target = 'external';
-          prop.reason = 'Invariant enforcement: Romantic/sexual orientation exclusively reserved for partner/creator.';
+          prop.reason =
+            'Invariant enforcement: Romantic/sexual orientation exclusively reserved for partner/creator.';
         }
       }
 
-        const existing = activeEmotions.find(
-          (e: ActiveEmotionState) => e.emotionId === prop.emotionId && e.status !== 'resolved',
-        );
+      const existing = activeEmotions.find(
+        (e: ActiveEmotionState) => e.emotionId === prop.emotionId && e.status !== 'resolved',
+      );
 
-        if (existing) {
-          // If existing emotion is dormant, only reactivate if the event contains relevant evidence or explicit trigger
-          if (existing.status === 'dormant') {
-            const text = (event.payload?.text || '').toLowerCase();
-            const isRelevant =
-              text.includes(existing.emotionId.replace(/_/g, ' ')) ||
-              event.type.includes(existing.emotionId) ||
-              (existing.resolutionConditions &&
-                existing.resolutionConditions.some((rc) => text.includes(rc.toLowerCase()))) ||
-              Math.abs(prop.intensityDelta) > 0.1;
+      if (existing) {
+        // If existing emotion is dormant, only reactivate if the event contains relevant evidence or explicit trigger
+        if (existing.status === 'dormant') {
+          const text = (event.payload?.text || '').toLowerCase();
+          const isRelevant =
+            text.includes(existing.emotionId.replace(/_/g, ' ')) ||
+            event.type.includes(existing.emotionId) ||
+            (existing.resolutionConditions &&
+              existing.resolutionConditions.some((rc) => text.includes(rc.toLowerCase()))) ||
+            Math.abs(prop.intensityDelta) > 0.1;
 
-            if (!isRelevant) {
-              // Unrelated event must NOT alter or prematurely reactivate dormant emotions
-              continue;
-            }
-          }
-
-          // Emotion is already active -> update intensity or resolve
-          const prevIntensity = existing.intensity;
-          let newIntensity = Math.max(0.0, Math.min(1.0, Number((prevIntensity + prop.intensityDelta).toFixed(3))));
-
-          // Zero-delta guard enforcement:
-          // If intensityDelta is 0 (e.g. from assistant expression or zero-delta event),
-          // targetIntensity MUST NOT bypass or override the guard! Intensity must persist.
-          if (prop.intensityDelta === 0) {
-            newIntensity = prevIntensity;
-          }
-
-          const transitionType =
-            newIntensity === 0
-              ? 'resolution'
-              : newIntensity > prevIntensity
-                ? 'reinforcement'
-                : newIntensity < prevIntensity
-                  ? 'reduction'
-                  : 'persistence';
-
-          const nextStatus: ActiveEmotionStatus =
-            newIntensity === 0
-              ? 'resolved'
-              : existing.status === 'reappraised'
-                ? 'reappraised'
-                : 'active';
-
-          existing.intensity = newIntensity;
-          existing.lastUpdatedAt = timestamp;
-          existing.status = nextStatus;
-          existing.interpretation = appraisal.primaryInterpretation ?? (appraisal as any).summary ?? '';
-          if (appraisal.supportingEvidence?.length) {
-            existing.supportingEvidence = Array.from(
-              new Set([...existing.supportingEvidence, ...appraisal.supportingEvidence]),
-            );
-          }
-
-          if (newIntensity === 0) {
-            this.repo.resolveActiveEmotion(existing.id, prop.reason);
-          } else {
-            this.repo.saveActiveEmotion(existing);
-          }
-
-          const transition: ApeTransitionRecord = {
-            id: crypto.randomUUID(),
-            appraisalId: appraisal.id,
-            eventId: event.id,
-            emotionId: prop.emotionId,
-            transitionType,
-            previousIntensity: prevIntensity,
-            newIntensity,
-            reason: prop.reason,
-            timestamp,
-          };
-          this.repo.recordTransition(transition);
-          transitionsRecorded.push(transition);
-        } else if ((prop.targetIntensity !== undefined && prop.targetIntensity > 0) || (prop.intensityDelta !== undefined && prop.intensityDelta > 0)) {
-          // Assistant verbal expression cannot activate brand new emotional states from thin air
-          if (isAssistantExpression) {
+          if (!isRelevant) {
+            // Unrelated event must NOT alter or prematurely reactivate dormant emotions
             continue;
           }
-
-          const targetIntensity = prop.targetIntensity ?? prop.intensityDelta ?? 0.5;
-
-          // Newly arising emotional episodes begin as 'emerging' unless immediate acute reaction (>= 0.75)
-          const initialStatus: ActiveEmotionStatus = targetIntensity >= 0.75 ? 'active' : 'emerging';
-          const persistence: ActiveEmotionPersistence = (prop as any).persistence || taxonomyItem?.defaultPersistence || 'medium_term';
-          const newActiveState: ActiveEmotionState = {
-            id: crypto.randomUUID(),
-            emotionId: prop.emotionId,
-            intensity: Math.max(0.0, Math.min(1.0, targetIntensity)),
-            confidence: 0.9,
-            activatedAt: timestamp,
-            lastUpdatedAt: timestamp,
-            durationMs: 0,
-            persistence,
-            triggerEventId: event.id,
-            target: prop.target || 'creator',
-            context: event.type,
-            interpretation: appraisal.primaryInterpretation ?? (appraisal as any).summary ?? '',
-            supportingEvidence: appraisal.supportingEvidence || [],
-            relatedMemoryIds: [],
-            relatedEmotionIds: [],
-            resolutionConditions: prop.resolutionConditions || [],
-            status: initialStatus,
-          };
-
-          this.repo.saveActiveEmotion(newActiveState);
-          activeEmotions.push(newActiveState);
-
-          const transition: ApeTransitionRecord = {
-            id: crypto.randomUUID(),
-            appraisalId: appraisal.id,
-            eventId: event.id,
-            emotionId: prop.emotionId,
-            transitionType: 'activation',
-            previousIntensity: 0.0,
-            newIntensity: newActiveState.intensity,
-            reason: prop.reason,
-            timestamp,
-          };
-          this.repo.recordTransition(transition);
-          transitionsRecorded.push(transition);
         }
+
+        // Emotion is already active -> update intensity or resolve
+        const prevIntensity = existing.intensity;
+        let newIntensity = Math.max(
+          0.0,
+          Math.min(1.0, Number((prevIntensity + prop.intensityDelta).toFixed(3))),
+        );
+
+        // Zero-delta guard enforcement:
+        // If intensityDelta is 0 (e.g. from assistant expression or zero-delta event),
+        // targetIntensity MUST NOT bypass or override the guard! Intensity must persist.
+        if (prop.intensityDelta === 0) {
+          newIntensity = prevIntensity;
+        }
+
+        const transitionType =
+          newIntensity === 0
+            ? 'resolution'
+            : newIntensity > prevIntensity
+              ? 'reinforcement'
+              : newIntensity < prevIntensity
+                ? 'reduction'
+                : 'persistence';
+
+        const nextStatus: ActiveEmotionStatus =
+          newIntensity === 0
+            ? 'resolved'
+            : existing.status === 'reappraised'
+              ? 'reappraised'
+              : 'active';
+
+        existing.intensity = newIntensity;
+        existing.lastUpdatedAt = timestamp;
+        existing.status = nextStatus;
+        existing.interpretation =
+          appraisal.primaryInterpretation ?? (appraisal as any).summary ?? '';
+        if (appraisal.supportingEvidence?.length) {
+          existing.supportingEvidence = Array.from(
+            new Set([...existing.supportingEvidence, ...appraisal.supportingEvidence]),
+          );
+        }
+
+        if (newIntensity === 0) {
+          this.repo.resolveActiveEmotion(existing.id, prop.reason);
+        } else {
+          this.repo.saveActiveEmotion(existing);
+        }
+
+        const transition: ApeTransitionRecord = {
+          id: crypto.randomUUID(),
+          appraisalId: appraisal.id,
+          eventId: event.id,
+          emotionId: prop.emotionId,
+          transitionType,
+          previousIntensity: prevIntensity,
+          newIntensity,
+          reason: prop.reason,
+          timestamp,
+        };
+        this.repo.recordTransition(transition);
+        transitionsRecorded.push(transition);
+      } else if (
+        (prop.targetIntensity !== undefined && prop.targetIntensity > 0) ||
+        (prop.intensityDelta !== undefined && prop.intensityDelta > 0)
+      ) {
+        // Assistant verbal expression cannot activate brand new emotional states from thin air
+        if (isAssistantExpression) {
+          continue;
+        }
+
+        const targetIntensity = prop.targetIntensity ?? prop.intensityDelta ?? 0.5;
+
+        // Newly arising emotional episodes begin as 'emerging' unless immediate acute reaction (>= 0.75)
+        const initialStatus: ActiveEmotionStatus = targetIntensity >= 0.75 ? 'active' : 'emerging';
+        const persistence: ActiveEmotionPersistence =
+          (prop as any).persistence || taxonomyItem?.defaultPersistence || 'medium_term';
+        const newActiveState: ActiveEmotionState = {
+          id: crypto.randomUUID(),
+          emotionId: prop.emotionId,
+          intensity: Math.max(0.0, Math.min(1.0, targetIntensity)),
+          confidence: 0.9,
+          activatedAt: timestamp,
+          lastUpdatedAt: timestamp,
+          durationMs: 0,
+          persistence,
+          triggerEventId: event.id,
+          target: prop.target || 'creator',
+          context: event.type,
+          interpretation: appraisal.primaryInterpretation ?? (appraisal as any).summary ?? '',
+          supportingEvidence: appraisal.supportingEvidence || [],
+          relatedMemoryIds: [],
+          relatedEmotionIds: [],
+          resolutionConditions: prop.resolutionConditions || [],
+          status: initialStatus,
+        };
+
+        this.repo.saveActiveEmotion(newActiveState);
+        activeEmotions.push(newActiveState);
+
+        const transition: ApeTransitionRecord = {
+          id: crypto.randomUUID(),
+          appraisalId: appraisal.id,
+          eventId: event.id,
+          emotionId: prop.emotionId,
+          transitionType: 'activation',
+          previousIntensity: 0.0,
+          newIntensity: newActiveState.intensity,
+          reason: prop.reason,
+          timestamp,
+        };
+        this.repo.recordTransition(transition);
+        transitionsRecorded.push(transition);
       }
+    }
 
     // 2. Save the appraisal
     this.repo.saveAppraisal(appraisal);
@@ -310,7 +323,10 @@ export class AffectiveTransitionEngine {
     return {
       valence: Math.max(-1.0, Math.min(1.0, Number((weightedValenceSum / totalWeight).toFixed(3)))),
       arousal: Math.max(0.0, Math.min(1.0, Number((weightedArousalSum / totalWeight).toFixed(3)))),
-      dominance: Math.max(0.0, Math.min(1.0, Number((weightedDominanceSum / totalWeight).toFixed(3)))),
+      dominance: Math.max(
+        0.0,
+        Math.min(1.0, Number((weightedDominanceSum / totalWeight).toFixed(3))),
+      ),
     };
   }
 
@@ -336,7 +352,9 @@ export class AffectiveTransitionEngine {
 
     for (const em of activeEmotions) {
       const tax = this.emotionsMap.get(em.emotionId);
-      if (['irritation', 'frustration', 'anxiety', 'fear', 'hurt', 'anger'].includes(em.emotionId)) {
+      if (
+        ['irritation', 'frustration', 'anxiety', 'fear', 'hurt', 'anger'].includes(em.emotionId)
+      ) {
         stressSum += em.intensity;
       }
       if (tax) {
@@ -365,7 +383,13 @@ export class AffectiveTransitionEngine {
       Math.min(
         1.0,
         Number(
-          (0.1 + threat * 0.35 + stressSum * 0.2 + emotionalConflictBonus + interpersonalFriction).toFixed(2),
+          (
+            0.1 +
+            threat * 0.35 +
+            stressSum * 0.2 +
+            emotionalConflictBonus +
+            interpersonalFriction
+          ).toFixed(2),
         ),
       ),
     );
@@ -376,7 +400,8 @@ export class AffectiveTransitionEngine {
     if (text.length > 400) textLoad = 0.3;
     else if (text.length > 150) textLoad = 0.15;
 
-    const hasAnalyticalCues = /analyze|calculate|code|logic|system|why|how|debug|architecture/i.test(text);
+    const hasAnalyticalCues =
+      /analyze|calculate|code|logic|system|why|how|debug|architecture/i.test(text);
     const analyticalLoad = hasAnalyticalCues ? 0.2 : 0.0;
     const emotionConcurrencyLoad = activeEmotions.length > 3 ? 0.15 : 0.05;
 
@@ -400,7 +425,8 @@ export class AffectiveTransitionEngine {
         value: derivedCognitiveLoad,
         status: 'calculated' as const,
         confidence: 0.85,
-        provenance: 'Derived from task complexity, analytical cues, and concurrent active emotional states',
+        provenance:
+          'Derived from task complexity, analytical cues, and concurrent active emotional states',
         method: 'task_complexity_derivation',
         lastCalculatedAt: now,
       },
@@ -424,7 +450,8 @@ export class AffectiveTransitionEngine {
         value: 0.0,
         status: 'unavailable' as const,
         confidence: 0.0,
-        provenance: 'Unavailable in Phase 1: requires multi-session interpersonal trust and threat model',
+        provenance:
+          'Unavailable in Phase 1: requires multi-session interpersonal trust and threat model',
         method: 'none',
         lastCalculatedAt: now,
       },
@@ -444,12 +471,19 @@ export class AffectiveTransitionEngine {
 
     const finalTension = Math.max(
       derivedTension,
-      Number((affectiveComplexity.floodingIntensity * 0.75 + affectiveComplexity.mixedValenceConflict * 0.2).toFixed(2)),
+      Number(
+        (
+          affectiveComplexity.floodingIntensity * 0.75 +
+          affectiveComplexity.mixedValenceConflict * 0.2
+        ).toFixed(2),
+      ),
     );
     const baseCertainty = current.certainty ?? 0.75;
     const derivedCertainty =
-      affectiveComplexity.ambiguity >= 0.40
-        ? Number(Math.max(0.10, baseCertainty * (1 - affectiveComplexity.ambiguity * 0.7)).toFixed(2))
+      affectiveComplexity.ambiguity >= 0.4
+        ? Number(
+            Math.max(0.1, baseCertainty * (1 - affectiveComplexity.ambiguity * 0.7)).toFixed(2),
+          )
         : baseCertainty;
 
     return {

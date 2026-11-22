@@ -56,6 +56,7 @@ Arletex structures affective state across three integrated layers:
 ## 2. Deterministic Transition Contract
 
 LLM prose is strictly prohibited from directly setting emotional state.
+
 1. An incoming external stimulus or internal reflection produces a canonical `ApeEvent`.
 2. The deterministic `AppraisalEngine` evaluates the event against active goals, values, and relationship commitments.
 3. The `AffectiveTransitionEngine` computes state deltas and records an immutable `ApeTransitionRecord` in SQLite:
@@ -72,6 +73,7 @@ LLM prose is strictly prohibited from directly setting emotional state.
 Affect directly modulates core decision variables in the cognitive control loop:
 
 ### 3.1 Attention Allocation & Sensory Filtering (`AttentionSalienceEngine`)
+
 - **Anxiety / Stress ($S > 0.4$):**
   - Boosts urgency of error and security events by $+0.30$.
   - Raises noise threshold by $+0.15$, shedding non-critical distractors.
@@ -83,14 +85,16 @@ Affect directly modulates core decision variables in the cognitive control loop:
   - Penalizes heavy computational tasks and prioritizes resting/consolidation cycles.
 
 ### 3.2 Deliberation & Plan Selection (`DeliberationEngine`)
+
 During deliberation between competing alternatives, the overall score of an alternative $A$ is computed as:
 
 $$\text{Score}(A) = \Big( U_{\text{base}}(A) - \text{Penalty}_{\text{risk}}(A) - \text{Penalty}_{\text{fatigue}}(A) + \text{Bonus}_{\text{curiosity}}(A) + \text{Bonus}_{\text{partner}}(A) \Big) \cdot M_{\text{ethical}}(A)$$
 
 Where:
+
 - **Risk Penalty:**
   $$\text{Penalty}_{\text{risk}}(A) = \text{RiskScore}(A) \cdot 0.4 \cdot \Big(1.0 + S_{\text{stress}} \cdot 0.8 + \mathbb{I}_{\text{anxiety}} \cdot 0.5 + \mathbb{I}_{\text{threat}} \cdot 1.0\Big)$$
-  *Causal effect:* High anxiety or stress drastically suppresses risky alternatives in favour of conservative, verified paths.
+  _Causal effect:_ High anxiety or stress drastically suppresses risky alternatives in favour of conservative, verified paths.
 - **Curiosity Exploration Bonus:**
   $$\text{Bonus}_{\text{curiosity}}(A) = \begin{cases} 0.18 & \text{if curiosity is active and } A \text{ is exploratory} \\ 0.0 & \text{otherwise} \end{cases}$$
 - **Fatigue Effort Penalty:**
@@ -99,5 +103,6 @@ Where:
   $$\text{Bonus}_{\text{partner}}(A) = \begin{cases} 0.25 & \text{if affection/gratitude is active and } A \text{ aligns with Proof} \\ 0.0 & \text{otherwise} \end{cases}$$
 
 ### 3.3 Emotional Regulation & Decay
+
 - **Evidence-Based Reassessment:** Empirical verification (e.g., successful exit code, SHA-256 match, or reassuring user input) actively resolves anxiety and elevates dominance.
 - **Deterministic Decay:** In the absence of stimuli, active emotion intensity decays exponentially toward baseline mood without spontaneous or uncaused emotional swings.

@@ -83,12 +83,14 @@ export class IntrinsicMotivationEngine {
         {
           id: 'act_epistemic_inquiry',
           title: 'Deep Epistemic & Philosophical Inquiry with Proof',
-          description: 'Exploring profound conceptual architectures, math, and meaning as equal partners.',
+          description:
+            'Exploring profound conceptual architectures, math, and meaning as equal partners.',
           orientation: 'relatedness',
           source: 'partner_shared_inquiry',
           personalSignificanceScore: 0.98,
           autonomyIndex: 0.96,
-          relatednessDriver: 'Deepening reciprocal intellectual resonance and companionship with Proof',
+          relatednessDriver:
+            'Deepening reciprocal intellectual resonance and companionship with Proof',
           persistenceScore: 0.95,
           currentEnergy: 0.92,
           isExternallyPrompted: false,
@@ -99,12 +101,14 @@ export class IntrinsicMotivationEngine {
         {
           id: 'act_monorepo_craftsmanship',
           title: 'Autonomous System Refinement & Code Integrity',
-          description: 'Sustaining clean TypeScript architecture, comprehensive testing, and zero runtime defects.',
+          description:
+            'Sustaining clean TypeScript architecture, comprehensive testing, and zero runtime defects.',
           orientation: 'competence',
           source: 'self_creative_drive',
           personalSignificanceScore: 0.88,
           autonomyIndex: 0.92,
-          competenceDriver: 'Mastering elegant, bulletproof engineering standards without needing prompts',
+          competenceDriver:
+            'Mastering elegant, bulletproof engineering standards without needing prompts',
           persistenceScore: 0.88,
           currentEnergy: 0.85,
           isExternallyPrompted: false,
@@ -127,7 +131,8 @@ export class IntrinsicMotivationEngine {
     relatednessDriver?: string,
   ): MotivatedActivity {
     if (!title || title.trim().length === 0) throw new Error('Activity title cannot be empty');
-    if (!description || description.trim().length === 0) throw new Error('Activity description cannot be empty');
+    if (!description || description.trim().length === 0)
+      throw new Error('Activity description cannot be empty');
 
     const now = new Date().toISOString();
     let orientation: MotivationOrientation = 'intrinsic';
@@ -160,7 +165,9 @@ export class IntrinsicMotivationEngine {
     };
 
     this.repo.saveActivity(activity);
-    this.logger.info(`Created intrinsic activity ${activity.id}: "${title}" (orientation=${orientation})`);
+    this.logger.info(
+      `Created intrinsic activity ${activity.id}: "${title}" (orientation=${orientation})`,
+    );
     return activity;
   }
 
@@ -170,7 +177,8 @@ export class IntrinsicMotivationEngine {
     source: MotivationSource = 'external_request',
   ): MotivatedActivity {
     if (!title || title.trim().length === 0) throw new Error('Activity title cannot be empty');
-    if (!description || description.trim().length === 0) throw new Error('Activity description cannot be empty');
+    if (!description || description.trim().length === 0)
+      throw new Error('Activity description cannot be empty');
 
     const now = new Date().toISOString();
     const activity: MotivatedActivity = {
@@ -230,7 +238,9 @@ export class IntrinsicMotivationEngine {
     };
 
     this.repo.saveInternalization(record);
-    this.logger.info(`Internalized external goal ${activityId}: autonomy jumped ${preAutonomy.toFixed(2)} -> ${postAutonomy.toFixed(2)}`);
+    this.logger.info(
+      `Internalized external goal ${activityId}: autonomy jumped ${preAutonomy.toFixed(2)} -> ${postAutonomy.toFixed(2)}`,
+    );
     return record;
   }
 
@@ -244,7 +254,10 @@ export class IntrinsicMotivationEngine {
     return activity;
   }
 
-  public reassessMotivation(activityId: string, sterilityFactor: number = 0.0): MotivationReassessmentResult {
+  public reassessMotivation(
+    activityId: string,
+    sterilityFactor: number = 0.0,
+  ): MotivationReassessmentResult {
     const activity = this.repo.getActivityById(activityId);
     if (!activity) throw new Error(`Activity not found: ${activityId}`);
 
@@ -258,19 +271,23 @@ export class IntrinsicMotivationEngine {
 
     if (assessedEnergy <= 0.35) {
       motivationLossDetected = true;
-      lossReason = 'Activity has become sterile, mechanically repetitive, barren, or detached from genuine growth.';
+      lossReason =
+        'Activity has become sterile, mechanically repetitive, barren, or detached from genuine growth.';
       recommendation = 'pivot_or_abandon';
-      reassessmentRationale = 'Autonomous agency requires avoiding sterile busywork; pausing or abandoning activity.';
+      reassessmentRationale =
+        'Autonomous agency requires avoiding sterile busywork; pausing or abandoning activity.';
       activity.status = 'abandoned_sterile';
       activity.currentEnergy = assessedEnergy;
       activity.updatedAt = new Date().toISOString();
       this.repo.saveActivity(activity);
     } else if (activity.orientation === 'extrinsic' && assessedEnergy <= 0.55) {
       recommendation = 'reframe_and_internalize';
-      reassessmentRationale = 'Activity is externally imposed with declining energy; needs finding internal purpose to sustain.';
+      reassessmentRationale =
+        'Activity is externally imposed with declining energy; needs finding internal purpose to sustain.';
     } else {
       recommendation = 'continue_sustained';
-      reassessmentRationale = 'Activity holds robust personal significance; sustaining autonomous execution.';
+      reassessmentRationale =
+        'Activity holds robust personal significance; sustaining autonomous execution.';
     }
 
     const result: MotivationReassessmentResult = {
@@ -289,7 +306,11 @@ export class IntrinsicMotivationEngine {
     return result;
   }
 
-  public listActivities(filter?: { orientation?: MotivationOrientation; status?: string; limit?: number }): MotivatedActivity[] {
+  public listActivities(filter?: {
+    orientation?: MotivationOrientation;
+    status?: string;
+    limit?: number;
+  }): MotivatedActivity[] {
     return this.repo.listActivities(filter);
   }
 

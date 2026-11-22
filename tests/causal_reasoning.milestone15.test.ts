@@ -3,11 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
-import {
-  CausalLink,
-  CausalNode,
-  assertCausalIntegrity,
-} from '@arletex/contracts';
+import { CausalLink, CausalNode, assertCausalIntegrity } from '@arletex/contracts';
 import {
   createDefaultConfig,
   ApeService,
@@ -68,9 +64,27 @@ describe('Milestone 15 — Causal Reasoning', () => {
   // -------------------------------------------------------------
   it('constructs and persists structured causal graph models', () => {
     const nodes: CausalNode[] = [
-      { id: 'node_oom', name: 'Out Of Memory Condition', domain: 'systems', variableType: 'binary', description: 'Process exceeds RAM quota' },
-      { id: 'node_restart', name: 'Service Process Restart', domain: 'systems', variableType: 'binary', description: 'Process killed and respawned' },
-      { id: 'node_drop_req', name: 'Dropped Inflight Requests', domain: 'systems', variableType: 'continuous', description: 'Rate of 502 Bad Gateway responses' },
+      {
+        id: 'node_oom',
+        name: 'Out Of Memory Condition',
+        domain: 'systems',
+        variableType: 'binary',
+        description: 'Process exceeds RAM quota',
+      },
+      {
+        id: 'node_restart',
+        name: 'Service Process Restart',
+        domain: 'systems',
+        variableType: 'binary',
+        description: 'Process killed and respawned',
+      },
+      {
+        id: 'node_drop_req',
+        name: 'Dropped Inflight Requests',
+        domain: 'systems',
+        variableType: 'continuous',
+        description: 'Rate of 502 Bad Gateway responses',
+      },
     ];
 
     const links: CausalLink[] = [
@@ -150,9 +164,27 @@ describe('Milestone 15 — Causal Reasoning', () => {
   // -------------------------------------------------------------
   it('infers plausible upstream causes and surfaces alternative explanations for an effect', () => {
     const nodes: CausalNode[] = [
-      { id: 'node_db_lock', name: 'Database Row Lock Contention', domain: 'performance', variableType: 'continuous', description: '' },
-      { id: 'node_slow_network', name: 'Upstream Network Latency', domain: 'performance', variableType: 'continuous', description: '' },
-      { id: 'node_request_timeout', name: 'API Request Timeout', domain: 'performance', variableType: 'binary', description: '' },
+      {
+        id: 'node_db_lock',
+        name: 'Database Row Lock Contention',
+        domain: 'performance',
+        variableType: 'continuous',
+        description: '',
+      },
+      {
+        id: 'node_slow_network',
+        name: 'Upstream Network Latency',
+        domain: 'performance',
+        variableType: 'continuous',
+        description: '',
+      },
+      {
+        id: 'node_request_timeout',
+        name: 'API Request Timeout',
+        domain: 'performance',
+        variableType: 'binary',
+        description: '',
+      },
     ];
 
     const links: CausalLink[] = [
@@ -195,8 +227,20 @@ describe('Milestone 15 — Causal Reasoning', () => {
   // -------------------------------------------------------------
   it('empirically verifies causal efficacy through controlled intervention testing', () => {
     const nodes: CausalNode[] = [
-      { id: 'node_cache_enabled', name: 'Cache Enabled Flag', domain: 'caching', variableType: 'binary', description: '' },
-      { id: 'node_db_qps', name: 'Database Query QPS', domain: 'caching', variableType: 'continuous', description: '' },
+      {
+        id: 'node_cache_enabled',
+        name: 'Cache Enabled Flag',
+        domain: 'caching',
+        variableType: 'binary',
+        description: '',
+      },
+      {
+        id: 'node_db_qps',
+        name: 'Database Query QPS',
+        domain: 'caching',
+        variableType: 'continuous',
+        description: '',
+      },
     ];
 
     const links: CausalLink[] = [
@@ -222,7 +266,7 @@ describe('Milestone 15 — Causal Reasoning', () => {
       'node_cache_enabled',
       true,
       'node_db_qps',
-      50,   // observed value after intervention
+      50, // observed value after intervention
       1000, // baseline value before intervention
     );
 
@@ -242,8 +286,20 @@ describe('Milestone 15 — Causal Reasoning', () => {
   // -------------------------------------------------------------
   it('refutes candidate causal links when an intervention fails to perturb the effect', () => {
     const nodes: CausalNode[] = [
-      { id: 'node_button_color', name: 'UI Button Color', domain: 'frontend', variableType: 'categorical', description: '' },
-      { id: 'node_api_latency', name: 'Backend API Latency', domain: 'frontend', variableType: 'continuous', description: '' },
+      {
+        id: 'node_button_color',
+        name: 'UI Button Color',
+        domain: 'frontend',
+        variableType: 'categorical',
+        description: '',
+      },
+      {
+        id: 'node_api_latency',
+        name: 'Backend API Latency',
+        domain: 'frontend',
+        variableType: 'continuous',
+        description: '',
+      },
     ];
 
     const links: CausalLink[] = [
@@ -289,8 +345,20 @@ describe('Milestone 15 — Causal Reasoning', () => {
   // -------------------------------------------------------------
   it('revises causal beliefs when observational or alternative evidence is discovered', () => {
     const nodes: CausalNode[] = [
-      { id: 'node_sleep', name: 'System Idle Standby', domain: 'power', variableType: 'binary', description: '' },
-      { id: 'node_disconnect', name: 'WebSocket Disconnect', domain: 'power', variableType: 'binary', description: '' },
+      {
+        id: 'node_sleep',
+        name: 'System Idle Standby',
+        domain: 'power',
+        variableType: 'binary',
+        description: '',
+      },
+      {
+        id: 'node_disconnect',
+        name: 'WebSocket Disconnect',
+        domain: 'power',
+        variableType: 'binary',
+        description: '',
+      },
     ];
 
     const links: CausalLink[] = [
@@ -310,10 +378,15 @@ describe('Milestone 15 — Causal Reasoning', () => {
     const graph = causalEngine.createOrUpdateGraph('power', nodes, links);
 
     // Discovery of an alternative cause / confounder (e.g. WiFi router DHCP lease expiration)
-    const revisedGraph = causalEngine.reviseCausalBelief(graph.id, 'node_sleep', 'node_disconnect', {
-      alternativeCauseDiscovered: 'wifi_router_dhcp_lease_renewal_drop',
-      newStrength: 0.6,
-    });
+    const revisedGraph = causalEngine.reviseCausalBelief(
+      graph.id,
+      'node_sleep',
+      'node_disconnect',
+      {
+        alternativeCauseDiscovered: 'wifi_router_dhcp_lease_renewal_drop',
+        newStrength: 0.6,
+      },
+    );
 
     const link = revisedGraph.links.find((l) => l.sourceNodeId === 'node_sleep')!;
     expect(link.relationType).toBe('contributing_factor'); // Downgraded from direct_cause!
@@ -377,8 +450,8 @@ describe('Milestone 15 — Causal Reasoning', () => {
         targetNodeId: 'target',
         relationType: 'direct_cause', // Cannot assert direct cause...
         strength: 0.8,
-        confidence: 0.85,             // ...with high confidence...
-        isInterventionVerified: false,// ...without intervention verification...
+        confidence: 0.85, // ...with high confidence...
+        isInterventionVerified: false, // ...without intervention verification...
         confoundingFactors: ['hidden_confounder_z'], // ...when confounders exist!
         mechanismDescription: '',
       });
@@ -404,8 +477,20 @@ describe('Milestone 15 — Causal Reasoning', () => {
   // -------------------------------------------------------------
   it('persists causal graphs and interventions across SQLite restarts', () => {
     const nodes: CausalNode[] = [
-      { id: 'db_conn_pool', name: 'Connection Pool Saturation', domain: 'infra', variableType: 'continuous', description: '' },
-      { id: 'db_latency', name: 'Database Latency', domain: 'infra', variableType: 'continuous', description: '' },
+      {
+        id: 'db_conn_pool',
+        name: 'Connection Pool Saturation',
+        domain: 'infra',
+        variableType: 'continuous',
+        description: '',
+      },
+      {
+        id: 'db_latency',
+        name: 'Database Latency',
+        domain: 'infra',
+        variableType: 'continuous',
+        description: '',
+      },
     ];
 
     const links: CausalLink[] = [
@@ -428,7 +513,7 @@ describe('Milestone 15 — Causal Reasoning', () => {
       'db_conn_pool',
       100, // max pool
       'db_latency',
-      2,   // 2ms
+      2, // 2ms
       800, // 800ms
     );
 
@@ -472,8 +557,20 @@ describe('Milestone 15 — Causal Reasoning', () => {
       body: JSON.stringify({
         domain: 'rest_causal_test',
         nodes: [
-          { id: 'code_bug', name: 'Syntax Bug', domain: 'rest_causal_test', variableType: 'binary', description: '' },
-          { id: 'build_fail', name: 'Build Failure', domain: 'rest_causal_test', variableType: 'binary', description: '' },
+          {
+            id: 'code_bug',
+            name: 'Syntax Bug',
+            domain: 'rest_causal_test',
+            variableType: 'binary',
+            description: '',
+          },
+          {
+            id: 'build_fail',
+            name: 'Build Failure',
+            domain: 'rest_causal_test',
+            variableType: 'binary',
+            description: '',
+          },
         ],
         links: [
           {
@@ -534,6 +631,8 @@ describe('Milestone 15 — Causal Reasoning', () => {
     const apeService = (server as any).apeService as ApeService;
     const promptContext = apeService.formatApePromptContext();
     expect(promptContext).toContain('Causal Reasoning:');
-    expect(promptContext).toContain('Correlation strictly distinguished from causation; alternative confounders evaluated');
+    expect(promptContext).toContain(
+      'Correlation strictly distinguished from causation; alternative confounders evaluated',
+    );
   });
 });

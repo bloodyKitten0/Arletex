@@ -50,13 +50,7 @@ export const ResourceAvailabilityMetricsSchema = z.object({
 });
 export type ResourceAvailabilityMetrics = z.infer<typeof ResourceAvailabilityMetricsSchema>;
 
-export const ResourceBottleneckSchema = z.enum([
-  'ram',
-  'cpu',
-  'disk',
-  'context_tokens',
-  'none',
-]);
+export const ResourceBottleneckSchema = z.enum(['ram', 'cpu', 'disk', 'context_tokens', 'none']);
 export type ResourceBottleneck = z.infer<typeof ResourceBottleneckSchema>;
 
 export const ResourceForecastPredictionSchema = z.object({

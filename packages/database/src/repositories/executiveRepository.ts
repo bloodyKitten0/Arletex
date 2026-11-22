@@ -45,15 +45,16 @@ export class SqliteExecutiveRepository implements IExecutiveRepository {
           inhibition.evaluatedAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save action inhibition ${inhibition.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save action inhibition ${inhibition.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
   public getInhibitionById(id: string): ActionInhibitionEvaluation | null {
     try {
-      const row = this.db
-        .prepare(`SELECT * FROM action_inhibitions WHERE id = ?`)
-        .get(id) as any;
+      const row = this.db.prepare(`SELECT * FROM action_inhibitions WHERE id = ?`).get(id) as any;
       if (!row) return null;
       return this.mapInhibitionRow(row);
     } catch (err: any) {
@@ -153,11 +154,17 @@ export class SqliteExecutiveRepository implements IExecutiveRepository {
           gating.appliedAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save memory gating directive ${gating.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save memory gating directive ${gating.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
-  public listMemoryGatings(targetBufferId?: string, limit: number = 50): WorkingMemoryGatingDirective[] {
+  public listMemoryGatings(
+    targetBufferId?: string,
+    limit: number = 50,
+  ): WorkingMemoryGatingDirective[] {
     try {
       let query = `SELECT * FROM executive_memory_gatings`;
       const params: any[] = [];

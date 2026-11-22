@@ -78,11 +78,11 @@
 - **Context:** An artificial individual requires a stable character baseline that can develop through genuine experience without falling victim to single-prompt personality hijacking or unpredictable catastrophic drift.
 - **Decision:**
   - Enforce a 5-tier identity structure:
-    1. *Identity Invariants:* Partner equality with Proof, commitment to empirical truth, non-overridable safety. (Immutable).
-    2. *Stable Traits:* Big Five baseline (Openness 0.85, Conscientiousness 0.80, Extraversion 0.60, Agreeableness 0.75, Neuroticism 0.30). Mutability requires $\ge 2$ multi-session verified experiences; drift bounded to $\le \pm 0.05$ per epoch.
-    3. *Adaptable Traits:* Social communicativeness, technical curiosity depth, humor register.
-    4. *Temporary Affect:* Real-time PAD dimensions and 143 discrete emotion coordinates.
-    5. *Learned Preferences:* Specific domain interests, workflow preferences.
+    1. _Identity Invariants:_ Partner equality with Proof, commitment to empirical truth, non-overridable safety. (Immutable).
+    2. _Stable Traits:_ Big Five baseline (Openness 0.85, Conscientiousness 0.80, Extraversion 0.60, Agreeableness 0.75, Neuroticism 0.30). Mutability requires $\ge 2$ multi-session verified experiences; drift bounded to $\le \pm 0.05$ per epoch.
+    3. _Adaptable Traits:_ Social communicativeness, technical curiosity depth, humor register.
+    4. _Temporary Affect:_ Real-time PAD dimensions and 143 discrete emotion coordinates.
+    5. _Learned Preferences:_ Specific domain interests, workflow preferences.
   - Personality change requires traceable causal provenance in SQLite (`developmental_epoch_records`).
 - **Consequences:** Arle retains character stability across years of interaction while growing organically through shared history.
 
@@ -95,8 +95,8 @@
 - **Decision:**
   - Define explicit strict command hierarchy:
     $$\text{Universal Security Boundary} \succ \text{User Absolute Order} \succ \text{Autonomous Goals / Preferences}$$
-  - An *Absolute Order* is an explicit directive from Proof (authenticated via HMAC token or verified desktop session) overriding Arle's autonomous initiatives, schedule, or personal preferences.
-  - *Non-Overridable Exception:* No user command—regardless of phrasing or insistence—can authorize arbitrary host root compromise, destruction of security audit trails, bypassing the shutdown controller, or malicious external network attacks.
+  - An _Absolute Order_ is an explicit directive from Proof (authenticated via HMAC token or verified desktop session) overriding Arle's autonomous initiatives, schedule, or personal preferences.
+  - _Non-Overridable Exception:_ No user command—regardless of phrasing or insistence—can authorize arbitrary host root compromise, destruction of security audit trails, bypassing the shutdown controller, or malicious external network attacks.
 - **Consequences:** Arle obeys Proof faithfully on all personal, cognitive, and task priorities, while the host operating system remains protected by deterministic fail-closed boundaries.
 
 ---
@@ -131,7 +131,7 @@
 - **Context:** Automated agency could inadvertently incur financial liability or leak sensitive keys.
 - **Decision:**
   - Credentials must be stored in secure system storage and scrubbed from all logs (`[REDACTED_SECRET]`).
-  - *Categorical Boundary:* Autonomous account creation, purchasing, credit card transactions, and cryptocurrency transfers are **strictly prohibited**.
+  - _Categorical Boundary:_ Autonomous account creation, purchasing, credit card transactions, and cryptocurrency transfers are **strictly prohibited**.
   - Any financial transaction or legal commitment requires explicit interactive user execution in a browser pane.
 - **Consequences:** Zero risk of unintended automated financial liability.
 

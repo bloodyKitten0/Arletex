@@ -94,12 +94,16 @@ export class AttentionSalienceEngine {
   // ==========================================
 
   public evaluateSalience(stimulus: AttentionalStimulus): SalienceBreakdown {
-    const textToMatch = `${stimulus.summary} ${stimulus.tags.join(' ')} ${stimulus.source}`.toLowerCase();
+    const textToMatch =
+      `${stimulus.summary} ${stimulus.tags.join(' ')} ${stimulus.source}`.toLowerCase();
 
     // 1. Goal relevance: check against active goals
     let goalMatchCount = 0;
     for (const goal of this.activeGoals) {
-      const words = goal.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
+      const words = goal
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((w) => w.length > 3);
       if (words.some((w) => textToMatch.includes(w))) {
         goalMatchCount++;
       }
@@ -109,12 +113,18 @@ export class AttentionSalienceEngine {
     // 2. Interest relevance: check against Arle's deep intellectual interests
     let interestMatchCount = 0;
     for (const interest of this.activeInterests) {
-      const words = interest.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
+      const words = interest
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((w) => w.length > 3);
       if (words.some((w) => textToMatch.includes(w))) {
         interestMatchCount++;
       }
     }
-    const interestRelevance = Math.min(1.0, interestMatchCount > 0 ? 0.45 + interestMatchCount * 0.25 : 0.1);
+    const interestRelevance = Math.min(
+      1.0,
+      interestMatchCount > 0 ? 0.45 + interestMatchCount * 0.25 : 0.1,
+    );
 
     // 3. Emotional valence: checks for relational references to Proof or intimate connection
     const emotionalValence =
@@ -135,18 +145,28 @@ export class AttentionSalienceEngine {
     const fatigue = this.affectiveState.fatigueLevel ?? 0.0;
     const activeEmotions = this.affectiveState.activeEmotionIds ?? [];
     const hasAnxiety = activeEmotions.includes('anxiety') || stress > 0.4;
-    const hasCuriosity = activeEmotions.includes('curiosity') || (this.affectiveState.pad && this.affectiveState.pad.arousal > 0.2);
-    const hasAffection = activeEmotions.includes('affection') || (this.affectiveState.pad && this.affectiveState.pad.pleasure > 0.3);
+    const hasCuriosity =
+      activeEmotions.includes('curiosity') ||
+      (this.affectiveState.pad && this.affectiveState.pad.arousal > 0.2);
+    const hasAffection =
+      activeEmotions.includes('affection') ||
+      (this.affectiveState.pad && this.affectiveState.pad.pleasure > 0.3);
 
     // Anxiety/stress amplifies threat and security urgency
     let modulatedUrgency = urgency;
-    if (hasAnxiety && (textToMatch.includes('error') || textToMatch.includes('security') || textToMatch.includes('fail') || textToMatch.includes('unauthorized'))) {
+    if (
+      hasAnxiety &&
+      (textToMatch.includes('error') ||
+        textToMatch.includes('security') ||
+        textToMatch.includes('fail') ||
+        textToMatch.includes('unauthorized'))
+    ) {
       modulatedUrgency = Math.min(1.0, urgency + 0.35);
     }
 
     // Curiosity boosts novelty weighting
-    const noveltyWeight = hasCuriosity ? 0.30 : 0.15;
-    const goalWeight = hasCuriosity ? 0.20 : 0.25;
+    const noveltyWeight = hasCuriosity ? 0.3 : 0.15;
+    const goalWeight = hasCuriosity ? 0.2 : 0.25;
 
     // Affection maximizes relational stimuli
     let modulatedEmotionalValence = emotionalValence;
@@ -157,23 +177,37 @@ export class AttentionSalienceEngine {
     // Fatigue biases toward consolidation/rest
     let fatigueModifier = 0.0;
     if (fatigue > 0.5) {
-      if (textToMatch.includes('consolidat') || textToMatch.includes('rest') || textToMatch.includes('idle')) {
+      if (
+        textToMatch.includes('consolidat') ||
+        textToMatch.includes('rest') ||
+        textToMatch.includes('idle')
+      ) {
         fatigueModifier = 0.25;
-      } else if (textToMatch.includes('heavy') || textToMatch.includes('compile') || textToMatch.includes('bench')) {
-        fatigueModifier = -0.20;
+      } else if (
+        textToMatch.includes('heavy') ||
+        textToMatch.includes('compile') ||
+        textToMatch.includes('bench')
+      ) {
+        fatigueModifier = -0.2;
       }
     }
 
-    const compositeSalience = Math.max(0.0, Math.min(1.0, Number(
-      (
-        goalRelevance * goalWeight +
-        interestRelevance * 0.20 +
-        modulatedUrgency * 0.25 +
-        modulatedEmotionalValence * 0.20 +
-        novelty * noveltyWeight +
-        fatigueModifier
-      ).toFixed(3),
-    )));
+    const compositeSalience = Math.max(
+      0.0,
+      Math.min(
+        1.0,
+        Number(
+          (
+            goalRelevance * goalWeight +
+            interestRelevance * 0.2 +
+            modulatedUrgency * 0.25 +
+            modulatedEmotionalValence * 0.2 +
+            novelty * noveltyWeight +
+            fatigueModifier
+          ).toFixed(3),
+        ),
+      ),
+    );
 
     return {
       novelty,
@@ -201,12 +235,18 @@ export class AttentionSalienceEngine {
 
     // Stress/anxiety elevates noise threshold to discard distractions
     const stress = this.affectiveState.stressLevel ?? 0.0;
-    const hasAnxiety = (this.affectiveState.activeEmotionIds ?? []).includes('anxiety') || stress > 0.4;
+    const hasAnxiety =
+      (this.affectiveState.activeEmotionIds ?? []).includes('anxiety') || stress > 0.4;
     const affectiveNoiseBump = hasAnxiety ? 0.15 : 0.0;
-    const effectiveNoiseThreshold = (isOverloaded ? this.noiseThreshold + 0.15 : this.noiseThreshold) + affectiveNoiseBump;
+    const effectiveNoiseThreshold =
+      (isOverloaded ? this.noiseThreshold + 0.15 : this.noiseThreshold) + affectiveNoiseBump;
 
-    const qualified = evaluated.filter((e) => e.salience.compositeSalience >= effectiveNoiseThreshold);
-    const discarded = evaluated.filter((e) => e.salience.compositeSalience < effectiveNoiseThreshold);
+    const qualified = evaluated.filter(
+      (e) => e.salience.compositeSalience >= effectiveNoiseThreshold,
+    );
+    const discarded = evaluated.filter(
+      (e) => e.salience.compositeSalience < effectiveNoiseThreshold,
+    );
 
     // Sort qualified items descending by composite salience
     qualified.sort((a, b) => b.salience.compositeSalience - a.salience.compositeSalience);
@@ -241,7 +281,8 @@ export class AttentionSalienceEngine {
 
       // Peripheral targets split remaining 30%
       const remainingItems = selectedItems.slice(1, 3);
-      const perTargetPercent = remainingItems.length > 0 ? Number((30 / remainingItems.length).toFixed(1)) : 0;
+      const perTargetPercent =
+        remainingItems.length > 0 ? Number((30 / remainingItems.length).toFixed(1)) : 0;
       for (const item of remainingItems) {
         selectedPeripheralTargets.push({
           stimulusId: item.stimulus.id,
@@ -259,7 +300,7 @@ export class AttentionSalienceEngine {
     // Record evaluations in repository
     for (const item of evaluated) {
       const wasAttended =
-        (selectedFocalTarget?.stimulusId === item.stimulus.id) ||
+        selectedFocalTarget?.stimulusId === item.stimulus.id ||
         selectedPeripheralTargets.some((p) => p.stimulusId === item.stimulus.id);
       this.repo.recordStimulusEvaluation(item.stimulus, item.salience, wasAttended);
     }
@@ -298,7 +339,8 @@ export class AttentionSalienceEngine {
     const now = new Date().toISOString();
 
     if (this.currentFocus && !forcedByUrgency) {
-      const salienceDelta = newSalience.compositeSalience - this.currentFocus.salience.compositeSalience;
+      const salienceDelta =
+        newSalience.compositeSalience - this.currentFocus.salience.compositeSalience;
       if (salienceDelta < this.switchingHysteresis) {
         this.logger.info(
           `Attention switch rejected due to hysteresis: delta (${salienceDelta.toFixed(2)}) < hysteresis (${this.switchingHysteresis.toFixed(2)})`,
@@ -435,9 +477,7 @@ export class InMemoryAttentionRepository implements IAttentionRepository {
   }
 
   public listFocusStates(limit = 20): AttentionalFocusState[] {
-    return [...this.states]
-      .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
-      .slice(0, limit);
+    return [...this.states].sort((a, b) => b.timestamp.localeCompare(a.timestamp)).slice(0, limit);
   }
 
   public recordSwitchEvent(event: AttentionSwitchEvent): void {

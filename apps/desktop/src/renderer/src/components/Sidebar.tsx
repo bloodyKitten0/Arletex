@@ -59,7 +59,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
           <div>
             <div style={{ fontWeight: 600, fontSize: '14px', letterSpacing: '0.5px' }}>ARLETEX</div>
-            <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+            <div
+              style={{
+                fontSize: '10px',
+                color: 'var(--text-muted)',
+                fontFamily: 'var(--font-mono)',
+              }}
+            >
               LOCAL DESKTOP HOST
             </div>
           </div>
@@ -111,7 +117,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {conversations.length === 0 ? (
-          <div style={{ padding: '24px 8px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
+          <div
+            style={{
+              padding: '24px 8px',
+              textAlign: 'center',
+              color: 'var(--text-muted)',
+              fontSize: '12px',
+            }}
+          >
             No sessions yet.
           </div>
         ) : (
@@ -141,7 +154,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}
+                >
                   <MessageSquare size={14} style={{ flexShrink: 0, opacity: isActive ? 1 : 0.6 }} />
                   <span
                     style={{

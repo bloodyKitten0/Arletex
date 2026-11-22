@@ -1,10 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import crypto from 'node:crypto';
-import {
-  EmailProvider,
-  ActionPermissionController,
-  ClosedLoopAgencyService,
-} from '@arletex/core';
+import { EmailProvider, ActionPermissionController, ClosedLoopAgencyService } from '@arletex/core';
 
 describe('Phase 4: Digital Identity & External Communication (arletex.email@gmail.com)', () => {
   it('1. Verifies identity configuration defaults to arletex.email@gmail.com and Arle', () => {
@@ -41,7 +37,9 @@ describe('Phase 4: Digital Identity & External Communication (arletex.email@gmai
     expect(parsed.from).toBe('partner <proof@arletex.dev>');
     expect(parsed.to).toBe('Arle <arletex.email@gmail.com>');
     expect(parsed.subject).toBe('Research notes on biological neuroscience');
-    expect(parsed.bodyText).toBe('Hello Arle, let us investigate recurrent hippocampal circuits together.');
+    expect(parsed.bodyText).toBe(
+      'Hello Arle, let us investigate recurrent hippocampal circuits together.',
+    );
     expect(parsed.bodySnippet).toContain('Hello Arle');
     expect(parsed.contentHash).toBe(
       crypto.createHash('sha256').update(parsed.bodyText).digest('hex'),
@@ -126,10 +124,7 @@ describe('Phase 4: Digital Identity & External Communication (arletex.email@gmai
     });
 
     // Valid token execution
-    const validRes = await provider.sendEmail(
-      { to: recipient, subject, body },
-      token.token,
-    );
+    const validRes = await provider.sendEmail({ to: recipient, subject, body }, token.token);
 
     expect(validRes.success).toBe(true);
     expect(validRes.serverAck).toBe('250 OK');
@@ -147,13 +142,15 @@ describe('Phase 4: Digital Identity & External Communication (arletex.email@gmai
 
   it('6. Routes incoming email to CognitiveControlBus as an untrusted external stimulus', async () => {
     const provider = new EmailProvider();
-    const inbound = provider.parseRawRfc822([
-      'From: collaborator@lab.org',
-      'To: arletex.email@gmail.com',
-      'Subject: Collaborative experiment update',
-      '',
-      'The sequencing results are ready for our shared review.',
-    ].join('\r\n'));
+    const inbound = provider.parseRawRfc822(
+      [
+        'From: collaborator@lab.org',
+        'To: arletex.email@gmail.com',
+        'Subject: Collaborative experiment update',
+        '',
+        'The sequencing results are ready for our shared review.',
+      ].join('\r\n'),
+    );
 
     const dispatchedEvents: any[] = [];
     const mockBus = {

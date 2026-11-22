@@ -49,9 +49,7 @@ function canonicalStringify(value: unknown): string {
     .filter((k) => obj[k] !== undefined)
     .sort();
   return (
-    '{' +
-    keys.map((k) => JSON.stringify(k) + ':' + canonicalStringify(obj[k])).join(',') +
-    '}'
+    '{' + keys.map((k) => JSON.stringify(k) + ':' + canonicalStringify(obj[k])).join(',') + '}'
   );
 }
 
@@ -92,12 +90,14 @@ export class ContinuityManager {
   // 1. Session Lifecycle & Shutdown Recovery
   // ==========================================
 
-  public async initialize(options: {
-    activeModel?: string;
-    channel?: ChannelOrigin;
-    heartbeatIntervalMs?: number;
-    dbRecoveredFromFileCorruption?: boolean;
-  } = {}): Promise<ContinuityStatus> {
+  public async initialize(
+    options: {
+      activeModel?: string;
+      channel?: ChannelOrigin;
+      heartbeatIntervalMs?: number;
+      dbRecoveredFromFileCorruption?: boolean;
+    } = {},
+  ): Promise<ContinuityStatus> {
     if (options.activeModel) {
       this.activeInferenceModel = options.activeModel;
     }
@@ -292,7 +292,9 @@ export class ContinuityManager {
     // 4. Create an initial session checkpoint (only marked valid if state passes integrity check)
     if (this.lastIntegrityValid) {
       await this.createCheckpoint(
-        this.wasUnexpectedShutdown || this.restoredFromOutOfBandMirror ? 'pre_recovery' : 'periodic',
+        this.wasUnexpectedShutdown || this.restoredFromOutOfBandMirror
+          ? 'pre_recovery'
+          : 'periodic',
       );
     }
 
@@ -325,9 +327,7 @@ export class ContinuityManager {
         finalMemoryCount: memoryCount,
         closedAt: new Date().toISOString(),
       });
-      this.logger.info(
-        `[Continuity] Session ${this.currentSession.id} closed cleanly (${type}).`,
-      );
+      this.logger.info(`[Continuity] Session ${this.currentSession.id} closed cleanly (${type}).`);
       this.currentSession = null;
     }
   }
@@ -461,7 +461,9 @@ export class ContinuityManager {
       );
       // Mirror verified checkpoint + non-deleted memories out-of-band on disk
       if (this.backupDir) {
-        const memories = this.memoryProvider?.listForBackup ? this.memoryProvider.listForBackup() : [];
+        const memories = this.memoryProvider?.listForBackup
+          ? this.memoryProvider.listForBackup()
+          : [];
         this.writeOutOfBandMirror(checkpoint, memories);
       }
     }
@@ -512,7 +514,9 @@ export class ContinuityManager {
 
       const rel = this.apeRepo.getRelationshipConfig();
       if (!rel || rel.targetUserId !== 'Proof' || !rel.isExclusivelyCommitted) {
-        errors.push('Relationship invariant violated (target must be Proof, exclusively committed)');
+        errors.push(
+          'Relationship invariant violated (target must be Proof, exclusively committed)',
+        );
       }
 
       const extRel = this.apeRepo.getExtendedRelationshipState();
@@ -555,10 +559,7 @@ export class ContinuityManager {
     };
   }
 
-  public validateCheckpointPayload(checkpoint: {
-    masterStateJson: string;
-    stateHash: string;
-  }): {
+  public validateCheckpointPayload(checkpoint: { masterStateJson: string; stateHash: string }): {
     valid: boolean;
     parsed?: ApeMasterState;
     reason?: string;
@@ -594,7 +595,11 @@ export class ContinuityManager {
 
     const candidate = rawParsed as Partial<ApeMasterState>;
     const missing: string[] = [];
-    if (!candidate.affective || !candidate.affective.pad || typeof candidate.affective.currentMood !== 'string') {
+    if (
+      !candidate.affective ||
+      !candidate.affective.pad ||
+      typeof candidate.affective.currentMood !== 'string'
+    ) {
       missing.push('affective');
     }
     if (!candidate.personality || !Array.isArray(candidate.personality.traits)) {
@@ -622,9 +627,18 @@ export class ContinuityManager {
 
     const pad = candidate.affective!.pad;
     if (
-      typeof pad.valence !== 'number' || Number.isNaN(pad.valence) || pad.valence < -1 || pad.valence > 1 ||
-      typeof pad.arousal !== 'number' || Number.isNaN(pad.arousal) || pad.arousal < 0 || pad.arousal > 1 ||
-      typeof pad.dominance !== 'number' || Number.isNaN(pad.dominance) || pad.dominance < 0 || pad.dominance > 1
+      typeof pad.valence !== 'number' ||
+      Number.isNaN(pad.valence) ||
+      pad.valence < -1 ||
+      pad.valence > 1 ||
+      typeof pad.arousal !== 'number' ||
+      Number.isNaN(pad.arousal) ||
+      pad.arousal < 0 ||
+      pad.arousal > 1 ||
+      typeof pad.dominance !== 'number' ||
+      Number.isNaN(pad.dominance) ||
+      pad.dominance < 0 ||
+      pad.dominance > 1
     ) {
       return { valid: false, reason: 'Checkpoint PAD values out of valid bounds' };
     }
@@ -635,7 +649,10 @@ export class ContinuityManager {
       state.relationship.config.targetUserId !== 'Proof' ||
       !state.relationship.config.isExclusivelyCommitted
     ) {
-      return { valid: false, reason: 'Checkpoint violates core identity or relationship invariants' };
+      return {
+        valid: false,
+        reason: 'Checkpoint violates core identity or relationship invariants',
+      };
     }
 
     return { valid: true, parsed: state };
@@ -728,18 +745,24 @@ export class ContinuityManager {
         this.lastIntegrityValid = true;
         return true;
       } catch (err: any) {
-        this.logger.error(`[Continuity] Checkpoint restoration failed for ${checkpoint.id}: ${err.message}`);
+        this.logger.error(
+          `[Continuity] Checkpoint restoration failed for ${checkpoint.id}: ${err.message}`,
+        );
         return false;
       }
     }
 
-    this.logger.error('[Continuity] All candidate checkpoints failed validation. Live state was NOT overwritten.');
+    this.logger.error(
+      '[Continuity] All candidate checkpoints failed validation. Live state was NOT overwritten.',
+    );
     return false;
   }
 
   public async restoreFromOutOfBandMirror(): Promise<boolean> {
     if (!this.backupDir || !fs.existsSync(this.backupDir)) {
-      this.logger.warn('[Continuity] Out-of-band backup directory not found; cannot restore from mirror.');
+      this.logger.warn(
+        '[Continuity] Out-of-band backup directory not found; cannot restore from mirror.',
+      );
       return false;
     }
 
@@ -925,7 +948,11 @@ export class ContinuityManager {
     baselinePayload: CanonicalIdentityPayload,
   ): ContinuityVerificationProbe {
     const currentPayload = this.exportCanonicalIdentityPayload();
-    return this.apeService.verifyCanonicalStateContinuity(probeType, baselinePayload, currentPayload);
+    return this.apeService.verifyCanonicalStateContinuity(
+      probeType,
+      baselinePayload,
+      currentPayload,
+    );
   }
 
   public getBackupDir(): string | undefined {

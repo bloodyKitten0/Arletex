@@ -3,10 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
-import {
-  WorkingMemoryBuffer,
-  assertWorkingMemoryCapacityIntegrity,
-} from '@arletex/contracts';
+import { WorkingMemoryBuffer, assertWorkingMemoryCapacityIntegrity } from '@arletex/contracts';
 import {
   createDefaultConfig,
   ApeService,
@@ -152,7 +149,11 @@ describe('Milestone 11 — Working Memory', () => {
 
     // Manipulate / update hypothesis based on new empirical evidence
     const manipulated = workingMemoryEngine.manipulateItem('hypothesis_leak', (prev) => ({
-      content: { suspect: 'event_listener_leak', confidence: 0.95, verifiedCulprit: 'dbus-monitor child process' },
+      content: {
+        suspect: 'event_listener_leak',
+        confidence: 0.95,
+        verifiedCulprit: 'dbus-monitor child process',
+      },
       summary: 'Confirmed: dbus-monitor child process signal handling was unclosed',
       priority: 0.95,
     }));
@@ -167,22 +168,35 @@ describe('Milestone 11 — Working Memory', () => {
   });
 
   it('4. Juggles multiple simultaneous considerations without interference', () => {
-    workingMemoryEngine.initializeTaskContext('task_deliberation', 'Deliberate Architectural Decisions');
+    workingMemoryEngine.initializeTaskContext(
+      'task_deliberation',
+      'Deliberate Architectural Decisions',
+    );
 
-    workingMemoryEngine.addConsideration('Ensure partner equality invariant with Proof is preserved');
-    workingMemoryEngine.addConsideration('Maintain sub-100ms latency on working memory slot queries');
-    workingMemoryEngine.addConsideration('Prevent prompt blowup through compact state summarization');
+    workingMemoryEngine.addConsideration(
+      'Ensure partner equality invariant with Proof is preserved',
+    );
+    workingMemoryEngine.addConsideration(
+      'Maintain sub-100ms latency on working memory slot queries',
+    );
+    workingMemoryEngine.addConsideration(
+      'Prevent prompt blowup through compact state summarization',
+    );
 
     const considerations = workingMemoryEngine.getConsiderations();
     expect(considerations).toHaveLength(3);
     expect(considerations).toContain('Ensure partner equality invariant with Proof is preserved');
 
     // Duplicate addition should be idempotent
-    workingMemoryEngine.addConsideration('Ensure partner equality invariant with Proof is preserved');
+    workingMemoryEngine.addConsideration(
+      'Ensure partner equality invariant with Proof is preserved',
+    );
     expect(workingMemoryEngine.getConsiderations()).toHaveLength(3);
 
     // Removal
-    workingMemoryEngine.removeConsideration('Maintain sub-100ms latency on working memory slot queries');
+    workingMemoryEngine.removeConsideration(
+      'Maintain sub-100ms latency on working memory slot queries',
+    );
     expect(workingMemoryEngine.getConsiderations()).toHaveLength(2);
   });
 
@@ -200,7 +214,8 @@ describe('Milestone 11 — Working Memory', () => {
     const step2 = workingMemoryEngine.recordIntermediateStep({
       goal: 'Confirm Pollard rho complexity',
       premise: 'Subgroup size is ~2^255',
-      intermediateConclusion: 'Expected collision search takes ~2^128 operations (standard security tier)',
+      intermediateConclusion:
+        'Expected collision search takes ~2^128 operations (standard security tier)',
       confidence: 0.99,
     });
 
@@ -210,7 +225,9 @@ describe('Milestone 11 — Working Memory', () => {
     const steps = workingMemoryEngine.getIntermediateSteps();
     expect(steps).toHaveLength(2);
     expect(steps[1]?.goal).toContain('Pollard rho complexity');
-    expect(steps[1]?.intermediateConclusion).toContain('Expected collision search takes ~2^128 operations');
+    expect(steps[1]?.intermediateConclusion).toContain(
+      'Expected collision search takes ~2^128 operations',
+    );
   });
 
   it('6. Enforces capacity limits and evicts lowest-value items when buffer overflows', () => {
@@ -275,9 +292,39 @@ describe('Milestone 11 — Working Memory', () => {
       taskId: 'illegal_task',
       goalTitle: 'Illegal Task',
       items: [
-        { id: crypto.randomUUID(), slotKey: '1', category: 'task_variable', content: null, summary: '1', priority: 0.5, createdAt: '', lastAccessedAt: '', version: 1 },
-        { id: crypto.randomUUID(), slotKey: '2', category: 'task_variable', content: null, summary: '2', priority: 0.5, createdAt: '', lastAccessedAt: '', version: 1 },
-        { id: crypto.randomUUID(), slotKey: '3', category: 'task_variable', content: null, summary: '3', priority: 0.5, createdAt: '', lastAccessedAt: '', version: 1 },
+        {
+          id: crypto.randomUUID(),
+          slotKey: '1',
+          category: 'task_variable',
+          content: null,
+          summary: '1',
+          priority: 0.5,
+          createdAt: '',
+          lastAccessedAt: '',
+          version: 1,
+        },
+        {
+          id: crypto.randomUUID(),
+          slotKey: '2',
+          category: 'task_variable',
+          content: null,
+          summary: '2',
+          priority: 0.5,
+          createdAt: '',
+          lastAccessedAt: '',
+          version: 1,
+        },
+        {
+          id: crypto.randomUUID(),
+          slotKey: '3',
+          category: 'task_variable',
+          content: null,
+          summary: '3',
+          priority: 0.5,
+          createdAt: '',
+          lastAccessedAt: '',
+          version: 1,
+        },
       ],
       intermediateSteps: [],
       considerations: [],
@@ -292,7 +339,10 @@ describe('Milestone 11 — Working Memory', () => {
   });
 
   it('8. Takes snapshots and recovers context seamlessly after task interruptions', () => {
-    workingMemoryEngine.initializeTaskContext('task_interrupted', 'Long-running multi-phase research');
+    workingMemoryEngine.initializeTaskContext(
+      'task_interrupted',
+      'Long-running multi-phase research',
+    );
 
     workingMemoryEngine.retainItem({
       slotKey: 'checkpoint_state',
@@ -436,7 +486,9 @@ describe('Milestone 11 — Working Memory', () => {
       expect(itemData.item.slotKey).toBe('client_connection');
 
       // 3. GET /api/ape/working-memory/item?key=client_connection
-      const getItemRes = await fetch(`http://127.0.0.1:${port}/api/ape/working-memory/item?key=client_connection`);
+      const getItemRes = await fetch(
+        `http://127.0.0.1:${port}/api/ape/working-memory/item?key=client_connection`,
+      );
       expect(getItemRes.status).toBe(200);
       const getItemData = (await getItemRes.json()) as any;
       expect(getItemData.summary).toContain('Authenticated loopback client connected');

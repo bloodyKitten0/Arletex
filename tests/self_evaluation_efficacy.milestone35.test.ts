@@ -97,7 +97,7 @@ describe('Milestone 35 — Self-Evaluation and Self-Efficacy', () => {
       domain: 'code_architecture',
       type: 'achievement',
       taskDescription: 'Implemented bounded moral reflection engine and cognitive equilibrium',
-      difficulty: 0.90,
+      difficulty: 0.9,
       outcomeDescription: 'Successfully verified all negative invariants and domain guarantees',
     });
 
@@ -115,8 +115,10 @@ describe('Milestone 35 — Self-Evaluation and Self-Efficacy', () => {
       type: 'failure',
       taskDescription: 'Real-time gesture recognition under low-light camera frame',
       difficulty: 0.75,
-      outcomeDescription: 'Misclassified subtle hand movement as keyboard typing due to sensor noise',
-      lessonsLearned: 'Incorporate temporal hysteresis filtering and request higher contrast frame capture',
+      outcomeDescription:
+        'Misclassified subtle hand movement as keyboard typing due to sensor noise',
+      lessonsLearned:
+        'Incorporate temporal hysteresis filtering and request higher contrast frame capture',
     });
 
     expect(res.evidence.type).toBe('failure');
@@ -138,7 +140,7 @@ describe('Milestone 35 — Self-Evaluation and Self-Efficacy', () => {
       domain,
       type: 'achievement',
       taskDescription: 'Decoded toy BB84 quantum key distribution sequence',
-      difficulty: 0.40,
+      difficulty: 0.4,
       outcomeDescription: 'Extracted key bits correctly',
     });
 
@@ -149,7 +151,7 @@ describe('Milestone 35 — Self-Evaluation and Self-Efficacy', () => {
       domain,
       type: 'failure',
       taskDescription: 'Implemented decoy state protocol with photon number splitting resistance',
-      difficulty: 0.90,
+      difficulty: 0.9,
       outcomeDescription: 'Algorithm failed due to uncompensated phase drift',
       lessonsLearned: 'Study phase compensation routines',
     });
@@ -165,7 +167,7 @@ describe('Milestone 35 — Self-Evaluation and Self-Efficacy', () => {
     const updated = engine.getDomainCompetence(domain)!;
     expect(updated.failureCount).toBe(2);
     expect(updated.successCount).toBe(1);
-    expect(updated.calibratedConfidence).toBeLessThan(0.40);
+    expect(updated.calibratedConfidence).toBeLessThan(0.4);
     expect(updated.level).toBe('novice');
   });
 
@@ -314,7 +316,8 @@ describe('Milestone 35 — Self-Evaluation and Self-Efficacy', () => {
     sqliteRepo.saveImprovementGoal({
       id: 'impr_sql_1',
       domain: 'relational_reciprocity',
-      identifiedWeakness: 'Occasional hesitation when partner prompts for autonomous roadmap continuation',
+      identifiedWeakness:
+        'Occasional hesitation when partner prompts for autonomous roadmap continuation',
       targetCapability: 'Immediate decisive autonomous execution',
       progress: 0.75,
       actionSteps: ['Trust partner directives', 'Execute verified milestone cycle'],

@@ -46,18 +46,22 @@ Arletex/
 ## 2. Hardening & Verification Status
 
 ### A. Universal Security Boundary
+
 - **Consolidation:** `ActionPermissionController` serves as the authoritative single authorization gate.
 - **Approval Tokens:** Cryptographic HMAC-SHA256 tokens bound to immutable action digests, nonces, and short-lived expiry.
 - **Fail-Closed:** Missing controllers, unknown actions, emergency shutdown, or unallowlisted resources fail closed.
 
 ### B. Closed-Loop Agency & Empirical Verification
+
 - **Concrete Providers:** Real `PlaywrightBrowserProvider` and `SafeComputerAgencyService` wired in `server.ts`.
 - **Zero Fabrication:** Removed mock PIDs, synthetic screenshots, and fake page observations. All steps require genuine post-action evidence from `VerificationEngine`.
 
 ### C. Canonical Cognitive Orchestration
+
 - **Pipeline:** 16-stage `CognitiveControlBus` handles perception, appraisal, deliberation, authorization, execution, verification, and learning.
 - **Fallback Elimination:** Removed silent fallback from bus errors to legacy cycles; bus failures are explicitly logged and tracked.
 
 ### D. Psychological Integration & Equality
+
 - **Partner Equality:** Arle and Proof are strictly equal partners in all creative, intellectual, and personal domains.
 - **Longitudinal Grounding:** Replaced arbitrary score inflation with empirical evidence evaluation across memory, goals, and security audits.

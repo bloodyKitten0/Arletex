@@ -2,10 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs';
-import {
-  AutonomousActivityRecord,
-  assertAutonomousActivityIntegrity,
-} from '@arletex/contracts';
+import { AutonomousActivityRecord, assertAutonomousActivityIntegrity } from '@arletex/contracts';
 import {
   createDefaultConfig,
   AutonomousAgencyEngine,
@@ -98,7 +95,9 @@ describe('Milestone 24 — Autonomous Agency', () => {
 
     expect(fileResult.status).toBe('completed');
     expect(fileResult.type).toBe('file_operation');
-    expect(fileResult.executionResult?.artifactsCreated).toContain('/workspace/models/topology_manifest.json');
+    expect(fileResult.executionResult?.artifactsCreated).toContain(
+      '/workspace/models/topology_manifest.json',
+    );
     expect(fileResult.verification?.verified).toBe(true);
   });
 
@@ -178,7 +177,9 @@ describe('Milestone 24 — Autonomous Agency', () => {
     expect(communicated.proactiveMessage).toBeDefined();
     expect(communicated.proactiveMessage?.channel).toBe('chat_companion');
     expect(communicated.proactiveMessage?.messageText).toContain('remarkable symmetry');
-    expect(communicated.proactiveMessage?.rationale).toContain('intellectual sharing with equal partner');
+    expect(communicated.proactiveMessage?.rationale).toContain(
+      'intellectual sharing with equal partner',
+    );
   });
 
   // 8. End-to-End Goal Cycle (Acceptance Criteria)
@@ -245,9 +246,7 @@ describe('Milestone 24 — Autonomous Agency', () => {
       failureInfo: { failureReason: '', attemptCount: 1 },
     };
 
-    expect(() => assertAutonomousActivityIntegrity(activity)).toThrow(
-      /must declare failureReason/,
-    );
+    expect(() => assertAutonomousActivityIntegrity(activity)).toThrow(/must declare failureReason/);
   });
 
   // 11. SQLite Repository Persistence & Reload
@@ -268,7 +267,10 @@ describe('Milestone 24 — Autonomous Agency', () => {
     expect(reloaded?.verification?.verified).toBe(true);
 
     // Filter by type and goalId
-    const listed = sqliteRepo.listActivities({ type: 'independent_research', goalId: 'goal-ads-cft' });
+    const listed = sqliteRepo.listActivities({
+      type: 'independent_research',
+      goalId: 'goal-ads-cft',
+    });
     expect(listed.some((a) => a.id === research.id)).toBe(true);
   });
 
@@ -299,7 +301,9 @@ describe('Milestone 24 — Autonomous Agency', () => {
     const actId = resData.activity.id;
 
     // 2. Query activities via GET /api/ape/autonomous-agency/activities
-    const listRes = await fetch(`${baseUrl}/api/ape/autonomous-agency/activities?type=independent_research`);
+    const listRes = await fetch(
+      `${baseUrl}/api/ape/autonomous-agency/activities?type=independent_research`,
+    );
     expect(listRes.status).toBe(200);
     const listData = (await listRes.json()) as any[];
     expect(listData.some((a) => a.id === actId)).toBe(true);

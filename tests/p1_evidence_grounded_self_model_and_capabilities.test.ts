@@ -2,16 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import {
-  ApeRepository,
-  DatabaseService,
-  MigrationRunner,
-} from '@arletex/database';
-import {
-  ApeService,
-  SelfModelEngine,
-  rootLogger,
-} from '@arletex/core';
+import { ApeRepository, DatabaseService, MigrationRunner } from '@arletex/database';
+import { ApeService, SelfModelEngine, rootLogger } from '@arletex/core';
 
 describe('P1.7 — Evidence-Grounded Self-Model and Capability Assessment', () => {
   let tempDir: string;
@@ -87,9 +79,9 @@ describe('P1.7 — Evidence-Grounded Self-Model and Capability Assessment', () =
         evidenceText: 'Recorded TLB shootdown under 240 cycles',
       });
 
-      const capBeforeFailure = selfModelEngine.getState().structuredCapabilities?.find(
-        (c) => c.domain === 'microkernel ipc benchmark',
-      );
+      const capBeforeFailure = selfModelEngine
+        .getState()
+        .structuredCapabilities?.find((c) => c.domain === 'microkernel ipc benchmark');
       const competenceBefore = capBeforeFailure?.demonstratedCompetence ?? 0.25;
 
       const res = selfModelEngine.recordTaskTrial({
@@ -121,9 +113,9 @@ describe('P1.7 — Evidence-Grounded Self-Model and Capability Assessment', () =
   describe('2. Domain Isolation', () => {
     it('ensures a successful task contributes ONLY to the specific domain it tests', () => {
       const stateBefore = selfModelEngine.getState();
-      const linguisticCapBefore = stateBefore.structuredCapabilities?.find(
-        (c) => c.domain === 'linguistic_nuance',
-      )?.demonstratedCompetence ?? 0.85;
+      const linguisticCapBefore =
+        stateBefore.structuredCapabilities?.find((c) => c.domain === 'linguistic_nuance')
+          ?.demonstratedCompetence ?? 0.85;
 
       // Execute verified task in an independent technical domain
       const trialRes = selfModelEngine.recordTaskTrial({
@@ -204,25 +196,31 @@ describe('P1.7 — Evidence-Grounded Self-Model and Capability Assessment', () =
   // =========================================================================
   describe('4. Accurate Reporting of "Not Yet Tested" and "Currently Unsupported"', () => {
     it('accurately reports "untested" with zero trials for untested domains', () => {
-      const report = selfModelEngine.getCapabilityEvidenceReport('Quantum Topological Cryptanalysis');
+      const report = selfModelEngine.getCapabilityEvidenceReport(
+        'Quantum Topological Cryptanalysis',
+      );
 
       expect(report.status).toBe('untested');
       expect(report.sampleSize).toBe(0);
       expect(report.successCount).toBe(0);
       expect(report.failureCount).toBe(0);
       expect(report.evidenceIds).toEqual([]);
-      expect(report.uncertainty).toBeGreaterThanOrEqual(0.80);
+      expect(report.uncertainty).toBeGreaterThanOrEqual(0.8);
       expect(report.summary).toContain('Not yet tested: zero empirical trial records');
     });
 
     it('accurately reports "currently_unsupported" for hard limitations and physical boundaries', () => {
-      const report = selfModelEngine.getCapabilityEvidenceReport('walking outside in the rain and touching trees');
+      const report = selfModelEngine.getCapabilityEvidenceReport(
+        'walking outside in the rain and touching trees',
+      );
 
       expect(report.status).toBe('currently_unsupported');
       expect(report.demonstratedCompetence).toBe(0.0);
       expect(report.confidence).toBe(1.0);
       expect(report.uncertainty).toBe(0.0);
-      expect(report.summary).toContain('Currently unsupported: hard boundary or physical limitation');
+      expect(report.summary).toContain(
+        'Currently unsupported: hard boundary or physical limitation',
+      );
     });
   });
 
@@ -242,7 +240,9 @@ describe('P1.7 — Evidence-Grounded Self-Model and Capability Assessment', () =
         evidenceText: 'Generated 4 valid Coq proofs accepted by compiler kernel',
       });
 
-      const reportBefore = selfModelEngine.getCapabilityEvidenceReport('Formal Automated Theorem Proving');
+      const reportBefore = selfModelEngine.getCapabilityEvidenceReport(
+        'Formal Automated Theorem Proving',
+      );
       expect(reportBefore.revalidationRequired).toBe(false);
       const confBefore = reportBefore.confidence;
 
@@ -256,7 +256,9 @@ describe('P1.7 — Evidence-Grounded Self-Model and Capability Assessment', () =
       expect(revalRes.revalidatedDomains).toContain('formal automated theorem proving');
 
       // 3. Inspect updated capability state
-      const reportAfter = selfModelEngine.getCapabilityEvidenceReport('Formal Automated Theorem Proving');
+      const reportAfter = selfModelEngine.getCapabilityEvidenceReport(
+        'Formal Automated Theorem Proving',
+      );
       expect(reportAfter.revalidationRequired).toBe(true);
       expect(reportAfter.confidence).toBeLessThan(confBefore);
       expect(reportAfter.uncertainty).toBeGreaterThan(reportBefore.uncertainty);

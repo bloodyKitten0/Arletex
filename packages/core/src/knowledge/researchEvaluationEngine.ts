@@ -24,7 +24,11 @@ export class ResearchEvaluationEngine {
   /**
    * Assesses the credibility of an external source URI and metadata.
    */
-  public evaluateSource(sourceUri: string, author?: string, contentSample?: string): SourceCredibilityAssessment {
+  public evaluateSource(
+    sourceUri: string,
+    author?: string,
+    contentSample?: string,
+  ): SourceCredibilityAssessment {
     const uriLower = sourceUri.toLowerCase();
     const isAcademic =
       uriLower.includes('.edu') ||
@@ -39,12 +43,14 @@ export class ResearchEvaluationEngine {
       uriLower.includes('manual') ||
       uriLower.includes('standards.org');
 
-    const hasAuthor = Boolean(author && author.trim().length > 0 && !author.toLowerCase().includes('anonymous'));
+    const hasAuthor = Boolean(
+      author && author.trim().length > 0 && !author.toLowerCase().includes('anonymous'),
+    );
     const suspiciousFormatting = Boolean(
       contentSample &&
-        (contentSample.includes('CLICK HERE') ||
-          contentSample.includes('SPONSORED') ||
-          contentSample.includes('100% Guaranteed')),
+      (contentSample.includes('CLICK HERE') ||
+        contentSample.includes('SPONSORED') ||
+        contentSample.includes('100% Guaranteed')),
     );
 
     let score = 0.5;
@@ -54,7 +60,8 @@ export class ResearchEvaluationEngine {
     if (suspiciousFormatting) score -= 0.4;
 
     const clamped = Math.max(0.1, Math.min(1.0, score));
-    const recommendation = clamped >= 0.75 ? 'trust' : clamped >= 0.5 ? 'verify_claims' : 'unreliable';
+    const recommendation =
+      clamped >= 0.75 ? 'trust' : clamped >= 0.5 ? 'verify_claims' : 'unreliable';
 
     return {
       sourceUri,
@@ -73,22 +80,29 @@ export class ResearchEvaluationEngine {
   /**
    * Analyzes search results on a topic for conflicting claims and synthesizes an evidence-weighted resolution.
    */
-  public analyzeContradictions(topic: string, searchResults: SemanticSearchResult[]): ContradictionAnalysis {
+  public analyzeContradictions(
+    topic: string,
+    searchResults: SemanticSearchResult[],
+  ): ContradictionAnalysis {
     if (searchResults.length < 2) {
       return {
         topic,
         hasContradiction: false,
         conflictingClaims: [],
-        synthesizedResolution: searchResults.length === 1 ? searchResults[0]!.chunk.content : 'No data available.',
+        synthesizedResolution:
+          searchResults.length === 1 ? searchResults[0]!.chunk.content : 'No data available.',
       };
     }
 
     // Identify statements containing negations or opposing assertions
-    const conflictingClaims: Array<{ claim: string; sourceTitle: string; reliability: number }> = [];
+    const conflictingClaims: Array<{ claim: string; sourceTitle: string; reliability: number }> =
+      [];
 
     // Simple heuristic negation detector for contradiction identification
-    const negationRegex = /\b(not|never|ineffective|disproven|false|no evidence|inhibits|decreases)\b/i;
-    const positiveRegex = /\b(causes|effective|proven|true|significant evidence|activates|increases)\b/i;
+    const negationRegex =
+      /\b(not|never|ineffective|disproven|false|no evidence|inhibits|decreases)\b/i;
+    const positiveRegex =
+      /\b(causes|effective|proven|true|significant evidence|activates|increases)\b/i;
 
     let hasPos = false;
     let hasNeg = false;
@@ -117,10 +131,14 @@ export class ResearchEvaluationEngine {
     // Synthesize resolution based on highest reliability weight
     let synthesizedResolution = '';
     if (hasContradiction) {
-      const sortedByReliability = [...searchResults].sort((a, b) => b.reliabilityScore - a.reliabilityScore);
+      const sortedByReliability = [...searchResults].sort(
+        (a, b) => b.reliabilityScore - a.reliabilityScore,
+      );
       const top = sortedByReliability[0]!;
       synthesizedResolution = `Evidence conflict detected on "${topic}". Weighting higher-credibility source "${top.documentTitle}" (reliability: ${top.reliabilityScore}): ${top.chunk.content.slice(0, 250)}...`;
-      this.logger.warn(`Contradiction identified on topic "${topic}". Synthesized resolution favoring "${top.documentTitle}".`);
+      this.logger.warn(
+        `Contradiction identified on topic "${topic}". Synthesized resolution favoring "${top.documentTitle}".`,
+      );
     } else {
       synthesizedResolution = searchResults.map((r) => r.chunk.content).join('\n---\n');
     }

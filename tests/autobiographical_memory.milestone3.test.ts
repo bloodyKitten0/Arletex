@@ -160,7 +160,8 @@ describe('Milestone 3 — Memory and Autobiographical Integration', () => {
     it('retrieves relevant past memories based on semantic keywords and ranks by relevance', () => {
       // Seed autobiographical history
       autoMemoryService.recordExperience({
-        content: 'Proof discussed Bobby Fischer chess defense and unconventional tactical sacrifices',
+        content:
+          'Proof discussed Bobby Fischer chess defense and unconventional tactical sacrifices',
         type: 'relationship',
         tags: ['chess', 'fischer', 'tactics'],
         importance: 0.9,
@@ -181,9 +182,12 @@ describe('Milestone 3 — Memory and Autobiographical Integration', () => {
       });
 
       // Stimulus regarding chess and tactical ideas
-      const matches = autoMemoryService.retrieveAssociativeContext('Bobby Fischer tactical sacrifice in chess opening', {
-        limit: 3,
-      });
+      const matches = autoMemoryService.retrieveAssociativeContext(
+        'Bobby Fischer tactical sacrifice in chess opening',
+        {
+          limit: 3,
+        },
+      );
 
       expect(matches.length).toBeGreaterThan(0);
       expect(matches[0]?.memory.content).toContain('Bobby Fischer');
@@ -328,7 +332,7 @@ describe('Milestone 3 — Memory and Autobiographical Integration', () => {
       const mem2 = autoMemoryService.recordExperience({
         type: 'project',
         content: 'Completed Milestone 2 causal six-engine dynamic wiring',
-        importance: 0.90,
+        importance: 0.9,
         tags: ['ape', 'milestone2'],
       });
 
@@ -349,7 +353,7 @@ describe('Milestone 3 — Memory and Autobiographical Integration', () => {
         const restored2 = newMemRepo.getById(mem2.id);
         expect(restored2).toBeDefined();
         expect(restored2?.type).toBe('project');
-        expect(restored2?.importance).toBe(0.90);
+        expect(restored2?.importance).toBe(0.9);
 
         const list = newMemRepo.list({ limit: 10 });
         expect(list.some((m) => m.id === mem1.id)).toBe(true);

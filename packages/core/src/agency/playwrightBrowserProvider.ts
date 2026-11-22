@@ -107,7 +107,8 @@ export class PlaywrightBrowserProvider implements IBrowserProvider {
 
       let isPlaying = false;
       let playbackProgressing = false;
-      let playbackState: 'playing' | 'paused' | 'stalled' | 'ended' | 'error' | 'not_present' = hasVideoElement ? 'paused' : 'not_present';
+      let playbackState: 'playing' | 'paused' | 'stalled' | 'ended' | 'error' | 'not_present' =
+        hasVideoElement ? 'paused' : 'not_present';
       let videoDuration: number | undefined;
       let videoCurrentTime: number | undefined;
       const timeObservations: Array<{ timestamp: number; currentTime: number }> = [];
@@ -172,7 +173,9 @@ export class PlaywrightBrowserProvider implements IBrowserProvider {
       }
 
       const textSnippet = (
-        await page.evaluate(() => (globalThis as any).document?.body?.innerText?.slice(0, 300) || '')
+        await page.evaluate(
+          () => (globalThis as any).document?.body?.innerText?.slice(0, 300) || '',
+        )
       ).trim();
 
       return {
@@ -191,7 +194,9 @@ export class PlaywrightBrowserProvider implements IBrowserProvider {
         statusCode,
       };
     } catch (err: any) {
-      this.logger.warn(`Playwright navigation error for ${url}: ${err.message}. Reporting true failure state.`);
+      this.logger.warn(
+        `Playwright navigation error for ${url}: ${err.message}. Reporting true failure state.`,
+      );
       return {
         url,
         title: 'Error Loading Webpage',
@@ -278,7 +283,9 @@ export class PlaywrightBrowserProvider implements IBrowserProvider {
           const title = el.getAttribute('title') || el.textContent?.trim();
           if (href && href.includes('/watch?v=') && title) {
             const renderer = el.closest('ytd-video-renderer');
-            const channelEl = renderer ? renderer.querySelector('#channel-info, #channel-name, .ytd-channel-name') : null;
+            const channelEl = renderer
+              ? renderer.querySelector('#channel-info, #channel-name, .ytd-channel-name')
+              : null;
             const uploader = channelEl?.textContent?.trim() || 'YouTube Creator';
             const fullUrl = href.startsWith('http') ? href : `https://www.youtube.com${href}`;
 
@@ -316,11 +323,15 @@ export class PlaywrightBrowserProvider implements IBrowserProvider {
       }, maxResults);
 
       if (liveVideos.length > 0) {
-        this.logger.info(`Discovered ${liveVideos.length} live video candidates from YouTube for "${query}"`);
+        this.logger.info(
+          `Discovered ${liveVideos.length} live video candidates from YouTube for "${query}"`,
+        );
         return liveVideos;
       }
     } catch (err: any) {
-      this.logger.warn(`Live YouTube search failed for "${query}": ${err.message}. Reporting zero candidates.`);
+      this.logger.warn(
+        `Live YouTube search failed for "${query}": ${err.message}. Reporting zero candidates.`,
+      );
     }
 
     return [];
@@ -345,7 +356,8 @@ export class PlaywrightBrowserProvider implements IBrowserProvider {
     const hasVideoElement = videoEl !== null;
     let isPlaying = false;
     let playbackProgressing = false;
-    let playbackState: 'playing' | 'paused' | 'stalled' | 'ended' | 'error' | 'not_present' = hasVideoElement ? 'paused' : 'not_present';
+    let playbackState: 'playing' | 'paused' | 'stalled' | 'ended' | 'error' | 'not_present' =
+      hasVideoElement ? 'paused' : 'not_present';
     let videoDuration: number | undefined;
     let videoCurrentTime: number | undefined;
     const timeObservations: Array<{ timestamp: number; currentTime: number }> = [];
@@ -443,25 +455,31 @@ export class PlaywrightBrowserProvider implements IBrowserProvider {
     };
   }
 
-  public async extractInteractiveElements(): Promise<Array<{
-    selector: string;
-    role: string;
-    text: string;
-    ariaLabel?: string;
-    tagName: string;
-  }>> {
+  public async extractInteractiveElements(): Promise<
+    Array<{
+      selector: string;
+      role: string;
+      text: string;
+      ariaLabel?: string;
+      tagName: string;
+    }>
+  > {
     const page = await this.ensurePage();
     return page.evaluate(() => {
       const doc = (globalThis as any).document;
       if (!doc) return [];
-      const elements = doc.querySelectorAll('button, a, input, [role="button"], [role="link"], [role="searchbox"], video, audio');
+      const elements = doc.querySelectorAll(
+        'button, a, input, [role="button"], [role="link"], [role="searchbox"], video, audio',
+      );
       const results: any[] = [];
       for (const el of Array.from(elements).slice(0, 50)) {
         const text = (el as any).innerText || (el as any).value || '';
         const ariaLabel = (el as any).getAttribute('aria-label') || undefined;
         const role = (el as any).getAttribute('role') || (el as any).tagName?.toLowerCase();
         const id = (el as any).id ? `#${(el as any).id}` : '';
-        const testId = (el as any).getAttribute('data-testid') ? `[data-testid="${(el as any).getAttribute('data-testid')}"]` : '';
+        const testId = (el as any).getAttribute('data-testid')
+          ? `[data-testid="${(el as any).getAttribute('data-testid')}"]`
+          : '';
         results.push({
           selector: testId || id || (el as any).tagName?.toLowerCase(),
           role,
@@ -482,7 +500,9 @@ export class PlaywrightBrowserProvider implements IBrowserProvider {
         if (!doc) return false;
         const buttons = Array.from(doc.querySelectorAll('button, [role="button"]')) as any[];
         for (const btn of buttons) {
-          const txt = String(btn.innerText || btn.getAttribute('aria-label') || '').toLowerCase().trim();
+          const txt = String(btn.innerText || btn.getAttribute('aria-label') || '')
+            .toLowerCase()
+            .trim();
           if (
             txt === 'accept' ||
             txt === 'agree' ||

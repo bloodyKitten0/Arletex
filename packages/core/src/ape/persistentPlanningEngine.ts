@@ -126,13 +126,17 @@ export class PersistentPlanningEngine {
    * Independently decomposes an autonomous self-generated goal into a multi-stage plan
    * with scheduled milestones, resource estimates, and DAG dependency linkages.
    */
-  public decomposeGoalIntoPlan(goal: SelfGeneratedGoal | {
-    id: string;
-    title: string;
-    description: string;
-    priority?: number;
-    estimatedEffortHours?: number;
-  }): MultiStagePlan {
+  public decomposeGoalIntoPlan(
+    goal:
+      | SelfGeneratedGoal
+      | {
+          id: string;
+          title: string;
+          description: string;
+          priority?: number;
+          estimatedEffortHours?: number;
+        },
+  ): MultiStagePlan {
     const planId = crypto.randomUUID();
     const now = new Date();
     const nowIso = now.toISOString();
@@ -331,7 +335,9 @@ export class PersistentPlanningEngine {
     plan.overallProgress = Number((totalProgress / plan.stages.length).toFixed(3));
     plan.updatedAt = now;
 
-    const allFinished = plan.stages.every((s) => s.status === 'completed' || s.status === 'skipped');
+    const allFinished = plan.stages.every(
+      (s) => s.status === 'completed' || s.status === 'skipped',
+    );
     if (allFinished) {
       plan.status = 'completed';
       plan.overallProgress = 1.0;
@@ -398,7 +404,9 @@ export class PersistentPlanningEngine {
 
     assertMultiStagePlanIntegrity(plan);
     this.repo.savePlan(plan);
-    this.logger.info(`Successfully recovered unfinished stage ${lastActiveStageId} of plan ${planId}.`);
+    this.logger.info(
+      `Successfully recovered unfinished stage ${lastActiveStageId} of plan ${planId}.`,
+    );
     return plan;
   }
 
@@ -430,7 +438,10 @@ export class PersistentPlanningEngine {
     }
 
     if (updates.priorityAdjustment !== undefined) {
-      plan.overallPriority = Math.min(1.0, Math.max(0.0, plan.overallPriority + updates.priorityAdjustment));
+      plan.overallPriority = Math.min(
+        1.0,
+        Math.max(0.0, plan.overallPriority + updates.priorityAdjustment),
+      );
     }
 
     const revision: PlanRevisionRecord = {
@@ -448,7 +459,8 @@ export class PersistentPlanningEngine {
 
     // Recalculate progress with updated stages
     const totalProgress = plan.stages.reduce((acc, s) => acc + s.progress, 0);
-    plan.overallProgress = plan.stages.length > 0 ? Number((totalProgress / plan.stages.length).toFixed(3)) : 0.0;
+    plan.overallProgress =
+      plan.stages.length > 0 ? Number((totalProgress / plan.stages.length).toFixed(3)) : 0.0;
 
     assertMultiStagePlanIntegrity(plan);
     this.repo.savePlan(plan);
@@ -536,7 +548,9 @@ export class PersistentPlanningEngine {
     const plan = this.repo.getPlanById(planId);
     if (!plan) throw new Error(`Plan ${planId} not found.`);
 
-    const completedStages = plan.stages.filter((s) => s.status === 'completed' || s.status === 'skipped').length;
+    const completedStages = plan.stages.filter(
+      (s) => s.status === 'completed' || s.status === 'skipped',
+    ).length;
     const remainingStages = plan.stages.length - completedStages;
     const isBlocked = plan.stages.some((s) => s.status === 'interrupted');
     const canResume = Boolean(plan.recoveryState && plan.status === 'interrupted');

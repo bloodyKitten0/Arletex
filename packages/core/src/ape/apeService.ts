@@ -108,37 +108,105 @@ import { ResourceGovernor } from './resourceGovernor.js';
 import { IntellectualEngine } from './intellectualEngine.js';
 import { PerceptualAffectService } from './perceptualAffectService.js';
 import { InMemoryNarrativeRepository, NarrativeIdentityEngine } from './narrativeIdentityEngine.js';
-import { DistinguishEntitiesResult, InMemoryTemporalRepository, TemporalCognitionEngine } from './temporalCognitionEngine.js';
+import {
+  DistinguishEntitiesResult,
+  InMemoryTemporalRepository,
+  TemporalCognitionEngine,
+} from './temporalCognitionEngine.js';
 import { InMemoryWorldRepository, WorldModelEngine } from './worldModelEngine.js';
-import { InMemoryPerceptionRepository, MultimodalPerceptionEngine } from './multimodalPerceptionEngine.js';
-import { EmbodimentInteroceptionEngine, InMemoryEmbodimentRepository } from './embodimentInteroceptionEngine.js';
-import { InMemorySensorimotorRepository, SensorimotorActionEngine } from './sensorimotorActionEngine.js';
-import { InMemorySituationalRepository, SituationalAwarenessEngine } from './situationalAwarenessEngine.js';
+import {
+  InMemoryPerceptionRepository,
+  MultimodalPerceptionEngine,
+} from './multimodalPerceptionEngine.js';
+import {
+  EmbodimentInteroceptionEngine,
+  InMemoryEmbodimentRepository,
+} from './embodimentInteroceptionEngine.js';
+import {
+  InMemorySensorimotorRepository,
+  SensorimotorActionEngine,
+} from './sensorimotorActionEngine.js';
+import {
+  InMemorySituationalRepository,
+  SituationalAwarenessEngine,
+} from './situationalAwarenessEngine.js';
 import { InMemoryAttentionRepository, AttentionSalienceEngine } from './attentionSalienceEngine.js';
 import { InMemoryWorkingMemoryRepository, WorkingMemoryEngine } from './workingMemoryEngine.js';
-import { InMemoryMultiSystemMemoryRepository, MultiSystemMemoryEngine } from './multiSystemMemoryEngine.js';
-import { InMemoryLearningRepository, LearningAdaptationEngine } from './learningAdaptationEngine.js';
+import {
+  InMemoryMultiSystemMemoryRepository,
+  MultiSystemMemoryEngine,
+} from './multiSystemMemoryEngine.js';
+import {
+  InMemoryLearningRepository,
+  LearningAdaptationEngine,
+} from './learningAdaptationEngine.js';
 import { InMemoryReasoningRepository, GeneralReasoningEngine } from './generalReasoningEngine.js';
 import { InMemoryCausalRepository, CausalReasoningEngine } from './causalReasoningEngine.js';
-import { InMemoryPredictiveRepository, PredictiveCognitionEngine } from './predictiveCognitionEngine.js';
+import {
+  InMemoryPredictiveRepository,
+  PredictiveCognitionEngine,
+} from './predictiveCognitionEngine.js';
 import { InMemorySimulationRepository, SimulationEngine } from './simulationEngine.js';
 import { InMemoryMetacognitionRepository, MetacognitionEngine } from './metacognitionEngine.js';
-import { InMemoryGlobalCognitiveRepository, GlobalCognitiveIntegrationEngine } from './globalCognitiveEngine.js';
+import {
+  InMemoryGlobalCognitiveRepository,
+  GlobalCognitiveIntegrationEngine,
+} from './globalCognitiveEngine.js';
 import { InMemoryExecutiveRepository, ExecutiveEngine } from './executiveEngine.js';
-import { InMemorySelfGeneratedGoalRepository, SelfGeneratedGoalEngine } from './selfGeneratedGoalEngine.js';
-import { InMemoryPersistentPlanningRepository, PersistentPlanningEngine } from './persistentPlanningEngine.js';
+import {
+  InMemorySelfGeneratedGoalRepository,
+  SelfGeneratedGoalEngine,
+} from './selfGeneratedGoalEngine.js';
+import {
+  InMemoryPersistentPlanningRepository,
+  PersistentPlanningEngine,
+} from './persistentPlanningEngine.js';
 import { InMemoryDeliberationRepository, DeliberationEngine } from './deliberationEngine.js';
-import { InMemoryAutonomousActivityRepository, AutonomousAgencyEngine } from './autonomousAgencyEngine.js';
-import { InMemoryEmotionalAppraisalRepository, ContextualAppraisalService } from './contextualAppraisalService.js';
-import { InMemoryEmotionalRepertoireRepository, EmotionalRepertoireEngine } from './emotionalRepertoireEngine.js';
-import { InMemoryEmotionalRegulationRepository, EmotionalRegulationEngine } from './emotionalRegulationEngine.js';
+import {
+  InMemoryAutonomousActivityRepository,
+  AutonomousAgencyEngine,
+} from './autonomousAgencyEngine.js';
+import {
+  InMemoryEmotionalAppraisalRepository,
+  ContextualAppraisalService,
+} from './contextualAppraisalService.js';
+import {
+  InMemoryEmotionalRepertoireRepository,
+  EmotionalRepertoireEngine,
+} from './emotionalRepertoireEngine.js';
+import {
+  InMemoryEmotionalRegulationRepository,
+  EmotionalRegulationEngine,
+} from './emotionalRegulationEngine.js';
 import { InMemoryHomeostasisRepository, HomeostasisEngine } from './homeostasisEngine.js';
-import { InMemoryIntrinsicMotivationRepository, IntrinsicMotivationEngine } from './intrinsicMotivationEngine.js';
-import { InMemoryCuriosityExplorationRepository, CuriosityExplorationEngine } from './curiosityExplorationEngine.js';
-import { InMemoryRewardLearningRepository, RewardLearningEngine, EvaluateOutcomeParams } from './rewardLearningEngine.js';
-import { InMemoryHabitsAndRoutinesRepository, HabitsAndRoutinesEngine, FormHabitParams, ModifyHabitParams } from './habitsAndRoutinesEngine.js';
-import { InMemoryTemperamentPersonalityRepository, TemperamentPersonalityEngine } from './temperamentPersonalityEngine.js';
-import { InMemoryValuesMoralRepository, ValuesMoralEngine, ResolveDilemmaParams } from './valuesMoralEngine.js';
+import {
+  InMemoryIntrinsicMotivationRepository,
+  IntrinsicMotivationEngine,
+} from './intrinsicMotivationEngine.js';
+import {
+  InMemoryCuriosityExplorationRepository,
+  CuriosityExplorationEngine,
+} from './curiosityExplorationEngine.js';
+import {
+  InMemoryRewardLearningRepository,
+  RewardLearningEngine,
+  EvaluateOutcomeParams,
+} from './rewardLearningEngine.js';
+import {
+  InMemoryHabitsAndRoutinesRepository,
+  HabitsAndRoutinesEngine,
+  FormHabitParams,
+  ModifyHabitParams,
+} from './habitsAndRoutinesEngine.js';
+import {
+  InMemoryTemperamentPersonalityRepository,
+  TemperamentPersonalityEngine,
+} from './temperamentPersonalityEngine.js';
+import {
+  InMemoryValuesMoralRepository,
+  ValuesMoralEngine,
+  ResolveDilemmaParams,
+} from './valuesMoralEngine.js';
 import {
   InMemorySelfEvaluationEfficacyRepository,
   SelfEvaluationEfficacyEngine,
@@ -188,10 +256,7 @@ import {
   InMemoryExpressiveIdentityRepository,
   ExpressiveIdentityEngine,
 } from './expressiveIdentityEngine.js';
-import {
-  InMemoryCreativityRepository,
-  CreativityEngine,
-} from './creativityEngine.js';
+import { InMemoryCreativityRepository, CreativityEngine } from './creativityEngine.js';
 import {
   InMemoryPlayHumourAestheticsRepository,
   PlayHumourAestheticsEngine,
@@ -381,7 +446,12 @@ export class ApeService {
     if (directTypes.has(apeType)) return apeType;
 
     const lower = apeType.toLowerCase();
-    if (lower.includes('dialogue') || lower.includes('chat') || lower.includes('statement') || lower.includes('message')) {
+    if (
+      lower.includes('dialogue') ||
+      lower.includes('chat') ||
+      lower.includes('statement') ||
+      lower.includes('message')
+    ) {
       return 'user_message';
     }
     if (lower.includes('telegram')) {
@@ -396,19 +466,33 @@ export class ApeService {
     if (lower.includes('separation') || lower.includes('loneliness')) {
       return 'separation_loneliness';
     }
-    if (lower.includes('relationship') || lower.includes('partner') || lower.includes('attachment') || lower.includes('intimacy')) {
+    if (
+      lower.includes('relationship') ||
+      lower.includes('partner') ||
+      lower.includes('attachment') ||
+      lower.includes('intimacy')
+    ) {
       return 'relationship_event';
     }
     if (lower.includes('social')) {
       return 'social_interaction';
     }
-    if (lower.includes('perception') || lower.includes('visual') || lower.includes('audio') || lower.includes('screen')) {
+    if (
+      lower.includes('perception') ||
+      lower.includes('visual') ||
+      lower.includes('audio') ||
+      lower.includes('screen')
+    ) {
       return 'media_perceived';
     }
     if (lower.includes('milestone') || lower.includes('goal_completed')) {
       return 'project_milestone';
     }
-    if (lower.includes('goal_failed') || lower.includes('failure_recovery') || lower.includes('recovery')) {
+    if (
+      lower.includes('goal_failed') ||
+      lower.includes('failure_recovery') ||
+      lower.includes('recovery')
+    ) {
       return 'failure_recovery';
     }
     if (lower.includes('goal')) {
@@ -420,7 +504,11 @@ export class ApeService {
     if (lower.includes('belief')) {
       return 'belief_revised';
     }
-    if (lower.includes('reflection') || lower.includes('dream') || lower.includes('consolidation')) {
+    if (
+      lower.includes('reflection') ||
+      lower.includes('dream') ||
+      lower.includes('consolidation')
+    ) {
       return 'reflection_cycle';
     }
     if (lower.includes('agency') || lower.includes('action')) {
@@ -429,14 +517,24 @@ export class ApeService {
     return 'internal_tick';
   }
 
-  private mapApeSourceToCognitiveSource(source?: string): 'user' | 'telegram' | 'agency' | 'timer' | 'internal' | 'environment' {
+  private mapApeSourceToCognitiveSource(
+    source?: string,
+  ): 'user' | 'telegram' | 'agency' | 'timer' | 'internal' | 'environment' {
     if (!source) return 'internal';
     const lower = source.toLowerCase();
     if (lower === 'user') return 'user';
     if (lower === 'telegram') return 'telegram';
-    if (lower.includes('agency') || lower.includes('tool') || lower.includes('device')) return 'agency';
-    if (lower.includes('timer') || lower.includes('clock') || lower.includes('scheduler')) return 'timer';
-    if (lower.includes('env') || lower.includes('vision') || lower.includes('audio') || lower.includes('sensor')) return 'environment';
+    if (lower.includes('agency') || lower.includes('tool') || lower.includes('device'))
+      return 'agency';
+    if (lower.includes('timer') || lower.includes('clock') || lower.includes('scheduler'))
+      return 'timer';
+    if (
+      lower.includes('env') ||
+      lower.includes('vision') ||
+      lower.includes('audio') ||
+      lower.includes('sensor')
+    )
+      return 'environment';
     return 'internal';
   }
 
@@ -600,7 +698,10 @@ export class ApeService {
     this.autonomousAgencyEngine = new AutonomousAgencyEngine({ repository: aaRepo, logger });
 
     const eAppRepo = appraisalRepo || new InMemoryEmotionalAppraisalRepository();
-    this.contextualAppraisalService = new ContextualAppraisalService({ repository: eAppRepo, logger });
+    this.contextualAppraisalService = new ContextualAppraisalService({
+      repository: eAppRepo,
+      logger,
+    });
 
     const repRepo = repertoireRepo || new InMemoryEmotionalRepertoireRepository();
     this.emotionalRepertoireEngine = new EmotionalRepertoireEngine(repRepo, logger);
@@ -870,7 +971,9 @@ export class ApeService {
     // 1. Idempotency Check: if event id was already logged, skip duplicate!
     const isNew = this.repo.logEvent(event);
     if (!isNew) {
-      this.logger.info(`Duplicate APE event ${event.id} detected; skipping processing (idempotency preserved).`);
+      this.logger.info(
+        `Duplicate APE event ${event.id} detected; skipping processing (idempotency preserved).`,
+      );
       return { processed: false, state: this.getState(), masterState: this.getMasterState() };
     }
 
@@ -897,7 +1000,11 @@ export class ApeService {
           timestamp: event.timestamp,
         });
 
-        this.repo.saveEventProcessingStatus(event.id, busResult.success ? 'processed' : 'failed', busResult.error);
+        this.repo.saveEventProcessingStatus(
+          event.id,
+          busResult.success ? 'processed' : 'failed',
+          busResult.error,
+        );
         return {
           processed: busResult.success,
           state: this.getState(),
@@ -1135,11 +1242,7 @@ export class ApeService {
     }
 
     // 2. Playfulness & Amusement
-    if (
-      emotionIds.has('playfulness') ||
-      emotionIds.has('amusement') ||
-      emotionIds.has('delight')
-    ) {
+    if (emotionIds.has('playfulness') || emotionIds.has('amusement') || emotionIds.has('delight')) {
       directives.push(
         'Subtle dry wit, lightly teasing, observant, and playful pacing without clownishness.',
       );
@@ -1171,23 +1274,13 @@ export class ApeService {
     }
 
     // 5. Serenity, Rest, Low Arousal
-    if (
-      aff.pad.arousal < 0.35 ||
-      emotionIds.has('serenity') ||
-      emotionIds.has('contentment')
-    ) {
-      directives.push(
-        'Slow, unhurried, peaceful cadence. Comforting and reflective stillness.',
-      );
+    if (aff.pad.arousal < 0.35 || emotionIds.has('serenity') || emotionIds.has('contentment')) {
+      directives.push('Slow, unhurried, peaceful cadence. Comforting and reflective stillness.');
       vocalRegister = 'soft, serene, quiet';
     }
 
     // 6. Displeasure, Coldness, Boundary Assertion
-    if (
-      emotionIds.has('irritation') ||
-      emotionIds.has('displeasure') ||
-      aff.pad.valence < -0.3
-    ) {
+    if (emotionIds.has('irritation') || emotionIds.has('displeasure') || aff.pad.valence < -0.3) {
       directives.push(
         'Crisp, measured, cool restraint. Firm boundaries and uncompromising standards.',
       );
@@ -1224,7 +1317,9 @@ export class ApeService {
     // Use dominant coexisting emotions (top 4 non-contradictory) to guide attention instead of dumping 20+ contradictory emotions
     const dominantEmotions = this.lifecycleEngine.getDominantCoexistingEmotions(4);
     const activeEmotions = dominantEmotions.length
-      ? dominantEmotions.map((e) => `${e.emotionId} (${e.status}, intensity: ${e.intensity.toFixed(2)})`).join(', ')
+      ? dominantEmotions
+          .map((e) => `${e.emotionId} (${e.status}, intensity: ${e.intensity.toFixed(2)})`)
+          .join(', ')
       : 'composed baseline (focused, analytical)';
 
     const modulation = this.getLinguisticModulation();
@@ -1240,7 +1335,9 @@ export class ApeService {
       .filter((g) => g.status === 'active')
       .slice(0, 2)
       .map((g) => g.title);
-    const goalsLine = activeGoals.length ? `\n- Current Active Ambitions: ${activeGoals.join('; ')}` : '';
+    const goalsLine = activeGoals.length
+      ? `\n- Current Active Ambitions: ${activeGoals.join('; ')}`
+      : '';
 
     const topTraits = (master.personality.traits || [])
       .sort((a, b) => b.score - a.score)
@@ -1253,9 +1350,13 @@ export class ApeService {
       .filter((c) => c.isEmpiricallyProven)
       .slice(0, 3)
       .map((c) => c.name);
-    const capsLine = provenCaps.length ? `\n- Grounded Empirical Capabilities: ${provenCaps.join(', ')}` : '';
+    const capsLine = provenCaps.length
+      ? `\n- Grounded Empirical Capabilities: ${provenCaps.join(', ')}`
+      : '';
     const lims = (self.structuredLimitations || []).slice(0, 2).map((l) => l.name);
-    const limsLine = lims.length ? `\n- Conscious Operational Boundaries: ${lims.join(', ')} (no physical embodiment)` : '';
+    const limsLine = lims.length
+      ? `\n- Conscious Operational Boundaries: ${lims.join(', ')} (no physical embodiment)`
+      : '';
 
     const currentEpoch = this.narrativeEngine.getCurrentEpoch();
     const narrativeState = this.narrativeEngine.getState();
@@ -1265,14 +1366,33 @@ export class ApeService {
     const temporalOverview = this.temporalEngine.getTemporalOverview();
     const commitments = this.temporalEngine.listActiveCommitments('Proof');
     const impending = temporalOverview.impendingDeadlines;
-    const commitmentsStr = commitments.length > 0 ? commitments.slice(0, 2).map((c) => `"${c.commitmentText}"`).join('; ') : 'None pending';
-    const deadlineStr = impending.length > 0 ? ` Impending deadlines: ${impending.map((d) => `"${d.title}" (${d.remainingHours}h)`).join(', ')}.` : '';
+    const commitmentsStr =
+      commitments.length > 0
+        ? commitments
+            .slice(0, 2)
+            .map((c) => `"${c.commitmentText}"`)
+            .join('; ')
+        : 'None pending';
+    const deadlineStr =
+      impending.length > 0
+        ? ` Impending deadlines: ${impending.map((d) => `"${d.title}" (${d.remainingHours}h)`).join(', ')}.`
+        : '';
 
     const now = new Date();
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     const dayOfWeek = days[now.getDay()];
     const month = months[now.getMonth()];
@@ -1378,7 +1498,9 @@ export class ApeService {
     return this.narrativeEngine.getState();
   }
 
-  public reconstructNarrativeHistory(options?: ReconstructHistoryOptions): AutobiographicalReconstruction {
+  public reconstructNarrativeHistory(
+    options?: ReconstructHistoryOptions,
+  ): AutobiographicalReconstruction {
     return this.narrativeEngine.reconstructNarrativeHistory(options);
   }
 
@@ -1419,11 +1541,17 @@ export class ApeService {
     return this.temporalEngine.getTemporalOverview(nowIso);
   }
 
-  public classifyTemporalHorizon(entity: TemporalEntityInput, nowIso?: string): TemporalClassificationResult {
+  public classifyTemporalHorizon(
+    entity: TemporalEntityInput,
+    nowIso?: string,
+  ): TemporalClassificationResult {
     return this.temporalEngine.classifyTemporalHorizon(entity, nowIso);
   }
 
-  public distinguishTemporalEntities(entities: TemporalEntityInput[], nowIso?: string): DistinguishEntitiesResult {
+  public distinguishTemporalEntities(
+    entities: TemporalEntityInput[],
+    nowIso?: string,
+  ): DistinguishEntitiesResult {
     return this.temporalEngine.distinguishTemporalEntities(entities, nowIso);
   }
 
@@ -1435,7 +1563,10 @@ export class ApeService {
     return this.temporalEngine.createIntention(input);
   }
 
-  public listFutureIntentions(filter?: { status?: FutureIntentionStatus; limit?: number }): FutureIntention[] {
+  public listFutureIntentions(filter?: {
+    status?: FutureIntentionStatus;
+    limit?: number;
+  }): FutureIntention[] {
     return this.temporalEngine.listIntentions(filter);
   }
 
@@ -1451,7 +1582,10 @@ export class ApeService {
     return this.temporalEngine.recordCommitment(input);
   }
 
-  public listCommitments(filter?: { status?: CommitmentStatus; partnerName?: string }): UnfinishedCommitment[] {
+  public listCommitments(filter?: {
+    status?: CommitmentStatus;
+    partnerName?: string;
+  }): UnfinishedCommitment[] {
     return this.temporalEngine.listCommitments(filter);
   }
 
@@ -1459,7 +1593,11 @@ export class ApeService {
     return this.temporalEngine.fulfillCommitment(id, fulfillmentEvidence);
   }
 
-  public renegotiateCommitment(id: string, newTargetTime: string, contextUpdate: string): UnfinishedCommitment | null {
+  public renegotiateCommitment(
+    id: string,
+    newTargetTime: string,
+    contextUpdate: string,
+  ): UnfinishedCommitment | null {
     return this.temporalEngine.renegotiateCommitment(id, newTargetTime, contextUpdate);
   }
 
@@ -1478,16 +1616,33 @@ export class ApeService {
   public estimateDuration(
     operationKey: string,
     fallbackMs?: number,
-  ): { estimatedDurationMs: number; confidence: number; basedOnSamples: number; profile?: DurationProfile } {
+  ): {
+    estimatedDurationMs: number;
+    confidence: number;
+    basedOnSamples: number;
+    profile?: DurationProfile;
+  } {
     return this.temporalEngine.estimateDuration(operationKey, fallbackMs);
   }
 
-  public recordActualDuration(operationKey: string, actualDurationMs: number, context?: string): DurationProfile {
+  public recordActualDuration(
+    operationKey: string,
+    actualDurationMs: number,
+    context?: string,
+  ): DurationProfile {
     return this.temporalEngine.recordActualDuration({ operationKey, actualDurationMs, context });
   }
 
-  public calculateTemporalRecencyScore(timestamp: string, nowIso?: string, lambdaHalfLifeHours?: number): number {
-    return this.temporalEngine.calculateTemporalRecencyScore(timestamp, nowIso, lambdaHalfLifeHours);
+  public calculateTemporalRecencyScore(
+    timestamp: string,
+    nowIso?: string,
+    lambdaHalfLifeHours?: number,
+  ): number {
+    return this.temporalEngine.calculateTemporalRecencyScore(
+      timestamp,
+      nowIso,
+      lambdaHalfLifeHours,
+    );
   }
 
   // ==========================================
@@ -1526,11 +1681,16 @@ export class ApeService {
     return this.worldModelEngine.listRelations(filter);
   }
 
-  public recordWorldEnvironmentalChange(input: RecordEnvironmentalChangeInput): WorldEnvironmentalChange {
+  public recordWorldEnvironmentalChange(
+    input: RecordEnvironmentalChangeInput,
+  ): WorldEnvironmentalChange {
     return this.worldModelEngine.recordEnvironmentalChange(input);
   }
 
-  public listWorldEnvironmentalChanges(filter?: { entityId?: string; limit?: number }): WorldEnvironmentalChange[] {
+  public listWorldEnvironmentalChanges(filter?: {
+    entityId?: string;
+    limit?: number;
+  }): WorldEnvironmentalChange[] {
     return this.worldModelEngine.listEnvironmentalChanges(filter);
   }
 
@@ -1553,7 +1713,10 @@ export class ApeService {
     return this.worldModelEngine.resolveUnknown(unknownId, resolutionEvidence);
   }
 
-  public listWorldUnknowns(filter?: { status?: UnknownStatus; domain?: string }): EpistemicUnknown[] {
+  public listWorldUnknowns(filter?: {
+    status?: UnknownStatus;
+    domain?: string;
+  }): EpistemicUnknown[] {
     return this.worldModelEngine.listUnknowns(filter);
   }
 
@@ -1683,7 +1846,12 @@ export class ApeService {
     return this.situationalEngine.startActivity(options);
   }
 
-  public updateActiveApplication(app: { name: string; windowTitle?: string; pid?: number; isForeground?: boolean }) {
+  public updateActiveApplication(app: {
+    name: string;
+    windowTitle?: string;
+    pid?: number;
+    isForeground?: boolean;
+  }) {
     return this.situationalEngine.updateActiveApplication(app);
   }
 
@@ -1848,8 +2016,16 @@ export class ApeService {
     return this.multiSystemMemoryEngine.correctMemory(memoryId, newContent, reason);
   }
 
-  public detectMemoryContradiction(memoryIdA: string, memoryIdB: string, conflictDescription: string) {
-    return this.multiSystemMemoryEngine.detectContradiction(memoryIdA, memoryIdB, conflictDescription);
+  public detectMemoryContradiction(
+    memoryIdA: string,
+    memoryIdB: string,
+    conflictDescription: string,
+  ) {
+    return this.multiSystemMemoryEngine.detectContradiction(
+      memoryIdA,
+      memoryIdB,
+      conflictDescription,
+    );
   }
 
   public resolveMemoryContradiction(
@@ -1857,7 +2033,11 @@ export class ApeService {
     strategy: 'override_with_verified' | 'epistemic_uncertainty',
     winningMemoryId?: string,
   ) {
-    return this.multiSystemMemoryEngine.resolveContradiction(contradictionId, strategy, winningMemoryId);
+    return this.multiSystemMemoryEngine.resolveContradiction(
+      contradictionId,
+      strategy,
+      winningMemoryId,
+    );
   }
 
   public getMultiSystemMemorySummary() {
@@ -1929,19 +2109,56 @@ export class ApeService {
     return this.reasoningEngine.executeInduction(observations, query, domain);
   }
 
-  public executeAbduction(surprisingObservation: string, candidateExplanations: any, query: string, domain?: string) {
-    return this.reasoningEngine.executeAbduction(surprisingObservation, candidateExplanations, query, domain);
+  public executeAbduction(
+    surprisingObservation: string,
+    candidateExplanations: any,
+    query: string,
+    domain?: string,
+  ) {
+    return this.reasoningEngine.executeAbduction(
+      surprisingObservation,
+      candidateExplanations,
+      query,
+      domain,
+    );
   }
 
-  public executeAnalogicalReasoning(sourceDomain: string, targetDomain: string, mappedRelations: any, query: string) {
-    return this.reasoningEngine.executeAnalogicalReasoning(sourceDomain, targetDomain, mappedRelations, query);
+  public executeAnalogicalReasoning(
+    sourceDomain: string,
+    targetDomain: string,
+    mappedRelations: any,
+    query: string,
+  ) {
+    return this.reasoningEngine.executeAnalogicalReasoning(
+      sourceDomain,
+      targetDomain,
+      mappedRelations,
+      query,
+    );
   }
 
-  public executeProbabilisticReasoning(prior: number, pEgivenH: number, pEgivenNotH: number, query: string, domain?: string) {
-    return this.reasoningEngine.executeProbabilisticReasoning(prior, pEgivenH, pEgivenNotH, query, domain);
+  public executeProbabilisticReasoning(
+    prior: number,
+    pEgivenH: number,
+    pEgivenNotH: number,
+    query: string,
+    domain?: string,
+  ) {
+    return this.reasoningEngine.executeProbabilisticReasoning(
+      prior,
+      pEgivenH,
+      pEgivenNotH,
+      query,
+      domain,
+    );
   }
 
-  public executeMathematicalReasoning(problem: string, steps: any, finalResult: string, domain?: string) {
+  public executeMathematicalReasoning(
+    problem: string,
+    steps: any,
+    finalResult: string,
+    domain?: string,
+  ) {
     return this.reasoningEngine.executeMathematicalReasoning(problem, steps, finalResult, domain);
   }
 
@@ -2085,11 +2302,15 @@ export class ApeService {
     return this.simulationEngine.simulateFuture(input);
   }
 
-  public evaluateAlternativeDecisions(input: Parameters<SimulationEngine['evaluateAlternativeDecisions']>[0]) {
+  public evaluateAlternativeDecisions(
+    input: Parameters<SimulationEngine['evaluateAlternativeDecisions']>[0],
+  ) {
     return this.simulationEngine.evaluateAlternativeDecisions(input);
   }
 
-  public constructCreativeHypothetical(input: Parameters<SimulationEngine['constructCreativeHypothetical']>[0]) {
+  public constructCreativeHypothetical(
+    input: Parameters<SimulationEngine['constructCreativeHypothetical']>[0],
+  ) {
     return this.simulationEngine.constructCreativeHypothetical(input);
   }
 
@@ -2097,23 +2318,37 @@ export class ApeService {
   // Milestone 18 — Metacognition
   // ==========================================
 
-  public assessCognitiveProcess(input: Parameters<MetacognitionEngine['evaluateCognitiveProcess']>[0]) {
+  public assessCognitiveProcess(
+    input: Parameters<MetacognitionEngine['evaluateCognitiveProcess']>[0],
+  ) {
     return this.metacognitionEngine.evaluateCognitiveProcess(input);
   }
 
-  public calibrateConfidence(statedConfidence: number, evidenceSufficiency: number, hasContradictions?: boolean) {
-    return this.metacognitionEngine.calibrateConfidence(statedConfidence, evidenceSufficiency, hasContradictions);
+  public calibrateConfidence(
+    statedConfidence: number,
+    evidenceSufficiency: number,
+    hasContradictions?: boolean,
+  ) {
+    return this.metacognitionEngine.calibrateConfidence(
+      statedConfidence,
+      evidenceSufficiency,
+      hasContradictions,
+    );
   }
 
   public detectContradictions(statements: string[]) {
     return this.metacognitionEngine.detectContradictions(statements);
   }
 
-  public assessEvidenceSufficiency(input: Parameters<MetacognitionEngine['assessEvidenceSufficiency']>[0]) {
+  public assessEvidenceSufficiency(
+    input: Parameters<MetacognitionEngine['assessEvidenceSufficiency']>[0],
+  ) {
     return this.metacognitionEngine.assessEvidenceSufficiency(input);
   }
 
-  public initiateSelfCorrection(input: Parameters<MetacognitionEngine['initiateSelfCorrection']>[0]) {
+  public initiateSelfCorrection(
+    input: Parameters<MetacognitionEngine['initiateSelfCorrection']>[0],
+  ) {
     return this.metacognitionEngine.initiateSelfCorrection(input);
   }
 
@@ -2125,7 +2360,9 @@ export class ApeService {
   // Milestone 19 — Global Cognitive Integration
   // ==========================================
 
-  public processGlobalCognitiveEvent(input: Parameters<GlobalCognitiveIntegrationEngine['processGlobalEvent']>[0]) {
+  public processGlobalCognitiveEvent(
+    input: Parameters<GlobalCognitiveIntegrationEngine['processGlobalEvent']>[0],
+  ) {
     return this.globalCognitiveEngine.processGlobalEvent(input);
   }
 
@@ -2137,7 +2374,9 @@ export class ApeService {
   // Milestone 20 — Executive Functions
   // ==========================================
 
-  public evaluateActionInhibition(input: Parameters<ExecutiveEngine['evaluateActionInhibition']>[0]) {
+  public evaluateActionInhibition(
+    input: Parameters<ExecutiveEngine['evaluateActionInhibition']>[0],
+  ) {
     return this.executiveEngine.evaluateActionInhibition(input);
   }
 
@@ -2145,15 +2384,21 @@ export class ApeService {
     return this.executiveEngine.switchTask(input);
   }
 
-  public regulateWorkingMemoryGating(input: Parameters<ExecutiveEngine['regulateWorkingMemory']>[0]) {
+  public regulateWorkingMemoryGating(
+    input: Parameters<ExecutiveEngine['regulateWorkingMemory']>[0],
+  ) {
     return this.executiveEngine.regulateWorkingMemory(input);
   }
 
-  public evaluateDelayedGratification(input: Parameters<ExecutiveEngine['evaluateDelayedGratification']>[0]) {
+  public evaluateDelayedGratification(
+    input: Parameters<ExecutiveEngine['evaluateDelayedGratification']>[0],
+  ) {
     return this.executiveEngine.evaluateDelayedGratification(input);
   }
 
-  public selectOptimalResponse(candidates: Parameters<ExecutiveEngine['selectOptimalResponse']>[0]) {
+  public selectOptimalResponse(
+    candidates: Parameters<ExecutiveEngine['selectOptimalResponse']>[0],
+  ) {
     return this.executiveEngine.selectOptimalResponse(candidates);
   }
 
@@ -2161,31 +2406,45 @@ export class ApeService {
   // Milestone 21 — Self-Generated Goals
   // ==========================================
 
-  public generateGoalFromInterest(params: Parameters<SelfGeneratedGoalEngine['generateGoalFromInterest']>[0]) {
+  public generateGoalFromInterest(
+    params: Parameters<SelfGeneratedGoalEngine['generateGoalFromInterest']>[0],
+  ) {
     return this.selfGeneratedGoalEngine.generateGoalFromInterest(params);
   }
 
-  public generateGoalFromCuriosity(params: Parameters<SelfGeneratedGoalEngine['generateGoalFromCuriosity']>[0]) {
+  public generateGoalFromCuriosity(
+    params: Parameters<SelfGeneratedGoalEngine['generateGoalFromCuriosity']>[0],
+  ) {
     return this.selfGeneratedGoalEngine.generateGoalFromCuriosity(params);
   }
 
-  public generateGoalFromUnresolvedQuestion(params: Parameters<SelfGeneratedGoalEngine['generateGoalFromUnresolvedQuestion']>[0]) {
+  public generateGoalFromUnresolvedQuestion(
+    params: Parameters<SelfGeneratedGoalEngine['generateGoalFromUnresolvedQuestion']>[0],
+  ) {
     return this.selfGeneratedGoalEngine.generateGoalFromUnresolvedQuestion(params);
   }
 
-  public generateGoalFromSelfImprovement(params: Parameters<SelfGeneratedGoalEngine['generateGoalFromSelfImprovement']>[0]) {
+  public generateGoalFromSelfImprovement(
+    params: Parameters<SelfGeneratedGoalEngine['generateGoalFromSelfImprovement']>[0],
+  ) {
     return this.selfGeneratedGoalEngine.generateGoalFromSelfImprovement(params);
   }
 
-  public generateGoalFromProject(params: Parameters<SelfGeneratedGoalEngine['generateGoalFromProject']>[0]) {
+  public generateGoalFromProject(
+    params: Parameters<SelfGeneratedGoalEngine['generateGoalFromProject']>[0],
+  ) {
     return this.selfGeneratedGoalEngine.generateGoalFromProject(params);
   }
 
-  public recognizeOpportunity(params: Parameters<SelfGeneratedGoalEngine['recognizeOpportunity']>[0]) {
+  public recognizeOpportunity(
+    params: Parameters<SelfGeneratedGoalEngine['recognizeOpportunity']>[0],
+  ) {
     return this.selfGeneratedGoalEngine.recognizeOpportunity(params);
   }
 
-  public generateLongTermAmbition(params: Parameters<SelfGeneratedGoalEngine['generateLongTermAmbition']>[0]) {
+  public generateLongTermAmbition(
+    params: Parameters<SelfGeneratedGoalEngine['generateLongTermAmbition']>[0],
+  ) {
     return this.selfGeneratedGoalEngine.generateLongTermAmbition(params);
   }
 
@@ -2244,7 +2503,9 @@ export class ApeService {
     });
   }
 
-  public synthesizeAutonomousGoalsFromState(context: Parameters<SelfGeneratedGoalEngine['synthesizeAutonomousGoalsFromState']>[0]) {
+  public synthesizeAutonomousGoalsFromState(
+    context: Parameters<SelfGeneratedGoalEngine['synthesizeAutonomousGoalsFromState']>[0],
+  ) {
     return this.selfGeneratedGoalEngine.synthesizeAutonomousGoalsFromState(context);
   }
 
@@ -2252,7 +2513,9 @@ export class ApeService {
   // Milestone 22 — Planning and Long-Term Intention
   // ==========================================
 
-  public decomposeGoalIntoPlan(goal: Parameters<PersistentPlanningEngine['decomposeGoalIntoPlan']>[0]) {
+  public decomposeGoalIntoPlan(
+    goal: Parameters<PersistentPlanningEngine['decomposeGoalIntoPlan']>[0],
+  ) {
     return this.planningEngine.decomposeGoalIntoPlan(goal);
   }
 
@@ -2290,7 +2553,10 @@ export class ApeService {
     return this.planningEngine.recoverUnfinishedPlan(planId);
   }
 
-  public revisePlan(planId: string, updates: Parameters<PersistentPlanningEngine['revisePlan']>[1]) {
+  public revisePlan(
+    planId: string,
+    updates: Parameters<PersistentPlanningEngine['revisePlan']>[1],
+  ) {
     return this.planningEngine.revisePlan(planId, updates);
   }
 
@@ -2302,7 +2568,11 @@ export class ApeService {
     return this.planningEngine.fulfillCommitment(commitmentId, evidence);
   }
 
-  public renegotiateLongTermCommitment(commitmentId: string, newStatement: string, newDue?: string) {
+  public renegotiateLongTermCommitment(
+    commitmentId: string,
+    newStatement: string,
+    newDue?: string,
+  ) {
     return this.planningEngine.renegotiateCommitment(commitmentId, newStatement, newDue);
   }
 
@@ -2344,23 +2614,33 @@ export class ApeService {
   // Milestone 24 — Autonomous Agency
   // ==========================================
 
-  public initiateAutonomousActivity(params: Parameters<AutonomousAgencyEngine['initiateActivity']>[0]) {
+  public initiateAutonomousActivity(
+    params: Parameters<AutonomousAgencyEngine['initiateActivity']>[0],
+  ) {
     return this.autonomousAgencyEngine.initiateActivity(params);
   }
 
-  public executeAutonomousResearch(params: Parameters<AutonomousAgencyEngine['executeResearch']>[0]) {
+  public executeAutonomousResearch(
+    params: Parameters<AutonomousAgencyEngine['executeResearch']>[0],
+  ) {
     return this.autonomousAgencyEngine.executeResearch(params);
   }
 
-  public executeAutonomousFileOperation(params: Parameters<AutonomousAgencyEngine['executeFileOperation']>[0]) {
+  public executeAutonomousFileOperation(
+    params: Parameters<AutonomousAgencyEngine['executeFileOperation']>[0],
+  ) {
     return this.autonomousAgencyEngine.executeFileOperation(params);
   }
 
-  public executeAutonomousAppInteraction(params: Parameters<AutonomousAgencyEngine['executeApplicationInteraction']>[0]) {
+  public executeAutonomousAppInteraction(
+    params: Parameters<AutonomousAgencyEngine['executeApplicationInteraction']>[0],
+  ) {
     return this.autonomousAgencyEngine.executeApplicationInteraction(params);
   }
 
-  public executeAutonomousBrowserInteraction(params: Parameters<AutonomousAgencyEngine['executeBrowserInteraction']>[0]) {
+  public executeAutonomousBrowserInteraction(
+    params: Parameters<AutonomousAgencyEngine['executeBrowserInteraction']>[0],
+  ) {
     return this.autonomousAgencyEngine.executeBrowserInteraction(params);
   }
 
@@ -2376,11 +2656,23 @@ export class ApeService {
     return this.autonomousAgencyEngine.recoverFailedActivity(activityId, recoveryStrategy);
   }
 
-  public dispatchProactiveCommunication(activityId: string, messageText: string, rationale: string, channel?: string) {
-    return this.autonomousAgencyEngine.dispatchProactiveCommunication(activityId, messageText, rationale, channel);
+  public dispatchProactiveCommunication(
+    activityId: string,
+    messageText: string,
+    rationale: string,
+    channel?: string,
+  ) {
+    return this.autonomousAgencyEngine.dispatchProactiveCommunication(
+      activityId,
+      messageText,
+      rationale,
+      channel,
+    );
   }
 
-  public runAutonomousGoalCycle(goal: Parameters<AutonomousAgencyEngine['runAutonomousGoalCycle']>[0]) {
+  public runAutonomousGoalCycle(
+    goal: Parameters<AutonomousAgencyEngine['runAutonomousGoalCycle']>[0],
+  ) {
     return this.autonomousAgencyEngine.runAutonomousGoalCycle(goal);
   }
 
@@ -2507,7 +2799,11 @@ export class ApeService {
     strategy?: CopingStrategyType,
     reappraisalNarrative?: string,
   ) {
-    return this.emotionalRegulationEngine.regulateSetback(setbackId, strategy, reappraisalNarrative);
+    return this.emotionalRegulationEngine.regulateSetback(
+      setbackId,
+      strategy,
+      reappraisalNarrative,
+    );
   }
 
   public reappraiseSetback(setbackId: string, reframingRationale: string) {
@@ -2519,7 +2815,11 @@ export class ApeService {
     partnerFeedback: string,
     dissonanceIntensity: number,
   ) {
-    return this.emotionalRegulationEngine.manageConflictRecovery(setbackId, partnerFeedback, dissonanceIntensity);
+    return this.emotionalRegulationEngine.manageConflictRecovery(
+      setbackId,
+      partnerFeedback,
+      dissonanceIntensity,
+    );
   }
 
   public getEmotionalStabilityMetrics() {
@@ -2559,7 +2859,11 @@ export class ApeService {
     availableCapacity: number,
     bottleneck?: ResourceBottleneck,
   ) {
-    return this.homeostasisEngine.predictResourceDepletion(burnRatePerMinute, availableCapacity, bottleneck);
+    return this.homeostasisEngine.predictResourceDepletion(
+      burnRatePerMinute,
+      availableCapacity,
+      bottleneck,
+    );
   }
 
   public satisfyHomeostaticNeed(
@@ -2593,16 +2897,15 @@ export class ApeService {
     );
   }
 
-  public createExtrinsicActivity(
-    title: string,
-    description: string,
-    source?: MotivationSource,
-  ) {
+  public createExtrinsicActivity(title: string, description: string, source?: MotivationSource) {
     return this.intrinsicMotivationEngine.createExtrinsicActivity(title, description, source);
   }
 
   public internalizeExternalGoal(activityId: string, internalizedRationale: string) {
-    return this.intrinsicMotivationEngine.internalizeExternalGoal(activityId, internalizedRationale);
+    return this.intrinsicMotivationEngine.internalizeExternalGoal(
+      activityId,
+      internalizedRationale,
+    );
   }
 
   public sustainMotivatedActivity(activityId: string, progressIncrement: number) {
@@ -2633,11 +2936,25 @@ export class ApeService {
     return this.curiosityEngine.detectNovelty(stimulus, detectedDomain, familiarityBaseline);
   }
 
-  public identifyKnowledgeGap(domain: string, topic: string, gapDescription: string, epistemicUncertainty?: number) {
-    return this.curiosityEngine.identifyKnowledgeGap(domain, topic, gapDescription, epistemicUncertainty);
+  public identifyKnowledgeGap(
+    domain: string,
+    topic: string,
+    gapDescription: string,
+    epistemicUncertainty?: number,
+  ) {
+    return this.curiosityEngine.identifyKnowledgeGap(
+      domain,
+      topic,
+      gapDescription,
+      epistemicUncertainty,
+    );
   }
 
-  public formulateExploratoryQuestion(knowledgeGapId: string, question: string, hypotheses?: string[]) {
+  public formulateExploratoryQuestion(
+    knowledgeGapId: string,
+    question: string,
+    hypotheses?: string[],
+  ) {
     return this.curiosityEngine.formulateQuestion(knowledgeGapId, question, hypotheses);
   }
 
@@ -2647,11 +2964,26 @@ export class ApeService {
     stepsExecuted: InvestigationStep[],
     synthesisSummary: string,
   ) {
-    return this.curiosityEngine.conductIndependentInvestigation(questionId, investigationTitle, stepsExecuted, synthesisSummary);
+    return this.curiosityEngine.conductIndependentInvestigation(
+      questionId,
+      investigationTitle,
+      stepsExecuted,
+      synthesisSummary,
+    );
   }
 
-  public developDiscoveredInterest(domain: string, topic: string, discoveredRationale: string, initialFindings?: string[]) {
-    return this.curiosityEngine.developInterest(domain, topic, discoveredRationale, initialFindings);
+  public developDiscoveredInterest(
+    domain: string,
+    topic: string,
+    discoveredRationale: string,
+    initialFindings?: string[],
+  ) {
+    return this.curiosityEngine.developInterest(
+      domain,
+      topic,
+      discoveredRationale,
+      initialFindings,
+    );
   }
 
   public evolveInterestMaturity(interestId: string, newFinding: string) {
@@ -2741,7 +3073,11 @@ export class ApeService {
     triggeredBy: string,
     overrideInterruptionReason?: string,
   ) {
-    return this.habitsEngine.triggerAndExecuteHabit(habitId, triggeredBy, overrideInterruptionReason);
+    return this.habitsEngine.triggerAndExecuteHabit(
+      habitId,
+      triggeredBy,
+      overrideInterruptionReason,
+    );
   }
 
   public evaluateAndModifyHabit(habitId: string, updates: ModifyHabitParams) {
@@ -2749,7 +3085,10 @@ export class ApeService {
   }
 
   public assessNoveltyRoutineBalance(routineActionsCount: number, novelExploratoryCount: number) {
-    return this.habitsEngine.assessNoveltyRoutineBalance(routineActionsCount, novelExploratoryCount);
+    return this.habitsEngine.assessNoveltyRoutineBalance(
+      routineActionsCount,
+      novelExploratoryCount,
+    );
   }
 
   public getHabit(habitId: string) {
@@ -2804,11 +3143,7 @@ export class ApeService {
     return this.moralEngine.assessHarm(scenario, potentialImpacts);
   }
 
-  public evaluateIntention(
-    actorId: string,
-    outcomeWasHarmful: boolean,
-    contextSignals?: string[],
-  ) {
+  public evaluateIntention(actorId: string, outcomeWasHarmful: boolean, contextSignals?: string[]) {
     return this.moralEngine.evaluateIntention(actorId, outcomeWasHarmful, contextSignals);
   }
 
@@ -3039,19 +3374,24 @@ export class ApeService {
     inputLatencyMs: number,
     isInterruption?: boolean,
   ) {
-    return this.socialCommunicationEngine.evaluateTurnTaking(sessionId, speakerId, inputLatencyMs, isInterruption);
+    return this.socialCommunicationEngine.evaluateTurnTaking(
+      sessionId,
+      speakerId,
+      inputLatencyMs,
+      isInterruption,
+    );
   }
 
   public adaptToAudience(targetAudienceId: string, socialDistance: SocialDistance) {
     return this.socialCommunicationEngine.adaptToAudience(targetAudienceId, socialDistance);
   }
 
-  public generatePragmaticResponse(
-    inputAnalysis: any,
-    context: any,
-    partnerIsProof: boolean,
-  ) {
-    return this.socialCommunicationEngine.generatePragmaticResponse(inputAnalysis, context, partnerIsProof);
+  public generatePragmaticResponse(inputAnalysis: any, context: any, partnerIsProof: boolean) {
+    return this.socialCommunicationEngine.generatePragmaticResponse(
+      inputAnalysis,
+      context,
+      partnerIsProof,
+    );
   }
 
   public updateConversationalContext(
@@ -3061,19 +3401,25 @@ export class ApeService {
     goal: string,
     formality?: FormalityLevel,
   ) {
-    return this.socialCommunicationEngine.updateContext(sessionId, topic, commonGroundUpdates, goal, formality);
+    return this.socialCommunicationEngine.updateContext(
+      sessionId,
+      topic,
+      commonGroundUpdates,
+      goal,
+      formality,
+    );
   }
 
   public getConversationalContext(sessionId: string) {
     return this.socialCommunicationEngine.getContext(sessionId);
   }
 
-  public evaluateContextualAppropriateness(
-    utterance: string,
-    context: any,
-    audienceProfile: any,
-  ) {
-    return this.socialCommunicationEngine.evaluateContextualAppropriateness(utterance, context, audienceProfile);
+  public evaluateContextualAppropriateness(utterance: string, context: any, audienceProfile: any) {
+    return this.socialCommunicationEngine.evaluateContextualAppropriateness(
+      utterance,
+      context,
+      audienceProfile,
+    );
   }
 
   public getAttachmentBond(personId: string) {
@@ -3094,7 +3440,10 @@ export class ApeService {
   }
 
   public listSharedHistoryEvents(personId: string, limit?: number) {
-    return (this.relationshipsAttachmentEngine as any).repository?.listSharedEvents(personId, limit) ?? [];
+    return (
+      (this.relationshipsAttachmentEngine as any).repository?.listSharedEvents(personId, limit) ??
+      []
+    );
   }
 
   public recognizeRelationalConflict(params: {
@@ -3172,11 +3521,18 @@ export class ApeService {
   }
 
   public listSocialNorms(culturalContext?: string) {
-    return (this.socialLearningCultureEngine as any).repository?.listSocialNorms(culturalContext) ?? [];
+    return (
+      (this.socialLearningCultureEngine as any).repository?.listSocialNorms(culturalContext) ?? []
+    );
   }
 
   public listObservationalLearningRecords(actorId?: string, limit?: number) {
-    return (this.socialLearningCultureEngine as any).repository?.listObservationalRecords(actorId, limit) ?? [];
+    return (
+      (this.socialLearningCultureEngine as any).repository?.listObservationalRecords(
+        actorId,
+        limit,
+      ) ?? []
+    );
   }
 
   public getExpressiveVoiceProfile() {
@@ -3258,7 +3614,9 @@ export class ApeService {
   }
 
   public listRecreationalActivities(category?: any, limit?: number) {
-    return (this.playHumourAestheticsEngine as any).repository?.listActivities(category, limit) ?? [];
+    return (
+      (this.playHumourAestheticsEngine as any).repository?.listActivities(category, limit) ?? []
+    );
   }
 
   public registerAestheticPreference(params: {
@@ -3275,10 +3633,7 @@ export class ApeService {
     return (this.playHumourAestheticsEngine as any).repository?.listPreferences(category) ?? [];
   }
 
-  public conductIntellectualPlay(params: {
-    playType: any;
-    challenge: string;
-  }) {
+  public conductIntellectualPlay(params: { playType: any; challenge: string }) {
     return this.playHumourAestheticsEngine.conductIntellectualPlay(params);
   }
 
@@ -3302,7 +3657,10 @@ export class ApeService {
     return this.offlineCognitiveEngine.scheduleActivity(input);
   }
 
-  public executeOfflineActivity(id: string, executionResult?: { insights: string[]; artifacts?: string[] }) {
+  public executeOfflineActivity(
+    id: string,
+    executionResult?: { insights: string[]; artifacts?: string[] },
+  ) {
     return this.offlineCognitiveEngine.executeActivity(id, executionResult);
   }
 
@@ -3337,7 +3695,13 @@ export class ApeService {
     urgency?: any,
     immediate?: boolean,
   ) {
-    return this.offlineCognitiveEngine.generateProactiveProposal(topic, message, reasoning, urgency, immediate);
+    return this.offlineCognitiveEngine.generateProactiveProposal(
+      topic,
+      message,
+      reasoning,
+      urgency,
+      immediate,
+    );
   }
 
   public listOfflineProactiveProposals(delivered?: boolean) {
@@ -3402,7 +3766,11 @@ export class ApeService {
     return this.evaluationEngine.evaluateOfficialReport(input);
   }
 
-  public verifyCanonicalStateContinuity(probeType: any, baseline: Record<string, any>, postEvent: Record<string, any>) {
+  public verifyCanonicalStateContinuity(
+    probeType: any,
+    baseline: Record<string, any>,
+    postEvent: Record<string, any>,
+  ) {
     return this.evaluationEngine.verifyCanonicalStateContinuity(probeType, baseline, postEvent);
   }
 
@@ -3485,4 +3853,3 @@ export class ApeService {
     return this.consciousnessEngine.listDmnWanderings(limit);
   }
 }
-

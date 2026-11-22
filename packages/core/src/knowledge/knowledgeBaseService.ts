@@ -1,8 +1,5 @@
 import crypto from 'node:crypto';
-import {
-  KnowledgeDocument,
-  SemanticSearchResult,
-} from '@arletex/contracts';
+import { KnowledgeDocument, SemanticSearchResult } from '@arletex/contracts';
 import { IKnowledgeRepository } from './interfaces.js';
 import { ILogger, rootLogger } from '../logger.js';
 import { DocumentIngestionService, IngestDocumentInput } from './documentIngestionService.js';
@@ -80,7 +77,8 @@ export class KnowledgeBaseService {
     logger?: ILogger;
   }) {
     this.repo = options.repo;
-    this.ingestionService = options.ingestionService || new DocumentIngestionService(options.logger);
+    this.ingestionService =
+      options.ingestionService || new DocumentIngestionService(options.logger);
     this.embedder = options.embedder || new DeterministicSemanticEmbedder();
     this.logger = (options.logger || rootLogger).child('KnowledgeBaseService');
   }
@@ -151,7 +149,8 @@ export class KnowledgeBaseService {
       for (const tok of chunkTokens) {
         if (queryTokens.has(tok)) matchedTokens++;
       }
-      const lexicalScore = queryTokens.size > 0 ? Math.min(1.0, matchedTokens / queryTokens.size) : 0;
+      const lexicalScore =
+        queryTokens.size > 0 ? Math.min(1.0, matchedTokens / queryTokens.size) : 0;
       score += lexicalScore * 0.35;
 
       // 3. Weight by source reliability

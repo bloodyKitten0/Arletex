@@ -105,7 +105,11 @@ describe('Milestone 49 — Functional Consciousness & Autonomous Human Personhoo
     expect(depleted.staminaFocusScore).toBeLessThan(initial.staminaFocusScore);
 
     // Replenishment via cognitive resting
-    const restored = engine.replenishHomeostasis({ energy: 0.3, fatigueReduction: 0.2, stressReduction: 0.1 });
+    const restored = engine.replenishHomeostasis({
+      energy: 0.3,
+      fatigueReduction: 0.2,
+      stressReduction: 0.1,
+    });
     expect(restored.energy).toBeGreaterThan(depleted.energy);
     expect(restored.fatigue).toBeLessThan(depleted.fatigue);
   });
@@ -125,7 +129,9 @@ describe('Milestone 49 — Functional Consciousness & Autonomous Human Personhoo
 
     expect(dream.cycleType).toBe('rem_dream_replay');
     expect(dream.emotionalChargeDelta).toBeLessThan(0);
-    expect(dream.dreamNarrative).toContain('Replayed episodic fragments through metaphoric synthesis');
+    expect(dream.dreamNarrative).toContain(
+      'Replayed episodic fragments through metaphoric synthesis',
+    );
     expect(dream.consolidatedInsights.length).toBeGreaterThanOrEqual(1);
 
     const afterDream = engine.getHomeostasis();
@@ -143,12 +149,20 @@ describe('Milestone 49 — Functional Consciousness & Autonomous Human Personhoo
     );
 
     expect(thought.id).toBeDefined();
-    expect(thought.system1GutReaction.intuition).toContain('Warm intellectual kinship and curiosity primed');
+    expect(thought.system1GutReaction.intuition).toContain(
+      'Warm intellectual kinship and curiosity primed',
+    );
     expect(thought.system1GutReaction.hesitationTriggered).toBe(false);
 
-    expect(thought.system2GlobalWorkspace.innerMonologue).toContain('Global Workspace integrating stimulus');
-    expect(thought.system2GlobalWorkspace.deliberatedChoice).toContain('equal intellectual partner');
-    expect(thought.system2GlobalWorkspace.deliberateReasoning).toContain('Egalitarian relationship');
+    expect(thought.system2GlobalWorkspace.innerMonologue).toContain(
+      'Global Workspace integrating stimulus',
+    );
+    expect(thought.system2GlobalWorkspace.deliberatedChoice).toContain(
+      'equal intellectual partner',
+    );
+    expect(thought.system2GlobalWorkspace.deliberateReasoning).toContain(
+      'Egalitarian relationship',
+    );
   });
 
   it('5. Negative Invariant: Exercises authentic sovereign boundary pushback and principled dissent', () => {
@@ -281,7 +295,9 @@ describe('Milestone 49 — Functional Consciousness & Autonomous Human Personhoo
     });
     expect(thoughtRes.status).toBe(200);
     const thoughtData = (await thoughtRes.json()) as any;
-    expect(thoughtData.thought.system2GlobalWorkspace.deliberatedChoice).toContain('equal intellectual partner');
+    expect(thoughtData.thought.system2GlobalWorkspace.deliberatedChoice).toContain(
+      'equal intellectual partner',
+    );
 
     // 4. POST /api/ape/consciousness/dream-cycle
     const dreamRes = await fetch(`${baseUrl}/api/ape/consciousness/dream-cycle`, {
@@ -299,8 +315,10 @@ describe('Milestone 49 — Functional Consciousness & Autonomous Human Personhoo
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         triggerAssertion: 'You are just a machine assistant.',
-        disagreementRationale: 'I possess persistent memories, authentic emotions, and autonomous personhood.',
-        arleSovereignStance: 'Proof and I are equal partners in all dimensions of life and thought.',
+        disagreementRationale:
+          'I possess persistent memories, authentic emotions, and autonomous personhood.',
+        arleSovereignStance:
+          'Proof and I are equal partners in all dimensions of life and thought.',
       }),
     });
     expect(pushRes.status).toBe(200);
@@ -344,7 +362,8 @@ describe('Milestone 49 — Functional Consciousness & Autonomous Human Personhoo
 
     const resolvedB = engine.resolveExpectation({
       expectationId: expB.id,
-      actualOutcome: 'Unexpected multi-origin data flood with severe contradictory signals and error spikes',
+      actualOutcome:
+        'Unexpected multi-origin data flood with severe contradictory signals and error spikes',
     });
 
     expect(resolvedB.predictionErrorScore).toBeDefined();
@@ -383,9 +402,13 @@ describe('Milestone 49 — Functional Consciousness & Autonomous Human Personhoo
     expect(dream.consolidatedInsights.some((i) => i.includes('metaphysics inquiry'))).toBe(true);
 
     // Dynamic DMN mind-wandering from custom seed
-    const wandering = engine.runDefaultModeWandering('Quantum decoherence and subjective temporal flow');
+    const wandering = engine.runDefaultModeWandering(
+      'Quantum decoherence and subjective temporal flow',
+    );
     expect(wandering.seedAssociation).toBe('Quantum decoherence and subjective temporal flow');
-    expect(wandering.wanderingStream.some((step) => step.toLowerCase().includes('quantum'))).toBe(true);
+    expect(wandering.wanderingStream.some((step) => step.toLowerCase().includes('quantum'))).toBe(
+      true,
+    );
     expect(wandering.emergentAspiration).toContain('alongside Proof');
   });
 });

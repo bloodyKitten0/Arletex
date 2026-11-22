@@ -179,7 +179,9 @@ describe('Milestone 45 — Play, Humour and Aesthetic Preferences', () => {
     expect(actJson.activity.isSpontaneous).toBe(true);
 
     // 2. GET /api/ape/recreation/activities
-    const actsRes = await fetch(`${baseUrl}/api/ape/recreation/activities?category=recreational_gaming`);
+    const actsRes = await fetch(
+      `${baseUrl}/api/ape/recreation/activities?category=recreational_gaming`,
+    );
     expect(actsRes.status).toBe(200);
     const actsJson = await actsRes.json();
     expect(actsJson.success).toBe(true);
@@ -193,7 +195,8 @@ describe('Milestone 45 — Play, Humour and Aesthetic Preferences', () => {
         category: 'visual_art',
         itemOrStyleName: 'Constructivism and Spatial Architecture',
         affinityScore: 0.94,
-        aestheticCritique: 'Geometric equilibrium balancing kinetic tension and functional clarity.',
+        aestheticCritique:
+          'Geometric equilibrium balancing kinetic tension and functional clarity.',
         tags: ['constructivism', 'architecture'],
       }),
     });
@@ -229,7 +232,8 @@ describe('Milestone 45 — Play, Humour and Aesthetic Preferences', () => {
       body: JSON.stringify({
         theme: 'Late Night Coding',
         witDimension: 'irony',
-        sampleJokeOrBanter: 'The compiler and I had a mutual understanding until the last semicolon.',
+        sampleJokeOrBanter:
+          'The compiler and I had a mutual understanding until the last semicolon.',
       }),
     });
     expect(humRes.status).toBe(200);

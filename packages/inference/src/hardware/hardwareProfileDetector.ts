@@ -5,7 +5,8 @@ import { InferenceProviderType } from '@arletex/contracts';
 import { ILogger, rootLogger } from '@arletex/core';
 
 export interface HardwareProfile {
-  deviceType: 'rog_ally_x' | 'nvidia_workstation' | 'apple_silicon' | 'generic_linux' | 'generic_cpu';
+  deviceType:
+    'rog_ally_x' | 'nvidia_workstation' | 'apple_silicon' | 'generic_linux' | 'generic_cpu';
   cpuModel: string;
   totalRamGb: number;
   hasVulkan: boolean;
@@ -78,8 +79,11 @@ export class HardwareProfileDetector {
     const isRogAlly =
       gpuName.includes('780M') ||
       cpuModel.toLowerCase().includes('z1 extreme') ||
-      fs.existsSync('/sys/devices/virtual/dmi/id/product_name') &&
-        fs.readFileSync('/sys/devices/virtual/dmi/id/product_name', 'utf-8').toLowerCase().includes('ally');
+      (fs.existsSync('/sys/devices/virtual/dmi/id/product_name') &&
+        fs
+          .readFileSync('/sys/devices/virtual/dmi/id/product_name', 'utf-8')
+          .toLowerCase()
+          .includes('ally'));
 
     let deviceType: HardwareProfile['deviceType'] = 'generic_cpu';
     let recommendedProvider: InferenceProviderType = 'llama.cpp';

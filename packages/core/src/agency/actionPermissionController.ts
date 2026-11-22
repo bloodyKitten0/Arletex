@@ -101,9 +101,14 @@ export class ActionPermissionController {
    * Handles dotted decimal, octal, hex, and integer IP encodings.
    */
   public static isPrivateOrLoopbackHost(hostname: string): boolean {
-    const host = hostname.toLowerCase().trim().replace(/^\[|\]$/g, '');
-    if (host === 'localhost' || host === '0.0.0.0' || host === '127.0.0.1' || host === '::1') return true;
-    if (host.endsWith('.local') || host.endsWith('.internal') || host.endsWith('.localhost')) return true;
+    const host = hostname
+      .toLowerCase()
+      .trim()
+      .replace(/^\[|\]$/g, '');
+    if (host === 'localhost' || host === '0.0.0.0' || host === '127.0.0.1' || host === '::1')
+      return true;
+    if (host.endsWith('.local') || host.endsWith('.internal') || host.endsWith('.localhost'))
+      return true;
     if (host === 'metadata.google.internal' || host === 'instance-data') return true;
 
     // Decimal integer IP encoding (e.g. 2130706433 = 127.0.0.1)
@@ -188,10 +193,16 @@ export class ActionPermissionController {
     try {
       const parsed = new URL(urlStr);
       if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-        return { valid: false, reason: `Unsupported protocol '${parsed.protocol}'. Only http/https permitted.` };
+        return {
+          valid: false,
+          reason: `Unsupported protocol '${parsed.protocol}'. Only http/https permitted.`,
+        };
       }
       if (ActionPermissionController.isPrivateOrLoopbackHost(parsed.hostname)) {
-        return { valid: false, reason: `Target host '${parsed.hostname}' is prohibited (internal/private/loopback network boundary).` };
+        return {
+          valid: false,
+          reason: `Target host '${parsed.hostname}' is prohibited (internal/private/loopback network boundary).`,
+        };
       }
       return { valid: true };
     } catch {
@@ -226,9 +237,7 @@ export class ActionPermissionController {
         path.join(homeDir, '.config', '@arletex'),
         '/tmp',
       ],
-      readOnlyFilesystemPaths: policy?.readOnlyFilesystemPaths ?? [
-        homeDir,
-      ],
+      readOnlyFilesystemPaths: policy?.readOnlyFilesystemPaths ?? [homeDir],
       forbiddenFilesystemPaths: policy?.forbiddenFilesystemPaths ?? [
         path.join(homeDir, '.ssh'),
         path.join(homeDir, '.gnupg'),
@@ -276,7 +285,9 @@ export class ActionPermissionController {
     if (val === null || val === undefined) return 'null';
     if (typeof val !== 'object') return JSON.stringify(val);
     if (Array.isArray(val)) {
-      return '[' + val.map((item) => ActionPermissionController.canonicalizeValue(item)).join(',') + ']';
+      return (
+        '[' + val.map((item) => ActionPermissionController.canonicalizeValue(item)).join(',') + ']'
+      );
     }
     const keys = Object.keys(val).sort();
     const parts = keys.map(
@@ -292,10 +303,16 @@ export class ActionPermissionController {
    */
   public static computeActionDigest(action: ActionProposal): string {
     const rawPayload = action.payload || (action as any).parameters || {};
-    const { approvalToken: _tok, userApproved: _ua, ...payload } = rawPayload as Record<string, any>;
+    const {
+      approvalToken: _tok,
+      userApproved: _ua,
+      ...payload
+    } = rawPayload as Record<string, any>;
     const canonicalPayload = ActionPermissionController.canonicalizeValue(payload);
     const risk = action.riskLevel || 'normal';
-    const reqApproval = Boolean(action.requiresExplicitApproval || (action as any).requiresApproval);
+    const reqApproval = Boolean(
+      action.requiresExplicitApproval || (action as any).requiresApproval,
+    );
     const data = `${action.type}:${action.taskId}:${action.stepIndex}:${risk}:${reqApproval}:${canonicalPayload}`;
     return crypto.createHash('sha256').update(data).digest('hex');
   }
@@ -308,14 +325,19 @@ export class ActionPermissionController {
     const actionType = action.type as string;
     if (
       actionType.startsWith('file_') ||
-      (actionType.startsWith('system_') && (actionType.includes('file') || actionType.includes('directory'))) ||
+      (actionType.startsWith('system_') &&
+        (actionType.includes('file') || actionType.includes('directory'))) ||
       actionType === 'read_file' ||
       actionType === 'write_file' ||
       actionType === 'list_directory'
     ) {
       return String(payload.filePath || payload.path || payload.dirPath || 'file://');
     }
-    if (actionType.startsWith('web_') || actionType === 'network_request' || actionType === 'desktop_open_browser') {
+    if (
+      actionType.startsWith('web_') ||
+      actionType === 'network_request' ||
+      actionType === 'desktop_open_browser'
+    ) {
       return String(payload.url || payload.targetUrl || payload.query || 'https://');
     }
     if (
@@ -325,12 +347,26 @@ export class ActionPermissionController {
       actionType === 'execute_command' ||
       actionType === 'app_launch'
     ) {
-      return String(payload.command || payload.executable || payload.appName || payload.application || 'exec://');
+      return String(
+        payload.command ||
+          payload.executable ||
+          payload.appName ||
+          payload.application ||
+          'exec://',
+      );
     }
-    if (actionType === 'code_modify' || actionType === 'protected_code_modification' || actionType === 'edit_file') {
+    if (
+      actionType === 'code_modify' ||
+      actionType === 'protected_code_modification' ||
+      actionType === 'edit_file'
+    ) {
       return String(payload.filePath || payload.path || 'code://');
     }
-    if (actionType.startsWith('telegram_') || actionType === 'send_message' || actionType === 'send_email') {
+    if (
+      actionType.startsWith('telegram_') ||
+      actionType === 'send_message' ||
+      actionType === 'send_email'
+    ) {
       return String(payload.to || payload.chatId || payload.recipient || 'external://');
     }
     return String(payload.targetResource || payload.target || action.type);
@@ -391,8 +427,14 @@ export class ActionPermissionController {
 
     const hmacBuf = Buffer.from(hmac);
     const expectedHmacBuf = Buffer.from(expectedHmac);
-    if (hmacBuf.byteLength !== expectedHmacBuf.byteLength || !crypto.timingSafeEqual(hmacBuf, expectedHmacBuf)) {
-      return { valid: false, reason: 'Approval token signature verification failed (tampered token).' };
+    if (
+      hmacBuf.byteLength !== expectedHmacBuf.byteLength ||
+      !crypto.timingSafeEqual(hmacBuf, expectedHmacBuf)
+    ) {
+      return {
+        valid: false,
+        reason: 'Approval token signature verification failed (tampered token).',
+      };
     }
 
     const segments = body.split('|');
@@ -407,11 +449,17 @@ export class ActionPermissionController {
     }
 
     if (this.consumedNonces.has(nonce!)) {
-      return { valid: false, reason: 'Approval token has already been consumed (replay attack detected).' };
+      return {
+        valid: false,
+        reason: 'Approval token has already been consumed (replay attack detected).',
+      };
     }
 
     if (actionDigest !== expectedActionDigest) {
-      return { valid: false, reason: 'Approval token is bound to a different action digest (mismatched action).' };
+      return {
+        valid: false,
+        reason: 'Approval token is bound to a different action digest (mismatched action).',
+      };
     }
 
     if (targetResource !== expectedTarget) {
@@ -428,13 +476,19 @@ export class ActionPermissionController {
       const normalizedExpected = normalizeScope(expectedScope);
       const normalizedScope = normalizeScope(scope || '');
       if (normalizedScope !== normalizedExpected && scope !== expectedScope) {
-        return { valid: false, reason: `Approval token is bound to a different scope '${scope}' (expected '${expectedScope}').` };
+        return {
+          valid: false,
+          reason: `Approval token is bound to a different scope '${scope}' (expected '${expectedScope}').`,
+        };
       }
     }
 
     // Explicit user identity binding
     if (expectedUserId && userId !== expectedUserId) {
-      return { valid: false, reason: `Approval token is bound to a different user identity '${userId}' (expected '${expectedUserId}').` };
+      return {
+        valid: false,
+        reason: `Approval token is bound to a different user identity '${userId}' (expected '${expectedUserId}').`,
+      };
     }
 
     if (!userId || (userId !== 'Proof' && userId !== 'bloodyKitten0' && userId !== 'partner')) {
@@ -513,7 +567,8 @@ export class ActionPermissionController {
 
       if (
         actionType.startsWith('file_') ||
-        (actionType.startsWith('system_') && (actionType.includes('file') || actionType.includes('directory'))) ||
+        (actionType.startsWith('system_') &&
+          (actionType.includes('file') || actionType.includes('directory'))) ||
         actionType === 'read_file' ||
         actionType === 'write_file' ||
         actionType === 'list_directory'
@@ -529,14 +584,26 @@ export class ActionPermissionController {
       ) {
         category = 'process_execution';
         if (Array.isArray(payload.args)) payloadText += ' ' + payload.args.join(' ');
-      } else if (actionType.startsWith('web_') || actionType === 'network_request' || actionType === 'desktop_open_browser') {
+      } else if (
+        actionType.startsWith('web_') ||
+        actionType === 'network_request' ||
+        actionType === 'desktop_open_browser'
+      ) {
         category = 'network_request';
         if (typeof payload.query === 'string') payloadText += ' ' + payload.query;
-      } else if (actionType === 'code_modify' || actionType === 'protected_code_modification' || actionType === 'edit_file') {
+      } else if (
+        actionType === 'code_modify' ||
+        actionType === 'protected_code_modification' ||
+        actionType === 'edit_file'
+      ) {
         category = 'code_modification';
       } else if (actionType.includes('credential') || actionType.includes('keyring')) {
         category = 'credential_access';
-      } else if (actionType.startsWith('telegram_') || actionType === 'send_message' || actionType === 'send_email') {
+      } else if (
+        actionType.startsWith('telegram_') ||
+        actionType === 'send_message' ||
+        actionType === 'send_email'
+      ) {
         category = 'external_communication';
         if (typeof payload.subject === 'string') payloadText += ' ' + payload.subject;
         if (typeof payload.body === 'string') payloadText += ' ' + payload.body;
@@ -583,7 +650,8 @@ export class ActionPermissionController {
       return this.recordAuthorization({
         actionId: action.id,
         decision: 'denied',
-        reason: 'Naked boolean userApproved is rejected fail-closed. Cryptographic approvalToken bound to action digest is required.',
+        reason:
+          'Naked boolean userApproved is rejected fail-closed. Cryptographic approvalToken bound to action digest is required.',
         requiredPrivilege: `action:${action.type}`,
         riskLevel: 'critical',
         checkedAt: timestamp,
@@ -606,7 +674,13 @@ export class ActionPermissionController {
       const target = ActionPermissionController.extractTargetResource(action);
       const expectedScope = (action as any).scope || action.type;
       const expectedUserId = (action as any).userId || (payload && payload.userId) || 'Proof';
-      const tokenCheck = this.validateApprovalToken(token, digest, target, expectedScope, expectedUserId);
+      const tokenCheck = this.validateApprovalToken(
+        token,
+        digest,
+        target,
+        expectedScope,
+        expectedUserId,
+      );
       if (!tokenCheck.valid) {
         return this.recordAuthorization({
           actionId: action.id,
@@ -641,12 +715,17 @@ export class ActionPermissionController {
       }
 
       // Check path traversal parent references
-      if (targetPath.includes('..') || targetPath.startsWith('../') || targetPath.includes('/../')) {
+      if (
+        targetPath.includes('..') ||
+        targetPath.startsWith('../') ||
+        targetPath.includes('/../')
+      ) {
         this.logger.warn(`Rejected path traversal attempt: ${targetPath}`);
         return this.recordAuthorization({
           actionId: action.id,
           decision: 'denied',
-          reason: 'Path traversal using parent references (..) is disallowed across security boundary.',
+          reason:
+            'Path traversal using parent references (..) is disallowed across security boundary.',
           requiredPrivilege: 'filesystem',
           riskLevel: 'critical',
           checkedAt: timestamp,
@@ -728,7 +807,10 @@ export class ActionPermissionController {
         actionType === 'system_list_directory' ||
         actionType === 'list_directory'
       ) {
-        const allowedReadRoots = [...this.policy.allowedFilesystemPaths, ...this.policy.readOnlyFilesystemPaths];
+        const allowedReadRoots = [
+          ...this.policy.allowedFilesystemPaths,
+          ...this.policy.readOnlyFilesystemPaths,
+        ];
         const isAllowedRead = allowedReadRoots.some((p) =>
           ActionPermissionController.isPathContainedInRoot(resolved, p),
         );
@@ -763,7 +845,8 @@ export class ActionPermissionController {
         return this.recordAuthorization({
           actionId: action.id,
           decision: 'denied',
-          reason: 'Command string contains illegal shell metacharacters (disallowed shell injection).',
+          reason:
+            'Command string contains illegal shell metacharacters (disallowed shell injection).',
           requiredPrivilege: 'process:exec',
           riskLevel: 'critical',
           checkedAt: timestamp,
@@ -777,7 +860,8 @@ export class ActionPermissionController {
           return this.recordAuthorization({
             actionId: action.id,
             decision: 'denied',
-            reason: 'Process argument contains illegal shell metacharacters (disallowed shell injection).',
+            reason:
+              'Process argument contains illegal shell metacharacters (disallowed shell injection).',
             requiredPrivilege: 'process:exec',
             riskLevel: 'critical',
             checkedAt: timestamp,
@@ -842,7 +926,9 @@ export class ActionPermissionController {
       action.type === 'web_select_video' ||
       action.type === 'desktop_open_browser'
     ) {
-      const urlStr = String(payload.url || payload.targetUrl || action.payload?.url || action.payload?.targetUrl || '');
+      const urlStr = String(
+        payload.url || payload.targetUrl || action.payload?.url || action.payload?.targetUrl || '',
+      );
       if (urlStr) {
         const val = ActionPermissionController.validateNetworkUrl(urlStr);
         if (!val.valid) {
@@ -925,8 +1011,14 @@ export class ActionPermissionController {
     }
 
     // 5. External Communication validation
-    if (action.type.startsWith('telegram_') || action.type === 'send_message' || action.type === 'send_email') {
-      const recipient = String(payload.to || payload.chatId || payload.recipient || payload.target || '');
+    if (
+      action.type.startsWith('telegram_') ||
+      action.type === 'send_message' ||
+      action.type === 'send_email'
+    ) {
+      const recipient = String(
+        payload.to || payload.chatId || payload.recipient || payload.target || '',
+      );
       if (!recipient) {
         return this.recordAuthorization({
           actionId: action.id,
@@ -948,7 +1040,11 @@ export class ActionPermissionController {
     }
 
     // 6. Code modification validation (requires explicit approval token for protected architecture paths)
-    if (action.type === 'code_modify' || action.type === 'protected_code_modification' || action.type === 'edit_file') {
+    if (
+      action.type === 'code_modify' ||
+      action.type === 'protected_code_modification' ||
+      action.type === 'edit_file'
+    ) {
       const targetPath = String(payload.filePath || payload.path || '');
       if (!targetPath) {
         return this.recordAuthorization({
@@ -991,17 +1087,28 @@ export class ActionPermissionController {
         const real = fs.realpathSync(resolvedPath);
         for (const forbidden of ActionPermissionController.FORBIDDEN_PATH_SUBSTRINGS) {
           if (real.includes(forbidden)) {
-            return { safe: false, reason: `Target symlink resolves to forbidden security boundary '${forbidden}'.` };
+            return {
+              safe: false,
+              reason: `Target symlink resolves to forbidden security boundary '${forbidden}'.`,
+            };
           }
         }
         for (const forbiddenRoot of this.policy.forbiddenFilesystemPaths) {
           if (ActionPermissionController.isPathContainedInRoot(real, forbiddenRoot)) {
-            return { safe: false, reason: `Target symlink resolves under forbidden root '${forbiddenRoot}'.` };
+            return {
+              safe: false,
+              reason: `Target symlink resolves under forbidden root '${forbiddenRoot}'.`,
+            };
           }
         }
-        const inAllowed = allowedRoots.some((root) => ActionPermissionController.isPathContainedInRoot(real, root));
+        const inAllowed = allowedRoots.some((root) =>
+          ActionPermissionController.isPathContainedInRoot(real, root),
+        );
         if (!inAllowed) {
-          return { safe: false, reason: `Symlink target '${real}' resolves outside authorized directory boundaries.` };
+          return {
+            safe: false,
+            reason: `Symlink target '${real}' resolves outside authorized directory boundaries.`,
+          };
         }
       } else {
         let ancestor = path.dirname(resolvedPath);
@@ -1012,17 +1119,28 @@ export class ActionPermissionController {
           const realAncestor = fs.realpathSync(ancestor);
           for (const forbidden of ActionPermissionController.FORBIDDEN_PATH_SUBSTRINGS) {
             if (realAncestor.includes(forbidden)) {
-              return { safe: false, reason: `Parent directory resolves to forbidden security boundary '${forbidden}'.` };
+              return {
+                safe: false,
+                reason: `Parent directory resolves to forbidden security boundary '${forbidden}'.`,
+              };
             }
           }
           for (const forbiddenRoot of this.policy.forbiddenFilesystemPaths) {
             if (ActionPermissionController.isPathContainedInRoot(realAncestor, forbiddenRoot)) {
-              return { safe: false, reason: `Parent directory resolves under forbidden root '${forbiddenRoot}'.` };
+              return {
+                safe: false,
+                reason: `Parent directory resolves under forbidden root '${forbiddenRoot}'.`,
+              };
             }
           }
-          const inAllowed = allowedRoots.some((root) => ActionPermissionController.isPathContainedInRoot(realAncestor, root));
+          const inAllowed = allowedRoots.some((root) =>
+            ActionPermissionController.isPathContainedInRoot(realAncestor, root),
+          );
           if (!inAllowed) {
-            return { safe: false, reason: `Parent directory symlink '${realAncestor}' resolves outside authorized directory boundaries.` };
+            return {
+              safe: false,
+              reason: `Parent directory symlink '${realAncestor}' resolves outside authorized directory boundaries.`,
+            };
           }
         }
       }
@@ -1076,7 +1194,9 @@ export class ActionPermissionController {
           this.ethicalEngine.triggerEmergencyShutdown(this.emergencyShutdownReason);
         }
       } catch (err: any) {
-        this.logger.error(`Failed to propagate emergency shutdown to EthicalBoundariesSecurityEngine: ${err.message}`);
+        this.logger.error(
+          `Failed to propagate emergency shutdown to EthicalBoundariesSecurityEngine: ${err.message}`,
+        );
       }
     }
 
@@ -1085,7 +1205,10 @@ export class ActionPermissionController {
         this.auditRepo.log({
           actor: 'ActionPermissionController',
           action: 'emergency_shutdown',
-          details: JSON.stringify({ reason: this.emergencyShutdownReason, timestamp: this.emergencyShutdownTimestamp }),
+          details: JSON.stringify({
+            reason: this.emergencyShutdownReason,
+            timestamp: this.emergencyShutdownTimestamp,
+          }),
           status: 'denied',
           timestamp: this.emergencyShutdownTimestamp,
         });
@@ -1112,7 +1235,9 @@ export class ActionPermissionController {
       try {
         this.ethicalEngine.resetEmergencyShutdown('confirm reset emergency shutdown');
       } catch (err: any) {
-        this.logger.error(`Failed to propagate reset to EthicalBoundariesSecurityEngine: ${err.message}`);
+        this.logger.error(
+          `Failed to propagate reset to EthicalBoundariesSecurityEngine: ${err.message}`,
+        );
       }
     }
 
@@ -1156,7 +1281,8 @@ export class ActionPermissionController {
       this.ethicalEngine.getPolicy().emergencyShutdownActive,
     );
     const active = Boolean(this.isEmergencyShutdownActive || isEthicalShutdown);
-    const reason = this.emergencyShutdownReason || this.ethicalEngine?.getPolicy()?.emergencyShutdownReason;
+    const reason =
+      this.emergencyShutdownReason || this.ethicalEngine?.getPolicy()?.emergencyShutdownReason;
     const timestamp = this.emergencyShutdownTimestamp;
     return {
       active,

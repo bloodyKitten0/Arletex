@@ -1,12 +1,6 @@
 import { z } from 'zod';
 
-export const COMPETENCE_LEVELS = [
-  'novice',
-  'competent',
-  'proficient',
-  'expert',
-  'master',
-] as const;
+export const COMPETENCE_LEVELS = ['novice', 'competent', 'proficient', 'expert', 'master'] as const;
 
 export const CompetenceLevelSchema = z.enum(COMPETENCE_LEVELS);
 export type CompetenceLevel = z.infer<typeof CompetenceLevelSchema>;

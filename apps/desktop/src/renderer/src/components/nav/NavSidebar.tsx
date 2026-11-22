@@ -84,7 +84,8 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        transition: 'width 0.2s cubic-bezier(0.16, 1, 0.3, 1), min-width 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+        transition:
+          'width 0.2s cubic-bezier(0.16, 1, 0.3, 1), min-width 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
         userSelect: 'none',
         zIndex: 20,
       }}
@@ -121,10 +122,23 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({
           </div>
           {!collapsed && (
             <div style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>
-              <div style={{ fontWeight: 700, fontSize: '13px', letterSpacing: '0.8px', color: 'var(--text-primary)' }}>
+              <div
+                style={{
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  letterSpacing: '0.8px',
+                  color: 'var(--text-primary)',
+                }}
+              >
                 ARLETEX
               </div>
-              <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+              <div
+                style={{
+                  fontSize: '9px',
+                  color: 'var(--text-muted)',
+                  fontFamily: 'var(--font-mono)',
+                }}
+              >
                 HOST OS v0.2
               </div>
             </div>
@@ -161,7 +175,15 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({
       </div>
 
       {/* Nav Items */}
-      <nav style={{ flex: 1, padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+      <nav
+        style={{
+          flex: 1,
+          padding: '12px 8px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px',
+        }}
+      >
         {NAV_ITEMS.map((item) => {
           const isActive = activeSection === item.id;
           const Icon = item.icon;
@@ -218,7 +240,14 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({
               <Icon size={18} />
 
               {!collapsed && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    minWidth: 0,
+                  }}
+                >
                   <span style={{ lineHeight: 1.2 }}>{item.label}</span>
                 </div>
               )}
@@ -280,9 +309,7 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({
                 height: '10px',
                 borderRadius: '50%',
                 backgroundColor: isGenerating ? 'var(--warning)' : 'var(--success)',
-                boxShadow: isGenerating
-                  ? '0 0 8px var(--warning)'
-                  : '0 0 8px var(--success)',
+                boxShadow: isGenerating ? '0 0 8px var(--warning)' : '0 0 8px var(--success)',
               }}
             />
           </div>

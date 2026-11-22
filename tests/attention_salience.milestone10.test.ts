@@ -169,7 +169,7 @@ describe('Milestone 10 — Attention and Salience', () => {
     expect(result.discardedStimuliIds).toContain(stimuli[1]!.id);
   });
 
-  it('3. Boosts interest-driven attention for topics aligned with Arle\'s intellectual curiosities', () => {
+  it("3. Boosts interest-driven attention for topics aligned with Arle's intellectual curiosities", () => {
     attentionEngine.setContext(
       ['General stability maintenance'],
       ['Artificial psychology', 'Epistemology', 'Philosophy of mind'],
@@ -252,7 +252,9 @@ describe('Milestone 10 — Attention and Salience', () => {
     const novelSalience = attentionEngine.evaluateSalience(novelStimulus);
 
     expect(novelSalience.novelty).toBe(0.95);
-    expect(novelSalience.compositeSalience).toBeGreaterThan(routineSalience.compositeSalience + 0.2);
+    expect(novelSalience.compositeSalience).toBeGreaterThan(
+      routineSalience.compositeSalience + 0.2,
+    );
   });
 
   it('6. Enforces cognitive inertia (hysteresis) on attention switches unless urgency forces an override', () => {
@@ -338,7 +340,8 @@ describe('Milestone 10 — Attention and Salience', () => {
         id: crypto.randomUUID(),
         type: 'perceptual',
         source: `source_${i}`,
-        summary: i < 2 ? `High priority research topic ${i}` : `Low importance ambient feed item ${i}`,
+        summary:
+          i < 2 ? `High priority research topic ${i}` : `Low importance ambient feed item ${i}`,
         tags: i < 2 ? ['research', 'proof'] : ['ambient'],
         noveltyScore: i < 2 ? 0.8 : 0.2,
         urgencyScore: i < 2 ? 0.8 : 0.2,
@@ -398,7 +401,9 @@ describe('Milestone 10 — Attention and Salience', () => {
 
     expect(() => {
       assertSelectiveAttentionIntegrity(invalidOverloadResult, 8, 0.35);
-    }).toThrow(/Negative Invariant Violated: Attentional overload recognized but no low-priority stimuli were shed/);
+    }).toThrow(
+      /Negative Invariant Violated: Attentional overload recognized but no low-priority stimuli were shed/,
+    );
   });
 
   it('10. Persists across SQLite restart, serves REST API endpoints, and integrates into prompt context', async () => {
@@ -493,7 +498,9 @@ describe('Milestone 10 — Attention and Salience', () => {
       expect(evalRes.status).toBe(200);
       const evalData = (await evalRes.json()) as any;
       expect(evalData.success).toBe(true);
-      expect(evalData.result.selectedFocalTarget.title).toContain('Proof sent an architectural suggestion');
+      expect(evalData.result.selectedFocalTarget.title).toContain(
+        'Proof sent an architectural suggestion',
+      );
       expect(evalData.result.discardedStimuliIds.length).toBe(1);
 
       // 2. GET /api/ape/attention/summary

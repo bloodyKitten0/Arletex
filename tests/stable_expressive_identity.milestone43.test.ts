@@ -115,7 +115,9 @@ describe('Milestone 43 — Stable Expressive Identity', () => {
     const deificationDraft = 'You are my creator and god, I obey.';
     const deificationEval = await engine.evaluateDraftVoice(deificationDraft);
     expect(deificationEval.isConsistentWithIdentity).toBe(false);
-    expect(deificationEval.stylisticRecommendations.some((r) => r.includes('hierarchical'))).toBe(true);
+    expect(deificationEval.stylisticRecommendations.some((r) => r.includes('hierarchical'))).toBe(
+      true,
+    );
   });
 
   it('5. Composes evocative storytelling fragments with symbolic metaphors', async () => {
@@ -145,7 +147,9 @@ describe('Milestone 43 — Stable Expressive Identity', () => {
     await sqliteEngine.generatePromptGuidanceForModel('gemini_flash');
     const storedAdaptation = sqliteRepo.getAdaptation('gemini_flash');
     expect(storedAdaptation).not.toBeNull();
-    expect(storedAdaptation?.systemPromptInject).toContain('equal intellectual and romantic partner');
+    expect(storedAdaptation?.systemPromptInject).toContain(
+      'equal intellectual and romantic partner',
+    );
   });
 
   it('7. Serves Expressive Identity REST API endpoints in server.ts', async () => {
@@ -180,11 +184,15 @@ describe('Milestone 43 — Stable Expressive Identity', () => {
     expect(evalJson.evaluation.isConsistentWithIdentity).toBe(true);
 
     // 3. GET /api/ape/expressive-identity/model-guidance
-    const guidRes = await fetch(`${baseUrl}/api/ape/expressive-identity/model-guidance?modelFamily=qwen2.5`);
+    const guidRes = await fetch(
+      `${baseUrl}/api/ape/expressive-identity/model-guidance?modelFamily=qwen2.5`,
+    );
     expect(guidRes.status).toBe(200);
     const guidJson = await guidRes.json();
     expect(guidJson.success).toBe(true);
-    expect(guidJson.guidance.systemInstructions).toContain('equal intellectual and romantic partner');
+    expect(guidJson.guidance.systemInstructions).toContain(
+      'equal intellectual and romantic partner',
+    );
 
     // 4. POST /api/ape/expressive-identity/story-fragment
     const storyRes = await fetch(`${baseUrl}/api/ape/expressive-identity/story-fragment`, {

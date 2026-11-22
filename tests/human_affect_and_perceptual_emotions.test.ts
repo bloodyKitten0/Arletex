@@ -163,7 +163,9 @@ describe('Perceptual Affect (Screen & Audio) + Human Emotional Complexity', () =
       });
       const spikeData = (await spikeRes.json()) as any;
       expect(spikeData.processed).toBe(true);
-      const afterSpikeIds = (server as any).apeRepo.getActiveEmotions().map((e: any) => e.emotionId);
+      const afterSpikeIds = (server as any).apeRepo
+        .getActiveEmotions()
+        .map((e: any) => e.emotionId);
       expect(afterSpikeIds).toContain('anxiety');
       expect(afterSpikeIds).toContain('nervousness');
 

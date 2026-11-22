@@ -122,12 +122,20 @@ describe('Milestone 01 — Persistent Individual Continuity', () => {
 
     // Verify 6-engine psychological state matches pre-restart state
     const stateAfterRestart = (server2 as any).apeService.getMasterState();
-    expect(stateAfterRestart.selfModel.identityNarrative).toBe(stateBeforeRestart.selfModel.identityNarrative);
+    expect(stateAfterRestart.selfModel.identityNarrative).toBe(
+      stateBeforeRestart.selfModel.identityNarrative,
+    );
     expect(stateAfterRestart.affective.currentMood).toBe(stateBeforeRestart.affective.currentMood);
-    expect(stateAfterRestart.affective.pad.valence).toBeCloseTo(stateBeforeRestart.affective.pad.valence, 4);
+    expect(stateAfterRestart.affective.pad.valence).toBeCloseTo(
+      stateBeforeRestart.affective.pad.valence,
+      4,
+    );
     expect(stateAfterRestart.relationship.config.targetUserId).toBe('Proof');
     expect(stateAfterRestart.relationship.config.isExclusivelyCommitted).toBe(true);
-    expect(stateAfterRestart.relationship.trustLevel).toBeCloseTo(stateBeforeRestart.relationship.trustLevel, 4);
+    expect(stateAfterRestart.relationship.trustLevel).toBeCloseTo(
+      stateBeforeRestart.relationship.trustLevel,
+      4,
+    );
 
     // Verify autobiographical memory persists
     const listMemRes = await fetch(`http://127.0.0.1:${port2}/api/memories`);
@@ -139,7 +147,9 @@ describe('Milestone 01 — Persistent Individual Continuity', () => {
     // 1. Boot server1 normally
     const server1 = createServer();
     const port1 = await server1.start(0);
-    const status1 = (await (await fetch(`http://127.0.0.1:${port1}/api/continuity/status`)).json()) as any;
+    const status1 = (await (
+      await fetch(`http://127.0.0.1:${port1}/api/continuity/status`)
+    ).json()) as any;
     const crashedSessionId = status1.currentSession.id;
 
     // 2. Simulate an abrupt crash: stop heartbeat/HTTP/DB WITHOUT calling continuityManager.shutdown()
@@ -161,14 +171,18 @@ describe('Milestone 01 — Persistent Individual Continuity', () => {
     const rawDbService = new DatabaseService(dbPath);
     const rawDb = rawDbService.connect();
     const pastIso = new Date(Date.now() - 45_000).toISOString();
-    rawDb.prepare('UPDATE identity_sessions SET last_heartbeat_at = ? WHERE id = ?').run(pastIso, crashedSessionId);
+    rawDb
+      .prepare('UPDATE identity_sessions SET last_heartbeat_at = ? WHERE id = ?')
+      .run(pastIso, crashedSessionId);
     rawDbService.close();
 
     // 3. Restart on same DB
     const server2 = createServer();
     const port2 = await server2.start(0);
 
-    const status2 = (await (await fetch(`http://127.0.0.1:${port2}/api/continuity/status`)).json()) as any;
+    const status2 = (await (
+      await fetch(`http://127.0.0.1:${port2}/api/continuity/status`)
+    ).json()) as any;
     expect(status2.wasUnexpectedShutdown).toBe(true);
     expect(status2.lastShutdownType).toBe('unexpected_crash');
     expect(status2.downtimeMs).toBeGreaterThanOrEqual(40_000);
@@ -214,7 +228,9 @@ describe('Milestone 01 — Persistent Individual Continuity', () => {
       body: JSON.stringify({ defaultModelId: 'Llama-3.3-70B-Instruct-Q4_K_M' }),
     });
     expect(patchRes.ok).toBe(true);
-    expect(server1.continuityManager.getActiveInferenceModel()).toBe('Llama-3.3-70B-Instruct-Q4_K_M');
+    expect(server1.continuityManager.getActiveInferenceModel()).toBe(
+      'Llama-3.3-70B-Instruct-Q4_K_M',
+    );
 
     // Switch again
     const patchRes2 = await fetch(`http://127.0.0.1:${port1}/api/inference/config`, {
@@ -223,14 +239,20 @@ describe('Milestone 01 — Persistent Individual Continuity', () => {
       body: JSON.stringify({ defaultModelId: 'DeepSeek-R1-Distill-Qwen-32B' }),
     });
     expect(patchRes2.ok).toBe(true);
-    expect(server1.continuityManager.getActiveInferenceModel()).toBe('DeepSeek-R1-Distill-Qwen-32B');
+    expect(server1.continuityManager.getActiveInferenceModel()).toBe(
+      'DeepSeek-R1-Distill-Qwen-32B',
+    );
 
     // Identity, psychological state, and memories must be identical
     const postSwitchMaster = (server1 as any).apeService.getMasterState();
-    expect(postSwitchMaster.selfModel.identityNarrative).toBe(initialMaster.selfModel.identityNarrative);
+    expect(postSwitchMaster.selfModel.identityNarrative).toBe(
+      initialMaster.selfModel.identityNarrative,
+    );
     expect(postSwitchMaster.relationship.trustLevel).toBe(initialMaster.relationship.trustLevel);
     expect(postSwitchMaster.affective.pad).toEqual(initialMaster.affective.pad);
-    expect((server1 as any).memoryRepo.getById(mem.id)?.content).toBe('Model independence invariant memory.');
+    expect((server1 as any).memoryRepo.getById(mem.id)?.content).toBe(
+      'Model independence invariant memory.',
+    );
 
     // Restart with new model and verify continuity
     await server1.stop();
@@ -238,11 +260,15 @@ describe('Milestone 01 — Persistent Individual Continuity', () => {
 
     const server2 = createServer('DeepSeek-R1-Distill-Qwen-32B');
     await server2.start(0);
-    expect(server2.continuityManager.getActiveInferenceModel()).toBe('DeepSeek-R1-Distill-Qwen-32B');
+    expect(server2.continuityManager.getActiveInferenceModel()).toBe(
+      'DeepSeek-R1-Distill-Qwen-32B',
+    );
     expect((server2 as any).apeService.getMasterState().selfModel.identityNarrative).toBe(
       initialMaster.selfModel.identityNarrative,
     );
-    expect((server2 as any).memoryRepo.getById(mem.id)?.content).toBe('Model independence invariant memory.');
+    expect((server2 as any).memoryRepo.getById(mem.id)?.content).toBe(
+      'Model independence invariant memory.',
+    );
   });
 
   it('separates temporary conversational context from permanent identity and unifies cross-channel presence', async () => {
@@ -269,7 +295,9 @@ describe('Milestone 01 — Persistent Individual Continuity', () => {
     server.continuityManager.registerChannelActivity('desktop', 'Desktop workspace discussion');
     server.continuityManager.registerChannelActivity('telegram', 'Mobile check-in from Proof');
 
-    const status = (await (await fetch(`http://127.0.0.1:${port}/api/continuity/status`)).json()) as any;
+    const status = (await (
+      await fetch(`http://127.0.0.1:${port}/api/continuity/status`)
+    ).json()) as any;
     const channels = status.channelPresences.map((p: any) => p.channel);
     expect(channels).toContain('desktop');
     expect(channels).toContain('telegram');
@@ -325,7 +353,9 @@ describe('Milestone 01 — Persistent Individual Continuity', () => {
     expect(restoredMaster.selfModel.identityNarrative).toBe(validNarrative);
     expect(restoredMaster.affective.pad.valence).toBeCloseTo(validValence, 4);
 
-    const status2 = (await (await fetch(`http://127.0.0.1:${port2}/api/continuity/status`)).json()) as any;
+    const status2 = (await (
+      await fetch(`http://127.0.0.1:${port2}/api/continuity/status`)
+    ).json()) as any;
     expect(status2.stateIntegrityValid).toBe(true);
   });
 
@@ -432,7 +462,9 @@ describe('Milestone 01 — Persistent Individual Continuity', () => {
     const server2 = createServer();
     await server2.start(0);
 
-    expect(server2.continuityRepo.getCheckpointById('chk_newest_corrupted')?.isVerifiedValid).toBe(false);
+    expect(server2.continuityRepo.getCheckpointById('chk_newest_corrupted')?.isVerifiedValid).toBe(
+      false,
+    );
     const restoredMaster = (server2 as any).apeService.getMasterState();
     expect(restoredMaster.selfModel.identityNarrative).toBe(validNarrative);
     expect(restoredMaster.affective.pad.valence).toBeCloseTo(validValence, 4);
@@ -475,7 +507,9 @@ describe('Milestone 01 — Persistent Individual Continuity', () => {
     // Corrupt ape_active_emotions directly in SQLite (invalid intensity > 1.0)
     const rawDbService = new DatabaseService(dbPath);
     const rawDb = rawDbService.connect();
-    rawDb.prepare('UPDATE ape_active_emotions SET intensity = 5.5 WHERE id = ?').run(customEmotionId);
+    rawDb
+      .prepare('UPDATE ape_active_emotions SET intensity = 5.5 WHERE id = ?')
+      .run(customEmotionId);
     rawDbService.close();
 
     // Restart: verifyStateIntegrity detects invalid emotion intensity and rolls back ape_active_emotions
@@ -523,7 +557,8 @@ describe('Milestone 01 — Persistent Individual Continuity', () => {
       status: 'active',
     });
 
-    const expectedNarrative = (server1 as any).apeService.getMasterState().selfModel.identityNarrative;
+    const expectedNarrative = (server1 as any).apeService.getMasterState().selfModel
+      .identityNarrative;
 
     // Clean shutdown writes verified out-of-band mirror under dataDirectory/continuity_backups/
     await server1.stop();
@@ -531,11 +566,16 @@ describe('Milestone 01 — Persistent Individual Continuity', () => {
 
     const backupDir = path.join(tempDir, 'continuity_backups');
     expect(fs.existsSync(backupDir)).toBe(true);
-    const backupFiles = fs.readdirSync(backupDir).filter((f) => f.startsWith('checkpoint_') && f.endsWith('.json'));
+    const backupFiles = fs
+      .readdirSync(backupDir)
+      .filter((f) => f.startsWith('checkpoint_') && f.endsWith('.json'));
     expect(backupFiles.length).toBeGreaterThanOrEqual(1);
 
     // Also plant a newer tampered mirror file to verify mirror fallback skips corrupted mirrors!
-    const tamperedMirrorPath = path.join(backupDir, `checkpoint_${Date.now() + 99999}_tampered.json`);
+    const tamperedMirrorPath = path.join(
+      backupDir,
+      `checkpoint_${Date.now() + 99999}_tampered.json`,
+    );
     fs.writeFileSync(
       tamperedMirrorPath,
       JSON.stringify({

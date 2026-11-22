@@ -87,11 +87,15 @@ export function assertReasoningIntegrity(task: ReasoningTask): void {
   }
 
   if (task.primaryParadigm === 'multi_step' && task.steps.length === 0) {
-    throw new Error('Negative Invariant Violation: Multi-step reasoning tasks must contain at least one reasoning step.');
+    throw new Error(
+      'Negative Invariant Violation: Multi-step reasoning tasks must contain at least one reasoning step.',
+    );
   }
 
   if (task.compositeConfidence < 0 || task.compositeConfidence > 1) {
-    throw new Error(`Invalid composite confidence ${task.compositeConfidence}: must be in range [0, 1].`);
+    throw new Error(
+      `Invalid composite confidence ${task.compositeConfidence}: must be in range [0, 1].`,
+    );
   }
 
   if (task.uncertaintyLevel < 0 || task.uncertaintyLevel > 1) {

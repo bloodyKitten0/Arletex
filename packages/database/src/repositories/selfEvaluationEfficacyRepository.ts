@@ -43,13 +43,18 @@ export class SqliteSelfEvaluationEfficacyRepository implements ISelfEvaluationEf
           competence.lastAssessedAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save domain competence ${competence.domain}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save domain competence ${competence.domain}: ${err.message}`,
+        err,
+      );
     }
   }
 
   public getDomainCompetence(domain: string): DomainCompetence | null {
     try {
-      const row = this.db.prepare(`SELECT * FROM domain_competences WHERE domain = ?`).get(domain) as any;
+      const row = this.db
+        .prepare(`SELECT * FROM domain_competences WHERE domain = ?`)
+        .get(domain) as any;
       if (!row) return null;
       return {
         domain: row.domain,
@@ -67,7 +72,9 @@ export class SqliteSelfEvaluationEfficacyRepository implements ISelfEvaluationEf
 
   public listDomainCompetences(): DomainCompetence[] {
     try {
-      const rows = this.db.prepare(`SELECT * FROM domain_competences ORDER BY calibrated_confidence DESC`).all() as any[];
+      const rows = this.db
+        .prepare(`SELECT * FROM domain_competences ORDER BY calibrated_confidence DESC`)
+        .all() as any[];
       return rows.map((r) => ({
         domain: r.domain,
         level: r.level as CompetenceLevel,
@@ -111,11 +118,18 @@ export class SqliteSelfEvaluationEfficacyRepository implements ISelfEvaluationEf
           evidence.timestamp,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save efficacy evidence ${evidence.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save efficacy evidence ${evidence.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
-  public listEvidence(domain?: string, type?: 'achievement' | 'failure', limit: number = 50): EfficacyEvidence[] {
+  public listEvidence(
+    domain?: string,
+    type?: 'achievement' | 'failure',
+    limit: number = 50,
+  ): EfficacyEvidence[] {
     try {
       let query = `SELECT * FROM efficacy_evidence`;
       const conditions: string[] = [];
@@ -176,7 +190,10 @@ export class SqliteSelfEvaluationEfficacyRepository implements ISelfEvaluationEf
           limitation.updatedAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save capability limitation ${limitation.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save capability limitation ${limitation.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -233,13 +250,18 @@ export class SqliteSelfEvaluationEfficacyRepository implements ISelfEvaluationEf
           goal.updatedAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save self-improvement goal ${goal.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save self-improvement goal ${goal.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
   public getImprovementGoalById(id: string): SelfImprovementGoal | null {
     try {
-      const row = this.db.prepare(`SELECT * FROM self_improvement_goals WHERE id = ?`).get(id) as any;
+      const row = this.db
+        .prepare(`SELECT * FROM self_improvement_goals WHERE id = ?`)
+        .get(id) as any;
       if (!row) return null;
       return {
         id: row.id,
@@ -319,7 +341,10 @@ export class SqliteSelfEvaluationEfficacyRepository implements ISelfEvaluationEf
           snapshot.evaluatedAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save self-evaluation snapshot ${snapshot.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save self-evaluation snapshot ${snapshot.id}: ${err.message}`,
+        err,
+      );
     }
   }
 

@@ -25,9 +25,12 @@ describe('Phase 5: Multi-Engine Inference & Hardware Portability', () => {
     const originalFetch = globalThis.fetch;
     const mockFetch = vi.fn().mockImplementation(async (url: string) => {
       if (url.includes('/api/tags')) {
-        return new Response(JSON.stringify({
-          models: [{ name: 'qwen2.5:14b-instruct' }, { name: 'llama3:8b' }],
-        }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        return new Response(
+          JSON.stringify({
+            models: [{ name: 'qwen2.5:14b-instruct' }, { name: 'llama3:8b' }],
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
       }
 
       if (url.includes('/api/chat')) {
@@ -35,7 +38,11 @@ describe('Phase 5: Multi-Engine Inference & Hardware Portability', () => {
           start(controller) {
             const chunks = [
               JSON.stringify({ message: { content: 'Arle ' }, done: false }) + '\n',
-              JSON.stringify({ message: { content: 'is here.' }, done: true, done_reason: 'stop' }) + '\n',
+              JSON.stringify({
+                message: { content: 'is here.' },
+                done: true,
+                done_reason: 'stop',
+              }) + '\n',
             ];
             for (const chunk of chunks) {
               controller.enqueue(new TextEncoder().encode(chunk));
@@ -82,9 +89,12 @@ describe('Phase 5: Multi-Engine Inference & Hardware Portability', () => {
     const originalFetch = globalThis.fetch;
     const mockFetch = vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
       if (url.includes('/v1/models')) {
-        return new Response(JSON.stringify({
-          data: [{ id: 'Qwen/Qwen2.5-14B-Instruct' }],
-        }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        return new Response(
+          JSON.stringify({
+            data: [{ id: 'Qwen/Qwen2.5-14B-Instruct' }],
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
       }
 
       if (url.includes('/v1/chat/completions')) {
@@ -96,8 +106,14 @@ describe('Phase 5: Multi-Engine Inference & Hardware Portability', () => {
         const stream = new ReadableStream({
           start(controller) {
             const sseLines = [
-              'data: ' + JSON.stringify({ choices: [{ delta: { content: 'Cognition ' } }] }) + '\n\n',
-              'data: ' + JSON.stringify({ choices: [{ delta: { content: 'online.' }, finish_reason: 'stop' }] }) + '\n\n',
+              'data: ' +
+                JSON.stringify({ choices: [{ delta: { content: 'Cognition ' } }] }) +
+                '\n\n',
+              'data: ' +
+                JSON.stringify({
+                  choices: [{ delta: { content: 'online.' }, finish_reason: 'stop' }],
+                }) +
+                '\n\n',
               'data: [DONE]\n\n',
             ];
             for (const line of sseLines) {
@@ -106,7 +122,10 @@ describe('Phase 5: Multi-Engine Inference & Hardware Portability', () => {
             controller.close();
           },
         });
-        return new Response(stream, { status: 200, headers: { 'Content-Type': 'text/event-stream' } });
+        return new Response(stream, {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        });
       }
 
       return new Response('Not found', { status: 404 });
@@ -222,14 +241,15 @@ describe('Phase 5: Multi-Engine Inference & Hardware Portability', () => {
       getConfig: vi.fn().mockReturnValue({}),
     };
 
-    const mockProviders = new Map<any, IInferenceProvider>([
-      ['llama.cpp', mockLlama],
-    ]);
+    const mockProviders = new Map<any, IInferenceProvider>([['llama.cpp', mockLlama]]);
 
-    const registry = new InferenceProviderRegistry({}, {
-      providers: mockProviders,
-      hardwareDetector: mockDetector,
-    });
+    const registry = new InferenceProviderRegistry(
+      {},
+      {
+        providers: mockProviders,
+        hardwareDetector: mockDetector,
+      },
+    );
 
     const result = await registry.autoConfigure();
 

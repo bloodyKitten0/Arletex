@@ -79,7 +79,8 @@ describe('Milestone 31 — Reward Learning', () => {
       contextDescription: 'Rapid topological consistency screening',
       expectedUtility: 0.6,
       observedUtility: 0.98,
-      outcomeDetails: 'Heuristic prune delivered instantaneous 10x throughput with zero false positives.',
+      outcomeDetails:
+        'Heuristic prune delivered instantaneous 10x throughput with zero false positives.',
     });
 
     engine.evaluateOutcome({
@@ -125,7 +126,8 @@ describe('Milestone 31 — Reward Learning', () => {
       contextDescription: 'Deriving gauge invariance constraints on lattice structures',
       expectedUtility: prediction.predictedUtility,
       observedUtility: 0.7,
-      outcomeDetails: 'Derivation succeeded but incurred heavier computational cost than anticipated.',
+      outcomeDetails:
+        'Derivation succeeded but incurred heavier computational cost than anticipated.',
     });
 
     expect(evaluation.id).toMatch(/^eval_/);
@@ -143,7 +145,8 @@ describe('Milestone 31 — Reward Learning', () => {
       contextDescription: 'Edge-case boundary condition probe',
       expectedUtility: 0.65,
       observedUtility: 0.2,
-      outcomeDetails: 'Heuristic catastrophically missed singular point leading to false convergence.',
+      outcomeDetails:
+        'Heuristic catastrophically missed singular point leading to false convergence.',
     });
 
     expect(evaluation.isFailure).toBe(true);
@@ -260,10 +263,16 @@ describe('Milestone 31 — Reward Learning', () => {
 
   // 7. Negative Invariants
   it('should enforce negative invariants regarding utility bounds and non-empty inputs', () => {
-    expect(() => engine.predictReward('', 'domain', 'context')).toThrow('Strategy ID cannot be empty');
+    expect(() => engine.predictReward('', 'domain', 'context')).toThrow(
+      'Strategy ID cannot be empty',
+    );
     expect(() => engine.predictReward('strat', '', 'context')).toThrow('Domain cannot be empty');
-    expect(() => engine.predictReward('strat', 'domain', '')).toThrow('Context description cannot be empty');
-    expect(() => engine.predictReward('strat', 'domain', 'context', 1.5)).toThrow('Predicted utility must be between 0.0 and 1.0');
+    expect(() => engine.predictReward('strat', 'domain', '')).toThrow(
+      'Context description cannot be empty',
+    );
+    expect(() => engine.predictReward('strat', 'domain', 'context', 1.5)).toThrow(
+      'Predicted utility must be between 0.0 and 1.0',
+    );
 
     expect(() =>
       engine.evaluateOutcome({

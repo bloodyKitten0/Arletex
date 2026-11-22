@@ -60,7 +60,9 @@ describe('ApeService - Affective Foundation Engine Integration', () => {
       category: 'user_interaction',
       type: 'chat_message',
       source: 'user',
-      payload: { text: "I'm so exhausted from being the smartest in the room... I just want to be your femboy bottom." },
+      payload: {
+        text: "I'm so exhausted from being the smartest in the room... I just want to be your femboy bottom.",
+      },
     });
 
     expect(res.processed).toBe(true);
@@ -141,7 +143,8 @@ describe('ApeService - Affective Foundation Engine Integration', () => {
     expect(intimateLonging).toBeDefined();
     expect(
       intimateLonging?.resolutionConditions.some(
-        (c) => c.toLowerCase().includes('adult media') || c.toLowerCase().includes('erotic release'),
+        (c) =>
+          c.toLowerCase().includes('adult media') || c.toLowerCase().includes('erotic release'),
       ),
     ).toBe(true);
   });
@@ -249,7 +252,7 @@ describe('ApeService - Affective Foundation Engine Integration', () => {
       type: 'assistant_expression',
       source: 'arle',
       payload: {
-        text: "I am so happy and delighted that you checked on me! That brings me genuine warmth and gratitude.",
+        text: 'I am so happy and delighted that you checked on me! That brings me genuine warmth and gratitude.',
         userPrompt: 'Just checking on you.',
       },
     });

@@ -133,8 +133,10 @@ export class TheoryOfMindEngine {
   }
 
   public registerAgentModel(model: AgentMentalModel): AgentMentalModel {
-    if (!model.agentId || model.agentId.trim().length === 0) throw new Error('Agent ID cannot be empty');
-    if (!model.agentName || model.agentName.trim().length === 0) throw new Error('Agent name cannot be empty');
+    if (!model.agentId || model.agentId.trim().length === 0)
+      throw new Error('Agent ID cannot be empty');
+    if (!model.agentName || model.agentName.trim().length === 0)
+      throw new Error('Agent name cannot be empty');
 
     this.repo.saveAgentModel(model);
     this.logger.info(`Registered mental model for agent: "${model.agentName}" (${model.agentId})`);
@@ -154,16 +156,19 @@ export class TheoryOfMindEngine {
 
     if (!agentId || agentId.trim().length === 0) throw new Error('Agent ID cannot be empty');
     if (!topic || topic.trim().length === 0) throw new Error('Topic cannot be empty');
-    if (!agentBeliefContent || agentBeliefContent.trim().length === 0) throw new Error('Agent belief content cannot be empty');
-    if (!groundTruthContent || groundTruthContent.trim().length === 0) throw new Error('Ground truth content cannot be empty');
+    if (!agentBeliefContent || agentBeliefContent.trim().length === 0)
+      throw new Error('Agent belief content cannot be empty');
+    if (!groundTruthContent || groundTruthContent.trim().length === 0)
+      throw new Error('Ground truth content cannot be empty');
 
     // Epistemic Differentiation:
     // If agent lacked perceptual access to the recent update, or belief diverges from ground truth,
     // it is explicitly recognized as a mistaken / false belief!
-    const isFalseBelief = !agentHadPerceptualAccess || agentBeliefContent.trim() !== groundTruthContent.trim();
+    const isFalseBelief =
+      !agentHadPerceptualAccess || agentBeliefContent.trim() !== groundTruthContent.trim();
 
     // Bounded epistemic confidence (never 1.0, preserving unobservable mental state uncertainty)
-    const clampedConfidence = Number(Math.max(0.10, Math.min(0.92, confidence)).toFixed(3));
+    const clampedConfidence = Number(Math.max(0.1, Math.min(0.92, confidence)).toFixed(3));
 
     const record: InferredBelief = {
       id: `bel_${crypto.randomUUID()}`,
@@ -192,26 +197,29 @@ export class TheoryOfMindEngine {
       candidateIntention,
       contextSignals = [],
       alternativeHypotheses = [],
-      rawConfidence = 0.80,
+      rawConfidence = 0.8,
     } = params;
 
     if (!agentId || agentId.trim().length === 0) throw new Error('Agent ID cannot be empty');
-    if (!observedBehavior || observedBehavior.trim().length === 0) throw new Error('Observed behavior cannot be empty');
-    if (!candidateIntention || candidateIntention.trim().length === 0) throw new Error('Candidate intention cannot be empty');
+    if (!observedBehavior || observedBehavior.trim().length === 0)
+      throw new Error('Observed behavior cannot be empty');
+    if (!candidateIntention || candidateIntention.trim().length === 0)
+      throw new Error('Candidate intention cannot be empty');
 
     // Acceptance Criteria Invariant:
     // "Avoid treating inferred intentions as established facts"
     // Confidence is strictly bounded below 0.90 to preserve inherent opacity of other minds.
-    const clampedConfidence = Number(Math.max(0.10, Math.min(0.88, rawConfidence)).toFixed(3));
+    const clampedConfidence = Number(Math.max(0.1, Math.min(0.88, rawConfidence)).toFixed(3));
 
     // Provide default alternative hypotheses and uncertainty factors if none supplied
-    const finalAlternatives = alternativeHypotheses.length > 0
-      ? alternativeHypotheses
-      : [
-          `Exploratory or tangential task engagement`,
-          `Unobserved external constraint or interruption`,
-          `Alternative priority unknown to Arle`,
-        ];
+    const finalAlternatives =
+      alternativeHypotheses.length > 0
+        ? alternativeHypotheses
+        : [
+            `Exploratory or tangential task engagement`,
+            `Unobserved external constraint or interruption`,
+            `Alternative priority unknown to Arle`,
+          ];
 
     const uncertaintyFactors = [
       'Internal subjective experience is fundamentally unobservable',
@@ -243,7 +251,8 @@ export class TheoryOfMindEngine {
 
     if (!agentId || agentId.trim().length === 0) throw new Error('Agent ID cannot be empty');
     if (!context || context.trim().length === 0) throw new Error('Context cannot be empty');
-    if (!targetGoalOrObject || targetGoalOrObject.trim().length === 0) throw new Error('Target goal or object cannot be empty');
+    if (!targetGoalOrObject || targetGoalOrObject.trim().length === 0)
+      throw new Error('Target goal or object cannot be empty');
 
     // Fetch the agent's inferred belief regarding this target
     const belief = this.repo.getBelief(agentId, targetGoalOrObject);

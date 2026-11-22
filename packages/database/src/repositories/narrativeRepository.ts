@@ -33,7 +33,9 @@ export class NarrativeRepository implements INarrativeRepository {
   public getCurrentEpoch(): NarrativeEpoch | null {
     try {
       const row = this.db
-        .prepare('SELECT * FROM narrative_epochs WHERE status = ? ORDER BY order_index DESC LIMIT 1')
+        .prepare(
+          'SELECT * FROM narrative_epochs WHERE status = ? ORDER BY order_index DESC LIMIT 1',
+        )
         .get('active') as any;
       if (!row) {
         // Fallback to highest order index
@@ -50,7 +52,9 @@ export class NarrativeRepository implements INarrativeRepository {
 
   public listEpochs(): NarrativeEpoch[] {
     try {
-      const rows = this.db.prepare('SELECT * FROM narrative_epochs ORDER BY order_index ASC').all() as any[];
+      const rows = this.db
+        .prepare('SELECT * FROM narrative_epochs ORDER BY order_index ASC')
+        .all() as any[];
       return rows.map((r) => this.mapEpochRow(r));
     } catch (err: any) {
       throw new DatabaseError(`Failed to list narrative epochs: ${err.message}`, err);
@@ -186,7 +190,10 @@ export class NarrativeRepository implements INarrativeRepository {
         milestone.updatedAt,
       );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save personal milestone ${milestone.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save personal milestone ${milestone.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -205,7 +212,9 @@ export class NarrativeRepository implements INarrativeRepository {
 
   public getInterpretationById(id: string): NarrativeInterpretation | null {
     try {
-      const row = this.db.prepare('SELECT * FROM narrative_interpretations WHERE id = ?').get(id) as any;
+      const row = this.db
+        .prepare('SELECT * FROM narrative_interpretations WHERE id = ?')
+        .get(id) as any;
       if (!row) return null;
       return this.mapInterpretationRow(row);
     } catch (err: any) {
@@ -213,7 +222,10 @@ export class NarrativeRepository implements INarrativeRepository {
     }
   }
 
-  public getInterpretationForTarget(targetType: string, targetId: string): NarrativeInterpretation | null {
+  public getInterpretationForTarget(
+    targetType: string,
+    targetId: string,
+  ): NarrativeInterpretation | null {
     try {
       const row = this.db
         .prepare('SELECT * FROM narrative_interpretations WHERE target_type = ? AND target_id = ?')
@@ -221,7 +233,10 @@ export class NarrativeRepository implements INarrativeRepository {
       if (!row) return null;
       return this.mapInterpretationRow(row);
     } catch (err: any) {
-      throw new DatabaseError(`Failed to get interpretation for target ${targetId}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to get interpretation for target ${targetId}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -266,7 +281,10 @@ export class NarrativeRepository implements INarrativeRepository {
         interpretation.updatedAt,
       );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save narrative interpretation ${interpretation.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save narrative interpretation ${interpretation.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -276,7 +294,9 @@ export class NarrativeRepository implements INarrativeRepository {
 
   public getNarrativeState(): NarrativeIdentityState | null {
     try {
-      const row = this.db.prepare('SELECT * FROM narrative_state WHERE id = ?').get('singleton') as any;
+      const row = this.db
+        .prepare('SELECT * FROM narrative_state WHERE id = ?')
+        .get('singleton') as any;
       if (!row) return null;
 
       const epochs = this.listEpochs();

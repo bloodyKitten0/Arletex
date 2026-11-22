@@ -1,10 +1,6 @@
 import { z } from 'zod';
 
-export const UncertaintyTypeSchema = z.enum([
-  'epistemic',
-  'aleatoric',
-  'ambiguity',
-]);
+export const UncertaintyTypeSchema = z.enum(['epistemic', 'aleatoric', 'ambiguity']);
 export type UncertaintyType = z.infer<typeof UncertaintyTypeSchema>;
 
 export const ReasoningFlawTypeSchema = z.enum([
@@ -82,16 +78,24 @@ export type MetacognitiveCorrection = z.infer<typeof MetacognitiveCorrectionSche
  */
 export function assertMetacognitiveIntegrity(assessment: CognitiveAssessment): void {
   if (assessment.statedConfidence < 0 || assessment.statedConfidence > 1) {
-    throw new Error(`Invalid statedConfidence ${assessment.statedConfidence}: must be in range [0, 1].`);
+    throw new Error(
+      `Invalid statedConfidence ${assessment.statedConfidence}: must be in range [0, 1].`,
+    );
   }
   if (assessment.calibratedConfidence < 0 || assessment.calibratedConfidence > 1) {
-    throw new Error(`Invalid calibratedConfidence ${assessment.calibratedConfidence}: must be in range [0, 1].`);
+    throw new Error(
+      `Invalid calibratedConfidence ${assessment.calibratedConfidence}: must be in range [0, 1].`,
+    );
   }
   if (assessment.evidenceSufficiency < 0 || assessment.evidenceSufficiency > 1) {
-    throw new Error(`Invalid evidenceSufficiency ${assessment.evidenceSufficiency}: must be in range [0, 1].`);
+    throw new Error(
+      `Invalid evidenceSufficiency ${assessment.evidenceSufficiency}: must be in range [0, 1].`,
+    );
   }
   if (assessment.reasoningQualityScore < 0 || assessment.reasoningQualityScore > 1) {
-    throw new Error(`Invalid reasoningQualityScore ${assessment.reasoningQualityScore}: must be in range [0, 1].`);
+    throw new Error(
+      `Invalid reasoningQualityScore ${assessment.reasoningQualityScore}: must be in range [0, 1].`,
+    );
   }
 
   // Invariant 1: Overconfidence mitigation
@@ -105,7 +109,11 @@ export function assertMetacognitiveIntegrity(assessment: CognitiveAssessment): v
   const hasUnaddressedSevereContradiction = assessment.detectedContradictions.some(
     (c) => c.severity === 'high' && c.status === 'detected',
   );
-  if (hasUnaddressedSevereContradiction && !assessment.needsInvestigation && !assessment.selfCorrectionInitiated) {
+  if (
+    hasUnaddressedSevereContradiction &&
+    !assessment.needsInvestigation &&
+    !assessment.selfCorrectionInitiated
+  ) {
     throw new Error(
       `Negative Invariant Violation: Unresolved high-severity contradiction exists in assessment ${assessment.id}, but neither investigation nor self-correction was initiated.`,
     );
@@ -114,6 +122,8 @@ export function assertMetacognitiveIntegrity(assessment: CognitiveAssessment): v
 
 export function assertCorrectionIntegrity(correction: MetacognitiveCorrection): void {
   if (correction.confidenceAdjustment < -1 || correction.confidenceAdjustment > 1) {
-    throw new Error(`Invalid confidenceAdjustment ${correction.confidenceAdjustment}: must be in range [-1, 1].`);
+    throw new Error(
+      `Invalid confidenceAdjustment ${correction.confidenceAdjustment}: must be in range [-1, 1].`,
+    );
   }
 }

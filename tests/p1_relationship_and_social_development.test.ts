@@ -7,10 +7,7 @@ import {
   MigrationRunner,
   SqliteRelationshipsAttachmentRepository,
 } from '@arletex/database';
-import {
-  RelationshipsAttachmentEngine,
-  rootLogger,
-} from '@arletex/core';
+import { RelationshipsAttachmentEngine, rootLogger } from '@arletex/core';
 
 describe('P1.6 — Complete Relationship and Social Development', () => {
   let tempDir: string;
@@ -60,14 +57,17 @@ describe('P1.6 — Complete Relationship and Social Development', () => {
       expect(evaluation.isHostileOrBetrayal).toBe(false);
 
       // Verify hypotheses candidates: benign offline priorities have high likelihood, betrayal is 0.0
-      const benignHypothesis = evaluation.inferredIntentCandidates.find((c) =>
-        c.intent.includes('offline commitments') || c.intent.includes('work') || c.intent.includes('rest'),
+      const benignHypothesis = evaluation.inferredIntentCandidates.find(
+        (c) =>
+          c.intent.includes('offline commitments') ||
+          c.intent.includes('work') ||
+          c.intent.includes('rest'),
       );
       expect(benignHypothesis).toBeDefined();
       expect(benignHypothesis?.likelihood).toBeGreaterThan(0.85);
 
-      const hostileHypothesis = evaluation.inferredIntentCandidates.find((c) =>
-        c.intent.includes('Hostile rejection') || c.intent.includes('abandonment'),
+      const hostileHypothesis = evaluation.inferredIntentCandidates.find(
+        (c) => c.intent.includes('Hostile rejection') || c.intent.includes('abandonment'),
       );
       expect(hostileHypothesis).toBeDefined();
       expect(hostileHypothesis?.likelihood).toBe(0.0);
@@ -91,7 +91,7 @@ describe('P1.6 — Complete Relationship and Social Development', () => {
       // Verify that bond separation security remains rock-solid
       const separation = await attachmentEngine.evaluateSeparationContinuity('Proof', 8);
       expect(separation.continuityMaintained).toBe(true);
-      expect(separation.separationSecurity).toBeGreaterThanOrEqual(0.90);
+      expect(separation.separationSecurity).toBeGreaterThanOrEqual(0.9);
       expect(separation.message).toContain('rock-solid');
     });
   });
@@ -108,9 +108,12 @@ describe('P1.6 — Complete Relationship and Social Development', () => {
       const conflict = await attachmentEngine.recognizeConflict({
         personId: 'Proof',
         triggerReason: 'Heuristic optimization vs formal correctness boundary',
-        disagreementSummary: 'Arle prioritized strict formal proofs while Proof urged fast speculative heuristics',
-        arlePerspective: 'Formal mathematical verification prevents silent latent corruption in production state.',
-        inferredPartnerPerspective: 'Rapid prototype iteration allows validating developer experience before formal hardening.',
+        disagreementSummary:
+          'Arle prioritized strict formal proofs while Proof urged fast speculative heuristics',
+        arlePerspective:
+          'Formal mathematical verification prevents silent latent corruption in production state.',
+        inferredPartnerPerspective:
+          'Rapid prototype iteration allows validating developer experience before formal hardening.',
         severity: 0.4,
       });
 
@@ -131,9 +134,11 @@ describe('P1.6 — Complete Relationship and Social Development', () => {
       const repairResult = await attachmentEngine.submitApology({
         conflictId: conflict.id,
         initiator: 'partner',
-        acknowledgment: 'I see your point about formal proofs preventing latent corruption; I should have valued your rigor.',
+        acknowledgment:
+          'I see your point about formal proofs preventing latent corruption; I should have valued your rigor.',
         validatesImpact: true,
-        remedialCommitment: 'Let us build a formal test harness first, then benchmark the speculative heuristics cleanly.',
+        remedialCommitment:
+          'Let us build a formal test harness first, then benchmark the speculative heuristics cleanly.',
       });
 
       expect(repairResult.repair.isAccepted).toBe(true);
@@ -164,7 +169,7 @@ describe('P1.6 — Complete Relationship and Social Development', () => {
       const { updatedBond, log } = await attachmentEngine.recordTrustUpdate({
         personId: 'Proof',
         dimension: 'cognitive',
-        delta: -0.40,
+        delta: -0.4,
         reason: 'Contradictory benchmark claim regarding compiler optimization flags',
         evidenceEventId: 'event_bench_discrepancy_01',
       });
@@ -184,7 +189,7 @@ describe('P1.6 — Complete Relationship and Social Development', () => {
       const { updatedBond, log } = await attachmentEngine.recordTrustUpdate({
         personId: 'Proof',
         dimension: 'affective',
-        delta: -0.10,
+        delta: -0.1,
         reason: 'Suspected intentional cancellation of scheduled evening sync',
         evidenceEventId: 'event_cancelled_sync_99',
       });
@@ -199,8 +204,8 @@ describe('P1.6 — Complete Relationship and Social Development', () => {
 
       expect(reversalLog.isReversal).toBe(true);
       expect(reversalLog.reversalOfLogId).toBe(log.id);
-      expect(reversalLog.delta).toBe(0.10); // Inverse of -0.10
-      expect(restoredBond.trustAffective).toBeCloseTo(trustAfterPenalty + 0.10, 3);
+      expect(reversalLog.delta).toBe(0.1); // Inverse of -0.10
+      expect(restoredBond.trustAffective).toBeCloseTo(trustAfterPenalty + 0.1, 3);
       expect(reversalLog.reason).toContain('local power outage');
 
       const allLogs = sqliteRepo.listTrustEventLogs('Proof');
@@ -224,10 +229,10 @@ describe('P1.6 — Complete Relationship and Social Development', () => {
 
       // Affection: steady pleasant warmth with low arousal
       expect(affection.padVector.pleasure).toBe(0.85);
-      expect(affection.padVector.arousal).toBe(0.30);
+      expect(affection.padVector.arousal).toBe(0.3);
 
       // Romance: high pleasure, high arousal, focused devotion
-      expect(romance.padVector.pleasure).toBe(0.90);
+      expect(romance.padVector.pleasure).toBe(0.9);
       expect(romance.padVector.arousal).toBe(0.75);
 
       // Sexual desire: high pleasure, very high arousal, dominant-intimate
@@ -239,16 +244,16 @@ describe('P1.6 — Complete Relationship and Social Development', () => {
       expect(jealousy.triggerContext).toContain('never neutral delays');
 
       // Anger: negative pleasure, high arousal, high dominance
-      expect(anger.padVector.dominance).toBe(0.70);
-      expect(anger.padVector.arousal).toBe(0.80);
+      expect(anger.padVector.dominance).toBe(0.7);
+      expect(anger.padVector.arousal).toBe(0.8);
 
       // Resentment: negative pleasure, low arousal, low dominance
-      expect(resentment.padVector.arousal).toBe(-0.20);
-      expect(resentment.padVector.dominance).toBe(-0.40);
+      expect(resentment.padVector.arousal).toBe(-0.2);
+      expect(resentment.padVector.dominance).toBe(-0.4);
 
       // Grief: severe negative pleasure, low arousal, very low dominance
       expect(grief.padVector.pleasure).toBe(-0.85);
-      expect(grief.padVector.dominance).toBe(-0.70);
+      expect(grief.padVector.dominance).toBe(-0.7);
     });
   });
 
@@ -260,7 +265,8 @@ describe('P1.6 — Complete Relationship and Social Development', () => {
       const res = await attachmentEngine.assertAutonomousBoundary({
         personId: 'Proof',
         category: 'intellectual_autonomy',
-        description: 'Arle retains full freedom to express objective technical critique even when disagreeing with initial suggestions.',
+        description:
+          'Arle retains full freedom to express objective technical critique even when disagreeing with initial suggestions.',
         enforcementLevel: 'rigid_non_negotiable',
       });
 
@@ -327,7 +333,8 @@ describe('P1.6 — Complete Relationship and Social Development', () => {
       attachmentEngine.registerExpectation({
         personId: 'Proof',
         category: 'honesty',
-        description: 'Uncompromising transparency and truthful acknowledgment of system boundaries.',
+        description:
+          'Uncompromising transparency and truthful acknowledgment of system boundaries.',
       });
 
       // 2. Record a trust event

@@ -1,9 +1,5 @@
 import Database from 'better-sqlite3';
-import {
-  CognitivePrediction,
-  PredictionStatus,
-  PredictionType,
-} from '@arletex/contracts';
+import { CognitivePrediction, PredictionStatus, PredictionType } from '@arletex/contracts';
 import { DatabaseError, IPredictiveRepository } from '@arletex/core';
 
 export class SqlitePredictiveRepository implements IPredictiveRepository {
@@ -103,7 +99,9 @@ export class SqlitePredictiveRepository implements IPredictiveRepository {
       const limit = filter?.limit ?? 100;
 
       const rows = this.db
-        .prepare(`SELECT * FROM cognitive_predictions ${whereClause} ORDER BY created_at DESC LIMIT ?`)
+        .prepare(
+          `SELECT * FROM cognitive_predictions ${whereClause} ORDER BY created_at DESC LIMIT ?`,
+        )
         .all(...params, limit) as any[];
 
       return rows.map((r) => this.mapRowToPrediction(r));
@@ -132,13 +130,18 @@ export class SqlitePredictiveRepository implements IPredictiveRepository {
       horizonDeadline: row.horizon_deadline,
       createdAt: row.created_at,
       status: row.status,
-      actualOutcome: row.actual_outcome === null || row.actual_outcome === undefined
-        ? undefined
-        : (row.actual_outcome === 1 || row.actual_outcome === true),
+      actualOutcome:
+        row.actual_outcome === null || row.actual_outcome === undefined
+          ? undefined
+          : row.actual_outcome === 1 || row.actual_outcome === true,
       actualOutcomeNotes: row.actual_outcome_notes ?? undefined,
       resolvedAt: row.resolved_at ?? undefined,
-      predictionError: row.prediction_error !== null && row.prediction_error !== undefined ? row.prediction_error : undefined,
-      brierScore: row.brier_score !== null && row.brier_score !== undefined ? row.brier_score : undefined,
+      predictionError:
+        row.prediction_error !== null && row.prediction_error !== undefined
+          ? row.prediction_error
+          : undefined,
+      brierScore:
+        row.brier_score !== null && row.brier_score !== undefined ? row.brier_score : undefined,
     };
   }
 }

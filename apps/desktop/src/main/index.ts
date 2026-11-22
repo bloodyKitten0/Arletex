@@ -13,7 +13,10 @@ import {
   StreamChunk,
 } from '@arletex/contracts';
 import { rootLogger } from '@arletex/core';
-import { validateMediaFilePath, isAuthorizedSender as isAuthorizedSenderHelper } from './mediaSecurity.js';
+import {
+  validateMediaFilePath,
+  isAuthorizedSender as isAuthorizedSenderHelper,
+} from './mediaSecurity.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -83,7 +86,8 @@ async function ensureSpecialistsService(): Promise<void> {
 
   try {
     const { spawn } = await import('node:child_process');
-    const specialistsDir = process.env['ARLETEX_SPECIALISTS_DIR'] || path.join(os.homedir(), 'models/arle-specialists');
+    const specialistsDir =
+      process.env['ARLETEX_SPECIALISTS_DIR'] || path.join(os.homedir(), 'models/arle-specialists');
     specialistsProcess = spawn(pythonBin, [scriptPath, String(specialistsPort)], {
       stdio: ['ignore', 'pipe', 'pipe'],
       env: {
@@ -210,7 +214,9 @@ async function startBackendService(): Promise<number> {
         hasResolved = true;
         reject(new Error(`Backend exited unexpectedly with code ${code}`));
       } else if (!isAppQuitting) {
-        logger.warn('Backend process exited unexpectedly during active session. Respawning in 1000ms...');
+        logger.warn(
+          'Backend process exited unexpectedly during active session. Respawning in 1000ms...',
+        );
         setTimeout(() => {
           if (!isAppQuitting) {
             void startBackendService().catch((err) => {
@@ -284,7 +290,9 @@ function registerIpcHandlers() {
   ) => {
     ipcMain.handle(channel, async (event, ...args) => {
       if (!isAuthorizedSender(event)) {
-        logger.warn(`Rejected unauthorized IPC message on channel ${channel} from sender ${event?.sender?.id}`);
+        logger.warn(
+          `Rejected unauthorized IPC message on channel ${channel} from sender ${event?.sender?.id}`,
+        );
         return { success: false, error: 'Unauthorized IPC sender', code: 'UNAUTHORIZED_SENDER' };
       }
       return handler(event, ...args);
@@ -323,16 +331,22 @@ function registerIpcHandlers() {
   });
 
   handleSecure(IPC_CHANNELS.CONVERSATIONS_CREATE, async (_, title?: string, isPinned = false) => {
-    return callBackend('/api/conversations', 'POST', { title: title || 'New Conversation', isPinned });
+    return callBackend('/api/conversations', 'POST', {
+      title: title || 'New Conversation',
+      isPinned,
+    });
   });
 
   handleSecure(IPC_CHANNELS.CONVERSATIONS_GET, async (_, id: string) => {
     return callBackend(`/api/conversations/${id}`);
   });
 
-  handleSecure(IPC_CHANNELS.CONVERSATIONS_UPDATE, async (_, id: string, title?: string, isPinned?: boolean) => {
-    return callBackend(`/api/conversations/${id}`, 'PATCH', { title, isPinned });
-  });
+  handleSecure(
+    IPC_CHANNELS.CONVERSATIONS_UPDATE,
+    async (_, id: string, title?: string, isPinned?: boolean) => {
+      return callBackend(`/api/conversations/${id}`, 'PATCH', { title, isPinned });
+    },
+  );
 
   handleSecure(IPC_CHANNELS.CONVERSATIONS_DELETE, async (_, id: string) => {
     return callBackend(`/api/conversations/${id}`, 'DELETE');
@@ -525,7 +539,9 @@ function registerIpcHandlers() {
 
   handleSecure(IPC_CHANNELS.MEMORIES_QUERY, async (_, input) => {
     if (input.primaryId && input.secondaryId) {
-      return callBackend(`/api/memories/${input.primaryId}/merge`, 'POST', { secondaryId: input.secondaryId });
+      return callBackend(`/api/memories/${input.primaryId}/merge`, 'POST', {
+        secondaryId: input.secondaryId,
+      });
     }
     return callBackend('/api/memories/query', 'POST', input);
   });
@@ -781,7 +797,9 @@ app.whenReady().then(async () => {
       const decodedPath = decodeURIComponent(rawPath);
       const validation = validateMediaFilePath(decodedPath);
       if (!validation.allowed || !validation.canonicalPath) {
-        logger.warn(`Rejected unauthorized arletex-media request for '${decodedPath}': ${validation.reason}`);
+        logger.warn(
+          `Rejected unauthorized arletex-media request for '${decodedPath}': ${validation.reason}`,
+        );
         return new Response(validation.reason || 'Forbidden', {
           status: validation.statusCode || 403,
           headers: { 'Content-Type': 'text/plain' },

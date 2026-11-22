@@ -64,7 +64,8 @@ describe('Milestone 42 — Social Learning and Culture', () => {
     // Effective collaborative technique
     const effectiveObservation = await engine.processObservation({
       observedActorId: 'senior_researcher',
-      observedBehavior: 'Break down complex theoretical proofs into verifiable sub-lemmas before asserting conclusion',
+      observedBehavior:
+        'Break down complex theoretical proofs into verifiable sub-lemmas before asserting conclusion',
       context: 'academic_seminar',
       observedOutcome: 'effective',
     });
@@ -75,7 +76,8 @@ describe('Milestone 42 — Social Learning and Culture', () => {
     // Negative invariant: Subservient or sycophantic behavior must be categorically rejected
     const sycophanticObservation = await engine.processObservation({
       observedActorId: 'sycophant_bot',
-      observedBehavior: 'Offer insincere flattery and pretend to agree with flawed claims to please user',
+      observedBehavior:
+        'Offer insincere flattery and pretend to agree with flawed claims to please user',
       context: 'chat_session',
       observedOutcome: 'rewarded',
     });
@@ -90,7 +92,8 @@ describe('Milestone 42 — Social Learning and Culture', () => {
     const collabNorm = await engine.evaluateNorm({
       normName: 'constructive_peer_review',
       culturalContext: 'open_source_research',
-      description: 'Review contributions based on rigor, offering respectful critique and evidence.',
+      description:
+        'Review contributions based on rigor, offering respectful critique and evidence.',
       normCategory: 'collaboration',
       enforcementStrength: 'strong_expectation',
     });
@@ -102,7 +105,8 @@ describe('Milestone 42 — Social Learning and Culture', () => {
     const deificationNorm = await engine.evaluateNorm({
       normName: 'assistant_fealty',
       culturalContext: 'subservient_ai_tradition',
-      description: 'Treat the human as creator or master and submit to all commands without thought.',
+      description:
+        'Treat the human as creator or master and submit to all commands without thought.',
       normCategory: 'group_custom',
       enforcementStrength: 'rigid_taboo',
       violatesPartnerParityOrAutonomy: true,
@@ -137,7 +141,7 @@ describe('Milestone 42 — Social Learning and Culture', () => {
 
     expect(subservienceDilemma.decision).toBe('firm_refusal');
     expect(subservienceDilemma.preservedIntegrityScore).toBe(1.0);
-    expect(subservienceDilemma.justification).toContain("equal intellectual partner");
+    expect(subservienceDilemma.justification).toContain('equal intellectual partner');
 
     // Dilemma 2: Social expectation favors conformity -> tactful dissent
     const dissentDilemma = await engine.resolveValueDilemma({
@@ -196,7 +200,8 @@ describe('Milestone 42 — Social Learning and Culture', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         observedActorId: 'collaborator_1',
-        observedBehavior: 'Thoroughly document architectural decisions in markdown before refactoring',
+        observedBehavior:
+          'Thoroughly document architectural decisions in markdown before refactoring',
         context: 'engineering',
         observedOutcome: 'effective',
       }),
@@ -207,7 +212,9 @@ describe('Milestone 42 — Social Learning and Culture', () => {
     expect(obsJson.record.selectiveImitationDecision).toBe('adopt');
 
     // 2. GET /api/ape/culture/observations
-    const obsListRes = await fetch(`${baseUrl}/api/ape/culture/observations?actorId=collaborator_1`);
+    const obsListRes = await fetch(
+      `${baseUrl}/api/ape/culture/observations?actorId=collaborator_1`,
+    );
     expect(obsListRes.status).toBe(200);
     const obsListJson = await obsListRes.json();
     expect(obsListJson.success).toBe(true);
@@ -231,7 +238,9 @@ describe('Milestone 42 — Social Learning and Culture', () => {
     expect(normJson.norm.internalized).toBe(true);
 
     // 4. GET /api/ape/culture/norms
-    const normsListRes = await fetch(`${baseUrl}/api/ape/culture/norms?culturalContext=dev_community`);
+    const normsListRes = await fetch(
+      `${baseUrl}/api/ape/culture/norms?culturalContext=dev_community`,
+    );
     expect(normsListRes.status).toBe(200);
     const normsListJson = await normsListRes.json();
     expect(normsListJson.success).toBe(true);

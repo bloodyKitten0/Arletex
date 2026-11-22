@@ -53,7 +53,16 @@ describe('APE Milestone 5: Functional Completion, Causal Consistency, and Lifecy
       expect(targets.some((t) => t === 'creator' || t === 'partner' || t === 'other')).toBe(true);
       const emotionIds = proposed.map((t) => t.emotionId);
       expect(
-        emotionIds.some((id) => ['empathy', 'compassion', 'protective_concern', 'tenderness', 'concern', 'warmth'].includes(id)),
+        emotionIds.some((id) =>
+          [
+            'empathy',
+            'compassion',
+            'protective_concern',
+            'tenderness',
+            'concern',
+            'warmth',
+          ].includes(id),
+        ),
       ).toBe(true);
     });
 
@@ -337,7 +346,9 @@ describe('APE Milestone 5: Functional Completion, Causal Consistency, and Lifecy
       apeService.stepLifecycle();
 
       // Frustration is no longer in active emotions
-      const activeFrustration = apeRepo.getActiveEmotions().find((e) => e.emotionId === 'frustration');
+      const activeFrustration = apeRepo
+        .getActiveEmotions()
+        .find((e) => e.emotionId === 'frustration');
       expect(activeFrustration).toBeUndefined();
 
       // But it is consolidated to historical status
@@ -613,8 +624,12 @@ describe('APE Milestone 5: Functional Completion, Causal Consistency, and Lifecy
       });
 
       const state = selfModel.getState();
-      expect(state.acknowledgedLimitations.some((l) => l.includes('Automated Kernel Compilation'))).toBe(true);
-      expect(state.acknowledgedCapabilities.some((c) => c.includes('Automated Kernel Compilation'))).toBe(false);
+      expect(
+        state.acknowledgedLimitations.some((l) => l.includes('Automated Kernel Compilation')),
+      ).toBe(true);
+      expect(
+        state.acknowledgedCapabilities.some((c) => c.includes('Automated Kernel Compilation')),
+      ).toBe(false);
     });
 
     it('records verified operations as demonstrated capabilities with empirical evidence', () => {
@@ -629,7 +644,11 @@ describe('APE Milestone 5: Functional Completion, Causal Consistency, and Lifecy
       });
 
       const state = selfModel.getState();
-      expect(state.acknowledgedCapabilities.some((c) => c.includes('Vulkan Shader Pipeline Verification'))).toBe(true);
+      expect(
+        state.acknowledgedCapabilities.some((c) =>
+          c.includes('Vulkan Shader Pipeline Verification'),
+        ),
+      ).toBe(true);
     });
 
     it('enforces gradual interest progression and blocks direct jump from emerging to mastery', () => {

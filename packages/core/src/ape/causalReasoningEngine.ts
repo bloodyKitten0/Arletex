@@ -30,7 +30,11 @@ export class CausalReasoningEngine {
   // 1. Causal Graph Management
   // ==========================================
 
-  public createOrUpdateGraph(domain: string, nodes: CausalNode[], links: CausalLink[]): CausalGraphModel {
+  public createOrUpdateGraph(
+    domain: string,
+    nodes: CausalNode[],
+    links: CausalLink[],
+  ): CausalGraphModel {
     // Validate negative invariants on every causal link
     for (const link of links) {
       assertCausalIntegrity(link);
@@ -48,7 +52,9 @@ export class CausalReasoningEngine {
     };
 
     this.repo.saveGraph(graph);
-    this.logger.info(`Saved causal graph [${domain}] with ${nodes.length} nodes and ${links.length} links.`);
+    this.logger.info(
+      `Saved causal graph [${domain}] with ${nodes.length} nodes and ${links.length} links.`,
+    );
     return graph;
   }
 
@@ -99,12 +105,14 @@ export class CausalReasoningEngine {
 
     const avgConfidence = incomingLinks.length > 0 ? totalConfidence / incomingLinks.length : 0.5;
     // Uncertainty elevated if causes lack interventional verification
-    const unverifiedPenalty = incomingLinks.length > 0 ? (unverifiedCount / incomingLinks.length) * 0.25 : 0.3;
+    const unverifiedPenalty =
+      incomingLinks.length > 0 ? (unverifiedCount / incomingLinks.length) * 0.25 : 0.3;
     const uncertaintyLevel = Math.min(1.0, Math.max(0.05, 1.0 - avgConfidence + unverifiedPenalty));
 
-    const correlationVsCausationNotes = unverifiedCount > 0
-      ? `Notice: ${unverifiedCount} of ${incomingLinks.length} causal links have not been empirically verified via intervention. Statistical association does not guarantee direct causal mechanism.`
-      : 'All primary upstream causal pathways verified via controlled interventional testing.';
+    const correlationVsCausationNotes =
+      unverifiedCount > 0
+        ? `Notice: ${unverifiedCount} of ${incomingLinks.length} causal links have not been empirically verified via intervention. Statistical association does not guarantee direct causal mechanism.`
+        : 'All primary upstream causal pathways verified via controlled interventional testing.';
 
     return {
       targetEffectId: effectNodeId,
@@ -163,7 +171,7 @@ export class CausalReasoningEngine {
       const link = graph.links[linkIndex]!;
       if (didEffectChange) {
         link.isInterventionVerified = true;
-        link.confidence = Math.min(1.0, Math.max(link.confidence, 0.90));
+        link.confidence = Math.min(1.0, Math.max(link.confidence, 0.9));
       } else {
         link.relationType = 'spurious_correlation';
         link.confidence = 0.85; // High confidence that it is NOT a direct cause!
@@ -173,7 +181,9 @@ export class CausalReasoningEngine {
       this.repo.saveGraph(graph);
     }
 
-    this.logger.info(`Executed intervention on ${targetNodeId} -> ${effectNodeId} (didChange: ${didEffectChange})`);
+    this.logger.info(
+      `Executed intervention on ${targetNodeId} -> ${effectNodeId} (didChange: ${didEffectChange})`,
+    );
     return intervention;
   }
 
@@ -208,7 +218,7 @@ export class CausalReasoningEngine {
         isDirectCausationPlausible: false,
         relationType: 'common_cause_confounder',
         rationale: `High correlation (r=${correlationCoefficient.toFixed(2)}) is likely confounded by third variables: ${potentialConfounders.join(', ')}. Direct causation cannot be inferred without controlling for confounders.`,
-        uncertainty: 0.70,
+        uncertainty: 0.7,
       };
     }
 
@@ -239,7 +249,9 @@ export class CausalReasoningEngine {
       throw new Error(`Causal graph not found: ${graphId}`);
     }
 
-    const link = graph.links.find((l) => l.sourceNodeId === sourceNodeId && l.targetNodeId === targetNodeId);
+    const link = graph.links.find(
+      (l) => l.sourceNodeId === sourceNodeId && l.targetNodeId === targetNodeId,
+    );
     if (!link) {
       throw new Error(`Causal link not found between '${sourceNodeId}' and '${targetNodeId}'`);
     }
@@ -269,7 +281,9 @@ export class CausalReasoningEngine {
     graph.updatedAt = new Date().toISOString();
     this.repo.saveGraph(graph);
 
-    this.logger.info(`Revised causal belief for link [${sourceNodeId} -> ${targetNodeId}]: new type=${link.relationType}`);
+    this.logger.info(
+      `Revised causal belief for link [${sourceNodeId} -> ${targetNodeId}]: new type=${link.relationType}`,
+    );
     return graph;
   }
 

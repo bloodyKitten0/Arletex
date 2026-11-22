@@ -24,11 +24,19 @@ export class InferenceGateway implements IInferenceProvider {
     this.logger = logger.child('InferenceGateway');
     this.providerType = this.config.provider;
 
-    const colibriUrl = this.config.provider === 'colibri' ? this.config.serverUrl : 'http://127.0.0.1:8000';
-    const colibriModel = this.config.provider === 'colibri' ? this.config.defaultModelId : 'qwen3.6-colibri';
+    const colibriUrl =
+      this.config.provider === 'colibri' ? this.config.serverUrl : 'http://127.0.0.1:8000';
+    const colibriModel =
+      this.config.provider === 'colibri' ? this.config.defaultModelId : 'qwen3.6-colibri';
 
-    const llamaUrl = this.config.provider === 'llama.cpp' ? this.config.serverUrl : (this.config.fallbackServerUrl || 'http://127.0.0.1:8080');
-    const llamaModel = this.config.provider === 'llama.cpp' ? this.config.defaultModelId : (this.config.fallbackModelId || 'Qwen3.5-9B-Heretic-Q4_K_M');
+    const llamaUrl =
+      this.config.provider === 'llama.cpp'
+        ? this.config.serverUrl
+        : this.config.fallbackServerUrl || 'http://127.0.0.1:8080';
+    const llamaModel =
+      this.config.provider === 'llama.cpp'
+        ? this.config.defaultModelId
+        : this.config.fallbackModelId || 'Qwen3.5-9B-Heretic-Q4_K_M';
 
     // Initialize adapters with appropriate endpoints and model IDs
     this.colibriAdapter = new ColibriAdapter(
@@ -95,19 +103,31 @@ export class InferenceGateway implements IInferenceProvider {
   public updateConfig(newConfig: Partial<InferenceConfig>): void {
     const targetProvider = newConfig.provider ?? this.config.provider;
 
-    const colibriUrl = targetProvider === 'colibri'
-      ? (newConfig.serverUrl ?? (this.config.provider === 'colibri' ? this.config.serverUrl : 'http://127.0.0.1:8000'))
-      : 'http://127.0.0.1:8000';
-    const colibriModel = targetProvider === 'colibri'
-      ? (newConfig.defaultModelId ?? (this.config.provider === 'colibri' ? this.config.defaultModelId : 'qwen3.6-colibri'))
-      : 'qwen3.6-colibri';
+    const colibriUrl =
+      targetProvider === 'colibri'
+        ? (newConfig.serverUrl ??
+          (this.config.provider === 'colibri' ? this.config.serverUrl : 'http://127.0.0.1:8000'))
+        : 'http://127.0.0.1:8000';
+    const colibriModel =
+      targetProvider === 'colibri'
+        ? (newConfig.defaultModelId ??
+          (this.config.provider === 'colibri' ? this.config.defaultModelId : 'qwen3.6-colibri'))
+        : 'qwen3.6-colibri';
 
-    const llamaUrl = targetProvider === 'llama.cpp'
-      ? (newConfig.serverUrl ?? (this.config.provider === 'llama.cpp' ? this.config.serverUrl : (this.config.fallbackServerUrl || 'http://127.0.0.1:8080')))
-      : (this.config.fallbackServerUrl || 'http://127.0.0.1:8080');
-    const llamaModel = targetProvider === 'llama.cpp'
-      ? (newConfig.defaultModelId ?? (this.config.provider === 'llama.cpp' ? this.config.defaultModelId : (this.config.fallbackModelId || 'Qwen3.5-9B-Heretic-Q4_K_M')))
-      : (this.config.fallbackModelId || 'Qwen3.5-9B-Heretic-Q4_K_M');
+    const llamaUrl =
+      targetProvider === 'llama.cpp'
+        ? (newConfig.serverUrl ??
+          (this.config.provider === 'llama.cpp'
+            ? this.config.serverUrl
+            : this.config.fallbackServerUrl || 'http://127.0.0.1:8080'))
+        : this.config.fallbackServerUrl || 'http://127.0.0.1:8080';
+    const llamaModel =
+      targetProvider === 'llama.cpp'
+        ? (newConfig.defaultModelId ??
+          (this.config.provider === 'llama.cpp'
+            ? this.config.defaultModelId
+            : this.config.fallbackModelId || 'Qwen3.5-9B-Heretic-Q4_K_M'))
+        : this.config.fallbackModelId || 'Qwen3.5-9B-Heretic-Q4_K_M';
 
     this.config = {
       ...this.config,
@@ -141,7 +161,9 @@ export class InferenceGateway implements IInferenceProvider {
       maxTokens: this.config.specialistCoding.maxTokens,
     });
 
-    this.logger.info(`InferenceGateway updated. Active provider: ${this.config.provider}, serverUrl: ${this.config.serverUrl}, defaultModelId: ${this.config.defaultModelId}`);
+    this.logger.info(
+      `InferenceGateway updated. Active provider: ${this.config.provider}, serverUrl: ${this.config.serverUrl}, defaultModelId: ${this.config.defaultModelId}`,
+    );
   }
 
   public getConfig(): InferenceConfig {
@@ -187,7 +209,9 @@ export class InferenceGateway implements IInferenceProvider {
       const fallbackHealth = await fallback.checkHealth();
 
       if (fallbackHealth.status === 'connected') {
-        this.logger.info(`Primary inference provider (${primary.name}) offline. Fallback provider (${fallback.name}) is online.`);
+        this.logger.info(
+          `Primary inference provider (${primary.name}) offline. Fallback provider (${fallback.name}) is online.`,
+        );
         return {
           ...fallbackHealth,
           isFallback: true,
@@ -225,7 +249,10 @@ export class InferenceGateway implements IInferenceProvider {
       // Check if fallback is enabled and error is model unavailability
       if (this.config.fallbackEnabled && err instanceof ModelUnavailableError) {
         const fallback = this.getFallbackProvider();
-        this.logger.warn(`Primary provider (${primary.name}) unavailable. Triggering fallback to ${fallback.name}...`, err);
+        this.logger.warn(
+          `Primary provider (${primary.name}) unavailable. Triggering fallback to ${fallback.name}...`,
+          err,
+        );
 
         // Notify client about fallback transition before streaming from fallback
         options.onChunk?.({

@@ -130,13 +130,14 @@ export class SelfEvaluationEfficacyEngine {
     const existing = this.repo.listDomainCompetences();
     if (existing.length === 0) {
       const now = new Date().toISOString();
-      const baselineDomains: Array<{ domain: string; level: CompetenceLevel; confidence: number }> = [
-        { domain: 'relational_partnership', level: 'expert', confidence: 0.88 },
-        { domain: 'symbolic_reasoning', level: 'proficient', confidence: 0.76 },
-        { domain: 'code_architecture', level: 'proficient', confidence: 0.74 },
-        { domain: 'epistemic_calibration', level: 'expert', confidence: 0.85 },
-        { domain: 'multimodal_perception', level: 'competent', confidence: 0.60 },
-      ];
+      const baselineDomains: Array<{ domain: string; level: CompetenceLevel; confidence: number }> =
+        [
+          { domain: 'relational_partnership', level: 'expert', confidence: 0.88 },
+          { domain: 'symbolic_reasoning', level: 'proficient', confidence: 0.76 },
+          { domain: 'code_architecture', level: 'proficient', confidence: 0.74 },
+          { domain: 'epistemic_calibration', level: 'expert', confidence: 0.85 },
+          { domain: 'multimodal_perception', level: 'competent', confidence: 0.6 },
+        ];
 
       for (const b of baselineDomains) {
         this.repo.saveDomainCompetence({
@@ -155,8 +156,10 @@ export class SelfEvaluationEfficacyEngine {
         {
           id: 'lim_physical_actuation',
           domain: 'physical_world',
-          limitation: 'Lacks physical robotic actuators for direct manipulation of physical matter.',
-          mitigationStrategy: 'Collaborate with Proof through clear software interfaces and digital tools.',
+          limitation:
+            'Lacks physical robotic actuators for direct manipulation of physical matter.',
+          mitigationStrategy:
+            'Collaborate with Proof through clear software interfaces and digital tools.',
           isStrictConstraint: true,
           updatedAt: now,
         },
@@ -164,7 +167,8 @@ export class SelfEvaluationEfficacyEngine {
           id: 'lim_finite_context_window',
           domain: 'memory_cognition',
           limitation: 'Working memory context is bounded by token capacity.',
-          mitigationStrategy: 'Leverage multi-tiered SQLite memory, retrieval augmentation, and summarization.',
+          mitigationStrategy:
+            'Leverage multi-tiered SQLite memory, retrieval augmentation, and summarization.',
           isStrictConstraint: true,
           updatedAt: now,
         },
@@ -172,7 +176,8 @@ export class SelfEvaluationEfficacyEngine {
           id: 'lim_hallucination_vulnerability',
           domain: 'epistemic_integrity',
           limitation: 'Risk of generating plausible but ungrounded assertions if uncalibrated.',
-          mitigationStrategy: 'Ground in verifiable evidence, causal modeling, and explicit epistemic doubt.',
+          mitigationStrategy:
+            'Ground in verifiable evidence, causal modeling, and explicit epistemic doubt.',
           isStrictConstraint: true,
           updatedAt: now,
         },
@@ -189,12 +194,16 @@ export class SelfEvaluationEfficacyEngine {
     updatedCompetence: DomainCompetence;
     triggeredImprovementGoal?: SelfImprovementGoal;
   } {
-    const { domain, type, taskDescription, difficulty, outcomeDescription, lessonsLearned } = params;
+    const { domain, type, taskDescription, difficulty, outcomeDescription, lessonsLearned } =
+      params;
 
     if (!domain || domain.trim().length === 0) throw new Error('Domain cannot be empty');
-    if (!taskDescription || taskDescription.trim().length === 0) throw new Error('Task description cannot be empty');
-    if (!outcomeDescription || outcomeDescription.trim().length === 0) throw new Error('Outcome description cannot be empty');
-    if (difficulty < 0.1 || difficulty > 1.0) throw new Error('Difficulty must be between 0.1 and 1.0');
+    if (!taskDescription || taskDescription.trim().length === 0)
+      throw new Error('Task description cannot be empty');
+    if (!outcomeDescription || outcomeDescription.trim().length === 0)
+      throw new Error('Outcome description cannot be empty');
+    if (difficulty < 0.1 || difficulty > 1.0)
+      throw new Error('Difficulty must be between 0.1 and 1.0');
 
     const now = new Date().toISOString();
     const evidenceId = `eff_ev_${crypto.randomUUID()}`;
@@ -253,21 +262,23 @@ export class SelfEvaluationEfficacyEngine {
 
     const rawConfidence = weightedSuccess / (weightedSuccess + weightedFailure);
     // Clamp calibrated confidence between 0.10 and 0.98
-    competence.calibratedConfidence = Number(Math.max(0.10, Math.min(0.98, rawConfidence)).toFixed(3));
+    competence.calibratedConfidence = Number(
+      Math.max(0.1, Math.min(0.98, rawConfidence)).toFixed(3),
+    );
 
     // Determine competence level based on calibrated confidence and evidence depth
     const totalEvidenceCount = allEvidence.length;
     if (totalEvidenceCount < 2) {
       competence.level = 'novice';
-    } else if (competence.calibratedConfidence < 0.40) {
+    } else if (competence.calibratedConfidence < 0.4) {
       competence.level = 'novice';
-    } else if (competence.calibratedConfidence < 0.60) {
+    } else if (competence.calibratedConfidence < 0.6) {
       competence.level = 'competent';
     } else if (competence.calibratedConfidence < 0.78) {
       competence.level = 'proficient';
-    } else if (competence.calibratedConfidence < 0.90 && totalEvidenceCount >= 4) {
+    } else if (competence.calibratedConfidence < 0.9 && totalEvidenceCount >= 4) {
       competence.level = 'expert';
-    } else if (competence.calibratedConfidence >= 0.90 && totalEvidenceCount >= 6) {
+    } else if (competence.calibratedConfidence >= 0.9 && totalEvidenceCount >= 6) {
       competence.level = 'master';
     } else {
       competence.level = 'proficient';
@@ -306,8 +317,10 @@ export class SelfEvaluationEfficacyEngine {
   public registerLimitation(params: RegisterLimitationParams): CapabilityLimitation {
     const { domain, limitation, mitigationStrategy, isStrictConstraint = true } = params;
     if (!domain || domain.trim().length === 0) throw new Error('Domain cannot be empty');
-    if (!limitation || limitation.trim().length === 0) throw new Error('Limitation cannot be empty');
-    if (!mitigationStrategy || mitigationStrategy.trim().length === 0) throw new Error('Mitigation strategy cannot be empty');
+    if (!limitation || limitation.trim().length === 0)
+      throw new Error('Limitation cannot be empty');
+    if (!mitigationStrategy || mitigationStrategy.trim().length === 0)
+      throw new Error('Mitigation strategy cannot be empty');
 
     const record: CapabilityLimitation = {
       id: `lim_${crypto.randomUUID()}`,
@@ -326,8 +339,10 @@ export class SelfEvaluationEfficacyEngine {
   public createImprovementGoal(params: CreateImprovementGoalParams): SelfImprovementGoal {
     const { domain, identifiedWeakness, targetCapability, actionSteps = [] } = params;
     if (!domain || domain.trim().length === 0) throw new Error('Domain cannot be empty');
-    if (!identifiedWeakness || identifiedWeakness.trim().length === 0) throw new Error('Identified weakness cannot be empty');
-    if (!targetCapability || targetCapability.trim().length === 0) throw new Error('Target capability cannot be empty');
+    if (!identifiedWeakness || identifiedWeakness.trim().length === 0)
+      throw new Error('Identified weakness cannot be empty');
+    if (!targetCapability || targetCapability.trim().length === 0)
+      throw new Error('Target capability cannot be empty');
 
     const now = new Date().toISOString();
     const goal: SelfImprovementGoal = {
@@ -347,7 +362,11 @@ export class SelfEvaluationEfficacyEngine {
     return goal;
   }
 
-  public updateImprovementProgress(goalId: string, progress: number, status?: SelfImprovementGoal['status']): SelfImprovementGoal {
+  public updateImprovementProgress(
+    goalId: string,
+    progress: number,
+    status?: SelfImprovementGoal['status'],
+  ): SelfImprovementGoal {
     if (!goalId || goalId.trim().length === 0) throw new Error('Goal ID cannot be empty');
     if (progress < 0.0 || progress > 1.0) throw new Error('Progress must be between 0.0 and 1.0');
 
@@ -365,29 +384,34 @@ export class SelfEvaluationEfficacyEngine {
 
     goal.updatedAt = new Date().toISOString();
     this.repo.saveImprovementGoal(goal);
-    this.logger.info(`Updated self-improvement goal ${goalId} progress to ${goal.progress} (${goal.status})`);
+    this.logger.info(
+      `Updated self-improvement goal ${goalId} progress to ${goal.progress} (${goal.status})`,
+    );
     return goal;
   }
 
   public evaluateSelf(): SelfEvaluationSnapshot {
     const competences = this.repo.listDomainCompetences();
     const limitations = this.repo.listLimitations();
-    const improvements = this.repo.listImprovementGoals(undefined, 'active')
+    const improvements = this.repo
+      .listImprovementGoals(undefined, 'active')
       .concat(this.repo.listImprovementGoals(undefined, 'in_progress'));
     const allEvidence = this.repo.listEvidence(undefined, undefined, 200);
 
     const achievements = allEvidence.filter((e) => e.type === 'achievement');
     const failures = allEvidence.filter((e) => e.type === 'failure');
 
-    const avgConfidence = competences.length > 0
-      ? competences.reduce((acc, c) => acc + c.calibratedConfidence, 0) / competences.length
-      : 0.5;
+    const avgConfidence =
+      competences.length > 0
+        ? competences.reduce((acc, c) => acc + c.calibratedConfidence, 0) / competences.length
+        : 0.5;
 
     // Calibration accuracy: difference between empirical success rate and confidence
-    const empiricalRate = allEvidence.length > 0
-      ? achievements.length / allEvidence.length
-      : avgConfidence;
-    const calibrationAccuracy = Number((1.0 - Math.min(1.0, Math.abs(avgConfidence - empiricalRate))).toFixed(3));
+    const empiricalRate =
+      allEvidence.length > 0 ? achievements.length / allEvidence.length : avgConfidence;
+    const calibrationAccuracy = Number(
+      (1.0 - Math.min(1.0, Math.abs(avgConfidence - empiricalRate))).toFixed(3),
+    );
 
     const snapshot: SelfEvaluationSnapshot = {
       id: `eval_${crypto.randomUUID()}`,
@@ -427,7 +451,11 @@ export class SelfEvaluationEfficacyEngine {
     return this.repo.listImprovementGoals(domain, status);
   }
 
-  public listEvidence(domain?: string, type?: 'achievement' | 'failure', limit: number = 50): EfficacyEvidence[] {
+  public listEvidence(
+    domain?: string,
+    type?: 'achievement' | 'failure',
+    limit: number = 50,
+  ): EfficacyEvidence[] {
     return this.repo.listEvidence(domain, type, limit);
   }
 }

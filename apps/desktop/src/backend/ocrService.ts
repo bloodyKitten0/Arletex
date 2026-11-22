@@ -1,20 +1,13 @@
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import { ILogger, rootLogger } from '@arletex/core';
-import {
-  OcrInspectionResult,
-  OcrTaskType,
-  PerformOcrInput,
-} from '@arletex/contracts';
+import { OcrInspectionResult, OcrTaskType, PerformOcrInput } from '@arletex/contracts';
 
 export class OcrService {
   private logger: ILogger;
   private specialistsUrl: string;
 
-  constructor(
-    specialistsUrl = 'http://127.0.0.1:39282',
-    logger: ILogger = rootLogger,
-  ) {
+  constructor(specialistsUrl = 'http://127.0.0.1:39282', logger: ILogger = rootLogger) {
     this.specialistsUrl = specialistsUrl;
     this.logger = logger.child('OcrService');
   }
@@ -29,7 +22,9 @@ export class OcrService {
     loaded: boolean;
   }> {
     try {
-      const res = await fetch(`${this.specialistsUrl}/health`, { signal: AbortSignal.timeout(3000) });
+      const res = await fetch(`${this.specialistsUrl}/health`, {
+        signal: AbortSignal.timeout(3000),
+      });
       if (!res.ok) {
         return { status: 'unavailable', model: 'glm-ocr-0.9b', installed: false, loaded: false };
       }
@@ -51,7 +46,7 @@ export class OcrService {
    * - formulas & mathematical notation
    * - tables & spreadsheets
    * - forms & scanned documents
-   * 
+   *
    * Strict ground-truth:
    * - If image is missing or invalid, fails explicitly with status: 'failed'
    * - If specialist server is offline or fails, returns status: 'unavailable' or 'failed'

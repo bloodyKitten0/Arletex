@@ -17,12 +17,7 @@ export const ActivityCategorySchema = z.enum([
 ]);
 export type ActivityCategory = z.infer<typeof ActivityCategorySchema>;
 
-export const ActivityStatusSchema = z.enum([
-  'active',
-  'paused',
-  'completed',
-  'interrupted',
-]);
+export const ActivityStatusSchema = z.enum(['active', 'paused', 'completed', 'interrupted']);
 export type ActivityStatus = z.infer<typeof ActivityStatusSchema>;
 
 export const ActiveApplicationSchema = z.object({

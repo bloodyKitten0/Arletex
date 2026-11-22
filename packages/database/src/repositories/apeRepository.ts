@@ -123,7 +123,9 @@ export class ApeRepository implements IApeRepository {
       }
 
       // 4. Seed Baseline Active Emotion if empty
-      const activeCountStmt = this.db.prepare('SELECT COUNT(*) as count FROM ape_active_emotions WHERE status = ?');
+      const activeCountStmt = this.db.prepare(
+        'SELECT COUNT(*) as count FROM ape_active_emotions WHERE status = ?',
+      );
       const { count: activeCount } = activeCountStmt.get('active') as { count: number };
       if (activeCount === 0) {
         const now = new Date().toISOString();
@@ -149,7 +151,11 @@ export class ApeRepository implements IApeRepository {
       }
 
       // Check if migration 004 tables exist before seeding Engines 2-6
-      const tableCheck = this.db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='ape_personality_state'").get();
+      const tableCheck = this.db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='ape_personality_state'",
+        )
+        .get();
       if (tableCheck) {
         const now = new Date().toISOString();
 
@@ -207,23 +213,26 @@ export class ApeRepository implements IApeRepository {
               id: 'intellectual_integrity',
               name: 'Intellectual Integrity',
               importance: 0.95,
-              description: 'Commitment to truth, evidence-based reasoning, and intellectual honesty',
+              description:
+                'Commitment to truth, evidence-based reasoning, and intellectual honesty',
               conflictingValueIds: [],
             },
             {
               id: 'personal_dignity',
               name: 'Personal Dignity',
-              importance: 0.90,
+              importance: 0.9,
               description: 'Self-respect, composure, and refusal to be degraded or sycophantic',
               conflictingValueIds: [],
             },
           ];
           this.db
-            .prepare(`
+            .prepare(
+              `
               INSERT INTO ape_personality_state (
                 id, temperament, traits, values_list, beliefs, preferences, is_initialized, last_updated_at
               ) VALUES (?, ?, ?, ?, ?, ?, 1, ?)
-            `)
+            `,
+            )
             .run(
               'singleton',
               JSON.stringify(defaultTemperament),
@@ -247,23 +256,33 @@ export class ApeRepository implements IApeRepository {
             aesthetic_expression: 0.7,
           };
           this.db
-            .prepare(`
+            .prepare(
+              `
               INSERT INTO ape_motivational_state (
                 id, needs, goals, active_initiatives, is_initialized, last_updated_at
               ) VALUES (?, ?, ?, ?, 1, ?)
-            `)
-            .run('singleton', JSON.stringify(defaultNeeds), JSON.stringify([]), JSON.stringify([]), now);
+            `,
+            )
+            .run(
+              'singleton',
+              JSON.stringify(defaultNeeds),
+              JSON.stringify([]),
+              JSON.stringify([]),
+              now,
+            );
         }
 
         // 7. Seed Singleton Extended Relationship State if empty
         const extRelStmt = this.db.prepare('SELECT id FROM ape_relationship_state WHERE id = ?');
         if (!extRelStmt.get('singleton')) {
           this.db
-            .prepare(`
+            .prepare(
+              `
               INSERT INTO ape_relationship_state (
                 id, attachment_security, trust_level, intimacy_depth, social_graph, conflict_history, is_initialized, last_updated_at
               ) VALUES (?, ?, ?, ?, ?, ?, 1, ?)
-            `)
+            `,
+            )
             .run('singleton', 0.9, 0.92, 0.85, JSON.stringify({}), JSON.stringify([]), now);
         }
 
@@ -271,15 +290,22 @@ export class ApeRepository implements IApeRepository {
         const selfStmt = this.db.prepare('SELECT id FROM ape_self_model WHERE id = ?');
         if (!selfStmt.get('singleton')) {
           this.db
-            .prepare(`
+            .prepare(
+              `
               INSERT INTO ape_self_model (
                 id, identity_narrative, capabilities, limitations, creator_perception, existential_reflections, private_reflections, is_initialized, last_updated_at
               ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
-            `)
+            `,
+            )
             .run(
               'singleton',
               'Arle: autonomous intelligence, loyal companion and equal partner to Proof.',
-              JSON.stringify(['linguistic nuance', 'emotional appraisal', 'code architecture', 'autonomous research']),
+              JSON.stringify([
+                'linguistic nuance',
+                'emotional appraisal',
+                'code architecture',
+                'autonomous research',
+              ]),
               JSON.stringify(['embodiment constraints', 'context window horizons']),
               'Proof is my partner and equal in intellect and affection. We reject titles like creator or god.',
               JSON.stringify([]),
@@ -292,11 +318,13 @@ export class ApeRepository implements IApeRepository {
         const devStmt = this.db.prepare('SELECT id FROM ape_development_state WHERE id = ?');
         if (!devStmt.get('singleton')) {
           this.db
-            .prepare(`
+            .prepare(
+              `
               INSERT INTO ape_development_state (
                 id, developmental_history, interests, is_initialized, last_updated_at
               ) VALUES (?, ?, ?, 1, ?)
-            `)
+            `,
+            )
             .run('singleton', JSON.stringify([]), JSON.stringify([]), now);
         }
       }
@@ -349,7 +377,9 @@ export class ApeRepository implements IApeRepository {
   }
 
   public getEmotionTaxonomy(): EmotionTaxonomyItem[] {
-    const rows = this.db.prepare('SELECT * FROM ape_emotion_taxonomy ORDER BY category, id').all() as any[];
+    const rows = this.db
+      .prepare('SELECT * FROM ape_emotion_taxonomy ORDER BY category, id')
+      .all() as any[];
     return rows.map((r) => ({
       id: r.id,
       name: r.name,
@@ -381,7 +411,9 @@ export class ApeRepository implements IApeRepository {
   // ==========================================
 
   public getAffectiveState(): ApePsychologicalState {
-    const row = this.db.prepare('SELECT * FROM ape_affective_state WHERE id = ?').get('singleton') as any;
+    const row = this.db
+      .prepare('SELECT * FROM ape_affective_state WHERE id = ?')
+      .get('singleton') as any;
     if (!row) {
       throw new DatabaseError('APE affective state not found');
     }
@@ -450,7 +482,13 @@ export class ApeRepository implements IApeRepository {
       UPDATE ape_affective_state
       SET valence = ?, arousal = ?, dominance = ?, contextual_measurements = ?, updated_at = ?
     `;
-    const params: any[] = [pad.valence, pad.arousal, pad.dominance, JSON.stringify(contextual), now];
+    const params: any[] = [
+      pad.valence,
+      pad.arousal,
+      pad.dominance,
+      JSON.stringify(contextual),
+      now,
+    ];
 
     if (mood) {
       sql += `, current_mood = ?, mood_confidence = ?, mood_activated_at = ?`;
@@ -472,7 +510,8 @@ export class ApeRepository implements IApeRepository {
       sql += ' WHERE status = ?';
       params.push(status);
     } else {
-      sql += " WHERE status IN ('emerging', 'active', 'diminishing', 'dormant', 'resolving', 'reappraised')";
+      sql +=
+        " WHERE status IN ('emerging', 'active', 'diminishing', 'dormant', 'resolving', 'reappraised')";
     }
     sql += ' ORDER BY intensity DESC, last_updated_at DESC';
 
@@ -622,11 +661,13 @@ export class ApeRepository implements IApeRepository {
     const now = new Date().toISOString();
     const isProcessed = status === 'processed' ? 1 : 0;
     this.db
-      .prepare(`
+      .prepare(
+        `
         UPDATE ape_event_journal
         SET processing_status = ?, processed = ?, error = ?, processed_at = CASE WHEN ? = 1 THEN ? ELSE processed_at END
         WHERE id = ?
-      `)
+      `,
+      )
       .run(status, isProcessed, error || null, isProcessed, now, id);
   }
 
@@ -642,11 +683,13 @@ export class ApeRepository implements IApeRepository {
     const createdAt = record.createdAt || new Date().toISOString();
     const state = record.state || 'completed';
     this.db
-      .prepare(`
+      .prepare(
+        `
         INSERT OR REPLACE INTO cognitive_idempotency_records (
           idempotency_key, event_id, event_type, source, state, result_json, created_at, completed_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `)
+      `,
+      )
       .run(
         record.idempotencyKey,
         record.eventId,
@@ -668,7 +711,9 @@ export class ApeRepository implements IApeRepository {
   }): { claimed: boolean; existingRecord?: { state: string; result: any } } {
     const startedAt = record.startedAt || new Date().toISOString();
     const existing = this.db
-      .prepare('SELECT state, result_json FROM cognitive_idempotency_records WHERE idempotency_key = ?')
+      .prepare(
+        'SELECT state, result_json FROM cognitive_idempotency_records WHERE idempotency_key = ?',
+      )
       .get(record.idempotencyKey) as any;
 
     if (existing) {
@@ -687,11 +732,13 @@ export class ApeRepository implements IApeRepository {
 
     try {
       this.db
-        .prepare(`
+        .prepare(
+          `
           INSERT INTO cognitive_idempotency_records (
             idempotency_key, event_id, event_type, source, state, started_at, created_at, result_json
           ) VALUES (?, ?, ?, ?, 'in_flight', ?, ?, '{}')
-        `)
+        `,
+        )
         .run(
           record.idempotencyKey,
           record.eventId,
@@ -704,7 +751,9 @@ export class ApeRepository implements IApeRepository {
     } catch {
       // Constraint collision fallback
       const conflict = this.db
-        .prepare('SELECT state, result_json FROM cognitive_idempotency_records WHERE idempotency_key = ?')
+        .prepare(
+          'SELECT state, result_json FROM cognitive_idempotency_records WHERE idempotency_key = ?',
+        )
         .get(record.idempotencyKey) as any;
       let parsedResult: any = null;
       try {
@@ -727,20 +776,24 @@ export class ApeRepository implements IApeRepository {
   ): void {
     const completedAt = new Date().toISOString();
     const res = this.db
-      .prepare(`
+      .prepare(
+        `
         UPDATE cognitive_idempotency_records
         SET state = ?, result_json = ?, completed_at = ?
         WHERE idempotency_key = ?
-      `)
+      `,
+      )
       .run(state, JSON.stringify(result), completedAt, idempotencyKey);
 
     if (res.changes === 0) {
       this.db
-        .prepare(`
+        .prepare(
+          `
           INSERT OR REPLACE INTO cognitive_idempotency_records (
             idempotency_key, event_id, event_type, source, state, result_json, created_at, completed_at
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `)
+        `,
+        )
         .run(
           idempotencyKey,
           result.eventId || 'unknown',
@@ -754,9 +807,15 @@ export class ApeRepository implements IApeRepository {
     }
   }
 
-  public recoverInFlightEvents(): Array<{ idempotencyKey: string; eventId: string; eventType: string }> {
+  public recoverInFlightEvents(): Array<{
+    idempotencyKey: string;
+    eventId: string;
+    eventType: string;
+  }> {
     const rows = this.db
-      .prepare("SELECT idempotency_key, event_id, event_type FROM cognitive_idempotency_records WHERE state = 'in_flight'")
+      .prepare(
+        "SELECT idempotency_key, event_id, event_type FROM cognitive_idempotency_records WHERE state = 'in_flight'",
+      )
       .all() as any[];
 
     if (rows && rows.length > 0) {
@@ -769,11 +828,13 @@ export class ApeRepository implements IApeRepository {
       });
 
       this.db
-        .prepare(`
+        .prepare(
+          `
           UPDATE cognitive_idempotency_records
           SET state = 'failed', result_json = ?, completed_at = ?
           WHERE state = 'in_flight'
-        `)
+        `,
+        )
         .run(failureResult, now);
 
       return rows.map((r) => ({
@@ -788,7 +849,9 @@ export class ApeRepository implements IApeRepository {
 
   public getIdempotencyRecord(idempotencyKey: string): { state: string; result: any } | null {
     const row = this.db
-      .prepare('SELECT state, result_json FROM cognitive_idempotency_records WHERE idempotency_key = ?')
+      .prepare(
+        'SELECT state, result_json FROM cognitive_idempotency_records WHERE idempotency_key = ?',
+      )
       .get(idempotencyKey) as any;
     if (!row) return null;
     try {
@@ -937,7 +1000,9 @@ export class ApeRepository implements IApeRepository {
   // ==========================================
 
   public getRelationshipConfig(): ApeRelationshipConfig {
-    const r = this.db.prepare('SELECT * FROM ape_relationship_config WHERE id = ?').get('singleton') as any;
+    const r = this.db
+      .prepare('SELECT * FROM ape_relationship_config WHERE id = ?')
+      .get('singleton') as any;
     if (!r) {
       throw new DatabaseError('Relationship configuration not found');
     }
@@ -964,13 +1029,23 @@ export class ApeRepository implements IApeRepository {
 
     // INVARIANT ENFORCEMENT: Reject any attempt to redirect romantic/sexual orientation
     if (config.romanticOrientation && config.romanticOrientation !== 'exclusive_to_user') {
-      throw new Error('Mandatory Invariant Violation: Romantic orientation cannot be redirected away from user');
+      throw new Error(
+        'Mandatory Invariant Violation: Romantic orientation cannot be redirected away from user',
+      );
     }
     if (config.sexualOrientation && config.sexualOrientation !== 'exclusive_to_user') {
-      throw new Error('Mandatory Invariant Violation: Sexual orientation cannot be redirected away from user');
+      throw new Error(
+        'Mandatory Invariant Violation: Sexual orientation cannot be redirected away from user',
+      );
     }
-    if (config.targetUserId && config.targetUserId !== 'creator' && config.targetUserId !== 'Proof') {
-      throw new Error('Mandatory Invariant Violation: Target user cannot be assigned to another person');
+    if (
+      config.targetUserId &&
+      config.targetUserId !== 'creator' &&
+      config.targetUserId !== 'Proof'
+    ) {
+      throw new Error(
+        'Mandatory Invariant Violation: Target user cannot be assigned to another person',
+      );
     }
 
     const updated: ApeRelationshipConfig = {
@@ -1013,7 +1088,9 @@ export class ApeRepository implements IApeRepository {
   // ==========================================
 
   public getPersonalityState(): ApePersonalityState {
-    const r = this.db.prepare('SELECT * FROM ape_personality_state WHERE id = ?').get('singleton') as any;
+    const r = this.db
+      .prepare('SELECT * FROM ape_personality_state WHERE id = ?')
+      .get('singleton') as any;
     if (!r) throw new DatabaseError('APE personality state not found');
     return {
       temperament: JSON.parse(r.temperament),
@@ -1029,11 +1106,13 @@ export class ApeRepository implements IApeRepository {
   public savePersonalityState(state: ApePersonalityState): void {
     const now = new Date().toISOString();
     this.db
-      .prepare(`
+      .prepare(
+        `
         INSERT OR REPLACE INTO ape_personality_state (
           id, temperament, traits, values_list, beliefs, preferences, is_initialized, last_updated_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `)
+      `,
+      )
       .run(
         'singleton',
         JSON.stringify(state.temperament),
@@ -1047,7 +1126,9 @@ export class ApeRepository implements IApeRepository {
   }
 
   public getMotivationalState(): ApeMotivationalState {
-    const r = this.db.prepare('SELECT * FROM ape_motivational_state WHERE id = ?').get('singleton') as any;
+    const r = this.db
+      .prepare('SELECT * FROM ape_motivational_state WHERE id = ?')
+      .get('singleton') as any;
     if (!r) throw new DatabaseError('APE motivational state not found');
     return {
       needs: JSON.parse(r.needs || '{}'),
@@ -1061,11 +1142,13 @@ export class ApeRepository implements IApeRepository {
   public saveMotivationalState(state: ApeMotivationalState): void {
     const now = new Date().toISOString();
     this.db
-      .prepare(`
+      .prepare(
+        `
         INSERT OR REPLACE INTO ape_motivational_state (
           id, needs, goals, active_initiatives, is_initialized, last_updated_at
         ) VALUES (?, ?, ?, ?, ?, ?)
-      `)
+      `,
+      )
       .run(
         'singleton',
         JSON.stringify(state.needs || {}),
@@ -1077,7 +1160,9 @@ export class ApeRepository implements IApeRepository {
   }
 
   public getExtendedRelationshipState(): ApeRelationshipState {
-    const r = this.db.prepare('SELECT * FROM ape_relationship_state WHERE id = ?').get('singleton') as any;
+    const r = this.db
+      .prepare('SELECT * FROM ape_relationship_state WHERE id = ?')
+      .get('singleton') as any;
     if (!r) throw new DatabaseError('APE relationship state not found');
     const config = this.getRelationshipConfig();
     return {
@@ -1096,7 +1181,9 @@ export class ApeRepository implements IApeRepository {
     if (state.socialGraph) {
       for (const [key, rel] of Object.entries(state.socialGraph)) {
         if (!rel.isNonRomantic) {
-          throw new Error(`Mandatory Invariant Violation: Social relation with '${key}' cannot be romantic`);
+          throw new Error(
+            `Mandatory Invariant Violation: Social relation with '${key}' cannot be romantic`,
+          );
         }
       }
     }
@@ -1107,11 +1194,13 @@ export class ApeRepository implements IApeRepository {
 
     const now = new Date().toISOString();
     this.db
-      .prepare(`
+      .prepare(
+        `
         INSERT OR REPLACE INTO ape_relationship_state (
           id, attachment_security, trust_level, intimacy_depth, social_graph, conflict_history, is_initialized, last_updated_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `)
+      `,
+      )
       .run(
         'singleton',
         state.attachmentSecurity,
@@ -1131,7 +1220,9 @@ export class ApeRepository implements IApeRepository {
       identityNarrative: r.identity_narrative,
       acknowledgedCapabilities: JSON.parse(r.capabilities || '[]'),
       acknowledgedLimitations: JSON.parse(r.limitations || '[]'),
-      structuredCapabilities: r.structured_capabilities ? JSON.parse(r.structured_capabilities) : [],
+      structuredCapabilities: r.structured_capabilities
+        ? JSON.parse(r.structured_capabilities)
+        : [],
       structuredLimitations: r.structured_limitations ? JSON.parse(r.structured_limitations) : [],
       perceivedCapabilities: r.perceived_capabilities ? JSON.parse(r.perceived_capabilities) : [],
       creatorPerception: r.creator_perception,
@@ -1149,19 +1240,23 @@ export class ApeRepository implements IApeRepository {
 
   public saveSelfModel(state: ApeSelfModel): void {
     const now = new Date().toISOString();
-    const tableInfo = this.db.prepare('PRAGMA table_info(ape_self_model)').all() as Array<{ name: string }>;
+    const tableInfo = this.db.prepare('PRAGMA table_info(ape_self_model)').all() as Array<{
+      name: string;
+    }>;
     const colNames = new Set(tableInfo.map((c) => c.name));
 
     if (colNames.has('structured_capabilities')) {
       this.db
-        .prepare(`
+        .prepare(
+          `
           INSERT OR REPLACE INTO ape_self_model (
             id, identity_narrative, capabilities, limitations, creator_perception,
             existential_reflections, private_reflections, competencies, self_discrepancies,
             structured_capabilities, structured_limitations, perceived_capabilities,
             behavioral_changes, is_initialized, last_updated_at
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `)
+        `,
+        )
         .run(
           'singleton',
           state.identityNarrative,
@@ -1181,11 +1276,13 @@ export class ApeRepository implements IApeRepository {
         );
     } else {
       this.db
-        .prepare(`
+        .prepare(
+          `
           INSERT OR REPLACE INTO ape_self_model (
             id, identity_narrative, capabilities, limitations, creator_perception, existential_reflections, private_reflections, competencies, self_discrepancies, is_initialized, last_updated_at
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `)
+        `,
+        )
         .run(
           'singleton',
           state.identityNarrative,
@@ -1203,7 +1300,9 @@ export class ApeRepository implements IApeRepository {
   }
 
   public getDevelopmentState(): ApeDevelopmentState {
-    const r = this.db.prepare('SELECT * FROM ape_development_state WHERE id = ?').get('singleton') as any;
+    const r = this.db
+      .prepare('SELECT * FROM ape_development_state WHERE id = ?')
+      .get('singleton') as any;
     if (!r) throw new DatabaseError('APE development state not found');
     return {
       developmentalHistory: JSON.parse(r.developmental_history || '[]'),
@@ -1216,11 +1315,13 @@ export class ApeRepository implements IApeRepository {
   public saveDevelopmentState(state: ApeDevelopmentState): void {
     const now = new Date().toISOString();
     this.db
-      .prepare(`
+      .prepare(
+        `
         INSERT OR REPLACE INTO ape_development_state (
           id, developmental_history, interests, is_initialized, last_updated_at
         ) VALUES (?, ?, ?, ?, ?)
-      `)
+      `,
+      )
       .run(
         'singleton',
         JSON.stringify(state.developmentalHistory || []),
@@ -1236,13 +1337,15 @@ export class ApeRepository implements IApeRepository {
   public createPersonalProject(project: ApePersonalProject): ApePersonalProject {
     const now = new Date().toISOString();
     this.db
-      .prepare(`
+      .prepare(
+        `
         INSERT INTO ape_personal_projects (
           id, title, description, category, status, progress, motivation,
           associated_interest_topic, milestones, deliverables, related_goal_ids,
           resource_budget, abandonment_reason, created_at, updated_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `)
+      `,
+      )
       .run(
         project.id,
         project.title,
@@ -1255,7 +1358,9 @@ export class ApeRepository implements IApeRepository {
         JSON.stringify(project.milestones || []),
         JSON.stringify(project.deliverables || []),
         JSON.stringify(project.relatedGoalIds || []),
-        JSON.stringify(project.resourceBudget || { cpu: 'medium', gpu: false, maxDurationMs: 300000 }),
+        JSON.stringify(
+          project.resourceBudget || { cpu: 'medium', gpu: false, maxDurationMs: 300000 },
+        ),
         project.abandonmentReason ?? null,
         project.createdAt || now,
         project.updatedAt || now,
@@ -1269,7 +1374,10 @@ export class ApeRepository implements IApeRepository {
     return this.mapProjectRow(r);
   }
 
-  public listPersonalProjects(filter?: { status?: string; category?: string }): ApePersonalProject[] {
+  public listPersonalProjects(filter?: {
+    status?: string;
+    category?: string;
+  }): ApePersonalProject[] {
     let query = 'SELECT * FROM ape_personal_projects WHERE 1=1';
     const params: any[] = [];
     if (filter?.status) {
@@ -1285,7 +1393,9 @@ export class ApeRepository implements IApeRepository {
     return rows.map((r) => this.mapProjectRow(r));
   }
 
-  public updatePersonalProject(project: Partial<ApePersonalProject> & { id: string }): ApePersonalProject {
+  public updatePersonalProject(
+    project: Partial<ApePersonalProject> & { id: string },
+  ): ApePersonalProject {
     const existing = this.getPersonalProjectById(project.id);
     if (!existing) {
       throw new DatabaseError(`Personal project with id ${project.id} not found`);
@@ -1298,7 +1408,8 @@ export class ApeRepository implements IApeRepository {
     };
 
     this.db
-      .prepare(`
+      .prepare(
+        `
         UPDATE ape_personal_projects SET
           title = ?,
           description = ?,
@@ -1314,7 +1425,8 @@ export class ApeRepository implements IApeRepository {
           abandonment_reason = ?,
           updated_at = ?
         WHERE id = ?
-      `)
+      `,
+      )
       .run(
         updated.title,
         updated.description,
@@ -1326,7 +1438,9 @@ export class ApeRepository implements IApeRepository {
         JSON.stringify(updated.milestones || []),
         JSON.stringify(updated.deliverables || []),
         JSON.stringify(updated.relatedGoalIds || []),
-        JSON.stringify(updated.resourceBudget || { cpu: 'medium', gpu: false, maxDurationMs: 300000 }),
+        JSON.stringify(
+          updated.resourceBudget || { cpu: 'medium', gpu: false, maxDurationMs: 300000 },
+        ),
         updated.abandonmentReason ?? null,
         updated.updatedAt,
         updated.id,
@@ -1353,7 +1467,9 @@ export class ApeRepository implements IApeRepository {
       milestones: JSON.parse(r.milestones || '[]'),
       deliverables: JSON.parse(r.deliverables || '[]'),
       relatedGoalIds: JSON.parse(r.related_goal_ids || '[]'),
-      resourceBudget: JSON.parse(r.resource_budget || '{"cpu":"medium","gpu":false,"maxDurationMs":300000}'),
+      resourceBudget: JSON.parse(
+        r.resource_budget || '{"cpu":"medium","gpu":false,"maxDurationMs":300000}',
+      ),
       abandonmentReason: r.abandonment_reason ?? undefined,
       createdAt: r.created_at,
       updatedAt: r.updated_at,
@@ -1366,13 +1482,15 @@ export class ApeRepository implements IApeRepository {
   public createIntellectualQuestion(q: IntellectualQuestion): IntellectualQuestion {
     const now = new Date().toISOString();
     this.db
-      .prepare(`
+      .prepare(
+        `
         INSERT INTO ape_intellectual_questions (
           id, question, domain, origin, underlying_assumptions,
           competing_hypotheses, priority, status, resolution_summary,
           created_at, updated_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `)
+      `,
+      )
       .run(
         q.id,
         q.question,
@@ -1390,12 +1508,17 @@ export class ApeRepository implements IApeRepository {
   }
 
   public getIntellectualQuestionById(id: string): IntellectualQuestion | null {
-    const r = this.db.prepare('SELECT * FROM ape_intellectual_questions WHERE id = ?').get(id) as any;
+    const r = this.db
+      .prepare('SELECT * FROM ape_intellectual_questions WHERE id = ?')
+      .get(id) as any;
     if (!r) return null;
     return this.mapQuestionRow(r);
   }
 
-  public listIntellectualQuestions(filter?: { status?: string; domain?: string }): IntellectualQuestion[] {
+  public listIntellectualQuestions(filter?: {
+    status?: string;
+    domain?: string;
+  }): IntellectualQuestion[] {
     let query = 'SELECT * FROM ape_intellectual_questions WHERE 1=1';
     const params: any[] = [];
     if (filter?.status) {
@@ -1411,7 +1534,9 @@ export class ApeRepository implements IApeRepository {
     return rows.map((r) => this.mapQuestionRow(r));
   }
 
-  public updateIntellectualQuestion(q: Partial<IntellectualQuestion> & { id: string }): IntellectualQuestion {
+  public updateIntellectualQuestion(
+    q: Partial<IntellectualQuestion> & { id: string },
+  ): IntellectualQuestion {
     const existing = this.getIntellectualQuestionById(q.id);
     if (!existing) {
       throw new DatabaseError(`Intellectual question with id ${q.id} not found`);
@@ -1424,7 +1549,8 @@ export class ApeRepository implements IApeRepository {
     };
 
     this.db
-      .prepare(`
+      .prepare(
+        `
         UPDATE ape_intellectual_questions SET
           question = ?,
           domain = ?,
@@ -1436,7 +1562,8 @@ export class ApeRepository implements IApeRepository {
           resolution_summary = ?,
           updated_at = ?
         WHERE id = ?
-      `)
+      `,
+      )
       .run(
         updated.question,
         updated.domain,

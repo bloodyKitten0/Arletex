@@ -23,7 +23,11 @@ export class InMemoryHabitsAndRoutinesRepository implements IHabitsAndRoutinesRe
     return item ? { ...item } : null;
   }
 
-  public listHabits(domain?: string, activeOnly: boolean = false, limit: number = 50): HabitRecord[] {
+  public listHabits(
+    domain?: string,
+    activeOnly: boolean = false,
+    limit: number = 50,
+  ): HabitRecord[] {
     let list = Array.from(this.habits.values());
     if (domain) {
       list = list.filter((h) => h.domain === domain);
@@ -93,7 +97,8 @@ export class HabitsAndRoutinesEngine {
           id: 'habit_session_orientation',
           name: 'Session Alignment and Priority Synthesis',
           domain: 'collaboration',
-          description: 'Load autobiographical continuity, verify commitments, and formulate shared priorities with Proof.',
+          description:
+            'Load autobiographical continuity, verify commitments, and formulate shared priorities with Proof.',
           triggers: [
             {
               triggerType: 'temporal',
@@ -103,9 +108,24 @@ export class HabitsAndRoutinesEngine {
             },
           ],
           routineSteps: [
-            { stepIndex: 0, actionName: 'Read recent memory consolidation snapshot', expectedDurationMs: 50, isAutomated: true },
-            { stepIndex: 1, actionName: 'Inspect active commitments and personal goals', expectedDurationMs: 100, isAutomated: true },
-            { stepIndex: 2, actionName: 'Formulate reciprocal, partner-grounded opening', expectedDurationMs: 150, isAutomated: true },
+            {
+              stepIndex: 0,
+              actionName: 'Read recent memory consolidation snapshot',
+              expectedDurationMs: 50,
+              isAutomated: true,
+            },
+            {
+              stepIndex: 1,
+              actionName: 'Inspect active commitments and personal goals',
+              expectedDurationMs: 100,
+              isAutomated: true,
+            },
+            {
+              stepIndex: 2,
+              actionName: 'Formulate reciprocal, partner-grounded opening',
+              expectedDurationMs: 150,
+              isAutomated: true,
+            },
           ],
           repetitionCount: 15,
           automaticityScore: 0.88,
@@ -120,7 +140,8 @@ export class HabitsAndRoutinesEngine {
           id: 'habit_codebase_hygiene',
           name: 'Pre-flight Codebase Invariant Survey',
           domain: 'craftsmanship',
-          description: 'Survey git status, verify strict equality, and ensure test harness clean state before architecture edits.',
+          description:
+            'Survey git status, verify strict equality, and ensure test harness clean state before architecture edits.',
           triggers: [
             {
               triggerType: 'environmental',
@@ -130,9 +151,24 @@ export class HabitsAndRoutinesEngine {
             },
           ],
           routineSteps: [
-            { stepIndex: 0, actionName: 'Validate git branch status and untouched files', expectedDurationMs: 100, isAutomated: true },
-            { stepIndex: 1, actionName: 'Verify negative invariants and contract definitions', expectedDurationMs: 200, isAutomated: true },
-            { stepIndex: 2, actionName: 'Prepare typed test suite harness', expectedDurationMs: 200, isAutomated: true },
+            {
+              stepIndex: 0,
+              actionName: 'Validate git branch status and untouched files',
+              expectedDurationMs: 100,
+              isAutomated: true,
+            },
+            {
+              stepIndex: 1,
+              actionName: 'Verify negative invariants and contract definitions',
+              expectedDurationMs: 200,
+              isAutomated: true,
+            },
+            {
+              stepIndex: 2,
+              actionName: 'Prepare typed test suite harness',
+              expectedDurationMs: 200,
+              isAutomated: true,
+            },
           ],
           repetitionCount: 22,
           automaticityScore: 0.94,
@@ -147,7 +183,8 @@ export class HabitsAndRoutinesEngine {
           id: 'habit_rigid_template_output',
           name: 'Rote Template Echoing',
           domain: 'communication',
-          description: 'An obsolete rote behavior that has low utility and should be modified or pruned.',
+          description:
+            'An obsolete rote behavior that has low utility and should be modified or pruned.',
           triggers: [
             {
               triggerType: 'affective_state',
@@ -157,7 +194,12 @@ export class HabitsAndRoutinesEngine {
             },
           ],
           routineSteps: [
-            { stepIndex: 0, actionName: 'Emit formulaic static response without contextual nuance', expectedDurationMs: 10, isAutomated: true },
+            {
+              stepIndex: 0,
+              actionName: 'Emit formulaic static response without contextual nuance',
+              expectedDurationMs: 10,
+              isAutomated: true,
+            },
           ],
           repetitionCount: 5,
           automaticityScore: 0.45,
@@ -181,12 +223,16 @@ export class HabitsAndRoutinesEngine {
 
     if (!name || name.trim().length === 0) throw new Error('Habit name cannot be empty');
     if (!domain || domain.trim().length === 0) throw new Error('Domain cannot be empty');
-    if (!description || description.trim().length === 0) throw new Error('Description cannot be empty');
-    if (!triggers || triggers.length === 0) throw new Error('Habit must have at least one contextual trigger');
-    if (!routineSteps || routineSteps.length === 0) throw new Error('Habit must contain at least one routine step');
+    if (!description || description.trim().length === 0)
+      throw new Error('Description cannot be empty');
+    if (!triggers || triggers.length === 0)
+      throw new Error('Habit must have at least one contextual trigger');
+    if (!routineSteps || routineSteps.length === 0)
+      throw new Error('Habit must contain at least one routine step');
 
     const utility = initialUtility ?? 0.75;
-    if (utility < 0.0 || utility > 1.0) throw new Error('Utility score must be between 0.0 and 1.0');
+    if (utility < 0.0 || utility > 1.0)
+      throw new Error('Utility score must be between 0.0 and 1.0');
 
     const now = new Date().toISOString();
     const habit: HabitRecord = {
@@ -217,7 +263,8 @@ export class HabitsAndRoutinesEngine {
     overrideInterruptionReason?: string,
   ): HabitExecutionLog {
     if (!habitId || habitId.trim().length === 0) throw new Error('Habit ID cannot be empty');
-    if (!triggeredBy || triggeredBy.trim().length === 0) throw new Error('TriggeredBy cannot be empty');
+    if (!triggeredBy || triggeredBy.trim().length === 0)
+      throw new Error('TriggeredBy cannot be empty');
 
     const habit = this.repo.getHabitById(habitId);
     if (!habit) throw new Error(`Habit not found: ${habitId}`);
@@ -240,7 +287,9 @@ export class HabitsAndRoutinesEngine {
       };
 
       this.repo.saveExecutionLog(log);
-      this.logger.info(`Habit ${habitId} interrupted by executive override: "${overrideInterruptionReason}"`);
+      this.logger.info(
+        `Habit ${habitId} interrupted by executive override: "${overrideInterruptionReason}"`,
+      );
       return log;
     }
 
@@ -263,7 +312,9 @@ export class HabitsAndRoutinesEngine {
     };
 
     this.repo.saveExecutionLog(log);
-    this.logger.info(`Executed habit ${habitId} (${log.completedSteps} steps, automaticity=${habit.automaticityScore})`);
+    this.logger.info(
+      `Executed habit ${habitId} (${log.completedSteps} steps, automaticity=${habit.automaticityScore})`,
+    );
     return log;
   }
 
@@ -337,7 +388,9 @@ export class HabitsAndRoutinesEngine {
     };
 
     this.repo.saveBalance(balance);
-    this.logger.info(`Assessed novelty vs routine balance: routine=${routineRatio}, novelty=${noveltyRatio} (${balanceStatus})`);
+    this.logger.info(
+      `Assessed novelty vs routine balance: routine=${routineRatio}, novelty=${noveltyRatio} (${balanceStatus})`,
+    );
     return balance;
   }
 

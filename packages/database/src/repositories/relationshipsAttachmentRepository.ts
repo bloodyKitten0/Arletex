@@ -85,10 +85,7 @@ export class SqliteRelationshipsAttachmentRepository implements IRelationshipsAt
         updatedAt: row.updated_at,
       };
     } catch (err: any) {
-      throw new DatabaseError(
-        `Failed to get attachment bond for ${personId}: ${err.message}`,
-        err,
-      );
+      throw new DatabaseError(`Failed to get attachment bond for ${personId}: ${err.message}`, err);
     }
   }
 
@@ -219,9 +216,7 @@ export class SqliteRelationshipsAttachmentRepository implements IRelationshipsAt
 
   public getConflict(id: string): RelationalConflict | null {
     try {
-      const row = this.db
-        .prepare(`SELECT * FROM relational_conflicts WHERE id = ?`)
-        .get(id) as any;
+      const row = this.db.prepare(`SELECT * FROM relational_conflicts WHERE id = ?`).get(id) as any;
       if (!row) return null;
       return {
         id: row.id,
@@ -305,19 +300,14 @@ export class SqliteRelationshipsAttachmentRepository implements IRelationshipsAt
           repair.timestamp,
         );
     } catch (err: any) {
-      throw new DatabaseError(
-        `Failed to save apology repair ${repair.id}: ${err.message}`,
-        err,
-      );
+      throw new DatabaseError(`Failed to save apology repair ${repair.id}: ${err.message}`, err);
     }
   }
 
   public listApologyRepairs(conflictId: string): ApologyAndRepair[] {
     try {
       const rows = this.db
-        .prepare(
-          `SELECT * FROM apology_repairs WHERE conflict_id = ? ORDER BY timestamp DESC`,
-        )
+        .prepare(`SELECT * FROM apology_repairs WHERE conflict_id = ? ORDER BY timestamp DESC`)
         .all(conflictId) as any[];
       return rows.map((r) => ({
         id: r.id,
@@ -400,7 +390,10 @@ export class SqliteRelationshipsAttachmentRepository implements IRelationshipsAt
         timestamp: r.timestamp,
       }));
     } catch (err: any) {
-      throw new DatabaseError(`Failed to list trust event logs for ${personId}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to list trust event logs for ${personId}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -456,11 +449,17 @@ export class SqliteRelationshipsAttachmentRepository implements IRelationshipsAt
           record.timestamp,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save behavior intent evaluation ${record.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save behavior intent evaluation ${record.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
-  public listBehaviorIntentEvaluations(personId: string, limit: number = 50): ObservedBehaviorVsIntent[] {
+  public listBehaviorIntentEvaluations(
+    personId: string,
+    limit: number = 50,
+  ): ObservedBehaviorVsIntent[] {
     try {
       const rows = this.db
         .prepare(
@@ -478,7 +477,10 @@ export class SqliteRelationshipsAttachmentRepository implements IRelationshipsAt
         timestamp: r.timestamp,
       }));
     } catch (err: any) {
-      throw new DatabaseError(`Failed to list behavior intent evaluations for ${personId}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to list behavior intent evaluations for ${personId}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -504,14 +506,19 @@ export class SqliteRelationshipsAttachmentRepository implements IRelationshipsAt
           expectation.createdAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save relationship expectation ${expectation.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save relationship expectation ${expectation.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
   public listExpectations(personId: string): RelationalExpectation[] {
     try {
       const rows = this.db
-        .prepare(`SELECT * FROM relationship_expectations WHERE person_id = ? ORDER BY created_at ASC`)
+        .prepare(
+          `SELECT * FROM relationship_expectations WHERE person_id = ? ORDER BY created_at ASC`,
+        )
         .all(personId) as any[];
       return rows.map((r) => ({
         id: r.id,
@@ -522,7 +529,10 @@ export class SqliteRelationshipsAttachmentRepository implements IRelationshipsAt
         createdAt: r.created_at,
       }));
     } catch (err: any) {
-      throw new DatabaseError(`Failed to list relationship expectations for ${personId}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to list relationship expectations for ${personId}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -551,14 +561,19 @@ export class SqliteRelationshipsAttachmentRepository implements IRelationshipsAt
           record.timestamp,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save relationship memory control ${record.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save relationship memory control ${record.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
   public listMemoryControlRecords(personId: string): RelationalMemoryControl[] {
     try {
       const rows = this.db
-        .prepare(`SELECT * FROM relationship_memory_controls WHERE person_id = ? ORDER BY timestamp DESC, rowid DESC`)
+        .prepare(
+          `SELECT * FROM relationship_memory_controls WHERE person_id = ? ORDER BY timestamp DESC, rowid DESC`,
+        )
         .all(personId) as any[];
       return rows.map((r) => ({
         id: r.id,
@@ -571,7 +586,10 @@ export class SqliteRelationshipsAttachmentRepository implements IRelationshipsAt
         timestamp: r.timestamp,
       }));
     } catch (err: any) {
-      throw new DatabaseError(`Failed to list relationship memory control records for ${personId}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to list relationship memory control records for ${personId}: ${err.message}`,
+        err,
+      );
     }
   }
 }

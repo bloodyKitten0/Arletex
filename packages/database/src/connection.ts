@@ -111,7 +111,10 @@ export class DatabaseService {
           return this.db;
         } catch (recoveryErr) {
           this.logger.error('Failed to initialize fresh database after quarantine', recoveryErr);
-          throw new DatabaseError(`Failed to recover corrupted database at ${this.dbPath}`, recoveryErr);
+          throw new DatabaseError(
+            `Failed to recover corrupted database at ${this.dbPath}`,
+            recoveryErr,
+          );
         }
       }
 

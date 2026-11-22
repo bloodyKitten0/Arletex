@@ -98,7 +98,10 @@ export function assertSelectiveAttentionIntegrity(
   noiseThreshold: number = 0.35,
 ): void {
   // 1. A focal target must not have composite salience below noise threshold
-  if (result.selectedFocalTarget && result.selectedFocalTarget.salience.compositeSalience < noiseThreshold) {
+  if (
+    result.selectedFocalTarget &&
+    result.selectedFocalTarget.salience.compositeSalience < noiseThreshold
+  ) {
     throw new Error(
       'Negative Invariant Violated: Selective attention accepted low-salience noise into active focus instead of filtering.',
     );

@@ -26,7 +26,11 @@ export class MemoryRepository {
       let confidence = input.confidence;
 
       // Do NOT convert an interpretation into a verified fact without direct empirical observation
-      if (input.interpretation && !input.rawObservation && (provenance === 'verified_fact' || provenance === 'empirical_verification')) {
+      if (
+        input.interpretation &&
+        !input.rawObservation &&
+        (provenance === 'verified_fact' || provenance === 'empirical_verification')
+      ) {
         provenance = 'inferred_interpretation';
         if (confidence === undefined || confidence > 0.65) {
           confidence = 0.65;
@@ -41,14 +45,21 @@ export class MemoryRepository {
           confidence = 0.95;
         } else if (provenance === 'user_statement' || provenance === 'user_reported') {
           confidence = 0.85;
-        } else if (provenance === 'autobiographical_experience' || provenance === 'digital_agency' || provenance === 'historical_consolidation') {
-          confidence = 0.80;
+        } else if (
+          provenance === 'autobiographical_experience' ||
+          provenance === 'digital_agency' ||
+          provenance === 'historical_consolidation'
+        ) {
+          confidence = 0.8;
         } else if (input.interpretation && !input.rawObservation) {
-          confidence = 0.60;
-        } else if (provenance === 'uncertain_information' || provenance === 'conflicting_information') {
+          confidence = 0.6;
+        } else if (
+          provenance === 'uncertain_information' ||
+          provenance === 'conflicting_information'
+        ) {
           confidence = 0.35;
         } else {
-          confidence = 0.70;
+          confidence = 0.7;
         }
       }
 
@@ -260,20 +271,27 @@ export class MemoryRepository {
 
       const now = new Date().toISOString();
       const content = input.content ?? existing.content;
-      const interpretation = input.interpretation !== undefined ? input.interpretation : existing.interpretation;
+      const interpretation =
+        input.interpretation !== undefined ? input.interpretation : existing.interpretation;
       const importance = input.importance ?? existing.importance;
       const confidence = input.confidence ?? existing.confidence;
       const provenance = input.provenance ?? existing.provenance;
       const tags = input.tags ?? existing.tags;
       const metadata = input.metadata ?? existing.metadata;
-      const isArchived = input.isArchived !== undefined ? (input.isArchived ? 1 : 0) : (existing.isArchived ? 1 : 0);
-      const isDeleted = input.isDeleted !== undefined ? (input.isDeleted ? 1 : 0) : (existing.isDeleted ? 1 : 0);
+      const isArchived =
+        input.isArchived !== undefined ? (input.isArchived ? 1 : 0) : existing.isArchived ? 1 : 0;
+      const isDeleted =
+        input.isDeleted !== undefined ? (input.isDeleted ? 1 : 0) : existing.isDeleted ? 1 : 0;
 
       // Track correction history and invalidate outdated embedding if content, interpretation, or tags changed
       const history: MemoryCorrection[] = [...existing.correctionHistory];
       const contentChanged = Boolean(input.content && input.content !== existing.content);
-      const interpretationChanged = Boolean(input.interpretation !== undefined && input.interpretation !== existing.interpretation);
-      const tagsChanged = Boolean(input.tags && JSON.stringify(input.tags) !== JSON.stringify(existing.tags));
+      const interpretationChanged = Boolean(
+        input.interpretation !== undefined && input.interpretation !== existing.interpretation,
+      );
+      const tagsChanged = Boolean(
+        input.tags && JSON.stringify(input.tags) !== JSON.stringify(existing.tags),
+      );
       const shouldInvalidateEmbedding = contentChanged || interpretationChanged || tagsChanged;
 
       if (contentChanged) {
@@ -405,7 +423,13 @@ export class MemoryRepository {
              SET content = ?, tags = ?, correction_history = ?, updated_at = ?
              WHERE id = ?`,
           )
-          .run(mergedContent, JSON.stringify(mergedTags), JSON.stringify(mergedHistory), now, primaryId);
+          .run(
+            mergedContent,
+            JSON.stringify(mergedTags),
+            JSON.stringify(mergedHistory),
+            now,
+            primaryId,
+          );
 
         // Invalidate primary embedding because content changed through merge
         this.invalidateEmbedding(primaryId);
@@ -455,11 +479,15 @@ export class MemoryRepository {
   public invalidateEmbedding(memoryId: string): void {
     try {
       const now = new Date().toISOString();
-      this.db.prepare(`
+      this.db
+        .prepare(
+          `
         UPDATE memory_embeddings
         SET status = 'stale', updated_at = ?
         WHERE memory_id = ?
-      `).run(now, memoryId);
+      `,
+        )
+        .run(now, memoryId);
     } catch (err) {
       throw new DatabaseError(`Failed to invalidate embedding for memory ${memoryId}`, err);
     }
@@ -468,17 +496,23 @@ export class MemoryRepository {
   public markEmbeddingFailed(memoryId: string, error: string): void {
     try {
       const now = new Date().toISOString();
-      this.db.prepare(`
+      this.db
+        .prepare(
+          `
         UPDATE memory_embeddings
         SET status = 'failed', error_message = ?, updated_at = ?
         WHERE memory_id = ?
-      `).run(error, now, memoryId);
+      `,
+        )
+        .run(error, now, memoryId);
     } catch (err) {
       throw new DatabaseError(`Failed to mark embedding failed for memory ${memoryId}`, err);
     }
   }
 
-  public getEmbedding(memoryId: string): { dimensions: number; vector: Float32Array; status: string; modelName: string } | null {
+  public getEmbedding(
+    memoryId: string,
+  ): { dimensions: number; vector: Float32Array; status: string; modelName: string } | null {
     try {
       const stmt = this.db.prepare(`
         SELECT e.dimensions, e.vector, e.status, e.model_name
@@ -486,15 +520,17 @@ export class MemoryRepository {
         JOIN memories m ON m.id = e.memory_id
         WHERE e.memory_id = ? AND e.status = 'indexed' AND m.is_deleted = 0
       `);
-      const row = stmt.get(memoryId) as { dimensions: number; vector: Buffer; status: string; model_name: string } | undefined;
+      const row = stmt.get(memoryId) as
+        { dimensions: number; vector: Buffer; status: string; model_name: string } | undefined;
       if (!row) return null;
 
-      const floatArray = new Float32Array(
-        row.vector.buffer,
-        row.vector.byteOffset,
-        row.dimensions,
-      );
-      return { dimensions: row.dimensions, vector: floatArray, status: row.status, modelName: row.model_name };
+      const floatArray = new Float32Array(row.vector.buffer, row.vector.byteOffset, row.dimensions);
+      return {
+        dimensions: row.dimensions,
+        vector: floatArray,
+        status: row.status,
+        modelName: row.model_name,
+      };
     } catch (err) {
       throw new DatabaseError(`Failed to get embedding for memory ${memoryId}`, err);
     }
@@ -518,10 +554,7 @@ export class MemoryRepository {
     }
   }
 
-  public searchSimilar(
-    queryVector: Float32Array,
-    options: QueryMemoriesInput = {},
-  ): Memory[] {
+  public searchSimilar(queryVector: Float32Array, options: QueryMemoriesInput = {}): Memory[] {
     try {
       const { type, limit = 10, minImportance = 0.0, includeArchived = false } = options;
 

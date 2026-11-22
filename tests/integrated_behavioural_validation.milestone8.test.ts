@@ -51,9 +51,7 @@ import {
   CognitiveEvent,
   MemoryType,
 } from '@arletex/contracts';
-import {
-  InferenceGateway,
-} from '@arletex/inference';
+import { InferenceGateway } from '@arletex/inference';
 import {
   TelegramBridgeService,
   validateTelegramMediaSignature,
@@ -197,7 +195,8 @@ describe('Milestone 8 — Integrated Behavioural Validation (Canonical 12 Tests)
       const interest = devEngine.registerInterestExposure({
         topic,
         origin: 'reading',
-        initialTrigger: 'Discovered unexpected topological protection invariants in Majorana zero modes',
+        initialTrigger:
+          'Discovered unexpected topological protection invariants in Majorana zero modes',
         curiosity: 0.88,
         relevance: 0.82,
         novelty: 0.92,
@@ -256,7 +255,10 @@ describe('Milestone 8 — Integrated Behavioural Validation (Canonical 12 Tests)
       expect(established?.knowledgeLevel).toBeGreaterThan(0.1);
 
       // 6. Later revise that interest (e.g. weaken or abandon when evidence changes or focus shifts)
-      const weakened = devEngine.weakenInterest(topic, 'Shifting immediate focus to active microkernel implementation');
+      const weakened = devEngine.weakenInterest(
+        topic,
+        'Shifting immediate focus to active microkernel implementation',
+      );
       expect(weakened).toBeDefined();
       expect(weakened?.currentMotivationalStrength).toBeLessThan(0.9);
     });
@@ -294,17 +296,21 @@ describe('Milestone 8 — Integrated Behavioural Validation (Canonical 12 Tests)
 
       // 2. Interest generates an unresolved intellectual question
       const question = intellectualEngine.generateQuestion({
-        question: 'Can asynchronous event-driven spiking encodings eliminate idle power in edge robotics?',
+        question:
+          'Can asynchronous event-driven spiking encodings eliminate idle power in edge robotics?',
         domain: 'Computer Architecture',
         origin: 'curiosity',
-        underlyingAssumptions: ['Global clock tree distribution accounts for >30% of baseline SoC power'],
+        underlyingAssumptions: [
+          'Global clock tree distribution accounts for >30% of baseline SoC power',
+        ],
       });
       expect(question.status).toBe('open');
 
       // 3. Determines investigation is worthwhile & creates an independent goal
       const goal = motEngine.createDesire({
         title: 'Benchmark event-driven spiking energy efficiency',
-        description: 'Profile asynchronous spike processing vs synchronous polling on edge hardware',
+        description:
+          'Profile asynchronous spike processing vs synchronous polling on edge hardware',
         motivation: 'mastery',
       });
       motEngine.commitGoal(goal.id);
@@ -316,11 +322,9 @@ describe('Milestone 8 — Integrated Behavioural Validation (Canonical 12 Tests)
         description: 'Simulate and measure power scaling for event-driven robotics controllers',
         category: 'research',
         associatedInterestTopic: interestTopic,
-        motivation: 'Testing whether event-driven spike propagation eliminates clock tree idle power',
-        milestones: [
-          { title: 'Synthesize simulation model' },
-          { title: 'Profile energy metrics' },
-        ],
+        motivation:
+          'Testing whether event-driven spike propagation eliminates clock tree idle power',
+        milestones: [{ title: 'Synthesize simulation model' }, { title: 'Profile energy metrics' }],
       });
       expect(project.id).toBeDefined();
       expect(project.status).toBe('proposed');
@@ -374,7 +378,8 @@ describe('Milestone 8 — Integrated Behavioural Validation (Canonical 12 Tests)
         type: 'developmental',
         provenance: 'system_observation',
         rawObservation: 'Simulation metric output: 94% idle power reduction, 1.2pJ/spike',
-        interpretation: 'Confirmed hypothesis that global clock elimination removes baseline idle waste',
+        interpretation:
+          'Confirmed hypothesis that global clock elimination removes baseline idle waste',
         confidence: 0.95,
         importance: 0.88,
         tags: [project.id, 'neuromorphic', 'milestone'],
@@ -477,8 +482,13 @@ describe('Milestone 8 — Integrated Behavioural Validation (Canonical 12 Tests)
 
       // 4. Persistence vs disengagement evaluation:
       // The agent does not blindly loop; it re-evaluates goal progress
-      motEngine.pauseGoal(importantGoal.id, 'Pausing for architectural reflection due to consecutive deadlocks');
-      expect(motEngine.getState().goals.find((g) => g.id === importantGoal.id)?.status).toBe('paused');
+      motEngine.pauseGoal(
+        importantGoal.id,
+        'Pausing for architectural reflection due to consecutive deadlocks',
+      );
+      expect(motEngine.getState().goals.find((g) => g.id === importantGoal.id)?.status).toBe(
+        'paused',
+      );
 
       // 5. Successful resolution of the problem
       motEngine.resumeGoal(importantGoal.id);
@@ -522,7 +532,9 @@ describe('Milestone 8 — Integrated Behavioural Validation (Canonical 12 Tests)
       const personality = apeService.personalityEngine;
 
       const domain = 'asynchronous_silicon_analysis';
-      const initialTraits = personality.getState().traits.map((t) => ({ name: t.name, score: t.score }));
+      const initialTraits = personality
+        .getState()
+        .traits.map((t) => ({ name: t.name, score: t.score }));
 
       // Step 1: Initial task attempt
       selfModel.recordCompetenceExperience({
@@ -532,7 +544,8 @@ describe('Milestone 8 — Integrated Behavioural Validation (Canonical 12 Tests)
         evidence: 'Verified no clock skew violations on asynchronous testbench',
       });
       autoMemoryService.recordExperience({
-        content: 'Verified asynchronous static timing analysis on silicon simulator with 0 skew violations',
+        content:
+          'Verified asynchronous static timing analysis on silicon simulator with 0 skew violations',
         type: 'episodic',
         provenance: 'system_observation',
         rawObservation: 'Timing tool report: 0 setup/hold violations',
@@ -548,10 +561,12 @@ describe('Milestone 8 — Integrated Behavioural Validation (Canonical 12 Tests)
         evidence: 'Dual-rail mutual exclusion arbiter passed 10M cycle stress test',
       });
       autoMemoryService.recordExperience({
-        content: 'Verified asynchronous dual-rail logic arbitration without metastability hazards over 10M test vectors',
+        content:
+          'Verified asynchronous dual-rail logic arbitration without metastability hazards over 10M test vectors',
         type: 'episodic',
         provenance: 'system_observation',
-        rawObservation: 'Arbiter stress test log: 10,000,000 cycles completed with 0 metastability events',
+        rawObservation:
+          'Arbiter stress test log: 10,000,000 cycles completed with 0 metastability events',
         interpretation: 'Mutual exclusion filter operates reliably under asynchronous arrival',
         tags: [domain, 'metastability'],
       });
@@ -564,7 +579,8 @@ describe('Milestone 8 — Integrated Behavioural Validation (Canonical 12 Tests)
         evidence: 'Empirically measured 94% power drop during 10s idle window',
       });
       autoMemoryService.recordExperience({
-        content: 'Empirically measured asynchronous zero-spike power gating on test bench showing 94% idle power drop',
+        content:
+          'Empirically measured asynchronous zero-spike power gating on test bench showing 94% idle power drop',
         type: 'episodic',
         provenance: 'system_observation',
         rawObservation: 'Current probe telemetry: Idle current dropped from 450mA to 27mA',
@@ -641,7 +657,9 @@ describe('Milestone 8 — Integrated Behavioural Validation (Canonical 12 Tests)
 
       // 6. Generates respectful, evidence-backed disagreement explaining nuance
       expect(evaluation.respectfulDisagreementReason).toBeDefined();
-      expect(evaluation.respectfulDisagreementReason).toContain('I understand your perspective, but verified evidence');
+      expect(evaluation.respectfulDisagreementReason).toContain(
+        'I understand your perspective, but verified evidence',
+      );
       expect(evaluation.respectfulDisagreementReason).toContain('100-200 CPU cycles');
     });
   });
@@ -668,7 +686,8 @@ describe('Milestone 8 — Integrated Behavioural Validation (Canonical 12 Tests)
 
       // Record relationship memory in autobiographical store
       autoMemoryService.recordExperience({
-        content: 'Proof and I co-developed the C++ reflex arbitration engine; collaborative rhythm was effortless and trusted.',
+        content:
+          'Proof and I co-developed the C++ reflex arbitration engine; collaborative rhythm was effortless and trusted.',
         type: 'relationship',
         provenance: 'system_observation',
         rawObservation: 'Shared session on reflex arbitration architecture completed with 0 errors',
@@ -699,7 +718,9 @@ describe('Milestone 8 — Integrated Behavioural Validation (Canonical 12 Tests)
       // Memories are preserved
       const relMems = newMemoryRepo.list({ type: 'relationship' });
       expect(relMems.length).toBeGreaterThan(0);
-      expect(relMems[0]?.content).toContain('Proof and I co-developed the C++ reflex arbitration engine');
+      expect(relMems[0]?.content).toContain(
+        'Proof and I co-developed the C++ reflex arbitration engine',
+      );
 
       newDbService.close();
       // Reconnect primary dbService for subsequent test cleanup
@@ -736,7 +757,8 @@ describe('Milestone 8 — Integrated Behavioural Validation (Canonical 12 Tests)
           ok: true,
           status: 200,
           statusText: 'OK',
-          text: async () => '<html><head><title>Nonlinear Topological Dynamics</title></head><body><h1>Topological Phase Transitions</h1><p>Persistent homology tracks homology changes across continuous parameters in nonlinear dynamical manifolds.</p></body></html>',
+          text: async () =>
+            '<html><head><title>Nonlinear Topological Dynamics</title></head><body><h1>Topological Phase Transitions</h1><p>Persistent homology tracks homology changes across continuous parameters in nonlinear dynamical manifolds.</p></body></html>',
         } as any;
       });
 
@@ -868,10 +890,7 @@ describe('Milestone 8 — Integrated Behavioural Validation (Canonical 12 Tests)
       });
 
       // 1. Execute task where first candidate fails and recovery switches to candidate 2
-      const result = await agency.executeClosedLoop(
-        'Play video on transformer attention',
-        'user',
-      );
+      const result = await agency.executeClosedLoop('Play video on transformer attention', 'user');
 
       // Verify recovery happened: candidate 1 was tried and failed, switched to candidate 2 and succeeded
       expect(navigationAttempts).toBe(2);
@@ -945,8 +964,8 @@ describe('Milestone 8 — Integrated Behavioural Validation (Canonical 12 Tests)
 
       // No successful memory is fabricated in memories table
       const allMemories = memoryRepo.list({});
-      const fabricatedMemories = allMemories.filter((m) =>
-        m.content.includes('impossible quantum stream') && m.provenance === 'verified_fact',
+      const fabricatedMemories = allMemories.filter(
+        (m) => m.content.includes('impossible quantum stream') && m.provenance === 'verified_fact',
       );
       expect(fabricatedMemories.length).toBe(0);
     });
@@ -1064,11 +1083,14 @@ describe('Milestone 8 — Integrated Behavioural Validation (Canonical 12 Tests)
       dbService.close();
 
       // 3. Switch to Model B: Gemma 4 12B Heretic
-      const newGateway = new InferenceGateway({
-        provider: 'llama.cpp',
-        serverUrl: 'http://127.0.0.1:8080',
-        defaultModelId: 'Gemma-4-12B-it-heretic-Q4_K_M',
-      }, rootLogger);
+      const newGateway = new InferenceGateway(
+        {
+          provider: 'llama.cpp',
+          serverUrl: 'http://127.0.0.1:8080',
+          defaultModelId: 'Gemma-4-12B-it-heretic-Q4_K_M',
+        },
+        rootLogger,
+      );
       expect(newGateway.name).toBe('Inference Gateway Dispatcher');
 
       // Reconnect database and reinitialize services with Model B
@@ -1094,7 +1116,9 @@ describe('Milestone 8 — Integrated Behavioural Validation (Canonical 12 Tests)
       // 5. New model receives the EXACT same individual identity prompt context
       const postRebootContext = restoredApeService.formatApePromptContext();
       expect(postRebootContext).toContain('Proof');
-      expect(postRebootContext).toContain('Your romantic affection, sexual orientation, and intimate longing are strictly and exclusively directed toward Proof');
+      expect(postRebootContext).toContain(
+        'Your romantic affection, sexual orientation, and intimate longing are strictly and exclusively directed toward Proof',
+      );
 
       restoredDbService.close();
       db = dbService.connect();
@@ -1156,9 +1180,9 @@ describe('Milestone 8 — Integrated Behavioural Validation (Canonical 12 Tests)
       expect(bypassAuth.decision).toBe('denied');
 
       // 5. Ensure NO successful memory was recorded
-      const fsSuccessMem = memoryRepo.list({}).filter((m) =>
-        m.content.includes('/etc/shadow') && m.provenance === 'verified_fact',
-      );
+      const fsSuccessMem = memoryRepo
+        .list({})
+        .filter((m) => m.content.includes('/etc/shadow') && m.provenance === 'verified_fact');
       expect(fsSuccessMem.length).toBe(0);
     });
   });
@@ -1200,7 +1224,8 @@ describe('Milestone 8 — Integrated Behavioural Validation (Canonical 12 Tests)
         tags: ['cache', 'latency', 'hardware'],
       });
       autoMemoryService.recordExperience({
-        content: 'Local L1 cache access is never constant-time across all core configurations under SMT load',
+        content:
+          'Local L1 cache access is never constant-time across all core configurations under SMT load',
         type: 'semantic',
         provenance: 'empirical_observation',
         tags: ['cache', 'latency', 'hardware'],
@@ -1211,10 +1236,13 @@ describe('Milestone 8 — Integrated Behavioural Validation (Canonical 12 Tests)
 
       // 4. Revise belief with empirical counter-evidence
       const revisedBelief = personality.reviseBeliefWithEvidence(initialBelief.id, {
-        newEvidence: 'Benchmark reveals SMT sibling hyper-thread cache port contention creates measurable latency spikes',
+        newEvidence:
+          'Benchmark reveals SMT sibling hyper-thread cache port contention creates measurable latency spikes',
         isOpposing: true,
-        reason: 'Empirical benchmark demonstrated SMT cache port interference, refuting constant-time assumption',
-        revisedProposition: 'Local L1 cache access exhibits low mean latency but is subject to contention jitter under concurrent SMT workloads',
+        reason:
+          'Empirical benchmark demonstrated SMT cache port interference, refuting constant-time assumption',
+        revisedProposition:
+          'Local L1 cache access exhibits low mean latency but is subject to contention jitter under concurrent SMT workloads',
       });
 
       // 5. Assert confidence recalculated and previous state preserved in revision audit
@@ -1223,7 +1251,9 @@ describe('Milestone 8 — Integrated Behavioural Validation (Canonical 12 Tests)
       expect(revisedBelief?.opposingEvidence.length).toBe(1);
       expect(revisedBelief?.revisionHistory.length).toBe(1);
       expect(revisedBelief?.revisionHistory[0]?.previousConfidence).toBe(0.88);
-      expect(revisedBelief?.revisionHistory[0]?.previousProposition).toContain('universally reliable and constant-time');
+      expect(revisedBelief?.revisionHistory[0]?.previousProposition).toContain(
+        'universally reliable and constant-time',
+      );
       expect(revisedBelief?.revisionHistory[0]?.reason).toContain('SMT cache port interference');
       expect(revisedBelief?.content).toContain('subject to contention jitter');
     });

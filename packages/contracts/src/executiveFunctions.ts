@@ -98,7 +98,10 @@ export function assertActionInhibitionIntegrity(evaluation: ActionInhibitionEval
 }
 
 export function assertTaskSwitchIntegrity(record: TaskSwitchRecord): void {
-  if (record.switchReason === 'higher_priority_preemption' && record.nextTaskPriority < record.previousTaskPriority) {
+  if (
+    record.switchReason === 'higher_priority_preemption' &&
+    record.nextTaskPriority < record.previousTaskPriority
+  ) {
     throw new Error(
       `Negative Invariant Violation (Invalid Preemption): Task switch claims 'higher_priority_preemption' but nextTaskPriority (${record.nextTaskPriority}) is strictly less than previousTaskPriority (${record.previousTaskPriority}).`,
     );

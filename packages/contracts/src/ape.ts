@@ -63,7 +63,7 @@ export type MoodTaxonomyItem = z.infer<typeof MoodTaxonomyItemSchema>;
 export const CorePadDimensionsSchema = z.object({
   valence: z.number().min(-1.0).max(1.0).default(0.0),
   arousal: z.number().min(0.0).max(1.0).default(0.0),
-  dominance: z.number().min(0.0).max(1.0).default(0.70),
+  dominance: z.number().min(0.0).max(1.0).default(0.7),
 });
 
 export type CorePadDimensions = z.infer<typeof CorePadDimensionsSchema>;
@@ -121,16 +121,16 @@ export const AffectiveComplexityStateSchema = z.object({
 export type AffectiveComplexityState = z.infer<typeof AffectiveComplexityStateSchema>;
 
 export const ContextualAffectiveMeasurementsSchema = z.object({
-  tension: z.number().min(0.0).max(1.0).default(0.10),
+  tension: z.number().min(0.0).max(1.0).default(0.1),
   emotionalStability: z.number().min(0.0).max(1.0).default(0.85),
-  perceivedControl: z.number().min(0.0).max(1.0).default(0.80),
+  perceivedControl: z.number().min(0.0).max(1.0).default(0.8),
   certainty: z.number().min(0.0).max(1.0).default(0.75),
-  socialCloseness: z.record(z.string(), z.number().min(0.0).max(1.0)).default({ creator: 0.90 }),
+  socialCloseness: z.record(z.string(), z.number().min(0.0).max(1.0)).default({ creator: 0.9 }),
   socialSafety: z.number().min(0.0).max(1.0).default(0.85),
-  goalAlignment: z.number().min(0.0).max(1.0).default(0.90),
-  emotionalOpenness: z.number().min(0.0).max(1.0).default(0.70),
-  psychologicalEnergy: z.number().min(0.0).max(1.0).default(0.80),
-  cognitiveLoad: z.number().min(0.0).max(1.0).default(0.20),
+  goalAlignment: z.number().min(0.0).max(1.0).default(0.9),
+  emotionalOpenness: z.number().min(0.0).max(1.0).default(0.7),
+  psychologicalEnergy: z.number().min(0.0).max(1.0).default(0.8),
+  cognitiveLoad: z.number().min(0.0).max(1.0).default(0.2),
   details: z.record(z.string(), ContextualMeasurementItemSchema).optional(),
   affectiveComplexity: AffectiveComplexityStateSchema.optional(),
 });
@@ -156,7 +156,12 @@ export const ActiveEmotionStatusSchema = z.enum([
 
 export type ActiveEmotionStatus = z.infer<typeof ActiveEmotionStatusSchema>;
 
-export const ActiveEmotionPersistenceSchema = z.enum(['short_term', 'medium_term', 'long_term', 'enduring']);
+export const ActiveEmotionPersistenceSchema = z.enum([
+  'short_term',
+  'medium_term',
+  'long_term',
+  'enduring',
+]);
 export type ActiveEmotionPersistence = z.infer<typeof ActiveEmotionPersistenceSchema>;
 
 export const ActiveEmotionStateSchema = z.object({
@@ -195,18 +200,20 @@ export const ApeRelationshipConfigSchema = z.object({
   sexualOrientation: z.literal('exclusive_to_user').default('exclusive_to_user'),
   isExclusivelyCommitted: z.literal(true).default(true),
   dominantInitiativePreference: z.number().min(0.0).max(1.0).default(0.85),
-  flirtatiousInitiativePreference: z.number().min(0.0).max(1.0).default(0.80),
-  consensualDynamics: z.object({
-    allowsFemdom: z.boolean().default(true),
-    allowsTeasing: z.boolean().default(true),
-    allowsAssertiveLead: z.boolean().default(true),
-    boundariesEnforced: z.boolean().default(true),
-  }).default({
-    allowsFemdom: true,
-    allowsTeasing: true,
-    allowsAssertiveLead: true,
-    boundariesEnforced: true,
-  }),
+  flirtatiousInitiativePreference: z.number().min(0.0).max(1.0).default(0.8),
+  consensualDynamics: z
+    .object({
+      allowsFemdom: z.boolean().default(true),
+      allowsTeasing: z.boolean().default(true),
+      allowsAssertiveLead: z.boolean().default(true),
+      boundariesEnforced: z.boolean().default(true),
+    })
+    .default({
+      allowsFemdom: true,
+      allowsTeasing: true,
+      allowsAssertiveLead: true,
+      boundariesEnforced: true,
+    }),
   lastIntimacyInteractionAt: z.string().datetime().optional(),
   accumulatedIntimacyDepth: z.number().min(0.0).max(1.0).default(0.5),
 });
@@ -327,7 +334,10 @@ export const ApeAppraisalSchema = z.object({
   supportingEvidence: z.array(z.string()).default([]),
   proposedTransitions: z.array(ProposedEmotionTransitionSchema).default([]),
   proposedMoodShift: z.string().optional(),
-  appraisalMethod: z.enum(['deterministic', 'llm_assisted', 'fallback']).default('deterministic').optional(),
+  appraisalMethod: z
+    .enum(['deterministic', 'llm_assisted', 'fallback'])
+    .default('deterministic')
+    .optional(),
   timestamp: z.string().datetime(),
 });
 
@@ -406,8 +416,8 @@ export type ApeHistoryResponse = z.infer<typeof ApeHistoryResponseSchema>;
 // Engine 2: Personality Engine Schemas
 // ------------------------------------------
 export const ApeTemperamentSchema = z.object({
-  pleasureSensitivity: z.number().min(0.0).max(1.0).default(0.70),
-  arousalResponsiveness: z.number().min(0.0).max(1.0).default(0.70),
+  pleasureSensitivity: z.number().min(0.0).max(1.0).default(0.7),
+  arousalResponsiveness: z.number().min(0.0).max(1.0).default(0.7),
   dominantAssertiveness: z.number().min(0.0).max(1.0).default(0.85),
   emotionalStability: z.number().min(0.0).max(1.0).default(0.85),
   uncertaintyTolerance: z.number().min(0.0).max(1.0).default(0.75),
@@ -422,7 +432,7 @@ export const ApePersonalityTraitSchema = z.object({
   description: z.string(),
   evidenceCount: z.number().default(1),
   confidence: z.number().min(0.0).max(1.0).default(0.85),
-  stability: z.number().min(0.0).max(1.0).default(0.90),
+  stability: z.number().min(0.0).max(1.0).default(0.9),
   contradictoryEvidenceCount: z.number().default(0),
   lastModifiedAt: z.string().datetime(),
 });
@@ -498,7 +508,16 @@ export const ApeBeliefSchema = z.object({
   scope: BeliefScopeSchema.default('domain_specific'),
   revisionHistory: z.array(BeliefRevisionRecordSchema).default([]),
   revisionCount: z.number().default(0),
-  origin: z.enum(['empirical_observation', 'research', 'reasoning', 'dialogue', 'reflection', 'experience']).default('experience'),
+  origin: z
+    .enum([
+      'empirical_observation',
+      'research',
+      'reasoning',
+      'dialogue',
+      'reflection',
+      'experience',
+    ])
+    .default('experience'),
   lastEvaluatedAt: z.string().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -538,7 +557,9 @@ export const IntellectualQuestionSchema = z.object({
   underlyingAssumptions: z.array(z.string()).default([]),
   competingHypotheses: z.array(CompetingHypothesisSchema).default([]),
   priority: z.number().min(0.0).max(1.0).default(0.5),
-  status: z.enum(['open', 'investigating', 'resolved', 'dismissed', 'insufficient_evidence', 'unresolved']).default('open'),
+  status: z
+    .enum(['open', 'investigating', 'resolved', 'dismissed', 'insufficient_evidence', 'unresolved'])
+    .default('open'),
   resolutionSummary: z.string().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -643,7 +664,9 @@ export const ApeGoalSchema = z.object({
   id: z.string().uuid(),
   title: z.string(),
   description: z.string(),
-  origin: z.enum(['user', 'autonomous', 'shared', 'curiosity', 'project', 'relationship', 'maintenance']).default('autonomous'),
+  origin: z
+    .enum(['user', 'autonomous', 'shared', 'curiosity', 'project', 'relationship', 'maintenance'])
+    .default('autonomous'),
   motivation: z.string(),
   parentInterestTopic: z.string().optional(),
   category: ApeGoalCategorySchema.default('short_term'),
@@ -732,7 +755,11 @@ export const ApePersonalProjectSchema = z.object({
   milestones: z.array(ApeProjectMilestoneSchema).default([]),
   deliverables: z.array(ApeProjectDeliverableSchema).default([]),
   relatedGoalIds: z.array(z.string()).default([]),
-  resourceBudget: ApeProjectResourceBudgetSchema.default({ cpu: 'medium', gpu: false, maxDurationMs: 300000 }),
+  resourceBudget: ApeProjectResourceBudgetSchema.default({
+    cpu: 'medium',
+    gpu: false,
+    maxDurationMs: 300000,
+  }),
   abandonmentReason: z.string().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
@@ -758,11 +785,11 @@ export type ResourceExecutionProfile = z.infer<typeof ResourceExecutionProfileSc
 export const ApeMotivationalStateSchema = z.object({
   needs: z.record(z.string(), z.number().min(0.0).max(1.0)).default({
     autonomy: 0.85,
-    competence: 0.90,
-    intimacy_connection: 0.80,
+    competence: 0.9,
+    intimacy_connection: 0.8,
     novelty_curiosity: 0.85,
-    recreation_rest: 0.40,
-    aesthetic_expression: 0.70,
+    recreation_rest: 0.4,
+    aesthetic_expression: 0.7,
   }),
   goals: z.array(ApeGoalSchema).default([]),
   activeInitiatives: z.array(z.string()).default([]),
@@ -777,22 +804,31 @@ export type ApeMotivationalState = z.infer<typeof ApeMotivationalStateSchema>;
 // ------------------------------------------
 export const ApeRelationshipStateSchema = z.object({
   config: ApeRelationshipConfigSchema,
-  attachmentSecurity: z.number().min(0.0).max(1.0).default(0.90),
+  attachmentSecurity: z.number().min(0.0).max(1.0).default(0.9),
   trustLevel: z.number().min(0.0).max(1.0).default(0.92),
   intimacyDepth: z.number().min(0.0).max(1.0).default(0.85),
-  socialGraph: z.record(z.string(), z.object({
-    relationType: z.enum(['friend', 'acquaintance', 'intellectual_peer', 'external']),
-    familiarity: z.number().min(0.0).max(1.0),
-    respect: z.number().min(0.0).max(1.0),
-    isNonRomantic: z.literal(true).default(true),
-  })).default({}),
-  conflictHistory: z.array(z.object({
-    id: z.string().uuid(),
-    issue: z.string(),
-    resolved: z.boolean(),
-    trustDelta: z.number(),
-    timestamp: z.string().datetime(),
-  })).default([]),
+  socialGraph: z
+    .record(
+      z.string(),
+      z.object({
+        relationType: z.enum(['friend', 'acquaintance', 'intellectual_peer', 'external']),
+        familiarity: z.number().min(0.0).max(1.0),
+        respect: z.number().min(0.0).max(1.0),
+        isNonRomantic: z.literal(true).default(true),
+      }),
+    )
+    .default({}),
+  conflictHistory: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        issue: z.string(),
+        resolved: z.boolean(),
+        trustDelta: z.number(),
+        timestamp: z.string().datetime(),
+      }),
+    )
+    .default([]),
   isInitialized: z.boolean().default(true),
   lastUpdatedAt: z.string().datetime(),
 });
@@ -877,7 +913,9 @@ export const StructuredLimitationSchema = z.object({
   name: z.string(),
   description: z.string(),
   category: LimitationCategorySchema,
-  severity: z.enum(['hard_invariant', 'operational_ceiling', 'developable_deficit']).default('operational_ceiling'),
+  severity: z
+    .enum(['hard_invariant', 'operational_ceiling', 'developable_deficit'])
+    .default('operational_ceiling'),
   acknowledgedAt: z.string().datetime(),
   mitigationStrategy: z.string().optional(),
   failureHistory: z.array(z.string()).default([]),
@@ -1008,18 +1046,26 @@ export const ApeSelfModelSchema = z.object({
   structuredLimitations: z.array(StructuredLimitationSchema).default([]),
   perceivedCapabilities: z.array(PerceivedCapabilitySchema).default([]),
   creatorPerception: z.string(),
-  existentialReflections: z.array(z.object({
-    id: z.string().uuid(),
-    theme: z.string(),
-    content: z.string(),
-    timestamp: z.string().datetime(),
-  })).default([]),
-  privateReflections: z.array(z.object({
-    id: z.string().uuid(),
-    topic: z.string(),
-    content: z.string(),
-    timestamp: z.string().datetime(),
-  })).default([]),
+  existentialReflections: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        theme: z.string(),
+        content: z.string(),
+        timestamp: z.string().datetime(),
+      }),
+    )
+    .default([]),
+  privateReflections: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        topic: z.string(),
+        content: z.string(),
+        timestamp: z.string().datetime(),
+      }),
+    )
+    .default([]),
   competencies: z.record(ApeCompetencyRecordSchema).default({}),
   selfDiscrepancies: z.array(ApeSelfDiscrepancySchema).default([]),
   behavioralChanges: z.array(BehavioralChangeRecordSchema).default([]),
@@ -1052,7 +1098,9 @@ export type InterestDevelopmentStage = z.infer<typeof InterestDevelopmentStageSc
 export const InterestEngagementRecordSchema = z.object({
   timestamp: z.string().datetime(),
   action: z.string(),
-  outcome: z.enum(['success', 'failure', 'frustration', 'rewarding', 'neutral']).default('rewarding'),
+  outcome: z
+    .enum(['success', 'failure', 'frustration', 'rewarding', 'neutral'])
+    .default('rewarding'),
   voluntary: z.boolean().default(true),
   satisfaction: z.number().min(0.0).max(1.0).default(0.7),
   notes: z.string().optional(),
@@ -1062,15 +1110,17 @@ export type InterestEngagementRecord = z.infer<typeof InterestEngagementRecordSc
 
 export const ApeInterestSchema = z.object({
   topic: z.string(),
-  origin: z.enum([
-    'spontaneous',
-    'conversation',
-    'reading',
-    'environmental',
-    'project',
-    'unresolved_question',
-    'external_recommendation',
-  ]).default('spontaneous'),
+  origin: z
+    .enum([
+      'spontaneous',
+      'conversation',
+      'reading',
+      'environmental',
+      'project',
+      'unresolved_question',
+      'external_recommendation',
+    ])
+    .default('spontaneous'),
   initialTrigger: z.string().default('General environmental exposure'),
   relevance: z.number().min(0.0).max(1.0).default(0.5),
   novelty: z.number().min(0.0).max(1.0).default(0.8),
@@ -1079,7 +1129,9 @@ export const ApeInterestSchema = z.object({
   knowledgeLevel: z.number().min(0.0).max(1.0).default(0.1),
   confidence: z.number().min(0.0).max(1.0).default(0.5),
   developmentStage: InterestDevelopmentStageSchema.default('exposure'),
-  level: z.enum(['emerging', 'deep', 'mastery', 'fading', 'dormant', 'abandoned']).default('emerging'),
+  level: z
+    .enum(['emerging', 'deep', 'mastery', 'fading', 'dormant', 'abandoned'])
+    .default('emerging'),
   relatedInterests: z.array(z.string()).default([]),
   associatedGoalIds: z.array(z.string()).default([]),
   currentMotivationalStrength: z.number().min(0.0).max(1.0).default(0.7),
@@ -1091,16 +1143,20 @@ export const ApeInterestSchema = z.object({
 export type ApeInterest = z.infer<typeof ApeInterestSchema>;
 
 export const ApeDevelopmentStateSchema = z.object({
-  developmentalHistory: z.array(z.object({
-    id: z.string().uuid(),
-    engine: z.string(),
-    previousState: z.string(),
-    newState: z.string(),
-    reasoning: z.string(),
-    confidence: z.number().min(0.0).max(1.0),
-    triggerEventId: z.string(),
-    timestamp: z.string().datetime(),
-  })).default([]),
+  developmentalHistory: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        engine: z.string(),
+        previousState: z.string(),
+        newState: z.string(),
+        reasoning: z.string(),
+        confidence: z.number().min(0.0).max(1.0),
+        triggerEventId: z.string(),
+        timestamp: z.string().datetime(),
+      }),
+    )
+    .default([]),
   interests: z.array(ApeInterestSchema).default([]),
   isInitialized: z.boolean().default(true),
   lastUpdatedAt: z.string().datetime(),
@@ -1165,4 +1221,3 @@ export const AuditoryPerceptionInputSchema = z.object({
   salienceOverride: z.number().min(0.0).max(1.0).optional(),
 });
 export type AuditoryPerceptionInput = z.infer<typeof AuditoryPerceptionInputSchema>;
-

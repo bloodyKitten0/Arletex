@@ -21,9 +21,18 @@ describe('Multimodal Media Perception: Pictures and Video Watching', () => {
     // Create a 2-second test video clip using ffmpeg with visual pattern and tone
     await execAsync('ffmpeg', [
       '-y',
-      '-f', 'lavfi', '-i', 'testsrc=duration=2:size=160x120:rate=10',
-      '-f', 'lavfi', '-i', 'sine=frequency=440:duration=2',
-      '-c:v', 'libx264', '-c:a', 'aac',
+      '-f',
+      'lavfi',
+      '-i',
+      'testsrc=duration=2:size=160x120:rate=10',
+      '-f',
+      'lavfi',
+      '-i',
+      'sine=frequency=440:duration=2',
+      '-c:v',
+      'libx264',
+      '-c:a',
+      'aac',
       testVideoPath,
     ]);
   });
@@ -74,12 +83,15 @@ describe('Multimodal Media Perception: Pictures and Video Watching', () => {
     const server = new ArletexBackendServer(config);
     await server.start(0);
 
-    vi.spyOn((server as any).inferenceGateway, 'streamChat').mockResolvedValue('I see the media clearly.');
+    vi.spyOn((server as any).inferenceGateway, 'streamChat').mockResolvedValue(
+      'I see the media clearly.',
+    );
 
     const conv = server.createConversation('Multimodal Media Session');
 
     // 1. Send message with pasted picture
-    const samplePicBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+    const samplePicBase64 =
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
     await server.runInferenceStream(
       conv.id,
       'Here is a picture I pasted',
@@ -113,7 +125,9 @@ describe('Multimodal Media Perception: Pictures and Video Watching', () => {
 
     const msgs2 = server.listMessages(conv.id);
     expect(msgs2.length).toBe(4); // 2 user + 2 assistant
-    const userVidMsg = msgs2.find((m) => m.role === 'user' && m.content.includes('Watch this video'));
+    const userVidMsg = msgs2.find(
+      (m) => m.role === 'user' && m.content.includes('Watch this video'),
+    );
     expect(userVidMsg?.metadata?.hasVideo).toBe(true);
     expect(userVidMsg?.metadata?.videoDuration).toBeGreaterThan(1.0);
     expect(userVidMsg?.metadata?.videoFramesCount).toBeGreaterThanOrEqual(1);

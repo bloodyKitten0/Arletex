@@ -6,9 +6,7 @@ import {
 } from '@arletex/contracts';
 import { DatabaseError, ITemperamentPersonalityRepository } from '@arletex/core';
 
-export class SqliteTemperamentPersonalityRepository
-  implements ITemperamentPersonalityRepository
-{
+export class SqliteTemperamentPersonalityRepository implements ITemperamentPersonalityRepository {
   private readonly db: Database.Database;
 
   constructor(db: Database.Database) {
@@ -40,15 +38,16 @@ export class SqliteTemperamentPersonalityRepository
           profile.lastCalibratedAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save temperament profile ${profile.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save temperament profile ${profile.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
   public getProfile(id: string = 'profile_arle_core'): TemperamentProfile | null {
     try {
-      const row = this.db
-        .prepare(`SELECT * FROM temperament_profiles WHERE id = ?`)
-        .get(id) as any;
+      const row = this.db.prepare(`SELECT * FROM temperament_profiles WHERE id = ?`).get(id) as any;
       if (!row) {
         // Fallback to latest
         const fallback = this.db
@@ -150,7 +149,7 @@ export class SqliteTemperamentPersonalityRepository
         reason: record.driftReason,
         evidence: record.evidence || [],
         version: record.version || 1,
-        confidence: record.confidence ?? 0.90,
+        confidence: record.confidence ?? 0.9,
         catalystEventId: record.catalystEventId,
       };
       this.db
@@ -177,10 +176,7 @@ export class SqliteTemperamentPersonalityRepository
     }
   }
 
-  public listEvolutionRecords(
-    traitKey?: string,
-    limit: number = 50,
-  ): PersonalityEvolutionRecord[] {
+  public listEvolutionRecords(traitKey?: string, limit: number = 50): PersonalityEvolutionRecord[] {
     try {
       let query = `SELECT * FROM personality_evolution_records`;
       const params: any[] = [];
@@ -195,16 +191,20 @@ export class SqliteTemperamentPersonalityRepository
       return rows.map((r) => {
         let reason = r.drift_reason;
         let evidence: string[] = [];
-        let confidence = 0.90;
+        let confidence = 0.9;
         let version = 1;
         let catalystEventId: string | undefined = undefined;
 
-        if (typeof r.drift_reason === 'string' && r.drift_reason.startsWith('{') && r.drift_reason.endsWith('}')) {
+        if (
+          typeof r.drift_reason === 'string' &&
+          r.drift_reason.startsWith('{') &&
+          r.drift_reason.endsWith('}')
+        ) {
           try {
             const parsed = JSON.parse(r.drift_reason);
             reason = parsed.reason ?? r.drift_reason;
             evidence = Array.isArray(parsed.evidence) ? parsed.evidence : [];
-            confidence = parsed.confidence ?? 0.90;
+            confidence = parsed.confidence ?? 0.9;
             version = parsed.version ?? 1;
             catalystEventId = parsed.catalystEventId;
           } catch {

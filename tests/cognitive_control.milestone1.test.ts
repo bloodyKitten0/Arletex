@@ -94,7 +94,9 @@ describe('Milestone 1 — Central Cognitive Control Architecture', () => {
       // Verify normalization stripped excess whitespace
       const event = cognitiveBus.getEventHistory()[0];
       expect(event).toBeDefined();
-      expect(event?.payload.text).toBe('Hello Arle, let us analyze the trade-offs of microkernel vs monolithic architectures.');
+      expect(event?.payload.text).toBe(
+        'Hello Arle, let us analyze the trade-offs of microkernel vs monolithic architectures.',
+      );
     });
 
     it('rejects events with invalid or disallowed source origins', async () => {
@@ -192,7 +194,9 @@ describe('Milestone 1 — Central Cognitive Control Architecture', () => {
       const dec = result.decision!;
 
       expect(dec.actionType).toBe('research');
-      expect(dec.chosenAlternativeReason).toContain('High novelty and curiosity trigger autonomous evidence collection');
+      expect(dec.chosenAlternativeReason).toContain(
+        'High novelty and curiosity trigger autonomous evidence collection',
+      );
       expect(dec.rejectedAlternatives.length).toBeGreaterThan(0);
 
       // Verify rejected alternatives have explicit justifications
@@ -214,7 +218,9 @@ describe('Milestone 1 — Central Cognitive Control Architecture', () => {
       expect(result.success).toBe(true);
       expect(result.decision).toBeDefined();
       expect(result.decision?.actionType).toBe('reflect');
-      expect(result.decision?.chosenAlternativeReason).toMatch(/causal reflection required to understand assumptions/i);
+      expect(result.decision?.chosenAlternativeReason).toMatch(
+        /causal reflection required to understand assumptions/i,
+      );
 
       // Verify immediate re-execution was rejected
       const rejectedExecution = result.decision?.rejectedAlternatives.find(
@@ -245,7 +251,9 @@ describe('Milestone 1 — Central Cognitive Control Architecture', () => {
       const selfModel = apeService.selfModelEngine.getState();
       expect(selfModel.acknowledgedLimitations.length).toBeGreaterThan(0);
       expect(
-        selfModel.acknowledgedLimitations.some((l) => l.includes('operational_execution') || l.includes('research')),
+        selfModel.acknowledgedLimitations.some(
+          (l) => l.includes('operational_execution') || l.includes('research'),
+        ),
       ).toBe(true);
 
       // Verify memory was committed with provenance
@@ -289,11 +297,15 @@ describe('Milestone 1 — Central Cognitive Control Architecture', () => {
 
       expect(result.success).toBe(true);
       expect(result.reflectionRecorded).toBeDefined();
-      expect(result.reflectionRecorded).toContain('Maintained authentic and grounded dialogue with user');
+      expect(result.reflectionRecorded).toContain(
+        'Maintained authentic and grounded dialogue with user',
+      );
 
       const selfModel = apeService.selfModelEngine.getState();
       expect(selfModel.privateReflections.length).toBeGreaterThan(0);
-      expect(selfModel.privateReflections[0]?.content).toContain('Maintained authentic and grounded dialogue');
+      expect(selfModel.privateReflections[0]?.content).toContain(
+        'Maintained authentic and grounded dialogue',
+      );
     });
 
     it('persists event history and decisions across dispatches', async () => {

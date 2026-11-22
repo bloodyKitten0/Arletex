@@ -51,7 +51,10 @@ export class SensorimotorRepository implements ISensorimotorRepository {
           new Date().toISOString(),
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to record sensorimotor action ${record.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to record sensorimotor action ${record.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -136,7 +139,10 @@ export class SensorimotorRepository implements ISensorimotorRepository {
           new Date().toISOString(),
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save interaction strategy ${strategy.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save interaction strategy ${strategy.id}: ${err.message}`,
+        err,
+      );
     }
   }
 

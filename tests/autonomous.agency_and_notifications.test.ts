@@ -14,8 +14,14 @@ import {
 } from '@arletex/database';
 import type Database from 'better-sqlite3';
 import { ApeService, rootLogger } from '@arletex/core';
-import { NotificationListenerService, DesktopNotification } from '../apps/desktop/src/backend/notificationListenerService.js';
-import { TelegramBridgeService, InboundTelegramMessage } from '../apps/desktop/src/backend/telegramBridgeService.js';
+import {
+  NotificationListenerService,
+  DesktopNotification,
+} from '../apps/desktop/src/backend/notificationListenerService.js';
+import {
+  TelegramBridgeService,
+  InboundTelegramMessage,
+} from '../apps/desktop/src/backend/telegramBridgeService.js';
 import { AutonomousAgencyService } from '../apps/desktop/src/backend/autonomousAgencyService.js';
 import { DeviceAgencyService } from '../apps/desktop/src/backend/deviceAgencyService.js';
 
@@ -235,7 +241,9 @@ method call time=101.0 sender=:1.6 -> destination=:1.2 serial=2 path=/org/freede
       expect(log?.title).toContain('Rest & Reflection');
 
       const activities = activityRepo.list('completed', 'arle_initiated');
-      expect(activities.some((a) => a.title.includes('Rest') || a.category === 'recreation')).toBe(true);
+      expect(activities.some((a) => a.title.includes('Rest') || a.category === 'recreation')).toBe(
+        true,
+      );
     });
 
     it('asserts Proof as partner and equal in self-model reflections, forbidding creator titles', async () => {

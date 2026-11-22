@@ -3,11 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
-import {
-  ReasoningPremise,
-  ReasoningTask,
-  assertReasoningIntegrity,
-} from '@arletex/contracts';
+import { ReasoningPremise, ReasoningTask, assertReasoningIntegrity } from '@arletex/contracts';
 import {
   createDefaultConfig,
   ApeService,
@@ -70,7 +66,8 @@ describe('Milestone 14 — General Diverse Reasoning', () => {
     const premises: ReasoningPremise[] = [
       {
         id: 'p1',
-        statement: 'If an operating system process receives SIGKILL, it terminates immediately without running cleanup handlers',
+        statement:
+          'If an operating system process receives SIGKILL, it terminates immediately without running cleanup handlers',
         truthValue: 'true',
       },
       {
@@ -123,10 +120,12 @@ describe('Milestone 14 — General Diverse Reasoning', () => {
   // Test 3: Abductive Reasoning (Inference to Best Explanation)
   // -------------------------------------------------------------
   it('selects the most probable explanation for surprising observations via abduction', () => {
-    const surprisingObs = 'High memory usage spike observed immediately after large PDF parsing job';
+    const surprisingObs =
+      'High memory usage spike observed immediately after large PDF parsing job';
     const candidateExplanations = [
       {
-        explanation: 'Worker thread retained uncompressed decoded raster pixel buffers in working memory',
+        explanation:
+          'Worker thread retained uncompressed decoded raster pixel buffers in working memory',
         priorLikelihood: 0.8,
         explanatoryPower: 0.9,
       },
@@ -163,9 +162,18 @@ describe('Milestone 14 — General Diverse Reasoning', () => {
       'biological_immune_system',
       'software_security_architecture',
       [
-        { sourceRelation: 'antibodies recognize foreign antigens', targetRelation: 'waf rules identify malicious payloads' },
-        { sourceRelation: 'memory B-cells retain past pathogen profiles', targetRelation: 'threat intelligence database caches attack signatures' },
-        { sourceRelation: 'fever elevates system-wide response threshold', targetRelation: 'circuit breakers throttle anomalous request bursts' },
+        {
+          sourceRelation: 'antibodies recognize foreign antigens',
+          targetRelation: 'waf rules identify malicious payloads',
+        },
+        {
+          sourceRelation: 'memory B-cells retain past pathogen profiles',
+          targetRelation: 'threat intelligence database caches attack signatures',
+        },
+        {
+          sourceRelation: 'fever elevates system-wide response threshold',
+          targetRelation: 'circuit breakers throttle anomalous request bursts',
+        },
       ],
       'Software architectures can self-harden against novel attacks using cached signature history and adaptive throttling',
     );
@@ -187,7 +195,7 @@ describe('Milestone 14 — General Diverse Reasoning', () => {
     const task = reasoningEngine.executeProbabilisticReasoning(
       0.05,
       0.95,
-      0.10,
+      0.1,
       'Probability of condition given positive diagnostic marker',
       'diagnostic_statistics',
     );
@@ -243,7 +251,8 @@ describe('Milestone 14 — General Diverse Reasoning', () => {
         {
           paradigm: 'probabilistic',
           operation: 'safety_margin_calculation',
-          intermediateConclusion: 'Reserve 40% margin (124.8MB) for transient spikes, leaving ~180MB for cache',
+          intermediateConclusion:
+            'Reserve 40% margin (124.8MB) for transient spikes, leaving ~180MB for cache',
           confidence: 0.9,
         },
         {
@@ -253,7 +262,8 @@ describe('Milestone 14 — General Diverse Reasoning', () => {
           confidence: 0.95,
         },
       ],
-      finalConclusion: 'Configured MAX_CACHE_SIZE = 180MB based on mathematical headroom and probabilistic safety margins.',
+      finalConclusion:
+        'Configured MAX_CACHE_SIZE = 180MB based on mathematical headroom and probabilistic safety margins.',
     });
 
     expect(task.primaryParadigm).toBe('multi_step');
@@ -311,10 +321,12 @@ describe('Milestone 14 — General Diverse Reasoning', () => {
         steps: [],
         finalConclusion: 'claiming 100% certainty on induction',
         compositeConfidence: 1.0, // VIOLATION! Inductive reasoning cannot be 1.0
-        uncertaintyLevel: 0.0,    // VIOLATION! Must acknowledge uncertainty
+        uncertaintyLevel: 0.0, // VIOLATION! Must acknowledge uncertainty
         timestamp: new Date().toISOString(),
       });
-    }).toThrow(/Negative Invariant Violation: inductive reasoning cannot claim 100% absolute certainty/);
+    }).toThrow(
+      /Negative Invariant Violation: inductive reasoning cannot claim 100% absolute certainty/,
+    );
 
     expect(() => {
       assertReasoningIntegrity({

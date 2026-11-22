@@ -93,20 +93,24 @@ export const CognitiveDecisionSchema = z.object({
   ]),
   target: z.string().optional(),
   chosenAlternativeReason: z.string(),
-  rejectedAlternatives: z.array(
-    z.object({
-      actionType: z.string(),
-      reason: z.string(),
-    }),
-  ).default([]),
+  rejectedAlternatives: z
+    .array(
+      z.object({
+        actionType: z.string(),
+        reason: z.string(),
+      }),
+    )
+    .default([]),
   confidence: z.number().min(0).max(1).default(1.0),
   riskAssessment: z.enum(['low', 'moderate', 'high']).default('low'),
   permissionRequired: z.boolean().default(false),
-  resourceEstimate: z.object({
-    cpu: z.enum(['low', 'medium', 'high']).default('low'),
-    gpu: z.boolean().default(false),
-    timeoutMs: z.number().int().positive().default(5000),
-  }).default({ cpu: 'low', gpu: false, timeoutMs: 5000 }),
+  resourceEstimate: z
+    .object({
+      cpu: z.enum(['low', 'medium', 'high']).default('low'),
+      gpu: z.boolean().default(false),
+      timeoutMs: z.number().int().positive().default(5000),
+    })
+    .default({ cpu: 'low', gpu: false, timeoutMs: 5000 }),
   timestamp: z.string().datetime(),
   traceId: z.string().optional(),
   correlationId: z.string().optional(),

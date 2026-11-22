@@ -8,11 +8,11 @@ import {
   ProactiveProposalDeliveryResult,
   ProactiveDeliveryPolicy,
 } from '@arletex/contracts';
-import { TelegramBridgeService, TelegramSendResult } from './telegramBridgeService.js';
+import { TelegramBridgeService } from './telegramBridgeService.js';
 
 export interface TelegramInitiativeConfig {
   quietHoursStart?: number; // 23 (11 PM)
-  quietHoursEnd?: number;   // 8 (8 AM)
+  quietHoursEnd?: number; // 8 (8 AM)
   rateLimitMaxPerHour?: number; // 5
   cooldownMinutes?: number; // 10
   duplicateSuppressionWindowMinutes?: number; // 60
@@ -84,7 +84,8 @@ export class TelegramInitiativeService {
       quietHoursStart: input.deliveryPolicy?.quietHoursStart ?? this.config.quietHoursStart,
       quietHoursEnd: input.deliveryPolicy?.quietHoursEnd ?? this.config.quietHoursEnd,
       allowQuietHoursOverride: input.deliveryPolicy?.allowQuietHoursOverride ?? false,
-      rateLimitMaxPerHour: input.deliveryPolicy?.rateLimitMaxPerHour ?? this.config.rateLimitMaxPerHour,
+      rateLimitMaxPerHour:
+        input.deliveryPolicy?.rateLimitMaxPerHour ?? this.config.rateLimitMaxPerHour,
       cooldownMinutes: input.deliveryPolicy?.cooldownMinutes ?? this.config.cooldownMinutes,
       batchingDelayMinutes: input.deliveryPolicy?.batchingDelayMinutes ?? 0,
       duplicateSuppressionWindowMinutes:
@@ -354,9 +355,7 @@ export class TelegramInitiativeService {
       };
 
       proposal.deliveryResult = failureResult;
-      this.logger.warn(
-        `Proactive proposal ${proposalId} transmission failed: ${sendResult.error}`,
-      );
+      this.logger.warn(`Proactive proposal ${proposalId} transmission failed: ${sendResult.error}`);
       return failureResult;
     }
   }

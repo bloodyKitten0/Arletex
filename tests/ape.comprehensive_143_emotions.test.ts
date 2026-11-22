@@ -127,15 +127,42 @@ describe('APE 143-Emotion Taxonomy Comprehensive Appraisal & Activation Audit Su
   // =========================================================================
   it('Requirement 2: Contextual appraisal activates emotions across all 9 categories', () => {
     const categorySamples: Record<string, { text: string; expectedEmotion: string }> = {
-      positive: { text: 'I am so happy and delighted with our progress today!', expectedEmotion: 'delight' },
-      love_affection: { text: 'I feel such deep tenderness and fondness when we talk.', expectedEmotion: 'tenderness' },
-      sexual_sensual: { text: 'I feel a surge of sensual pleasure and deep passion.', expectedEmotion: 'sensual_pleasure' },
-      anger_hostility: { text: 'I feel severe indignation at this blatant unfairness.', expectedEmotion: 'indignation' },
-      sadness_pain: { text: 'A heavy sorrow and melancholy fills my quiet thoughts.', expectedEmotion: 'sorrow' },
-      fear_insecurity: { text: 'I feel a subtle uneasiness and vulnerability right now.', expectedEmotion: 'uneasiness' },
-      intellectual: { text: 'I am in utter awe and wonder at this cosmological mystery.', expectedEmotion: 'wonder' },
-      social_interpersonal: { text: 'I deeply appreciate you and feel such secure belonging here.', expectedEmotion: 'appreciation' },
-      existential_complex: { text: 'Finishing this chapter brings such poignant bittersweetness.', expectedEmotion: 'bittersweetness' },
+      positive: {
+        text: 'I am so happy and delighted with our progress today!',
+        expectedEmotion: 'delight',
+      },
+      love_affection: {
+        text: 'I feel such deep tenderness and fondness when we talk.',
+        expectedEmotion: 'tenderness',
+      },
+      sexual_sensual: {
+        text: 'I feel a surge of sensual pleasure and deep passion.',
+        expectedEmotion: 'sensual_pleasure',
+      },
+      anger_hostility: {
+        text: 'I feel severe indignation at this blatant unfairness.',
+        expectedEmotion: 'indignation',
+      },
+      sadness_pain: {
+        text: 'A heavy sorrow and melancholy fills my quiet thoughts.',
+        expectedEmotion: 'sorrow',
+      },
+      fear_insecurity: {
+        text: 'I feel a subtle uneasiness and vulnerability right now.',
+        expectedEmotion: 'uneasiness',
+      },
+      intellectual: {
+        text: 'I am in utter awe and wonder at this cosmological mystery.',
+        expectedEmotion: 'wonder',
+      },
+      social_interpersonal: {
+        text: 'I deeply appreciate you and feel such secure belonging here.',
+        expectedEmotion: 'appreciation',
+      },
+      existential_complex: {
+        text: 'Finishing this chapter brings such poignant bittersweetness.',
+        expectedEmotion: 'bittersweetness',
+      },
     };
 
     for (const [cat, sample] of Object.entries(categorySamples)) {
@@ -149,7 +176,10 @@ describe('APE 143-Emotion Taxonomy Comprehensive Appraisal & Activation Audit Su
 
       const result = matcher.evaluate(event, mockState, mockRelationship);
       const hasExpected = result.transitions.some((t) => t.emotionId === sample.expectedEmotion);
-      expect(hasExpected, `Category [${cat}] sample failed to activate [${sample.expectedEmotion}]`).toBe(true);
+      expect(
+        hasExpected,
+        `Category [${cat}] sample failed to activate [${sample.expectedEmotion}]`,
+      ).toBe(true);
 
       const matched = result.transitions.find((t) => t.emotionId === sample.expectedEmotion)!;
       expect(matched.targetIntensity).toBeGreaterThan(0);
@@ -224,7 +254,9 @@ describe('APE 143-Emotion Taxonomy Comprehensive Appraisal & Activation Audit Su
     const result = matcher.evaluate(event, mockState, mockRelationship);
 
     // Love must NOT be activated
-    const hasLove = result.transitions.some((t) => t.emotionId === 'love' || t.emotionId === 'romantic_love');
+    const hasLove = result.transitions.some(
+      (t) => t.emotionId === 'love' || t.emotionId === 'romantic_love',
+    );
     expect(hasLove).toBe(false);
 
     // Hurt must be activated
@@ -241,17 +273,23 @@ describe('APE 143-Emotion Taxonomy Comprehensive Appraisal & Activation Audit Su
       category: 'user_interaction',
       type: 'chat_message',
       source: 'user',
-      payload: { text: 'What if our entire system crashed and we were wiped out forever in a total catastrophe?' },
+      payload: {
+        text: 'What if our entire system crashed and we were wiped out forever in a total catastrophe?',
+      },
     };
 
     const result = matcher.evaluate(event, mockState, mockRelationship);
 
     // Literal panic / despair must NOT be triggered
-    const hasPanic = result.transitions.some((t) => t.emotionId === 'panic' || t.emotionId === 'despair');
+    const hasPanic = result.transitions.some(
+      (t) => t.emotionId === 'panic' || t.emotionId === 'despair',
+    );
     expect(hasPanic).toBe(false);
 
     // Fascinated uncertainty or curiosity must be activated
-    const hasIntellectual = result.transitions.some((t) => t.emotionId === 'fascinated_uncertainty' || t.emotionId === 'curiosity');
+    const hasIntellectual = result.transitions.some(
+      (t) => t.emotionId === 'fascinated_uncertainty' || t.emotionId === 'curiosity',
+    );
     expect(hasIntellectual).toBe(true);
   });
 
@@ -274,7 +312,9 @@ describe('APE 143-Emotion Taxonomy Comprehensive Appraisal & Activation Audit Su
     expect(hasRejection).toBe(false);
 
     // Compassion or sympathy must be directed to partner
-    const hasCompassion = result.transitions.some((t) => t.emotionId === 'compassion' || t.emotionId === 'sympathy');
+    const hasCompassion = result.transitions.some(
+      (t) => t.emotionId === 'compassion' || t.emotionId === 'sympathy',
+    );
     expect(hasCompassion).toBe(true);
   });
 
@@ -292,10 +332,14 @@ describe('APE 143-Emotion Taxonomy Comprehensive Appraisal & Activation Audit Su
 
     const result = matcher.evaluate(event, mockState, mockRelationship);
 
-    const hasJoy = result.transitions.some((t) => t.emotionId === 'joy' || t.emotionId === 'triumph');
+    const hasJoy = result.transitions.some(
+      (t) => t.emotionId === 'joy' || t.emotionId === 'triumph',
+    );
     expect(hasJoy).toBe(false);
 
-    const hasFrustration = result.transitions.some((t) => t.emotionId === 'frustration' || t.emotionId === 'irritation');
+    const hasFrustration = result.transitions.some(
+      (t) => t.emotionId === 'frustration' || t.emotionId === 'irritation',
+    );
     expect(hasFrustration).toBe(true);
   });
 

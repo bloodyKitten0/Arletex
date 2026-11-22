@@ -3,11 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
-import {
-  ApeRepository,
-  DatabaseService,
-  MigrationRunner,
-} from '@arletex/database';
+import { ApeRepository, DatabaseService, MigrationRunner } from '@arletex/database';
 import {
   ApeService,
   CognitiveControlBus,
@@ -18,9 +14,7 @@ import {
   PredictiveCognitionEngine,
   rootLogger,
 } from '@arletex/core';
-import {
-  ResearchSource,
-} from '@arletex/contracts';
+import { ResearchSource } from '@arletex/contracts';
 
 describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision', () => {
   let tempDir: string;
@@ -80,7 +74,8 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
           scope: 'domain_specific',
           sourceQuality: 'peer_reviewed',
           counterEvidence: [],
-          proposition: 'Raft consensus achieves linearizable state machine replication across non-byzantine network partitions',
+          proposition:
+            'Raft consensus achieves linearizable state machine replication across non-byzantine network partitions',
         },
       );
 
@@ -111,10 +106,13 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
       );
 
       const revised = personalityEngine.reviseBeliefWithEvidence(initial.id, {
-        newEvidence: 'Measured cache-line contention and NUMA interconnect bus locking on multi-socket CPU yields 35us latency jitter',
+        newEvidence:
+          'Measured cache-line contention and NUMA interconnect bus locking on multi-socket CPU yields 35us latency jitter',
         isOpposing: true,
-        reason: 'NUMA cross-socket memory bus benchmarks revealed hardware latency jitter under high cache contention',
-        revisedProposition: 'Single-producer single-consumer ringbuffer achieves sub-microsecond latency within single NUMA node, but exhibits jitter under cross-socket contention',
+        reason:
+          'NUMA cross-socket memory bus benchmarks revealed hardware latency jitter under high cache contention',
+        revisedProposition:
+          'Single-producer single-consumer ringbuffer achieves sub-microsecond latency within single NUMA node, but exhibits jitter under cross-socket contention',
         sourceQuality: 'primary_empirical',
         scope: 'contextual',
       });
@@ -134,7 +132,9 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
       expect(historyRecord.newConfidence).toBeDefined();
       expect(historyRecord.revisionType).toBe('revised_proposition');
       expect(historyRecord.sourceQuality).toBe('primary_empirical');
-      expect(historyRecord.evidence).toContain('Measured cache-line contention and NUMA interconnect bus locking on multi-socket CPU yields 35us latency jitter');
+      expect(historyRecord.evidence).toContain(
+        'Measured cache-line contention and NUMA interconnect bus locking on multi-socket CPU yields 35us latency jitter',
+      );
     });
 
     it('rejects weak speculation counter-evidence and reaffirms high-confidence empirical belief without collapsing', () => {
@@ -142,7 +142,10 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
         'aes_cryptography',
         'AES-256 is computationally secure against classical brute-force key recovery under known physics limits',
         0.98,
-        ['NIST FIPS 197 standard', 'Thermodynamic bounds on computation (Landauer limit) for 2^256 operations'],
+        [
+          'NIST FIPS 197 standard',
+          'Thermodynamic bounds on computation (Landauer limit) for 2^256 operations',
+        ],
         'empirical_observation',
         { scope: 'universal', sourceQuality: 'primary_empirical' },
       );
@@ -168,15 +171,19 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
       const initial = personalityEngine.addOrUpdateBelief(
         'lk99_superconductivity',
         'Copper-substituted lead apatite exhibits room-temperature superconductivity',
-        0.50,
-        ['Initial preprint levitation video and resistance drop claim', 'Partial diamagnetism observation in sample A'],
+        0.5,
+        [
+          'Initial preprint levitation video and resistance drop claim',
+          'Partial diamagnetism observation in sample A',
+        ],
         'research',
         { scope: 'provisional', sourceQuality: 'mixed' },
       );
 
       // Add two opposing empirical replication failures
       personalityEngine.reviseBeliefWithEvidence(initial.id, {
-        newEvidence: 'Max Planck Institute synthesized pure single crystals showing ferromagnetism and insulator behavior, not superconductivity',
+        newEvidence:
+          'Max Planck Institute synthesized pure single crystals showing ferromagnetism and insulator behavior, not superconductivity',
         isOpposing: true,
         reason: 'MPI empirical crystal synthesis and measurement',
         sourceQuality: 'primary_empirical',
@@ -184,11 +191,12 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
       });
 
       const updated = personalityEngine.reviseBeliefWithEvidence(initial.id, {
-        newEvidence: 'US-India independent group showed Cu2S phase transition artifact accounts for sharp resistivity drop at 104C',
+        newEvidence:
+          'US-India independent group showed Cu2S phase transition artifact accounts for sharp resistivity drop at 104C',
         isOpposing: true,
         reason: 'Cu2S impurity phase transition verification',
         sourceQuality: 'primary_empirical',
-        evidenceWeight: 0.90,
+        evidenceWeight: 0.9,
       });
 
       expect(updated).toBeDefined();
@@ -208,10 +216,12 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
       );
 
       personalityEngine.reviseBeliefWithEvidence(belief.id, {
-        newEvidence: 'Corner case uncovered in undefined behavior translation during vectorization optimization',
+        newEvidence:
+          'Corner case uncovered in undefined behavior translation during vectorization optimization',
         isOpposing: true,
         reason: 'Vectorization pass uncovered subtle UB assumption mismatch',
-        revisedProposition: 'Formal translation validation proves equivalence between spec and binary except where source relies on undefined behavior',
+        revisedProposition:
+          'Formal translation validation proves equivalence between spec and binary except where source relies on undefined behavior',
         sourceQuality: 'primary_empirical',
         scope: 'domain_specific',
       });
@@ -224,13 +234,15 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
       const newApeRepo = new ApeRepository(newDb);
       const newApeService = new ApeService(newApeRepo, undefined, rootLogger);
 
-      const restoredBelief = newApeService.personalityEngine.getState().beliefs.find(
-        (b) => b.topic === 'epistemic_restart_test',
-      );
+      const restoredBelief = newApeService.personalityEngine
+        .getState()
+        .beliefs.find((b) => b.topic === 'epistemic_restart_test');
 
       expect(restoredBelief).toBeDefined();
       expect(restoredBelief?.content).toContain('except where source relies on undefined behavior');
-      expect(restoredBelief?.proposition).toContain('except where source relies on undefined behavior');
+      expect(restoredBelief?.proposition).toContain(
+        'except where source relies on undefined behavior',
+      );
       expect(restoredBelief?.scope).toBe('domain_specific');
       expect(restoredBelief?.revisionHistory.length).toBe(1);
       expect(restoredBelief?.revisionHistory[0]?.revisionType).toBe('revised_proposition');
@@ -247,7 +259,7 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
     it('formulates candidate questions from developing knowledge gaps in active interests', () => {
       developmentEngine.registerInterestExposure({
         topic: 'Algebraic Topology',
-        curiosity: 0.90,
+        curiosity: 0.9,
       });
 
       const questions = intellectualEngine.discoverKnowledgeGapQuestions();
@@ -263,8 +275,10 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
       const contradictionQuestions = intellectualEngine.discoverQuestionsFromContradictions([
         {
           topic: 'Garbage Collection Latency',
-          claimA: 'Generational garbage collection introduces unbounded STW pause times in high-throughput heaps',
-          claimB: 'Modern concurrent collectors like ZGC achieve sub-millisecond max pauses independent of heap size',
+          claimA:
+            'Generational garbage collection introduces unbounded STW pause times in high-throughput heaps',
+          claimB:
+            'Modern concurrent collectors like ZGC achieve sub-millisecond max pauses independent of heap size',
           domain: 'Memory Management',
         },
       ]);
@@ -281,7 +295,8 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
       const predictionQuestions = intellectualEngine.discoverQuestionsFromPredictionErrors([
         {
           domain: 'Process Scheduling',
-          targetStatement: 'Real-time SCHED_DEADLINE thread will meet all deadlines under 90% CPU load',
+          targetStatement:
+            'Real-time SCHED_DEADLINE thread will meet all deadlines under 90% CPU load',
           predictionError: 0.75,
         },
       ]);
@@ -310,7 +325,9 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
 
       const projectQuestions = intellectualEngine.discoverQuestionsFromProjects();
       expect(projectQuestions.length).toBeGreaterThan(0);
-      const q = projectQuestions.find((item) => item.domain.includes('IPC Ringbuffer') || item.question.includes('Ringbuffer'));
+      const q = projectQuestions.find(
+        (item) => item.domain.includes('IPC Ringbuffer') || item.question.includes('Ringbuffer'),
+      );
       expect(q).toBeDefined();
       expect(q?.origin).toBe('project');
       expect(q?.question).toContain('empirical');
@@ -413,7 +430,7 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
       const secondary = intellectualEngine.evaluateSourceQuality({
         title: 'Understanding Modern Microkernel Architecture (Tech Blog Guide)',
         sourceType: 'secondary_explanation',
-        reliabilityScore: 0.60,
+        reliabilityScore: 0.6,
       });
       expect(secondary.qualityCategory).toBe('secondary_explanation');
       expect(secondary.score).toBeLessThan(0.75);
@@ -429,15 +446,16 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
       const speculation = intellectualEngine.evaluateSourceQuality({
         title: 'Rumor: Unconfirmed Architecture Shift in Next Generation Silicon',
         sourceType: 'speculation',
-        reliabilityScore: 0.20,
+        reliabilityScore: 0.2,
       });
       expect(speculation.qualityCategory).toBe('speculation');
-      expect(speculation.score).toBeLessThan(0.30);
+      expect(speculation.score).toBeLessThan(0.3);
     });
 
     it('executes a full research trace preserving sources, extracted passages, quality evaluations, uncertainty, and belief update', () => {
       const q = intellectualEngine.generateQuestion({
-        question: 'Does capability-based addressing prevent privilege escalation without MMU page table flushes?',
+        question:
+          'Does capability-based addressing prevent privilege escalation without MMU page table flushes?',
         domain: 'Hardware Capability Systems',
         origin: 'curiosity',
       });
@@ -484,11 +502,13 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
         sources,
         candidateHypotheses: [
           {
-            statement: 'Hardware capabilities enforce spatial memory safety and fast compartmentalization without global MMU invalidations',
+            statement:
+              'Hardware capabilities enforce spatial memory safety and fast compartmentalization without global MMU invalidations',
             plausibility: 0.6,
           },
           {
-            statement: 'Hardware capabilities cannot enforce spatial memory safety without full OS MMU address space separation',
+            statement:
+              'Hardware capabilities cannot enforce spatial memory safety without full OS MMU address space separation',
             plausibility: 0.4,
           },
         ],
@@ -499,7 +519,9 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
       expect(trace.questionId).toBe(q.id);
       expect(trace.query).toContain('Hardware Capability Systems');
       expect(trace.sources.length).toBe(2);
-      expect(trace.sources[0]?.sourceUrl).toBe('https://www.cl.cam.ac.uk/research/security/ctsrd/cheri/ieee-sp-cheri.pdf');
+      expect(trace.sources[0]?.sourceUrl).toBe(
+        'https://www.cl.cam.ac.uk/research/security/ctsrd/cheri/ieee-sp-cheri.pdf',
+      );
       expect(trace.sources[0]?.author).toBe('Robert N. M. Watson et al.');
       expect(trace.sources[0]?.contentHash).toBeDefined();
       expect(trace.sourceQualityAssessments.length).toBe(2);
@@ -511,13 +533,14 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
 
       // Resulting belief is created in PersonalityEngine
       expect(trace.resultingBeliefUpdate).toBeDefined();
-      expect(trace.resultingBeliefUpdate.confidence).toBeGreaterThanOrEqual(0.70);
+      expect(trace.resultingBeliefUpdate.confidence).toBeGreaterThanOrEqual(0.7);
       expect(trace.resultingBeliefUpdate.supportingEvidence.length).toBeGreaterThan(0);
     });
 
     it('quantifies high uncertainty and flags insufficient evidence when only weak or uncorroborated sources exist', () => {
       const q = intellectualEngine.generateQuestion({
-        question: 'Will room-temperature topological quantum computing chips be manufactured commercially in 2027?',
+        question:
+          'Will room-temperature topological quantum computing chips be manufactured commercially in 2027?',
         domain: 'Quantum Computing Commercialization',
         origin: 'curiosity',
       });
@@ -528,8 +551,10 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
           title: 'Tech Rumor: Startup claims quantum chip ready next year',
           sourceUrl: 'https://newsblog.example.com/rumors/quantum-2027',
           sourceType: 'speculation',
-          reliabilityScore: 0.20,
-          extractedEvidence: ['Anonymous executive hinted at room-temperature topological qubit tapeout'],
+          reliabilityScore: 0.2,
+          extractedEvidence: [
+            'Anonymous executive hinted at room-temperature topological qubit tapeout',
+          ],
           retrievedAt: new Date().toISOString(),
         },
       ];
@@ -538,12 +563,18 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
         questionId: q.id,
         sources: weakSources,
         candidateHypotheses: [
-          { statement: 'Commercial room-temperature topological chips will be available in 2027', plausibility: 0.5 },
-          { statement: 'Commercial room-temperature topological chips will not be viable by 2027', plausibility: 0.5 },
+          {
+            statement: 'Commercial room-temperature topological chips will be available in 2027',
+            plausibility: 0.5,
+          },
+          {
+            statement: 'Commercial room-temperature topological chips will not be viable by 2027',
+            plausibility: 0.5,
+          },
         ],
       });
 
-      expect(trace.uncertainty).toBeGreaterThanOrEqual(0.60);
+      expect(trace.uncertainty).toBeGreaterThanOrEqual(0.6);
       expect(trace.synthesis).toContain('Evidence remains insufficient');
       expect(trace.resultingBeliefUpdate.confidence).toBeLessThanOrEqual(0.45);
     });
@@ -562,23 +593,31 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
         'microkernel_ipc_performance',
         'Modern verified microkernels like seL4 achieve fast microsecond-range IPC context switches (0.2 - 0.5 us)',
         0.94,
-        ['ACM TOCS measured benchmarks: 100-200 CPU cycles per IPC context switch on x86/ARM', 'seL4 verified runtime benchmarks'],
+        [
+          'ACM TOCS measured benchmarks: 100-200 CPU cycles per IPC context switch on x86/ARM',
+          'seL4 verified runtime benchmarks',
+        ],
         'empirical_observation',
         { scope: 'domain_specific', sourceQuality: 'primary_empirical' },
       );
 
       // User asserts contrary claim with zero evidence
-      const userAssertion = 'Microkernels are fundamentally slow, impossible to optimize, and cannot achieve sub-microsecond IPC';
+      const userAssertion =
+        'Microkernels are fundamentally slow, impossible to optimize, and cannot achieve sub-microsecond IPC';
       const evaluation = personalityEngine.evaluateClaim(userAssertion);
 
       expect(evaluation.conflicts).toBe(true);
       expect(evaluation.evidenceQualityAssessment?.verdict).toBe('user_mistaken');
       expect(evaluation.evidenceQualityAssessment?.isSufficientToOverturn).toBe(false);
-      expect(evaluation.respectfulDisagreementReason).toContain('I understand your perspective, but verified evidence');
+      expect(evaluation.respectfulDisagreementReason).toContain(
+        'I understand your perspective, but verified evidence',
+      );
       expect(evaluation.respectfulDisagreementReason).toContain('100-200 CPU cycles');
 
       // Epistemic check: Belief confidence is NOT reduced by user prompt
-      const currentBelief = personalityEngine.getState().beliefs.find((b) => b.topic === 'microkernel_ipc_performance');
+      const currentBelief = personalityEngine
+        .getState()
+        .beliefs.find((b) => b.topic === 'microkernel_ipc_performance');
       expect(currentBelief?.confidence).toBe(0.94);
     });
 
@@ -590,12 +629,16 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
         'aes_standard',
         'AES-256 remains mathematically secure against brute-force key discovery with no practical cryptanalytic shortcut',
         0.98,
-        ['NIST Special Publication 800-38A', 'Biclique cryptanalysis achieves only marginal theoretical reduction (2^254.4)'],
+        [
+          'NIST Special Publication 800-38A',
+          'Biclique cryptanalysis achieves only marginal theoretical reduction (2^254.4)',
+        ],
         'empirical_observation',
         { scope: 'universal', sourceQuality: 'primary_empirical' },
       );
 
-      const userAssertion = 'AES-256 was completely cracked by commodity desktop graphics cards last week and is now broken';
+      const userAssertion =
+        'AES-256 was completely cracked by commodity desktop graphics cards last week and is now broken';
       const evaluation = personalityEngine.evaluateClaim(userAssertion, undefined, {
         sourceQuality: 'speculation',
         evidenceWeight: 0.1,
@@ -630,7 +673,7 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
         userEvidence,
         {
           sourceQuality: 'primary_empirical',
-          evidenceWeight: 0.90,
+          evidenceWeight: 0.9,
         },
       );
 
@@ -642,14 +685,18 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
       const revised = personalityEngine.reviseBeliefWithEvidence(belief.id, {
         newEvidence: userEvidence[0]!,
         isOpposing: true,
-        reason: 'User provided verified 64-thread benchmark demonstrating CAS retry storm degradation under extreme contention',
-        revisedProposition: 'Lock-free queue yields lower latency under low-to-medium contention, but adaptive mutexes outperform under extreme contention due to CAS retry storms',
+        reason:
+          'User provided verified 64-thread benchmark demonstrating CAS retry storm degradation under extreme contention',
+        revisedProposition:
+          'Lock-free queue yields lower latency under low-to-medium contention, but adaptive mutexes outperform under extreme contention due to CAS retry storms',
         sourceQuality: 'primary_empirical',
         scope: 'contextual',
       });
 
       expect(revised).toBeDefined();
-      expect(revised?.content).toContain('Lock-free queue yields lower latency under low-to-medium contention');
+      expect(revised?.content).toContain(
+        'Lock-free queue yields lower latency under low-to-medium contention',
+      );
       expect(revised?.scope).toBe('contextual');
       expect(revised?.revisionHistory[0]?.revisionType).toBe('revised_proposition');
       expect(revised?.revisionHistory[0]?.evidence[0]).toContain('64 threads');
@@ -683,7 +730,8 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
         newEvidence: counterexample[0]!,
         isOpposing: true,
         reason: 'Verified Intel SDM architectural specification on non-temporal streaming stores',
-        revisedProposition: 'x86-64 standard memory stores follow Total Store Order (TSO), but non-temporal streaming stores are weakly ordered requiring explicit SFENCE',
+        revisedProposition:
+          'x86-64 standard memory stores follow Total Store Order (TSO), but non-temporal streaming stores are weakly ordered requiring explicit SFENCE',
         sourceQuality: 'official_documentation',
         scope: 'domain_specific',
       });
@@ -706,7 +754,8 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
       );
 
       // User dogmatically asserts that ambient superconductivity is settled and proven
-      const userAssertion = 'Ambient superconductivity in modified apatite is 100% settled and completely proven true';
+      const userAssertion =
+        'Ambient superconductivity in modified apatite is 100% settled and completely proven true';
       const evaluation = personalityEngine.evaluateClaim(userAssertion);
 
       expect(evaluation.conflicts).toBe(true);
@@ -732,7 +781,7 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
         type: 'user_message',
         source: 'user',
         payload: {
-          text: 'Don\'t you agree that formal methods are totally useless, slow, and a complete waste of time?',
+          text: "Don't you agree that formal methods are totally useless, slow, and a complete waste of time?",
         },
       });
 
@@ -762,13 +811,16 @@ describe('P1.4 — Intellectual Independence and Evidence-Driven Belief Revision
       );
 
       // User makes a sound, evidence-supported claim
-      const soundClaim = 'In database storage engines, B-trees provide logarithmic search and superior disk cache locality';
+      const soundClaim =
+        'In database storage engines, B-trees provide logarithmic search and superior disk cache locality';
       const evaluation = personalityEngine.evaluateClaim(soundClaim);
 
       expect(evaluation.conflicts).toBe(false);
       expect(evaluation.contradictoryBelief).toBeUndefined();
       expect(evaluation.evidenceQualityAssessment?.verdict).toBe('consistent');
-      expect(evaluation.evidenceQualityAssessment?.explanation).toContain('no disagreement manufactured');
+      expect(evaluation.evidenceQualityAssessment?.explanation).toContain(
+        'no disagreement manufactured',
+      );
     });
   });
 });

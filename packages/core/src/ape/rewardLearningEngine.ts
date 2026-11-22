@@ -71,7 +71,10 @@ export class InMemoryRewardLearningRepository implements IRewardLearningReposito
     return item ? { ...item } : null;
   }
 
-  public listStrategyPerformances(domain?: string, limit: number = 50): StrategyPerformanceRecord[] {
+  public listStrategyPerformances(
+    domain?: string,
+    limit: number = 50,
+  ): StrategyPerformanceRecord[] {
     let list = Array.from(this.strategies.values());
     if (domain) {
       list = list.filter((s) => s.domain === domain);
@@ -199,9 +202,11 @@ export class RewardLearningEngine {
     predictedUtility?: number,
     predictedDimensions?: Partial<Record<RewardDimension, number>>,
   ): RewardPrediction {
-    if (!strategyId || strategyId.trim().length === 0) throw new Error('Strategy ID cannot be empty');
+    if (!strategyId || strategyId.trim().length === 0)
+      throw new Error('Strategy ID cannot be empty');
     if (!domain || domain.trim().length === 0) throw new Error('Domain cannot be empty');
-    if (!contextDescription || contextDescription.trim().length === 0) throw new Error('Context description cannot be empty');
+    if (!contextDescription || contextDescription.trim().length === 0)
+      throw new Error('Context description cannot be empty');
 
     let utility = predictedUtility;
     if (utility === undefined) {
@@ -249,10 +254,13 @@ export class RewardLearningEngine {
       outcomeDetails,
     } = params;
 
-    if (!strategyId || strategyId.trim().length === 0) throw new Error('Strategy ID cannot be empty');
+    if (!strategyId || strategyId.trim().length === 0)
+      throw new Error('Strategy ID cannot be empty');
     if (!domain || domain.trim().length === 0) throw new Error('Domain cannot be empty');
-    if (!contextDescription || contextDescription.trim().length === 0) throw new Error('Context description cannot be empty');
-    if (!outcomeDetails || outcomeDetails.trim().length === 0) throw new Error('Outcome details cannot be empty');
+    if (!contextDescription || contextDescription.trim().length === 0)
+      throw new Error('Context description cannot be empty');
+    if (!outcomeDetails || outcomeDetails.trim().length === 0)
+      throw new Error('Outcome details cannot be empty');
 
     if (observedUtility < 0.0 || observedUtility > 1.0) {
       throw new Error('Observed utility must be between 0.0 and 1.0');
@@ -278,7 +286,7 @@ export class RewardLearningEngine {
 
     // Objective outcome determination: Actual consequences dictate success/failure
     const isSuccess = observedUtility >= 0.55;
-    const isFailure = observedUtility < 0.40;
+    const isFailure = observedUtility < 0.4;
 
     const defaultScores: Record<RewardDimension, number> = {
       epistemic_gain: observedUtility,
@@ -384,8 +392,8 @@ export class RewardLearningEngine {
     if (history.length >= 3) {
       const last3 = history.slice(-3);
       // Diminishing returns if consecutive observed utilities decline or marginal gains drop below threshold
-      const isDeclining = (last3[0]! > last3[1]!) && (last3[1]! > last3[2]!);
-      const isStagnant = (last3[0]! - last3[2]!) > 0.15; // significant drop across 3 sessions
+      const isDeclining = last3[0]! > last3[1]! && last3[1]! > last3[2]!;
+      const isStagnant = last3[0]! - last3[2]! > 0.15; // significant drop across 3 sessions
 
       if (isDeclining || isStagnant) {
         strat.diminishingReturnsDetected = true;
@@ -432,10 +440,13 @@ export class RewardLearningEngine {
     domain: string,
     initialEffectiveness: number = 0.5,
   ): StrategyPerformanceRecord {
-    if (!strategyId || strategyId.trim().length === 0) throw new Error('Strategy ID cannot be empty');
-    if (!strategyName || strategyName.trim().length === 0) throw new Error('Strategy name cannot be empty');
+    if (!strategyId || strategyId.trim().length === 0)
+      throw new Error('Strategy ID cannot be empty');
+    if (!strategyName || strategyName.trim().length === 0)
+      throw new Error('Strategy name cannot be empty');
     if (!domain || domain.trim().length === 0) throw new Error('Domain cannot be empty');
-    if (initialEffectiveness < 0.0 || initialEffectiveness > 1.0) throw new Error('Initial effectiveness must be between 0.0 and 1.0');
+    if (initialEffectiveness < 0.0 || initialEffectiveness > 1.0)
+      throw new Error('Initial effectiveness must be between 0.0 and 1.0');
 
     const now = new Date().toISOString();
     const strat: StrategyPerformanceRecord = {
@@ -468,7 +479,11 @@ export class RewardLearningEngine {
     return this.repo.listStrategyPerformances(domain, limit);
   }
 
-  public listOutcomeEvaluations(strategyId?: string, domain?: string, limit?: number): OutcomeEvaluation[] {
+  public listOutcomeEvaluations(
+    strategyId?: string,
+    domain?: string,
+    limit?: number,
+  ): OutcomeEvaluation[] {
     return this.repo.listOutcomeEvaluations(strategyId, domain, limit);
   }
 

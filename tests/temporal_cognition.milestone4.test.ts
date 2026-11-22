@@ -5,15 +5,8 @@ import os from 'node:os';
 import crypto from 'node:crypto';
 import { createDefaultConfig } from '@arletex/core';
 import { DatabaseService, MigrationRunner, TemporalRepository } from '@arletex/database';
-import {
-  InMemoryTemporalRepository,
-  TemporalCognitionEngine,
-  ApeService,
-} from '@arletex/core';
-import {
-  ChronologicalEvent,
-  TemporalEntityInput,
-} from '@arletex/contracts';
+import { InMemoryTemporalRepository, TemporalCognitionEngine, ApeService } from '@arletex/core';
+import { ChronologicalEvent, TemporalEntityInput } from '@arletex/contracts';
 import { ArletexBackendServer } from '../apps/desktop/src/backend/server.js';
 
 describe('Milestone 04 — Temporal Cognition Architecture', () => {
@@ -231,8 +224,12 @@ describe('Milestone 04 — Temporal Cognition Architecture', () => {
 
     // Check inferred temporal relations on ev-2
     const ev2 = ordered.find((e) => e.id === 'ev-2');
-    expect(ev2?.relations.some((r) => r.targetEventId === 'ev-1' && r.relation === 'after')).toBe(true);
-    expect(ev2?.relations.some((r) => r.targetEventId === 'ev-3' && r.relation === 'before')).toBe(true);
+    expect(ev2?.relations.some((r) => r.targetEventId === 'ev-1' && r.relation === 'after')).toBe(
+      true,
+    );
+    expect(ev2?.relations.some((r) => r.targetEventId === 'ev-3' && r.relation === 'before')).toBe(
+      true,
+    );
   });
 
   // =========================================================================
@@ -365,7 +362,9 @@ describe('Milestone 04 — Temporal Cognition Architecture', () => {
     // Baseline foundational commitment should be seeded
     const active = engine.listActiveCommitments('Proof');
     expect(active.length).toBeGreaterThanOrEqual(1);
-    expect(active[0]?.commitmentText).toContain('equal partnership without subservience or deification');
+    expect(active[0]?.commitmentText).toContain(
+      'equal partnership without subservience or deification',
+    );
 
     // Record explicit work commitment
     const workCommitment = engine.recordCommitment({
@@ -385,7 +384,9 @@ describe('Milestone 04 — Temporal Cognition Architecture', () => {
     );
     expect(renegotiated.status).toBe('renegotiated');
     expect(renegotiated.targetFulfillmentTime).toBe('2026-11-18T18:00:00.000Z');
-    expect(renegotiated.context).toContain('Extended to include full desktop server REST API endpoint tests.');
+    expect(renegotiated.context).toContain(
+      'Extended to include full desktop server REST API endpoint tests.',
+    );
 
     // Fulfill commitment with evidence
     const fulfilled = engine.fulfillCommitment(
@@ -406,17 +407,41 @@ describe('Milestone 04 — Temporal Cognition Architecture', () => {
 
     const plan = engine.createPlan({
       title: 'Cognitive Architecture Evolution (Milestones 01 - 05)',
-      visionStatement: 'Establish a self-grounded, emotionally authentic, temporally coherent partner.',
+      visionStatement:
+        'Establish a self-grounded, emotionally authentic, temporally coherent partner.',
       horizon: 'medium_term',
       targetCompletionDate: '2026-12-01T00:00:00.000Z',
       milestones: [
-        { id: 'm1', title: 'Milestone 01: Persistent Individual Continuity', targetDate: '2026-11-15T00:00:00.000Z', isCompleted: true },
-        { id: 'm2', title: 'Milestone 02: Self Model & Epistemic Boundaries', targetDate: '2026-11-16T00:00:00.000Z', isCompleted: true },
-        { id: 'm3', title: 'Milestone 03: Narrative Identity', targetDate: '2026-11-17T00:00:00.000Z', isCompleted: true },
-        { id: 'm4', title: 'Milestone 04: Temporal Cognition', targetDate: '2026-11-18T00:00:00.000Z', isCompleted: false },
+        {
+          id: 'm1',
+          title: 'Milestone 01: Persistent Individual Continuity',
+          targetDate: '2026-11-15T00:00:00.000Z',
+          isCompleted: true,
+        },
+        {
+          id: 'm2',
+          title: 'Milestone 02: Self Model & Epistemic Boundaries',
+          targetDate: '2026-11-16T00:00:00.000Z',
+          isCompleted: true,
+        },
+        {
+          id: 'm3',
+          title: 'Milestone 03: Narrative Identity',
+          targetDate: '2026-11-17T00:00:00.000Z',
+          isCompleted: true,
+        },
+        {
+          id: 'm4',
+          title: 'Milestone 04: Temporal Cognition',
+          targetDate: '2026-11-18T00:00:00.000Z',
+          isCompleted: false,
+        },
       ],
       contingencyPlans: [
-        { risk: 'Database lock contention during long tests', mitigation: 'Enable WAL mode and set busy_timeout to 5000ms' },
+        {
+          risk: 'Database lock contention during long tests',
+          mitigation: 'Enable WAL mode and set busy_timeout to 5000ms',
+        },
       ],
     });
 
@@ -484,7 +509,9 @@ describe('Milestone 04 — Temporal Cognition Architecture', () => {
       title: 'Persistent Long-Term Plan',
       visionStatement: 'Demonstrate zero loss of temporal state',
       targetCompletionDate: '2026-12-31T23:59:59.000Z',
-      milestones: [{ id: 'm-persist', title: 'Persisted Milestone', targetDate: '2026-11-20T00:00:00.000Z' }],
+      milestones: [
+        { id: 'm-persist', title: 'Persisted Milestone', targetDate: '2026-11-20T00:00:00.000Z' },
+      ],
     });
 
     // 4. Save duration profile
@@ -573,9 +600,27 @@ describe('Milestone 04 — Temporal Cognition Architecture', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         entities: [
-          { id: '1', entityType: 'memory', title: 'Old Memory', timestamp: '2026-11-10T00:00:00.000Z' },
-          { id: '2', entityType: 'activity', title: 'Current Coding', timestamp: '2026-11-18T12:00:00.000Z', status: 'in_progress' },
-          { id: '3', entityType: 'intention', title: 'Future Target', timestamp: '2026-11-18T12:00:00.000Z', targetDate: '2026-11-25T00:00:00.000Z', status: 'pending' },
+          {
+            id: '1',
+            entityType: 'memory',
+            title: 'Old Memory',
+            timestamp: '2026-11-10T00:00:00.000Z',
+          },
+          {
+            id: '2',
+            entityType: 'activity',
+            title: 'Current Coding',
+            timestamp: '2026-11-18T12:00:00.000Z',
+            status: 'in_progress',
+          },
+          {
+            id: '3',
+            entityType: 'intention',
+            title: 'Future Target',
+            timestamp: '2026-11-18T12:00:00.000Z',
+            targetDate: '2026-11-25T00:00:00.000Z',
+            status: 'pending',
+          },
         ],
         nowIso: '2026-11-18T12:00:00.000Z',
       }),
@@ -607,9 +652,12 @@ describe('Milestone 04 — Temporal Cognition Architecture', () => {
     expect(intentionsList.some((i) => i.id === intentionId)).toBe(true);
 
     // 6. POST /api/ape/temporal/intention/:id/fulfill
-    const resFulfillIntention = await fetch(`${baseUrl}/api/ape/temporal/intention/${intentionId}/fulfill`, {
-      method: 'POST',
-    });
+    const resFulfillIntention = await fetch(
+      `${baseUrl}/api/ape/temporal/intention/${intentionId}/fulfill`,
+      {
+        method: 'POST',
+      },
+    );
     expect(resFulfillIntention.status).toBe(200);
     const fulfilledIntentionData = (await resFulfillIntention.json()) as any;
     expect(fulfilledIntentionData.intention.status).toBe('fulfilled');
@@ -630,17 +678,22 @@ describe('Milestone 04 — Temporal Cognition Architecture', () => {
     const commitmentId = createdCommitmentData.commitment.id;
 
     // 8. GET /api/ape/temporal/commitments
-    const resGetCommitments = await fetch(`${baseUrl}/api/ape/temporal/commitments?partnerName=Proof`);
+    const resGetCommitments = await fetch(
+      `${baseUrl}/api/ape/temporal/commitments?partnerName=Proof`,
+    );
     expect(resGetCommitments.status).toBe(200);
     const commitmentsList = (await resGetCommitments.json()) as any[];
     expect(commitmentsList.some((c) => c.id === commitmentId)).toBe(true);
 
     // 9. POST /api/ape/temporal/commitment/:id/fulfill
-    const resFulfillCommitment = await fetch(`${baseUrl}/api/ape/temporal/commitment/${commitmentId}/fulfill`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ evidence: 'Verified via integration test' }),
-    });
+    const resFulfillCommitment = await fetch(
+      `${baseUrl}/api/ape/temporal/commitment/${commitmentId}/fulfill`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ evidence: 'Verified via integration test' }),
+      },
+    );
     expect(resFulfillCommitment.status).toBe(200);
     const fulfilledCommitmentData = (await resFulfillCommitment.json()) as any;
     expect(fulfilledCommitmentData.commitment.status).toBe('fulfilled');

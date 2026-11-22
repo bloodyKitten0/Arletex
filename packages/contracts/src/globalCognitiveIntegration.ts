@@ -87,13 +87,15 @@ export const GlobalCognitiveSnapshotSchema = z.object({
     focusTopic: z.string(),
     salienceScore: z.number().min(0.0).max(1.0),
   }),
-  activeGoals: z.array(
-    z.object({
-      id: z.string().min(1),
-      title: z.string().min(1),
-      priority: z.number().min(0.0).max(1.0),
-    }),
-  ).default([]),
+  activeGoals: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        title: z.string().min(1),
+        priority: z.number().min(0.0).max(1.0),
+      }),
+    )
+    .default([]),
   activeRelationship: z.object({
     partnerName: z.string(),
     trustScore: z.number().min(0.0).max(1.0),

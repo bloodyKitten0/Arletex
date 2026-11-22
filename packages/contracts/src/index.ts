@@ -218,12 +218,7 @@ export const MemoryProvenanceSchema = z.enum([
 ]);
 export type MemoryProvenance = z.infer<typeof MemoryProvenanceSchema>;
 
-export const EmbeddingStatusSchema = z.enum([
-  'pending',
-  'indexed',
-  'stale',
-  'failed',
-]);
+export const EmbeddingStatusSchema = z.enum(['pending', 'indexed', 'stale', 'failed']);
 export type EmbeddingStatus = z.infer<typeof EmbeddingStatusSchema>;
 
 export const MemoryEmbeddingRecordSchema = z.object({
@@ -308,7 +303,11 @@ export type QueryMemoriesInput = z.infer<typeof QueryMemoriesInputSchema>;
 export const RetrievalMatchStatusSchema = z.enum(['found', 'absent', 'refuted']);
 export type RetrievalMatchStatus = z.infer<typeof RetrievalMatchStatusSchema>;
 
-export const RetrievalModeSchema = z.enum(['hybrid_vector', 'lexical_fallback', 'contextual_multi_factor']);
+export const RetrievalModeSchema = z.enum([
+  'hybrid_vector',
+  'lexical_fallback',
+  'contextual_multi_factor',
+]);
 export type RetrievalMode = z.infer<typeof RetrievalModeSchema>;
 
 export const ContextualRetrievalQuerySchema = z.object({
@@ -317,10 +316,12 @@ export const ContextualRetrievalQuerySchema = z.object({
   project: z.string().optional(),
   source: z.string().optional(),
   category: MemoryTypeSchema.optional(),
-  timeRange: z.object({
-    start: z.string().optional(),
-    end: z.string().optional(),
-  }).optional(),
+  timeRange: z
+    .object({
+      start: z.string().optional(),
+      end: z.string().optional(),
+    })
+    .optional(),
   minImportance: z.number().min(0).max(1).optional(),
   minConfidence: z.number().min(0).max(1).optional(),
   limit: z.number().int().positive().optional().default(10),
@@ -487,11 +488,13 @@ export const SynthesizeSpeechInputSchema = z.object({
   tone: z.string().optional(),
   leadPaddingMs: z.number().optional().default(0),
   useRvc: z.boolean().optional(),
-  pad: z.object({
-    valence: z.number(),
-    arousal: z.number(),
-    dominance: z.number(),
-  }).optional(),
+  pad: z
+    .object({
+      valence: z.number(),
+      arousal: z.number(),
+      dominance: z.number(),
+    })
+    .optional(),
   emotion: z.string().optional(),
   vocalRegister: z.string().optional(),
 });
@@ -643,7 +646,9 @@ export const StreamChunkSchema = z.object({
   isDone: z.boolean(),
   error: z.string().nullable().default(null),
   finishReason: z.string().nullable().default(null),
-  specialistStage: z.enum(['central', 'coding_specialist', 'synthesis', 'watching_video']).optional(),
+  specialistStage: z
+    .enum(['central', 'coding_specialist', 'synthesis', 'watching_video'])
+    .optional(),
   specialistModel: z.string().optional(),
   ttftMs: z.number().optional(),
   tokensPerSecond: z.number().optional(),
@@ -682,8 +687,7 @@ export const AuditEventSchema = z.object({
 export type AuditEvent = z.infer<typeof AuditEventSchema>;
 
 export type IPCResponse<T> =
-  | { success: true; data: T }
-  | { success: false; error: string; code?: string };
+  { success: true; data: T } | { success: false; error: string; code?: string };
 
 // ==========================================
 // APE (Artificial Psychology Engine) Exports
@@ -945,19 +949,3 @@ export * from './modelRegistry.js';
 export * from './boundedPreservation.js';
 export * from './futureSelf.js';
 export * from './evolutionAndAutonomy.js';
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

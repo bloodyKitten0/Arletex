@@ -255,7 +255,9 @@ export class SqliteCreativityRepository implements ICreativityRepository {
     try {
       const rows = domain
         ? (this.db
-            .prepare(`SELECT * FROM creative_interests WHERE domain = ? ORDER BY curiosity_depth DESC`)
+            .prepare(
+              `SELECT * FROM creative_interests WHERE domain = ? ORDER BY curiosity_depth DESC`,
+            )
             .all(domain) as any[])
         : (this.db
             .prepare(`SELECT * FROM creative_interests ORDER BY curiosity_depth DESC`)

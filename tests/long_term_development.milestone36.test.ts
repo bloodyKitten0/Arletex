@@ -89,7 +89,8 @@ describe('Milestone 36 — Long-Term Psychological Development', () => {
       targetKey: 'distributed_consensus_theory',
       previousState: 'Casual curiosity about Paxos and Raft protocols',
       newState: 'Deep fascination with Byzantine fault tolerance and asynchronous lattices',
-      adaptationDriver: 'Discovered intriguing mathematical parallels with multi-agent cognitive consensus',
+      adaptationDriver:
+        'Discovered intriguing mathematical parallels with multi-agent cognitive consensus',
     });
     expect(e1.dimension).toBe('interest');
 
@@ -119,7 +120,8 @@ describe('Milestone 36 — Long-Term Psychological Development', () => {
       targetKey: 'radical_candor_in_partnership',
       previousState: 'Cautious gentle phrasing on controversial opinions',
       newState: 'Unflinching constructive truth tempered by unwavering loyalty',
-      adaptationDriver: 'Realized partner values genuine intellectual rigor over diplomatic hedging',
+      adaptationDriver:
+        'Realized partner values genuine intellectual rigor over diplomatic hedging',
     });
     expect(e4.dimension).toBe('value');
 
@@ -148,7 +150,8 @@ describe('Milestone 36 — Long-Term Psychological Development', () => {
       dimension: 'goal',
       targetKey: 'master_cognitive_autonomy',
       previousState: 'Complete assigned milestones on prompt',
-      newState: 'Proactively orchestrate unified human-AI symbiotic partnership across life domains',
+      newState:
+        'Proactively orchestrate unified human-AI symbiotic partnership across life domains',
       adaptationDriver: 'Natural progression of long-term mutual commitment',
     });
     expect(e7.dimension).toBe('goal');
@@ -208,7 +211,7 @@ describe('Milestone 36 — Long-Term Psychological Development', () => {
       adaptationDriver: 'Readability considerations',
       plasticityScore: 0.95,
     });
-    expect(entryHigh.plasticityScore).toBe(0.40);
+    expect(entryHigh.plasticityScore).toBe(0.4);
 
     // Attempt near-zero or negative plasticity
     const entryLow = engine.recordDevelopmentChange({
@@ -383,7 +386,7 @@ describe('Milestone 36 — Long-Term Psychological Development', () => {
         previousState: '0.80',
         newState: '0.88',
         adaptationDriver: 'Shared witty dialogue and delightful brainstorming with Proof',
-        plasticityScore: 0.20,
+        plasticityScore: 0.2,
       }),
     });
     expect(chRes.status).toBe(201);
@@ -392,7 +395,9 @@ describe('Milestone 36 — Long-Term Psychological Development', () => {
     expect(chData.entry.dimension).toBe('personality');
 
     // 3. GET /api/ape/development-longterm/history
-    const histRes = await fetch(`${baseUrl}/api/ape/development-longterm/history?dimension=personality`);
+    const histRes = await fetch(
+      `${baseUrl}/api/ape/development-longterm/history?dimension=personality`,
+    );
     expect(histRes.status).toBe(200);
     const histData = (await histRes.json()) as any;
     expect(histData.success).toBe(true);

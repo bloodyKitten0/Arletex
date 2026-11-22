@@ -194,7 +194,13 @@ export class MemoryExperienceSync {
           importance: isFullyVerified ? 0.85 : 0.5,
           confidence,
           provenance,
-          tags: ['digital_agency', task.initiator, task.status, ...(isFullyVerified ? ['verified'] : ['unverified']), ...(relatedUrl ? ['web'] : [])],
+          tags: [
+            'digital_agency',
+            task.initiator,
+            task.status,
+            ...(isFullyVerified ? ['verified'] : ['unverified']),
+            ...(relatedUrl ? ['web'] : []),
+          ],
           metadata: {
             taskId: task.id,
             verifiedFacts,
@@ -209,7 +215,13 @@ export class MemoryExperienceSync {
           summary: `${statusText}: ${task.title}`,
           source: provenance,
           importanceScore: isFullyVerified ? 0.85 : 0.5,
-          tags: ['digital_agency', task.initiator, task.status, ...(isFullyVerified ? ['verified'] : ['unverified']), ...(relatedUrl ? ['web'] : [])],
+          tags: [
+            'digital_agency',
+            task.initiator,
+            task.status,
+            ...(isFullyVerified ? ['verified'] : ['unverified']),
+            ...(relatedUrl ? ['web'] : []),
+          ],
         });
       }
       this.logger.info(`Distilled experience recorded for task ${task.id}`);

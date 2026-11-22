@@ -103,7 +103,8 @@ export class IntellectualEngine {
     predictiveEngine?: PredictiveCognitionEngine;
     causalEngine?: CausalReasoningEngine;
   }): void {
-    if (services.personalProjectService) this.personalProjectService = services.personalProjectService;
+    if (services.personalProjectService)
+      this.personalProjectService = services.personalProjectService;
     if (services.predictiveEngine) this.predictiveEngine = services.predictiveEngine;
     if (services.causalEngine) this.causalEngine = services.causalEngine;
   }
@@ -129,7 +130,9 @@ export class IntellectualEngine {
     };
 
     const saved = this.repo.createIntellectualQuestion(q);
-    this.logger.info(`Independent intellectual question formulated [${saved.origin}]: "${saved.question}"`);
+    this.logger.info(
+      `Independent intellectual question formulated [${saved.origin}]: "${saved.question}"`,
+    );
     return saved;
   }
 
@@ -159,7 +162,9 @@ export class IntellectualEngine {
       status: 'investigating',
     });
 
-    this.logger.info(`Hypotheses formulated for question "${q.question}": ${competing.length} competing paths`);
+    this.logger.info(
+      `Hypotheses formulated for question "${q.question}": ${competing.length} competing paths`,
+    );
     return updated;
   }
 
@@ -223,7 +228,8 @@ export class IntellectualEngine {
       return {
         qualityCategory: 'primary_empirical',
         score: Math.max(0.88, Math.min(1.0, source.reliabilityScore ?? 0.95)),
-        rationale: 'Direct empirical measurement, verifiable benchmark data, or machine-checked proof.',
+        rationale:
+          'Direct empirical measurement, verifiable benchmark data, or machine-checked proof.',
       };
     }
 
@@ -237,8 +243,9 @@ export class IntellectualEngine {
     ) {
       return {
         qualityCategory: 'official_documentation',
-        score: Math.max(0.82, Math.min(0.95, source.reliabilityScore ?? 0.90)),
-        rationale: 'Official documentation, standard specification, or verifiable source implementation.',
+        score: Math.max(0.82, Math.min(0.95, source.reliabilityScore ?? 0.9)),
+        rationale:
+          'Official documentation, standard specification, or verifiable source implementation.',
       };
     }
 
@@ -253,30 +260,47 @@ export class IntellectualEngine {
       return {
         qualityCategory: 'peer_reviewed',
         score: Math.max(0.78, Math.min(0.92, source.reliabilityScore ?? 0.85)),
-        rationale: 'Peer-reviewed academic publication or rigorously refereed technical conference.',
+        rationale:
+          'Peer-reviewed academic publication or rigorously refereed technical conference.',
       };
     }
 
-    if (type === 'secondary' || type === 'secondary_explanation' || title.includes('guide') || title.includes('tutorial')) {
+    if (
+      type === 'secondary' ||
+      type === 'secondary_explanation' ||
+      title.includes('guide') ||
+      title.includes('tutorial')
+    ) {
       return {
         qualityCategory: 'secondary_explanation',
-        score: Math.max(0.50, Math.min(0.70, source.reliabilityScore ?? 0.65)),
+        score: Math.max(0.5, Math.min(0.7, source.reliabilityScore ?? 0.65)),
         rationale: 'Secondary summary, explanatory guide, or synthesis of primary literature.',
       };
     }
 
-    if (type === 'discussion' || type === 'opinion' || title.includes('opinion') || title.includes('perspective')) {
+    if (
+      type === 'discussion' ||
+      type === 'opinion' ||
+      title.includes('opinion') ||
+      title.includes('perspective')
+    ) {
       return {
         qualityCategory: 'opinion',
         score: Math.max(0.25, Math.min(0.45, source.reliabilityScore ?? 0.35)),
-        rationale: 'Subjective opinion, editorial perspective, or informal discussion without empirical verification.',
+        rationale:
+          'Subjective opinion, editorial perspective, or informal discussion without empirical verification.',
       };
     }
 
-    if (type === 'speculation' || title.includes('rumor') || title.includes('leak') || notes.includes('unconfirmed')) {
+    if (
+      type === 'speculation' ||
+      title.includes('rumor') ||
+      title.includes('leak') ||
+      notes.includes('unconfirmed')
+    ) {
       return {
         qualityCategory: 'speculation',
-        score: Math.max(0.10, Math.min(0.25, source.reliabilityScore ?? 0.18)),
+        score: Math.max(0.1, Math.min(0.25, source.reliabilityScore ?? 0.18)),
         rationale: 'Unconfirmed speculation, speculative hypothesis, or unverified assertion.',
       };
     }
@@ -284,7 +308,7 @@ export class IntellectualEngine {
     if (type === 'snippet' || type === 'unsupported_assertion') {
       return {
         qualityCategory: 'unsupported_assertion',
-        score: Math.max(0.05, Math.min(0.20, source.reliabilityScore ?? 0.10)),
+        score: Math.max(0.05, Math.min(0.2, source.reliabilityScore ?? 0.1)),
         rationale: 'Unsubstantiated text snippet without citation, methodology, or evidence.',
       };
     }
@@ -330,7 +354,10 @@ export class IntellectualEngine {
         }
       }
 
-      const updatedPlausibility = Math.max(0.05, Math.min(0.95, Number((h.plausibility + plausibilityDelta).toFixed(3))));
+      const updatedPlausibility = Math.max(
+        0.05,
+        Math.min(0.95, Number((h.plausibility + plausibilityDelta).toFixed(3))),
+      );
 
       return {
         ...h,
@@ -346,7 +373,9 @@ export class IntellectualEngine {
       status: 'investigating',
     });
 
-    this.logger.info(`Source critically evaluated: "${source.title}" (category=${assessment.qualityCategory}, rel=${effectiveReliability})`);
+    this.logger.info(
+      `Source critically evaluated: "${source.title}" (category=${assessment.qualityCategory}, rel=${effectiveReliability})`,
+    );
     return updated;
   }
 
@@ -370,19 +399,21 @@ export class IntellectualEngine {
     }
 
     // Accumulate all verified supporting evidence from the investigation
-    const dominant = typeof params.dominantHypothesisIndex === 'number'
-      ? q.competingHypotheses[params.dominantHypothesisIndex]
-      : q.competingHypotheses.slice().sort((a, b) => b.plausibility - a.plausibility)[0];
+    const dominant =
+      typeof params.dominantHypothesisIndex === 'number'
+        ? q.competingHypotheses[params.dominantHypothesisIndex]
+        : q.competingHypotheses.slice().sort((a, b) => b.plausibility - a.plausibility)[0];
 
-    const evidenceList = dominant && dominant.supportingEvidence.length > 0
-      ? dominant.supportingEvidence
-      : [`Investigated and resolved question "${q.question}"`];
+    const evidenceList =
+      dominant && dominant.supportingEvidence.length > 0
+        ? dominant.supportingEvidence
+        : [`Investigated and resolved question "${q.question}"`];
 
-    const counterList = dominant && dominant.opposingEvidence.length > 0
-      ? dominant.opposingEvidence
-      : [];
+    const counterList =
+      dominant && dominant.opposingEvidence.length > 0 ? dominant.opposingEvidence : [];
 
-    const isInsufficient = params.confidence < 0.40 ||
+    const isInsufficient =
+      params.confidence < 0.4 ||
       /insufficient|inconclusive|uncertain|unknown|debated/i.test(params.conclusionProposition);
     const finalStatus = isInsufficient ? 'insufficient_evidence' : 'resolved';
 
@@ -419,7 +450,9 @@ export class IntellectualEngine {
       resolutionSummary: params.conclusionProposition,
     });
 
-    this.logger.info(`Intellectual question ${finalStatus}: "${q.question}" -> Belief recorded in domain "${q.domain}"`);
+    this.logger.info(
+      `Intellectual question ${finalStatus}: "${q.question}" -> Belief recorded in domain "${q.domain}"`,
+    );
     return { question: updated, beliefTopic: q.domain };
   }
 
@@ -440,12 +473,16 @@ export class IntellectualEngine {
 
     // 1. Ensure competing hypotheses exist
     if (!q.competingHypotheses || q.competingHypotheses.length === 0) {
-      const initialHypotheses = params.candidateHypotheses && params.candidateHypotheses.length > 0
-        ? params.candidateHypotheses
-        : [
-            { statement: `Primary hypothesis affirming: ${q.question}`, plausibility: 0.5 },
-            { statement: `Alternative/null hypothesis regarding: ${q.question}`, plausibility: 0.5 },
-          ];
+      const initialHypotheses =
+        params.candidateHypotheses && params.candidateHypotheses.length > 0
+          ? params.candidateHypotheses
+          : [
+              { statement: `Primary hypothesis affirming: ${q.question}`, plausibility: 0.5 },
+              {
+                statement: `Alternative/null hypothesis regarding: ${q.question}`,
+                plausibility: 0.5,
+              },
+            ];
       q = this.formulateCompetingHypotheses(q.id, initialHypotheses);
     }
 
@@ -468,7 +505,10 @@ export class IntellectualEngine {
 
       const currentHypotheses = q.competingHypotheses;
       q.competingHypotheses.forEach((hypo, idx) => {
-        const hypoKeywords = hypo.statement.toLowerCase().split(/[\s,.-]+/).filter((w) => w.length >= 4);
+        const hypoKeywords = hypo.statement
+          .toLowerCase()
+          .split(/[\s,.-]+/)
+          .filter((w) => w.length >= 4);
         const hypoLower = hypo.statement.toLowerCase();
         const hypoIsNegative =
           hypoLower.includes('cannot') ||
@@ -481,9 +521,16 @@ export class IntellectualEngine {
         for (const ev of source.extractedEvidence) {
           const evLower = ev.toLowerCase();
           const matchCount = hypoKeywords.filter((k) => evLower.includes(k)).length;
-          const evIsNegated = evLower.includes('not ') || evLower.includes('failed') || evLower.includes('refutes') || evLower.includes('disproved');
+          const evIsNegated =
+            evLower.includes('not ') ||
+            evLower.includes('failed') ||
+            evLower.includes('refutes') ||
+            evLower.includes('disproved');
 
-          if (matchCount >= 2 || (source.extractedEvidence.length === 1 && currentHypotheses.length <= 2)) {
+          if (
+            matchCount >= 2 ||
+            (source.extractedEvidence.length === 1 && currentHypotheses.length <= 2)
+          ) {
             const supports = hypoIsNegative ? evIsNegated : !evIsNegated;
             findings.push({ hypothesisIndex: idx, evidence: ev, supports });
             extractedEvidenceItems.push({
@@ -513,7 +560,9 @@ export class IntellectualEngine {
     }
 
     // 3. Compute synthesis, rankings, and epistemic uncertainty
-    const sortedHypotheses = [...q.competingHypotheses].sort((a, b) => b.plausibility - a.plausibility);
+    const sortedHypotheses = [...q.competingHypotheses].sort(
+      (a, b) => b.plausibility - a.plausibility,
+    );
     const dominant = sortedHypotheses[0]!;
     const runnerUp = sortedHypotheses[1];
     const margin = runnerUp ? dominant.plausibility - runnerUp.plausibility : dominant.plausibility;
@@ -529,10 +578,10 @@ export class IntellectualEngine {
     let finalConfidence: number;
     let uncertainty: number;
 
-    const hasStrongEvidence = sourceAssessments.some((s) => s.score >= 0.80);
-    const onlyWeakEvidence = sourceAssessments.every((s) => s.score <= 0.40);
+    const hasStrongEvidence = sourceAssessments.some((s) => s.score >= 0.8);
+    const onlyWeakEvidence = sourceAssessments.every((s) => s.score <= 0.4);
 
-    if (onlyWeakEvidence || dominant.plausibility < 0.58 || margin < 0.10) {
+    if (onlyWeakEvidence || dominant.plausibility < 0.58 || margin < 0.1) {
       // Epistemic humility: insufficient evidence
       finalConfidence = 0.42;
       uncertainty = 0.65;
@@ -552,7 +601,9 @@ export class IntellectualEngine {
       sourceQuality: hasStrongEvidence ? 'primary_empirical' : 'mixed',
     });
 
-    const resultingBelief = this.personalityEngine.getState().beliefs.find((b) => b.topic.toLowerCase() === q.domain.toLowerCase()) || {
+    const resultingBelief = this.personalityEngine
+      .getState()
+      .beliefs.find((b) => b.topic.toLowerCase() === q.domain.toLowerCase()) || {
       id: crypto.randomUUID(),
       topic: q.domain,
       content: dominant.statement,
@@ -594,7 +645,7 @@ export class IntellectualEngine {
     const generated: IntellectualQuestion[] = [];
 
     for (const interest of interests) {
-      if (interest.curiosity > 0.70 && interest.knowledgeLevel < 0.45) {
+      if (interest.curiosity > 0.7 && interest.knowledgeLevel < 0.45) {
         const questionText = `What are the core foundational mechanisms and empirical benchmarks governing ${interest.topic}?`;
         const q = this.generateQuestion({
           question: questionText,
@@ -609,7 +660,7 @@ export class IntellectualEngine {
 
     const beliefs = this.personalityEngine.getState().beliefs;
     for (const b of beliefs) {
-      if (b.confidence < 0.60 && b.supportingEvidence.length <= 1) {
+      if (b.confidence < 0.6 && b.supportingEvidence.length <= 1) {
         const q = this.generateQuestion({
           question: `What empirical evidence is needed to resolve the low-confidence proposition in ${b.topic}?`,
           domain: b.topic,
@@ -628,7 +679,12 @@ export class IntellectualEngine {
    * Discovers candidate questions from contradictions between observations, beliefs, or claims.
    */
   public discoverQuestionsFromContradictions(
-    providedContradictions?: Array<{ topic: string; claimA: string; claimB: string; domain?: string }>,
+    providedContradictions?: Array<{
+      topic: string;
+      claimA: string;
+      claimB: string;
+      domain?: string;
+    }>,
   ): IntellectualQuestion[] {
     const generated: IntellectualQuestion[] = [];
 
@@ -639,7 +695,9 @@ export class IntellectualEngine {
           question: `How can the contradiction between "${c.claimA}" and "${c.claimB}" be resolved in ${domain}?`,
           domain,
           origin: 'contradiction',
-          underlyingAssumptions: ['Both claims reflect observations under differing boundary conditions'],
+          underlyingAssumptions: [
+            'Both claims reflect observations under differing boundary conditions',
+          ],
           priority: 0.85,
         });
         generated.push(q);
@@ -649,13 +707,20 @@ export class IntellectualEngine {
     // Also scan existing beliefs and causal models for unresolved contradictions
     const beliefs = this.personalityEngine.getState().beliefs;
     for (const b of beliefs) {
-      if (b.opposingEvidence.length > 0 && b.supportingEvidence.length > 0 && b.confidence >= 0.35 && b.confidence <= 0.65) {
+      if (
+        b.opposingEvidence.length > 0 &&
+        b.supportingEvidence.length > 0 &&
+        b.confidence >= 0.35 &&
+        b.confidence <= 0.65
+      ) {
         const q = this.generateQuestion({
           question: `What empirical boundary conditions distinguish when "${b.content}" holds versus when observed counter-evidence applies in ${b.topic}?`,
           domain: b.topic,
           origin: 'contradiction',
-          underlyingAssumptions: ['Empirical counter-evidence indicates unmodeled contextual factors'],
-          priority: 0.80,
+          underlyingAssumptions: [
+            'Empirical counter-evidence indicates unmodeled contextual factors',
+          ],
+          priority: 0.8,
         });
         generated.push(q);
       }
@@ -670,7 +735,7 @@ export class IntellectualEngine {
               question: `What empirical experiments can resolve the uncertain causal link in graph "${model.name || model.id}"?`,
               domain: model.domain || 'Causal Dynamics',
               origin: 'contradiction',
-              priority: 0.70,
+              priority: 0.7,
             });
             generated.push(q);
           }
@@ -706,14 +771,19 @@ export class IntellectualEngine {
 
     if (this.predictiveEngine) {
       try {
-        const predictions = (this.predictiveEngine as any).repo?.listPredictions?.({ limit: 100 }) || [];
-        const inaccurate = predictions.filter((p: any) => p.status === 'resolved_inaccurate' || (p.predictionError ?? 0) >= 0.4);
+        const predictions =
+          (this.predictiveEngine as any).repo?.listPredictions?.({ limit: 100 }) || [];
+        const inaccurate = predictions.filter(
+          (p: any) => p.status === 'resolved_inaccurate' || (p.predictionError ?? 0) >= 0.4,
+        );
         for (const p of inaccurate.slice(0, 5)) {
           const q = this.generateQuestion({
             question: `Why did the cognitive prediction regarding "${p.targetStatement}" fail with prediction error ${p.predictionError} in ${p.domain}?`,
             domain: p.domain,
             origin: 'failed_prediction',
-            underlyingAssumptions: ['Prior probability distribution deviated from empirical outcome'],
+            underlyingAssumptions: [
+              'Prior probability distribution deviated from empirical outcome',
+            ],
             priority: Math.min(1.0, 0.6 + (p.predictionError ?? 0.5) * 0.4),
           });
           generated.push(q);
@@ -742,7 +812,9 @@ export class IntellectualEngine {
           question: `What empirical mechanisms and verified paradigms are required to solve: "${problem}" for project "${p.title}"?`,
           domain,
           origin: 'project',
-          underlyingAssumptions: ['Project technical execution requires empirical literature grounding'],
+          underlyingAssumptions: [
+            'Project technical execution requires empirical literature grounding',
+          ],
           priority: 0.75,
         });
         generated.push(q);
@@ -755,13 +827,15 @@ export class IntellectualEngine {
         for (const proj of activeProjects.slice(0, 3)) {
           const pendingMilestone = proj.milestones.find((m) => !m.completed);
           const topic = proj.title || proj.category;
-          const milestoneTitle = pendingMilestone ? pendingMilestone.title : 'system implementation';
+          const milestoneTitle = pendingMilestone
+            ? pendingMilestone.title
+            : 'system implementation';
           const q = this.generateQuestion({
             question: `What empirical specifications and architectural proofs are necessary to complete milestone "${milestoneTitle}" in project "${proj.title}"?`,
             domain: topic,
             origin: 'project',
             underlyingAssumptions: ['Milestone success depends on verified subsystem constraints'],
-            priority: 0.80,
+            priority: 0.8,
           });
           generated.push(q);
         }

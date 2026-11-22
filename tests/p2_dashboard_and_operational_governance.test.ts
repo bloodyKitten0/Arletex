@@ -12,7 +12,10 @@ describe('P2.5 — Psychological and Operational Governance Dashboard', () => {
 
   beforeEach(async () => {
     testPort = 31000 + Math.floor(Math.random() * 8000);
-    tempDir = path.join('/tmp', `arletex_p25_${Date.now()}_${Math.random().toString(36).substring(7)}`);
+    tempDir = path.join(
+      '/tmp',
+      `arletex_p25_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+    );
     fs.mkdirSync(tempDir, { recursive: true });
     dbPath = path.join(tempDir, 'test.db');
 
@@ -123,7 +126,9 @@ describe('P2.5 — Psychological and Operational Governance Dashboard', () => {
     expect(auditData.events.length).toBeGreaterThan(0);
 
     const loggedEvent = auditData.events.find(
-      (e: any) => e.action === 'security_boundary_check' && e.details.includes('Audit verification test event'),
+      (e: any) =>
+        e.action === 'security_boundary_check' &&
+        e.details.includes('Audit verification test event'),
     );
     expect(loggedEvent).toBeDefined();
     expect(loggedEvent.status).toBe('success');
@@ -185,7 +190,9 @@ describe('P2.5 — Psychological and Operational Governance Dashboard', () => {
     expect(statusRes.status).toBe(200);
     const statusData = await statusRes.json();
     expect(statusData.isEmergencyShutdown).toBe(true);
-    expect(statusData.emergencyShutdownReason).toContain('Dashboard security operator emergency stop');
+    expect(statusData.emergencyShutdownReason).toContain(
+      'Dashboard security operator emergency stop',
+    );
 
     // Autonomous agency execution is disabled
     expect(server['autonomousAgency'].getStatus().isEnabled).toBe(false);

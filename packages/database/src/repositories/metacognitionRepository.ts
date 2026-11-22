@@ -68,7 +68,10 @@ export class SqliteMetacognitionRepository implements IMetacognitionRepository {
           assessment.assessedAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save cognitive assessment ${assessment.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save cognitive assessment ${assessment.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -84,7 +87,10 @@ export class SqliteMetacognitionRepository implements IMetacognitionRepository {
     }
   }
 
-  public listAssessments(filter?: { targetDomain?: string; limit?: number }): CognitiveAssessment[] {
+  public listAssessments(filter?: {
+    targetDomain?: string;
+    limit?: number;
+  }): CognitiveAssessment[] {
     try {
       let query = `SELECT * FROM cognitive_assessments`;
       const params: any[] = [];
@@ -145,7 +151,10 @@ export class SqliteMetacognitionRepository implements IMetacognitionRepository {
           correction.appliedAt ?? null,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save metacognitive correction ${correction.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save metacognitive correction ${correction.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -161,7 +170,10 @@ export class SqliteMetacognitionRepository implements IMetacognitionRepository {
     }
   }
 
-  public listCorrections(filter?: { assessmentId?: string; limit?: number }): MetacognitiveCorrection[] {
+  public listCorrections(filter?: {
+    assessmentId?: string;
+    limit?: number;
+  }): MetacognitiveCorrection[] {
     try {
       let query = `SELECT * FROM metacognitive_corrections`;
       const params: any[] = [];
@@ -212,7 +224,10 @@ export class SqliteMetacognitionRepository implements IMetacognitionRepository {
           now,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save contradiction ${contradiction.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save contradiction ${contradiction.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -235,7 +250,10 @@ export class SqliteMetacognitionRepository implements IMetacognitionRepository {
     }
   }
 
-  public listContradictions(filter?: { status?: MetacognitiveContradictionItem['status']; limit?: number }): MetacognitiveContradictionItem[] {
+  public listContradictions(filter?: {
+    status?: MetacognitiveContradictionItem['status'];
+    limit?: number;
+  }): MetacognitiveContradictionItem[] {
     try {
       let query = `SELECT * FROM metacognitive_contradictions`;
       const params: any[] = [];
@@ -266,11 +284,17 @@ export class SqliteMetacognitionRepository implements IMetacognitionRepository {
     }
   }
 
-  public updateContradictionStatus(id: string, status: MetacognitiveContradictionItem['status'], notes?: string): void {
+  public updateContradictionStatus(
+    id: string,
+    status: MetacognitiveContradictionItem['status'],
+    notes?: string,
+  ): void {
     try {
       const now = new Date().toISOString();
       this.db
-        .prepare(`UPDATE metacognitive_contradictions SET status = ?, notes = COALESCE(?, notes), updated_at = ? WHERE id = ?`)
+        .prepare(
+          `UPDATE metacognitive_contradictions SET status = ?, notes = COALESCE(?, notes), updated_at = ? WHERE id = ?`,
+        )
         .run(status, notes ?? null, now, id);
     } catch (err: any) {
       throw new DatabaseError(`Failed to update contradiction ${id}: ${err.message}`, err);

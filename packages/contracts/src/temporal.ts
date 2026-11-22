@@ -61,10 +61,14 @@ export const ChronologicalEventSchema = z.object({
   startTime: z.string(),
   endTime: z.string().optional(),
   durationMs: z.number().optional(),
-  relations: z.array(z.object({
-    targetEventId: z.string(),
-    relation: TemporalRelationSchema,
-  })).default([]),
+  relations: z
+    .array(
+      z.object({
+        targetEventId: z.string(),
+        relation: TemporalRelationSchema,
+      }),
+    )
+    .default([]),
 });
 export type ChronologicalEvent = z.infer<typeof ChronologicalEventSchema>;
 
@@ -112,19 +116,10 @@ export const CreateFutureIntentionInputSchema = z.object({
 });
 export type CreateFutureIntentionInput = z.input<typeof CreateFutureIntentionInputSchema>;
 
-export const CommitmentDeadlineTypeSchema = z.enum([
-  'hard_deadline',
-  'soft_target',
-  'flexible',
-]);
+export const CommitmentDeadlineTypeSchema = z.enum(['hard_deadline', 'soft_target', 'flexible']);
 export type CommitmentDeadlineType = z.infer<typeof CommitmentDeadlineTypeSchema>;
 
-export const CommitmentStatusSchema = z.enum([
-  'active',
-  'fulfilled',
-  'renegotiated',
-  'broken',
-]);
+export const CommitmentStatusSchema = z.enum(['active', 'fulfilled', 'renegotiated', 'broken']);
 export type CommitmentStatus = z.infer<typeof CommitmentStatusSchema>;
 
 export const UnfinishedCommitmentSchema = z.object({
@@ -155,12 +150,7 @@ export const CreateCommitmentInputSchema = z.object({
 });
 export type CreateCommitmentInput = z.input<typeof CreateCommitmentInputSchema>;
 
-export const PlanHorizonSchema = z.enum([
-  'short_term',
-  'medium_term',
-  'long_term',
-  'epochal',
-]);
+export const PlanHorizonSchema = z.enum(['short_term', 'medium_term', 'long_term', 'epochal']);
 export type PlanHorizon = z.infer<typeof PlanHorizonSchema>;
 
 export const PlanMilestoneItemSchema = z.object({
@@ -188,10 +178,14 @@ export const LongTermPlanSchema = z.object({
   visionStatement: z.string().min(1),
   horizon: PlanHorizonSchema.default('medium_term'),
   milestones: z.array(PlanMilestoneItemSchema).default([]),
-  contingencyPlans: z.array(z.object({
-    risk: z.string(),
-    mitigation: z.string(),
-  })).default([]),
+  contingencyPlans: z
+    .array(
+      z.object({
+        risk: z.string(),
+        mitigation: z.string(),
+      }),
+    )
+    .default([]),
   status: LongTermPlanStatusSchema.default('active'),
   targetCompletionDate: z.string(),
   createdAt: z.string(),
@@ -204,10 +198,15 @@ export const CreateLongTermPlanInputSchema = z.object({
   visionStatement: z.string().min(1),
   horizon: PlanHorizonSchema.optional().default('medium_term'),
   milestones: z.array(PlanMilestoneItemSchema).optional().default([]),
-  contingencyPlans: z.array(z.object({
-    risk: z.string(),
-    mitigation: z.string(),
-  })).optional().default([]),
+  contingencyPlans: z
+    .array(
+      z.object({
+        risk: z.string(),
+        mitigation: z.string(),
+      }),
+    )
+    .optional()
+    .default([]),
   targetCompletionDate: z.string(),
 });
 export type CreateLongTermPlanInput = z.input<typeof CreateLongTermPlanInputSchema>;

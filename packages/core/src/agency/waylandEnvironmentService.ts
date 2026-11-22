@@ -44,11 +44,14 @@ export class WaylandEnvironmentService {
     const waylandDisplay = process.env['WAYLAND_DISPLAY'] || null;
     const sessionTypeEnv = (process.env['XDG_SESSION_TYPE'] || '').toLowerCase();
     const isWayland = Boolean(waylandDisplay || sessionTypeEnv === 'wayland');
-    const isKdeWayland = isWayland && (Boolean(process.env['KDE_FULL_SESSION']) || sessionTypeEnv.includes('kde'));
+    const isKdeWayland =
+      isWayland && (Boolean(process.env['KDE_FULL_SESSION']) || sessionTypeEnv.includes('kde'));
 
     const sessionType: 'wayland' | 'x11' | 'headless' = isWayland
       ? 'wayland'
-      : (process.env['DISPLAY'] ? 'x11' : 'headless');
+      : process.env['DISPLAY']
+        ? 'x11'
+        : 'headless';
 
     // 1. Screen Capture Audit
     const hasSpectacle = this.hasBinary('spectacle');
@@ -98,9 +101,11 @@ export class WaylandEnvironmentService {
       } else if (hasXdotool && process.env['DISPLAY']) {
         inputTool = 'xdotool_xwayland_fallback';
         isInputWaylandNative = false;
-        inputLimitation = 'XWayland fallback active; synthetic events cannot cross security boundary into native Wayland windows.';
+        inputLimitation =
+          'XWayland fallback active; synthetic events cannot cross security boundary into native Wayland windows.';
       } else {
-        inputLimitation = 'No Wayland input synthesis tool (ydotool/wtype) available; direct keyboard/mouse emulation restricted by compositor.';
+        inputLimitation =
+          'No Wayland input synthesis tool (ydotool/wtype) available; direct keyboard/mouse emulation restricted by compositor.';
       }
     } else {
       if (hasXdotool) {
@@ -143,7 +148,9 @@ export class WaylandEnvironmentService {
     const recommendedWorkarounds: string[] = [];
 
     if (isWayland && !isCaptureWaylandNative && !captureTool) {
-      limitations.push('Wayland desktop screen capture requires spectacle or grim; visual perception offline.');
+      limitations.push(
+        'Wayland desktop screen capture requires spectacle or grim; visual perception offline.',
+      );
       recommendedWorkarounds.push('Install spectacle (KDE Plasma) or grim/slurp.');
     }
     if (isWayland && inputLimitation) {
@@ -193,19 +200,26 @@ export class WaylandEnvironmentService {
     const freeMemoryMb = Math.round(os.freemem() / (1024 * 1024));
     const issues: string[] = [];
 
-    const isWayland = Boolean(process.env['WAYLAND_DISPLAY'] || process.env['XDG_SESSION_TYPE'] === 'wayland');
+    const isWayland = Boolean(
+      process.env['WAYLAND_DISPLAY'] || process.env['XDG_SESSION_TYPE'] === 'wayland',
+    );
 
     // Memory ceiling check: ROG Ally X has 24GB shared RAM.
     // Ensure total memory is within operating threshold (> 16GB)
     if (totalMemoryMb < 16000) {
-      issues.push(`Total memory (${totalMemoryMb}MB) is below the expected 24GB shared memory specification for ASUS ROG Ally X.`);
+      issues.push(
+        `Total memory (${totalMemoryMb}MB) is below the expected 24GB shared memory specification for ASUS ROG Ally X.`,
+      );
     }
 
     // TDP Profile evaluation
-    let tdpProfile: '15W_quiet' | '25W_performance' | '30W_turbo' | 'unconstrained' = '25W_performance';
+    let tdpProfile: '15W_quiet' | '25W_performance' | '30W_turbo' | 'unconstrained' =
+      '25W_performance';
     try {
       if (fs.existsSync('/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor')) {
-        const gov = fs.readFileSync('/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor', 'utf8').trim();
+        const gov = fs
+          .readFileSync('/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor', 'utf8')
+          .trim();
         if (gov === 'powersave') {
           tdpProfile = '15W_quiet';
         } else if (gov === 'performance') {

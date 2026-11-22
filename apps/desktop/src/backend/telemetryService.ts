@@ -35,8 +35,14 @@ export class TelemetryService {
       if (res.ok) {
         const data = (await res.json()) as any;
         this.specialistStatus = {
-          embeddingGemma: Boolean(data.embeddingGemma ?? data.modelsInstalled?.embeddingGemma ?? data.modelsLoaded?.embeddingGemma),
-          whisper: Boolean(data.whisper ?? data.modelsInstalled?.whisper ?? data.modelsLoaded?.whisper),
+          embeddingGemma: Boolean(
+            data.embeddingGemma ??
+            data.modelsInstalled?.embeddingGemma ??
+            data.modelsLoaded?.embeddingGemma,
+          ),
+          whisper: Boolean(
+            data.whisper ?? data.modelsInstalled?.whisper ?? data.modelsLoaded?.whisper,
+          ),
           kokoro: Boolean(data.kokoro ?? data.modelsInstalled?.kokoro ?? data.modelsLoaded?.kokoro),
         };
       }
@@ -212,7 +218,8 @@ export class TelemetryService {
     } catch {}
 
     const usedBytes = Math.max(0, totalBytes - availableBytes);
-    const usagePercent = totalBytes > 0 ? parseFloat(((usedBytes / totalBytes) * 100).toFixed(1)) : 0;
+    const usagePercent =
+      totalBytes > 0 ? parseFloat(((usedBytes / totalBytes) * 100).toFixed(1)) : 0;
 
     return {
       totalBytes,

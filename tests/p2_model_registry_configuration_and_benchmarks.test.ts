@@ -4,10 +4,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { createDefaultConfig } from '@arletex/core';
-import {
-  defaultModelRegistry,
-  ModelRegistryService,
-} from '@arletex/inference';
+import { defaultModelRegistry, ModelRegistryService } from '@arletex/inference';
 import { ArletexBackendServer } from '../apps/desktop/src/backend/server.js';
 
 describe('P2.4 — Authoritative Model Registry, Inference Configuration & Benchmarks', () => {
@@ -119,9 +116,7 @@ describe('P2.4 — Authoritative Model Registry, Inference Configuration & Bench
   describe('2. Configuration Reconciliation & Drift Elimination', () => {
     it('resolves default config to canonical primary model ID and fallback model ID', () => {
       const config = createDefaultConfig();
-      expect(config.inference.defaultModelId).toBe(
-        'Qwen2.5-14B-Instruct-abliterated-v2.Q4_K_M',
-      );
+      expect(config.inference.defaultModelId).toBe('Qwen2.5-14B-Instruct-abliterated-v2.Q4_K_M');
       expect(config.inference.fallbackModelId).toBe('Qwen3.5-9B-Heretic-Q4_K_M');
       expect(config.inference.serverUrl).toBe('http://127.0.0.1:8080');
       expect(config.inference.provider).toBe('llama.cpp');
@@ -191,10 +186,7 @@ describe('P2.4 — Authoritative Model Registry, Inference Configuration & Bench
         m.isInstalled = false;
       }
 
-      const decision = mockReg.resolveModel(
-        'NonExistentModel',
-        'AlsoNonExistent',
-      );
+      const decision = mockReg.resolveModel('NonExistentModel', 'AlsoNonExistent');
 
       expect(decision.status).toBe('unavailable');
       expect(decision.isFallback).toBe(false);

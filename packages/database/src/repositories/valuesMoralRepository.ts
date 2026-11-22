@@ -40,7 +40,10 @@ export class SqliteValuesMoralRepository implements IValuesMoralRepository {
           principle.lastReconsideredAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save moral principle ${principle.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save moral principle ${principle.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -119,13 +122,18 @@ export class SqliteValuesMoralRepository implements IValuesMoralRepository {
           resolution.timestamp,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save ethical dilemma resolution ${resolution.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save ethical dilemma resolution ${resolution.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
   public getResolutionById(id: string): EthicalDilemmaResolution | null {
     try {
-      const row = this.db.prepare(`SELECT * FROM ethical_dilemma_resolutions WHERE id = ?`).get(id) as any;
+      const row = this.db
+        .prepare(`SELECT * FROM ethical_dilemma_resolutions WHERE id = ?`)
+        .get(id) as any;
       if (!row) return null;
       return {
         id: row.id,
@@ -183,7 +191,10 @@ export class SqliteValuesMoralRepository implements IValuesMoralRepository {
           record.reconsideredAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save moral learning record ${record.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save moral learning record ${record.id}: ${err.message}`,
+        err,
+      );
     }
   }
 

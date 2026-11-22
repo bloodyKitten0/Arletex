@@ -30,10 +30,7 @@ export class AudioPerceptionService {
   private logger: ILogger;
   private specialistUrl: string;
 
-  constructor(
-    specialistUrl = 'http://127.0.0.1:39282',
-    logger: ILogger = rootLogger,
-  ) {
+  constructor(specialistUrl = 'http://127.0.0.1:39282', logger: ILogger = rootLogger) {
     this.specialistUrl = specialistUrl;
     this.logger = logger.child('AudioPerceptionService');
   }
@@ -51,11 +48,16 @@ export class AudioPerceptionService {
       try {
         await execFilePromise('ffmpeg', [
           '-y',
-          '-f', 'pulse',
-          '-i', 'default.monitor',
-          '-t', String(dur),
-          '-ac', '1',
-          '-ar', '16000',
+          '-f',
+          'pulse',
+          '-i',
+          'default.monitor',
+          '-t',
+          String(dur),
+          '-ac',
+          '1',
+          '-ar',
+          '16000',
           outPath,
         ]);
       } catch {
@@ -86,7 +88,11 @@ export class AudioPerceptionService {
   /**
    * Queries MPRIS DBus to identify any active track title/artist currently playing in Chrome, Spotify, etc.
    */
-  public async getMprisMediaMetadata(): Promise<{ title?: string; artist?: string; album?: string } | null> {
+  public async getMprisMediaMetadata(): Promise<{
+    title?: string;
+    artist?: string;
+    album?: string;
+  } | null> {
     try {
       let busList = '';
       try {
@@ -95,14 +101,23 @@ export class AudioPerceptionService {
       } catch {
         return null;
       }
-      const services = [...busList.matchAll(/org\.mpris\.MediaPlayer2\.[a-zA-Z0-9_.-]+/g)].map((m) => m[0]);
+      const services = [...busList.matchAll(/org\.mpris\.MediaPlayer2\.[a-zA-Z0-9_.-]+/g)].map(
+        (m) => m[0],
+      );
 
       for (const service of services) {
         try {
           // Strictly verify that media is actively PLAYING, not paused or stopped in a background tab
           const statusRes = await execFilePromise(
             'busctl',
-            ['--user', 'get-property', service, '/org/mpris/MediaPlayer2', 'org.mpris.MediaPlayer2.Player', 'PlaybackStatus'],
+            [
+              '--user',
+              'get-property',
+              service,
+              '/org/mpris/MediaPlayer2',
+              'org.mpris.MediaPlayer2.Player',
+              'PlaybackStatus',
+            ],
             { timeout: 2000 },
           );
           if (!/s\s+"Playing"/i.test(statusRes.stdout)) {
@@ -111,7 +126,14 @@ export class AudioPerceptionService {
 
           const metaRes = await execFilePromise(
             'busctl',
-            ['--user', 'get-property', service, '/org/mpris/MediaPlayer2', 'org.mpris.MediaPlayer2.Player', 'Metadata'],
+            [
+              '--user',
+              'get-property',
+              service,
+              '/org/mpris/MediaPlayer2',
+              'org.mpris.MediaPlayer2.Player',
+              'Metadata',
+            ],
             { timeout: 2000 },
           );
           const metaOut = metaRes.stdout;
@@ -123,11 +145,12 @@ export class AudioPerceptionService {
             const cleanTitle = titleMatch[1].replace(/\\([0-7]{1,3})/g, (_m, oct) =>
               String.fromCharCode(parseInt(oct, 8)),
             );
-            const cleanArtist = artistMatch && artistMatch[1]
-              ? artistMatch[1].replace(/\\([0-7]{1,3})/g, (_m, oct) =>
-                  String.fromCharCode(parseInt(oct, 8)),
-                )
-              : undefined;
+            const cleanArtist =
+              artistMatch && artistMatch[1]
+                ? artistMatch[1].replace(/\\([0-7]{1,3})/g, (_m, oct) =>
+                    String.fromCharCode(parseInt(oct, 8)),
+                  )
+                : undefined;
             const cleanAlbum = albumMatch && albumMatch[1] ? albumMatch[1] : undefined;
 
             return {
@@ -184,7 +207,9 @@ export class AudioPerceptionService {
       this.logger.debug(`Audio transcription note: ${err.message}`);
     } finally {
       if (tempPath && fs.existsSync(tempPath)) {
-        try { fs.unlinkSync(tempPath); } catch {}
+        try {
+          fs.unlinkSync(tempPath);
+        } catch {}
       }
     }
 

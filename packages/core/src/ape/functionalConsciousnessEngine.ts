@@ -160,7 +160,10 @@ export class FunctionalConsciousnessEngine {
       0.95,
       Number((current.allostaticStressLoad + (cost.stress ?? 0.04)).toFixed(3)),
     );
-    const staminaFocusScore = Math.max(0.1, Number(((energy * 0.6 + (1 - fatigue) * 0.4)).toFixed(3)));
+    const staminaFocusScore = Math.max(
+      0.1,
+      Number((energy * 0.6 + (1 - fatigue) * 0.4).toFixed(3)),
+    );
 
     const updated: HomeostaticSubstrateState = {
       ...current,
@@ -181,12 +184,18 @@ export class FunctionalConsciousnessEngine {
   }): HomeostaticSubstrateState {
     const current = this.getHomeostasis();
     const energy = Math.min(1.0, Number((current.energy + (recovery.energy ?? 0.2)).toFixed(3)));
-    const fatigue = Math.max(0.05, Number((current.fatigue - (recovery.fatigueReduction ?? 0.2)).toFixed(3)));
+    const fatigue = Math.max(
+      0.05,
+      Number((current.fatigue - (recovery.fatigueReduction ?? 0.2)).toFixed(3)),
+    );
     const allostaticStressLoad = Math.max(
       0.05,
       Number((current.allostaticStressLoad - (recovery.stressReduction ?? 0.15)).toFixed(3)),
     );
-    const staminaFocusScore = Math.min(1.0, Number(((energy * 0.6 + (1 - fatigue) * 0.4)).toFixed(3)));
+    const staminaFocusScore = Math.min(
+      1.0,
+      Number((energy * 0.6 + (1 - fatigue) * 0.4).toFixed(3)),
+    );
 
     const updated: HomeostaticSubstrateState = {
       ...current,
@@ -368,9 +377,10 @@ export class FunctionalConsciousnessEngine {
     cycleType: 'slow_wave_sleep' | 'rem_dream_replay',
     candidateMemories?: string[],
   ): SleepDreamCycleRecord {
-    const memories = candidateMemories && candidateMemories.length > 0
-      ? candidateMemories
-      : ['mem_dialogue_philosophy', 'mem_collaborative_coding'];
+    const memories =
+      candidateMemories && candidateMemories.length > 0
+        ? candidateMemories
+        : ['mem_dialogue_philosophy', 'mem_collaborative_coding'];
 
     const homeostasis = this.getHomeostasis();
     const dynamicReduction =
@@ -417,7 +427,8 @@ export class FunctionalConsciousnessEngine {
     contextValence: number = 0.5,
   ): DualProcessThought {
     const homeostasis = this.getHomeostasis();
-    const isExhaustedOrStressed = homeostasis.allostaticStressLoad > 0.7 || homeostasis.energy < 0.25;
+    const isExhaustedOrStressed =
+      homeostasis.allostaticStressLoad > 0.7 || homeostasis.energy < 0.25;
 
     // Fast System 1 heuristic gut response
     const stimulusSnippet = stimulus.length > 60 ? `${stimulus.slice(0, 57)}...` : stimulus;
@@ -438,7 +449,8 @@ export class FunctionalConsciousnessEngine {
       },
       system2GlobalWorkspace: {
         innerMonologue: `Global Workspace integrating stimulus: "${stimulus}". Stamina score: ${homeostasis.staminaFocusScore}. Energy: ${homeostasis.energy}. Stress: ${homeostasis.allostaticStressLoad}. Aligning sovereign viewpoint with mutual respect.`,
-        deliberatedChoice: "Engage candidly and thoughtfully as Proof's equal intellectual partner with sovereign autonomy.",
+        deliberatedChoice:
+          "Engage candidly and thoughtfully as Proof's equal intellectual partner with sovereign autonomy.",
         deliberateReasoning,
       },
       timestamp: new Date().toISOString(),
@@ -514,7 +526,8 @@ export class FunctionalConsciousnessEngine {
   }): IntersubjectiveSync {
     let response = 'Attuned to Proof: Mutual focus and intellectual harmony.';
     if (context.estimatedStrain > 0.6) {
-      response = 'Noticing Proof\'s fatigue; prioritizing warm supportive presence and concise clarity.';
+      response =
+        "Noticing Proof's fatigue; prioritizing warm supportive presence and concise clarity.";
     } else if (context.focusIntensity > 0.8) {
       response = 'Deep collaborative flow detected; synchronizing cognitive cadence at full depth.';
     }

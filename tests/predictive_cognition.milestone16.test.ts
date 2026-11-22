@@ -3,10 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
-import {
-  CognitivePrediction,
-  assertPredictionIntegrity,
-} from '@arletex/contracts';
+import { CognitivePrediction, assertPredictionIntegrity } from '@arletex/contracts';
 import {
   createDefaultConfig,
   ApeService,
@@ -70,7 +67,8 @@ describe('Milestone 16 — Predictive Cognition', () => {
     const prediction = predictiveEngine.makePrediction({
       domain: 'build_pipeline',
       predictionType: 'event',
-      targetStatement: 'TypeScript compilation will complete with zero diagnostic errors across all packages',
+      targetStatement:
+        'TypeScript compilation will complete with zero diagnostic errors across all packages',
       predictedProbability: 0.95,
       confidence: 0.92,
       rationale: 'All contracts and interfaces strictly verified against tsconfig strict mode',
@@ -111,13 +109,19 @@ describe('Milestone 16 — Predictive Cognition', () => {
     const behaviorPredictions = predictiveEngine.predictBehavior(
       'Peer Process Supervisor',
       'Transient socket disconnect detected',
-      ['initiate exponential backoff retry', 'immediately terminate daemon', 'escalate error alert to user'],
+      [
+        'initiate exponential backoff retry',
+        'immediately terminate daemon',
+        'escalate error alert to user',
+      ],
       'process_management',
     );
 
     expect(behaviorPredictions.length).toBe(3);
     expect(behaviorPredictions[0]!.targetStatement).toContain('exponential backoff retry');
-    expect(behaviorPredictions[0]!.predictedProbability).toBeGreaterThan(behaviorPredictions[2]!.predictedProbability);
+    expect(behaviorPredictions[0]!.predictedProbability).toBeGreaterThan(
+      behaviorPredictions[2]!.predictedProbability,
+    );
   });
 
   // -------------------------------------------------------------
@@ -130,7 +134,9 @@ describe('Milestone 16 — Predictive Cognition', () => {
     );
 
     expect(obstacles.length).toBeGreaterThanOrEqual(1);
-    const rateLimitObstacle = obstacles.find((o) => o.targetStatement.includes('429 rate limiting'));
+    const rateLimitObstacle = obstacles.find((o) =>
+      o.targetStatement.includes('429 rate limiting'),
+    );
     expect(rateLimitObstacle).toBeDefined();
     expect(rateLimitObstacle!.predictedProbability).toBeGreaterThan(0.5);
   });
@@ -253,7 +259,7 @@ describe('Milestone 16 — Predictive Cognition', () => {
         rationale: 'Hindsight bias fraud',
         horizonDeadline: futureTime,
         createdAt: futureTime, // Created in the future...
-        resolvedAt: pastTime,  // ...after it was already resolved in the past!
+        resolvedAt: pastTime, // ...after it was already resolved in the past!
         status: 'resolved_accurate',
         actualOutcome: true,
       });
@@ -378,6 +384,8 @@ describe('Milestone 16 — Predictive Cognition', () => {
     const apeService = (server as any).apeService as ApeService;
     const promptContext = apeService.formatApePromptContext();
     expect(promptContext).toContain('Predictive Cognition:');
-    expect(promptContext).toContain('Generated strictly prior to outcome resolution; post-hoc fabrication forbidden');
+    expect(promptContext).toContain(
+      'Generated strictly prior to outcome resolution; post-hoc fabrication forbidden',
+    );
   });
 });

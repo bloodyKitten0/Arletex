@@ -60,23 +60,36 @@ export class VideoProcessor {
         await fs.mkdir(mediaDir, { recursive: true });
         const canonicalInput = path.resolve(videoPath);
         // If file is already inside approved media directory or tmp, keep it as is
-        if (canonicalInput.startsWith(path.resolve(mediaDir)) || canonicalInput.startsWith(path.resolve(os.tmpdir()))) {
+        if (
+          canonicalInput.startsWith(path.resolve(mediaDir)) ||
+          canonicalInput.startsWith(path.resolve(os.tmpdir()))
+        ) {
           inputFilePath = canonicalInput;
           resolvedVideoPath = canonicalInput;
         } else {
           // Ingest external video into secure persistent media storage
           const ext = path.extname(videoPath) || '.mp4';
-          const persistentCopy = path.join(mediaDir, `imported_${Date.now()}_${crypto.randomBytes(4).toString('hex')}${ext}`);
+          const persistentCopy = path.join(
+            mediaDir,
+            `imported_${Date.now()}_${crypto.randomBytes(4).toString('hex')}${ext}`,
+          );
           await fs.copyFile(canonicalInput, persistentCopy);
           inputFilePath = persistentCopy;
           resolvedVideoPath = persistentCopy;
           this.logger.info(`Ingested external video into secure media storage: ${persistentCopy}`);
         }
       } else {
-        const ext = mimeType.includes('webm') ? '.webm' : mimeType.includes('mov') ? '.mov' : '.mp4';
+        const ext = mimeType.includes('webm')
+          ? '.webm'
+          : mimeType.includes('mov')
+            ? '.mov'
+            : '.mp4';
         const mediaDir = path.join(os.homedir(), '.arletex', 'media', 'videos');
         await fs.mkdir(mediaDir, { recursive: true });
-        const persistentFile = path.join(mediaDir, `clip_${Date.now()}_${crypto.randomBytes(4).toString('hex')}${ext}`);
+        const persistentFile = path.join(
+          mediaDir,
+          `clip_${Date.now()}_${crypto.randomBytes(4).toString('hex')}${ext}`,
+        );
 
         let rawB64 = videoBase64!;
         if (rawB64.includes('base64,')) {
@@ -125,7 +138,10 @@ export class VideoProcessor {
       const framesBase64: string[] = [];
       for (let idx = 0; idx < sampleTimestamps.length; idx++) {
         const timestamp = sampleTimestamps[idx]!;
-        const frameOutputPath = path.join(tempDir, `frame_${idx}_${crypto.randomBytes(4).toString('hex')}.jpg`);
+        const frameOutputPath = path.join(
+          tempDir,
+          `frame_${idx}_${crypto.randomBytes(4).toString('hex')}.jpg`,
+        );
 
         try {
           await execFileAsync('ffmpeg', [
@@ -154,7 +170,10 @@ export class VideoProcessor {
 
       // Fallback: If no frames were extracted (e.g. non-standard keyframe indexing), extract first frame
       if (framesBase64.length === 0) {
-        const fallbackPath = path.join(tempDir, `frame_fallback_${crypto.randomBytes(4).toString('hex')}.jpg`);
+        const fallbackPath = path.join(
+          tempDir,
+          `frame_fallback_${crypto.randomBytes(4).toString('hex')}.jpg`,
+        );
         try {
           await execFileAsync('ffmpeg', [
             '-y',
@@ -181,7 +200,10 @@ export class VideoProcessor {
 
       // 3. Extract audio track and transcribe via local Whisper Small
       let transcript: string | null = null;
-      const audioOutputPath = path.join(tempDir, `audio_${crypto.randomBytes(4).toString('hex')}.wav`);
+      const audioOutputPath = path.join(
+        tempDir,
+        `audio_${crypto.randomBytes(4).toString('hex')}.wav`,
+      );
 
       try {
         await execFileAsync('ffmpeg', [

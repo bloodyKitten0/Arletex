@@ -6,8 +6,14 @@ import { AutobiographicalMemoryService } from '../memory/autobiographicalMemoryS
 
 export interface OpenWorldBrowserIntent {
   rawObjective: string;
-  category: 'media_playback' | 'information_research' | 'document_reading' | 'interactive_form' | 'direct_navigation';
-  targetPlatform?: 'spotify' | 'youtube' | 'wikipedia' | 'pubmed' | 'arxiv' | 'github' | 'reddit' | 'generic';
+  category:
+    | 'media_playback'
+    | 'information_research'
+    | 'document_reading'
+    | 'interactive_form'
+    | 'direct_navigation';
+  targetPlatform?:
+    'spotify' | 'youtube' | 'wikipedia' | 'pubmed' | 'arxiv' | 'github' | 'reddit' | 'generic';
   searchQuery?: string;
   targetUrl?: string;
   expectedMediaState?: 'playing' | 'paused' | 'not_required';
@@ -128,8 +134,14 @@ export class OpenWorldBrowserAgency {
 
     // Extract search query by stripping common command verbs and platform references
     let searchQuery = objective
-      .replace(/^(please\s+)?(can\s+you\s+)?(open|go\s+to|navigate\s+to|search\s+for|find\s+and\s+play|play|listen\s+to|look\s+up|read)\s+/i, '')
-      .replace(/\s+(on|at|in|via)\s+(spotify|youtube|wikipedia|pubmed|arxiv|github|reddit|the\s+web|google)\b/gi, '')
+      .replace(
+        /^(please\s+)?(can\s+you\s+)?(open|go\s+to|navigate\s+to|search\s+for|find\s+and\s+play|play|listen\s+to|look\s+up|read)\s+/i,
+        '',
+      )
+      .replace(
+        /\s+(on|at|in|via)\s+(spotify|youtube|wikipedia|pubmed|arxiv|github|reddit|the\s+web|google)\b/gi,
+        '',
+      )
       .trim();
 
     if (!searchQuery) searchQuery = objective;
@@ -285,7 +297,10 @@ export class OpenWorldBrowserAgency {
         } catch (intErr: any) {
           this.logger.debug(`Media interaction notice: ${intErr.message}`);
         }
-      } else if (!hasMedia && (intent.targetPlatform === 'spotify' || intent.targetPlatform === 'youtube')) {
+      } else if (
+        !hasMedia &&
+        (intent.targetPlatform === 'spotify' || intent.targetPlatform === 'youtube')
+      ) {
         // If on search result page, click the top matching result item
         const resultSelectors = [
           'div[data-testid="tracklist-row"]',
@@ -314,7 +329,9 @@ export class OpenWorldBrowserAgency {
 
     // 7. VERIFY
     const hasMedia = observation.hasVideoElement || Boolean((observation as any).hasAudioElement);
-    const mediaPlaying = Boolean(observation.isPlaying && (observation.playbackProgressing ?? true));
+    const mediaPlaying = Boolean(
+      observation.isPlaying && (observation.playbackProgressing ?? true),
+    );
     const contentFound = Boolean(observation.textSnippet && observation.textSnippet.length > 20);
     const statusCode = observation.statusCode ?? 200;
 
@@ -324,12 +341,17 @@ export class OpenWorldBrowserAgency {
     if (intent.category === 'media_playback') {
       verified = hasMedia && mediaPlaying;
       if (!verified) {
-        failureReason = observation.playbackError || (!hasMedia ? 'No media player discovered' : 'Media paused or playback failed to progress');
+        failureReason =
+          observation.playbackError ||
+          (!hasMedia
+            ? 'No media player discovered'
+            : 'Media paused or playback failed to progress');
       }
     } else {
       verified = statusCode === 200 && contentFound;
       if (!verified) {
-        failureReason = statusCode !== 200 ? `HTTP status ${statusCode}` : 'Page content was empty or unreadable';
+        failureReason =
+          statusCode !== 200 ? `HTTP status ${statusCode}` : 'Page content was empty or unreadable';
       }
     }
 

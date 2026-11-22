@@ -8,21 +8,25 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createDefaultConfig } from '@arletex/core';
 import { ArletexBackendServer } from '../apps/desktop/src/backend/server.js';
-import { cleanTextForSpeech, splitIntoSpeechChunks } from '../apps/desktop/src/renderer/src/utils/mediaUtils.js';
+import {
+  cleanTextForSpeech,
+  splitIntoSpeechChunks,
+} from '../apps/desktop/src/renderer/src/utils/mediaUtils.js';
 
 const execFileAsync = promisify(execFile);
 
 describe('Kokoro 82M TTS & Dynamic Affective Tone Tuning', () => {
   describe('Frontend Speech Chunking & Tone Modulation', () => {
     it('properly cleans markdown, thoughts, brackets, and normalizes prosody', () => {
-      const raw = '**Good evening**, Proof... [thought: analyzing] Let\'s *proceed* — shall we? [tone: warm]';
+      const raw =
+        "**Good evening**, Proof... [thought: analyzing] Let's *proceed* — shall we? [tone: warm]";
       const cleaned = cleanTextForSpeech(raw);
       expect(cleaned).not.toContain('**');
       expect(cleaned).not.toContain('*');
       expect(cleaned).not.toContain('[thought: analyzing]');
       expect(cleaned).not.toContain('[tone: warm]');
       expect(cleaned).toContain('—');
-      expect(cleaned).toContain('Good evening, Proof... Let\'s proceed — shall we?');
+      expect(cleaned).toContain("Good evening, Proof... Let's proceed — shall we?");
     });
 
     it('extracts multi-word tone and emotion directives across sentence chunks', () => {
@@ -33,7 +37,9 @@ describe('Kokoro 82M TTS & Dynamic Affective Tone Tuning', () => {
       expect(chunks[0].tone).toBe('gentle, warm, affectionate');
       expect(chunks[0].text).toContain('I am always glad to see you, Proof.');
       expect(chunks[chunks.length - 1].tone).toBe('playful, light, wry');
-      expect(chunks[chunks.length - 1].text).toContain('Though your schedule appears rather chaotic today.');
+      expect(chunks[chunks.length - 1].text).toContain(
+        'Though your schedule appears rather chaotic today.',
+      );
     });
 
     it('extracts [emotion: ...] tags as tone directives', () => {
@@ -68,7 +74,8 @@ describe('Kokoro 82M TTS & Dynamic Affective Tone Tuning', () => {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(
               JSON.stringify({
-                audioBase64: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=',
+                audioBase64:
+                  'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=',
                 format: 'wav',
                 sampleRate: 24000,
                 profileUsed: {
@@ -209,11 +216,9 @@ print("PYTHON_TONE_VERIFICATION_SUCCESS")
             : 'python3');
 
       try {
-        const { stdout } = await execFileAsync(
-          pythonBin,
-          ['-c', pythonScript],
-          { cwd: process.cwd() },
-        );
+        const { stdout } = await execFileAsync(pythonBin, ['-c', pythonScript], {
+          cwd: process.cwd(),
+        });
 
         expect(stdout).toContain('PYTHON_TONE_VERIFICATION_SUCCESS');
       } catch (err: any) {

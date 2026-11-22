@@ -14,7 +14,10 @@ describe('P2.6 — Deployment, Observability and Resource Governance', () => {
 
   beforeEach(async () => {
     testPort = 31000 + Math.floor(Math.random() * 8000);
-    tempDir = path.join('/tmp', `arletex_p26_${Date.now()}_${Math.random().toString(36).substring(7)}`);
+    tempDir = path.join(
+      '/tmp',
+      `arletex_p26_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+    );
     fs.mkdirSync(tempDir, { recursive: true });
     dbPath = path.join(tempDir, 'test.db');
 
@@ -98,7 +101,8 @@ describe('P2.6 — Deployment, Observability and Resource Governance', () => {
       password: 'super-secret-password-xyz',
       apiKey: 'sk-ant-api-key-999',
       headers: {
-        authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.t-IDcSemACt8x4iTMCda8Yhe3iZaWbvV5XKSTbuAn0M',
+        authorization:
+          'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.t-IDcSemACt8x4iTMCda8Yhe3iZaWbvV5XKSTbuAn0M',
         'x-arletex-auth': 'my-custom-loopback-secret',
       },
       safeField: 'normal operation metadata',
@@ -115,7 +119,8 @@ describe('P2.6 — Deployment, Observability and Resource Governance', () => {
     expect(sanitized.safeField).toBe('normal operation metadata');
 
     // Test text string sanitization
-    const rawString = 'Failed to connect to Telegram with bot123456789:ABCdefGHIjklMNOpqrsTUVwxyz_1234567890 and Bearer secret-bearer-token';
+    const rawString =
+      'Failed to connect to Telegram with bot123456789:ABCdefGHIjklMNOpqrsTUVwxyz_1234567890 and Bearer secret-bearer-token';
     const sanitizedString = sanitizeSecrets(rawString) as string;
     expect(sanitizedString).not.toContain('bot123456789');
     expect(sanitizedString).not.toContain('secret-bearer-token');

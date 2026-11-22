@@ -36,9 +36,9 @@ describe('Database Package', () => {
 
   it('runs migrations and establishes schema for initial and milestone 2 tables', () => {
     const db = dbService.getClient();
-    const tables = db
-      .prepare("SELECT name FROM sqlite_master WHERE type='table'")
-      .all() as Array<{ name: string }>;
+    const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as Array<{
+      name: string;
+    }>;
     const tableNames = tables.map((t) => t.name);
 
     expect(tableNames).toContain('_migrations');
@@ -147,7 +147,9 @@ describe('Database Package', () => {
     });
 
     expect(updated.correctionHistory.length).toBe(1);
-    expect(updated.correctionHistory[0]?.previousContent).toBe('Discussed architectural priorities with creator.');
+    expect(updated.correctionHistory[0]?.previousContent).toBe(
+      'Discussed architectural priorities with creator.',
+    );
 
     // Query list
     const list = repo.list({ query: 'autonomy' });

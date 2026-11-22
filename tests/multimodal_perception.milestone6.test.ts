@@ -3,7 +3,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { createDefaultConfig } from '@arletex/core';
-import { DatabaseService, MigrationRunner, PerceptionRepository, WorldRepository } from '@arletex/database';
+import {
+  DatabaseService,
+  MigrationRunner,
+  PerceptionRepository,
+  WorldRepository,
+} from '@arletex/database';
 import {
   InMemoryPerceptionRepository,
   InMemoryWorldRepository,
@@ -113,8 +118,16 @@ describe('Milestone 06 — Multimodal Perception Architecture', () => {
 
     expect(imgResult.interpretation.directObservations.length).toBeGreaterThanOrEqual(2);
     // Direct observations must state verified resolution and detected regions
-    expect(imgResult.interpretation.directObservations.some((o) => o.includes('Image resolution verified: 1920x1080px'))).toBe(true);
-    expect(imgResult.interpretation.directObservations.some((o) => o.includes('Dominant visual color palette:'))).toBe(true);
+    expect(
+      imgResult.interpretation.directObservations.some((o) =>
+        o.includes('Image resolution verified: 1920x1080px'),
+      ),
+    ).toBe(true);
+    expect(
+      imgResult.interpretation.directObservations.some((o) =>
+        o.includes('Dominant visual color palette:'),
+      ),
+    ).toBe(true);
 
     // Assumptions must be explicitly labeled with confidence and verification requirement
     expect(imgResult.interpretation.assumptions.length).toBeGreaterThanOrEqual(1);
@@ -128,8 +141,16 @@ describe('Milestone 06 — Multimodal Perception Architecture', () => {
       language: 'en',
     });
 
-    expect(audioResult.interpretation.directObservations.some((o) => o.includes('Acoustic duration: 2.50s'))).toBe(true);
-    expect(audioResult.interpretation.directObservations.some((o) => o.includes('Speech recognized via Whisper STT'))).toBe(true);
+    expect(
+      audioResult.interpretation.directObservations.some((o) =>
+        o.includes('Acoustic duration: 2.50s'),
+      ),
+    ).toBe(true);
+    expect(
+      audioResult.interpretation.directObservations.some((o) =>
+        o.includes('Speech recognized via Whisper STT'),
+      ),
+    ).toBe(true);
     expect(audioResult.interpretation.assumptions.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -187,8 +208,12 @@ describe('Milestone 06 — Multimodal Perception Architecture', () => {
 
     expect(result.durationSeconds).toBe(6.0);
     expect(result.keyframesCount).toBe(3);
-    expect(result.synchronizedTranscript).toBe('Demonstrating dynamic timeline navigation in Arletex.');
-    expect(result.visualEvents.some((e) => e.eventType === 'video_playback_progression')).toBe(true);
+    expect(result.synchronizedTranscript).toBe(
+      'Demonstrating dynamic timeline navigation in Arletex.',
+    );
+    expect(result.visualEvents.some((e) => e.eventType === 'video_playback_progression')).toBe(
+      true,
+    );
     expect(result.audioEvents.some((e) => e.eventType === 'synchronized_audio_speech')).toBe(true);
     expect(result.sceneEvolution.length).toBeGreaterThanOrEqual(2);
   });
@@ -272,8 +297,15 @@ describe('Milestone 06 — Multimodal Perception Architecture', () => {
     const repo = new InMemoryPerceptionRepository();
     const engine = new MultimodalPerceptionEngine(repo);
 
-    const imgResult = engine.interpretImage({ width: 1920, height: 1080, contextHint: 'code editor' });
-    const audioResult = engine.interpretAudio({ durationSeconds: 3.0, transcript: 'Analyzing terminal test results' });
+    const imgResult = engine.interpretImage({
+      width: 1920,
+      height: 1080,
+      contextHint: 'code editor',
+    });
+    const audioResult = engine.interpretAudio({
+      durationSeconds: 3.0,
+      transcript: 'Analyzing terminal test results',
+    });
     const screenResult = engine.interpretScreen({ focusedWindowTitle: 'Arletex Backend' });
 
     const fusionInput: FuseMultimodalInput = {
@@ -324,8 +356,15 @@ describe('Milestone 06 — Multimodal Perception Architecture', () => {
     const engine1 = new MultimodalPerceptionEngine(perceptionRepo);
 
     // Create and fuse multimodal frame
-    const img = engine1.interpretImage({ width: 3840, height: 2160, contextHint: '4K code display' });
-    const audio = engine1.interpretAudio({ durationSeconds: 2.0, transcript: 'Persistent perception test' });
+    const img = engine1.interpretImage({
+      width: 3840,
+      height: 2160,
+      contextHint: '4K code display',
+    });
+    const audio = engine1.interpretAudio({
+      durationSeconds: 2.0,
+      transcript: 'Persistent perception test',
+    });
     const frame = engine1.fuseMultimodalContext({ imageResult: img, audioResult: audio });
 
     // Close SQLite connection

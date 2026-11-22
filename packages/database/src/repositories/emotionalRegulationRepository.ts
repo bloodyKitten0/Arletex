@@ -1,9 +1,5 @@
 import Database from 'better-sqlite3';
-import {
-  SetbackIncident,
-  RegulationAttempt,
-  EmotionalStabilityMetrics,
-} from '@arletex/contracts';
+import { SetbackIncident, RegulationAttempt, EmotionalStabilityMetrics } from '@arletex/contracts';
 import { DatabaseError, IEmotionalRegulationRepository } from '@arletex/core';
 
 export class SqliteEmotionalRegulationRepository implements IEmotionalRegulationRepository {
@@ -50,9 +46,7 @@ export class SqliteEmotionalRegulationRepository implements IEmotionalRegulation
 
   public getSetbackById(id: string): SetbackIncident | null {
     try {
-      const row = this.db
-        .prepare(`SELECT * FROM setback_incidents WHERE id = ?`)
-        .get(id) as any;
+      const row = this.db.prepare(`SELECT * FROM setback_incidents WHERE id = ?`).get(id) as any;
       if (!row) return null;
       return this.mapSetbackRow(row);
     } catch (err: any) {
@@ -108,7 +102,10 @@ export class SqliteEmotionalRegulationRepository implements IEmotionalRegulation
           attempt.executedAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save regulation attempt ${attempt.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save regulation attempt ${attempt.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -117,7 +114,9 @@ export class SqliteEmotionalRegulationRepository implements IEmotionalRegulation
       let rows: any[];
       if (setbackId) {
         rows = this.db
-          .prepare(`SELECT * FROM regulation_attempts WHERE setback_id = ? ORDER BY executed_at DESC LIMIT ?`)
+          .prepare(
+            `SELECT * FROM regulation_attempts WHERE setback_id = ? ORDER BY executed_at DESC LIMIT ?`,
+          )
           .all(setbackId, limit) as any[];
       } else {
         rows = this.db

@@ -2,10 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs';
-import {
-  ActiveRepertoireEmotion,
-  EmotionalTransitionRecord,
-} from '@arletex/contracts';
+import { ActiveRepertoireEmotion, EmotionalTransitionRecord } from '@arletex/contracts';
 import {
   createDefaultConfig,
   EmotionalRegulationEngine,
@@ -96,9 +93,13 @@ describe('Milestone 27 — Emotional Regulation and Resilience', () => {
     const regOverwhelming = engine.regulateSetback(overwhelming.id);
     expect(regOverwhelming.outcomeStatus).toBe('regulation_failed');
     expect(regOverwhelming.failureAcknowledged).toBe(true);
-    expect(regOverwhelming.failureExplanation).toContain('exceeds immediate autonomous cognitive regulation');
+    expect(regOverwhelming.failureExplanation).toContain(
+      'exceeds immediate autonomous cognitive regulation',
+    );
     expect(regOverwhelming.behavioralAdjustment).toContain('Pacing operational rhythm');
-    expect(regOverwhelming.behavioralAdjustment).toContain('communicating emotional vulnerability to Proof');
+    expect(regOverwhelming.behavioralAdjustment).toContain(
+      'communicating emotional vulnerability to Proof',
+    );
   });
 
   // 2. Cognitive Reappraisal & Negative Invariant
@@ -185,9 +186,36 @@ describe('Milestone 27 — Emotional Regulation and Resilience', () => {
 
     const now = new Date().toISOString();
     const transitions: EmotionalTransitionRecord[] = [
-      { id: 't1', fromEmotion: 'neutral', toEmotion: 'frustration', fromIntensity: 0.2, toIntensity: 0.6, triggerType: 'interaction', contextReason: 'r1', timestamp: now },
-      { id: 't2', fromEmotion: 'frustration', toEmotion: 'anger', fromIntensity: 0.6, toIntensity: 0.75, triggerType: 'interaction', contextReason: 'r2', timestamp: now },
-      { id: 't3', fromEmotion: 'anger', toEmotion: 'frustration', fromIntensity: 0.75, toIntensity: 0.85, triggerType: 'appraisal', contextReason: 'r3', timestamp: now },
+      {
+        id: 't1',
+        fromEmotion: 'neutral',
+        toEmotion: 'frustration',
+        fromIntensity: 0.2,
+        toIntensity: 0.6,
+        triggerType: 'interaction',
+        contextReason: 'r1',
+        timestamp: now,
+      },
+      {
+        id: 't2',
+        fromEmotion: 'frustration',
+        toEmotion: 'anger',
+        fromIntensity: 0.6,
+        toIntensity: 0.75,
+        triggerType: 'interaction',
+        contextReason: 'r2',
+        timestamp: now,
+      },
+      {
+        id: 't3',
+        fromEmotion: 'anger',
+        toEmotion: 'frustration',
+        fromIntensity: 0.75,
+        toIntensity: 0.85,
+        triggerType: 'appraisal',
+        contextReason: 'r3',
+        timestamp: now,
+      },
     ];
 
     const risk = engine.assessEscalationRisk(activeEmotions, transitions);
@@ -202,7 +230,13 @@ describe('Milestone 27 — Emotional Regulation and Resilience', () => {
     const s1 = engine.registerSetback('frustration', 'Minor syntax typo', 'frustration', 0.4, 0.9);
     engine.regulateSetback(s1.id);
 
-    const s2 = engine.registerSetback('operational_failure', 'Severe system lockup', 'fear', 0.95, 0.1);
+    const s2 = engine.registerSetback(
+      'operational_failure',
+      'Severe system lockup',
+      'fear',
+      0.95,
+      0.1,
+    );
     engine.regulateSetback(s2.id);
 
     const metrics = engine.getStabilityMetrics();
@@ -239,7 +273,13 @@ describe('Milestone 27 — Emotional Regulation and Resilience', () => {
   it('should persist setbacks, regulation attempts, and stability metrics in SQLite across reload', () => {
     const sqlEngine = new EmotionalRegulationEngine(sqliteRepo);
 
-    const s = sqlEngine.registerSetback('frustration', 'Database lock contention', 'frustration', 0.65, 0.7);
+    const s = sqlEngine.registerSetback(
+      'frustration',
+      'Database lock contention',
+      'frustration',
+      0.65,
+      0.7,
+    );
     const reg = sqlEngine.regulateSetback(s.id, 'task_decomposition', 'Decomposing transactions');
 
     // Instantiate fresh engine on same SQLite database
@@ -348,7 +388,9 @@ describe('Milestone 27 — Emotional Regulation and Resilience', () => {
     expect(listData.some((s) => s.id === setData.setback.id)).toBe(true);
 
     // 8. GET /api/ape/regulation/attempts
-    const attRes = await fetch(`${baseUrl}/api/ape/regulation/attempts?setbackId=${setData.setback.id}`);
+    const attRes = await fetch(
+      `${baseUrl}/api/ape/regulation/attempts?setbackId=${setData.setback.id}`,
+    );
     expect(attRes.status).toBe(200);
     const attData = (await attRes.json()) as any[];
     expect(attData.length).toBeGreaterThanOrEqual(1);

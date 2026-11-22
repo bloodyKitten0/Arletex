@@ -3,10 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
-import {
-  DatabaseService,
-  MigrationRunner,
-} from '@arletex/database';
+import { DatabaseService, MigrationRunner } from '@arletex/database';
 import type Database from 'better-sqlite3';
 import {
   ActionPermissionController,
@@ -15,10 +12,7 @@ import {
   ApeService,
   rootLogger,
 } from '@arletex/core';
-import {
-  ActionProposal,
-  CognitiveEvent,
-} from '@arletex/contracts';
+import { ActionProposal, CognitiveEvent } from '@arletex/contracts';
 
 describe('Priority 0 — Universal Security Coverage & Fail-Closed Boundary (P0.3)', () => {
   let tempDir: string;
@@ -121,7 +115,9 @@ describe('Priority 0 — Universal Security Coverage & Fail-Closed Boundary (P0.
 
       const result = controller.evaluate(action);
       expect(result.decision).toBe('denied');
-      expect(result.reason).toMatch(/outside pre-approved write directories|resolves outside authorized directory boundaries/i);
+      expect(result.reason).toMatch(
+        /outside pre-approved write directories|resolves outside authorized directory boundaries/i,
+      );
     });
 
     it('blocks path-prefix collision attacks (e.g. safe_write-malicious)', () => {
@@ -142,7 +138,9 @@ describe('Priority 0 — Universal Security Coverage & Fail-Closed Boundary (P0.
 
       const result = controller.evaluate(action);
       expect(result.decision).toBe('denied');
-      expect(result.reason).toMatch(/outside pre-approved write directories|resolves outside authorized directory boundaries/i);
+      expect(result.reason).toMatch(
+        /outside pre-approved write directories|resolves outside authorized directory boundaries/i,
+      );
     });
 
     it('blocks parent traversal .. in read and write operations', () => {

@@ -252,7 +252,10 @@ export class SqliteFunctionalConsciousnessRepository implements IFunctionalConsc
           pushback.timestamp,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save boundary pushback ${pushback.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save boundary pushback ${pushback.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -295,7 +298,10 @@ export class SqliteFunctionalConsciousnessRepository implements IFunctionalConsc
           state.timestamp,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save DMN wandering state ${state.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save DMN wandering state ${state.id}: ${err.message}`,
+        err,
+      );
     }
   }
 

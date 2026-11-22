@@ -1,20 +1,9 @@
 import { z } from 'zod';
 
-export const ShutdownTypeSchema = z.enum([
-  'active',
-  'clean',
-  'unexpected_crash',
-  'interrupted',
-]);
+export const ShutdownTypeSchema = z.enum(['active', 'clean', 'unexpected_crash', 'interrupted']);
 export type ShutdownType = z.infer<typeof ShutdownTypeSchema>;
 
-export const ChannelOriginSchema = z.enum([
-  'desktop',
-  'telegram',
-  'cli',
-  'unified',
-  'system',
-]);
+export const ChannelOriginSchema = z.enum(['desktop', 'telegram', 'cli', 'unified', 'system']);
 export type ChannelOrigin = z.infer<typeof ChannelOriginSchema>;
 
 export const IdentitySessionSchema = z.object({

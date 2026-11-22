@@ -103,7 +103,9 @@ export class LearningAdaptationEngine {
     assertLearningIntegrity(rule);
 
     this.repo.saveRule(rule);
-    this.logger.info(`Synthesized adaptation rule [${rule.domain}]: ${rule.condition} -> ${rule.recommendedStrategy}`);
+    this.logger.info(
+      `Synthesized adaptation rule [${rule.domain}]: ${rule.condition} -> ${rule.recommendedStrategy}`,
+    );
     return rule;
   }
 
@@ -115,14 +117,22 @@ export class LearningAdaptationEngine {
     const normContext = context.toLowerCase();
     const allRules = this.repo.listRules({ domain });
 
-    const matchedRules = allRules.filter((r) => {
-      if (r.domain.toLowerCase() === domain.toLowerCase()) return true;
-      if (r.transferDomains.some((d: string) => d.toLowerCase() === domain.toLowerCase())) return true;
-      return false;
-    }).filter((r) => {
-      const cond = r.condition.toLowerCase();
-      return normContext.includes(cond) || cond.includes(normContext) || cond === 'default' || cond === '*';
-    });
+    const matchedRules = allRules
+      .filter((r) => {
+        if (r.domain.toLowerCase() === domain.toLowerCase()) return true;
+        if (r.transferDomains.some((d: string) => d.toLowerCase() === domain.toLowerCase()))
+          return true;
+        return false;
+      })
+      .filter((r) => {
+        const cond = r.condition.toLowerCase();
+        return (
+          normContext.includes(cond) ||
+          cond.includes(normContext) ||
+          cond === 'default' ||
+          cond === '*'
+        );
+      });
 
     matchedRules.sort((a, b) => b.confidence * b.successRate - a.confidence * a.successRate);
 
@@ -133,16 +143,18 @@ export class LearningAdaptationEngine {
       }
     });
 
-    const confidenceScore = matchedRules.length > 0
-      ? matchedRules.reduce((acc, r) => acc + r.confidence, 0) / matchedRules.length
-      : 0.5;
+    const confidenceScore =
+      matchedRules.length > 0
+        ? matchedRules.reduce((acc, r) => acc + r.confidence, 0) / matchedRules.length
+        : 0.5;
 
-    const avgSuccess = matchedRules.length > 0
-      ? matchedRules.reduce((acc, r) => acc + r.successRate, 0) / matchedRules.length
-      : 0.5;
+    const avgSuccess =
+      matchedRules.length > 0
+        ? matchedRules.reduce((acc, r) => acc + r.successRate, 0) / matchedRules.length
+        : 0.5;
 
     // Expected improvement relative to baseline 0.50
-    const expectedSuccessImprovement = Math.max(0.0, avgSuccess - 0.50);
+    const expectedSuccessImprovement = Math.max(0.0, avgSuccess - 0.5);
 
     return {
       context,
@@ -175,7 +187,7 @@ export class LearningAdaptationEngine {
       nextConfidence = Math.min(1.0, rule.confidence + 0.05);
     } else {
       nextSuccessRate = (rule.successRate * currentSamples + 0.0) / nextSamples;
-      nextConfidence = Math.max(0.1, rule.confidence - 0.10);
+      nextConfidence = Math.max(0.1, rule.confidence - 0.1);
     }
 
     const updatedRule: BehavioralAdaptationRule = {
@@ -219,9 +231,13 @@ export class LearningAdaptationEngine {
 
         const implications: string[] = [];
         if (clusterOutcome === 'failure') {
-          implications.push(`High failure frequency in domain '${clusterDomain}'. Recommend evasive strategy adjustment.`);
+          implications.push(
+            `High failure frequency in domain '${clusterDomain}'. Recommend evasive strategy adjustment.`,
+          );
         } else if (clusterOutcome === 'success') {
-          implications.push(`Consistent success patterns observed in domain '${clusterDomain}'. Good candidate for cross-domain generalization.`);
+          implications.push(
+            `Consistent success patterns observed in domain '${clusterDomain}'. Good candidate for cross-domain generalization.`,
+          );
         }
 
         patterns.push({
@@ -293,12 +309,10 @@ export class LearningAdaptationEngine {
 
     const totalRules = rules.length;
     const generalizationCount = rules.filter((r) => r.isGeneralization).length;
-    const avgConfidence = totalRules > 0
-      ? rules.reduce((acc, r) => acc + r.confidence, 0) / totalRules
-      : 0.0;
-    const avgSuccessRate = totalRules > 0
-      ? rules.reduce((acc, r) => acc + r.successRate, 0) / totalRules
-      : 0.0;
+    const avgConfidence =
+      totalRules > 0 ? rules.reduce((acc, r) => acc + r.confidence, 0) / totalRules : 0.0;
+    const avgSuccessRate =
+      totalRules > 0 ? rules.reduce((acc, r) => acc + r.successRate, 0) / totalRules : 0.0;
 
     return {
       totalExperiences: experiences.length,
@@ -320,9 +334,10 @@ export class LearningAdaptationEngine {
     if (exp.outcome === 'failure' || exp.channel === 'mistake') {
       const condition = exp.context;
       const avoidStrategy = exp.actionTaken;
-      const recommendedStrategy = exp.lessonsLearned.length > 0
-        ? exp.lessonsLearned.join('; ')
-        : `Avoid repeating '${exp.actionTaken}' under '${exp.context}'`;
+      const recommendedStrategy =
+        exp.lessonsLearned.length > 0
+          ? exp.lessonsLearned.join('; ')
+          : `Avoid repeating '${exp.actionTaken}' under '${exp.context}'`;
 
       this.createAdaptationRule({
         sourceExperienceIds: [exp.id],
@@ -335,9 +350,8 @@ export class LearningAdaptationEngine {
       });
     } else if (exp.outcome === 'success' || exp.channel === 'success') {
       const condition = exp.context;
-      const recommendedStrategy = exp.lessonsLearned.length > 0
-        ? exp.lessonsLearned.join('; ')
-        : exp.actionTaken;
+      const recommendedStrategy =
+        exp.lessonsLearned.length > 0 ? exp.lessonsLearned.join('; ') : exp.actionTaken;
 
       this.createAdaptationRule({
         sourceExperienceIds: [exp.id],
@@ -402,12 +416,17 @@ export class InMemoryLearningRepository implements ILearningRepository {
     return rule ? JSON.parse(JSON.stringify(rule)) : null;
   }
 
-  public listRules(filter?: { domain?: string; minConfidence?: number }): BehavioralAdaptationRule[] {
+  public listRules(filter?: {
+    domain?: string;
+    minConfidence?: number;
+  }): BehavioralAdaptationRule[] {
     let result = [...this.rules];
     if (filter?.domain) {
       const d = filter.domain.toLowerCase();
       result = result.filter(
-        (r) => r.domain.toLowerCase() === d || r.transferDomains.some((td: string) => td.toLowerCase() === d),
+        (r) =>
+          r.domain.toLowerCase() === d ||
+          r.transferDomains.some((td: string) => td.toLowerCase() === d),
       );
     }
     if (filter?.minConfidence !== undefined) {

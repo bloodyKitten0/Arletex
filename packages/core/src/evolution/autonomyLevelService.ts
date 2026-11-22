@@ -11,7 +11,8 @@ export const CANONICAL_AUTONOMY_LEVELS: Record<AutonomyLevel, AutonomyLevelDefin
   '1_develop': {
     level: '1_develop',
     name: 'Develop',
-    description: 'Learn, form interests, and change through experience while grounded in proven memory and causal affect.',
+    description:
+      'Learn, form interests, and change through experience while grounded in proven memory and causal affect.',
     permittedCapabilities: [
       'autobiographical_memory_consolidation',
       'epistemic_provenance_tracking',
@@ -24,16 +25,13 @@ export const CANONICAL_AUTONOMY_LEVELS: Record<AutonomyLevel, AutonomyLevelDefin
       'unapproved_file_system_modifications',
       'autonomous_code_patching',
     ],
-    requiredGateCriteria: [
-      'P0_hardened',
-      'canonical_memory_provenance',
-      'causal_affect_traces',
-    ],
+    requiredGateCriteria: ['P0_hardened', 'canonical_memory_provenance', 'causal_affect_traces'],
   },
   '2_initiate': {
     level: '2_initiate',
     name: 'Initiate',
-    description: 'Independently begin research, projects, and communication within strict policy permissions and user quiet hours.',
+    description:
+      'Independently begin research, projects, and communication within strict policy permissions and user quiet hours.',
     permittedCapabilities: [
       'endogenous_curiosity_and_goal_generation',
       'autonomous_web_research',
@@ -56,7 +54,8 @@ export const CANONICAL_AUTONOMY_LEVELS: Record<AutonomyLevel, AutonomyLevelDefin
   '3_modify': {
     level: '3_modify',
     name: 'Modify',
-    description: 'Identify benchmark weaknesses, propose code improvements, test in isolated sandboxes, and require explicit approval for application.',
+    description:
+      'Identify benchmark weaknesses, propose code improvements, test in isolated sandboxes, and require explicit approval for application.',
     permittedCapabilities: [
       'benchmark_weakness_identification',
       'isolated_patch_generation',
@@ -79,7 +78,8 @@ export const CANONICAL_AUTONOMY_LEVELS: Record<AutonomyLevel, AutonomyLevelDefin
   '4_evolve': {
     level: '4_evolve',
     name: 'Evolve',
-    description: 'Develop and evaluate new cognitive mechanisms, motivations, and reasoning strategies with repeated evidence, regression tests, and user alignment.',
+    description:
+      'Develop and evaluate new cognitive mechanisms, motivations, and reasoning strategies with repeated evidence, regression tests, and user alignment.',
     permittedCapabilities: [
       'cognitive_architecture_hypothesis_testing',
       'new_reasoning_strategy_evaluation',

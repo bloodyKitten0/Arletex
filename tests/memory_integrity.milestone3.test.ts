@@ -140,7 +140,8 @@ describe('Milestone 3 — Memory Integrity (Priority III)', () => {
       const verifiedResult: VerificationResult = {
         actionId: 'act-2',
         expectedOutcome: 'Video player initialized and advancing playback',
-        observedOutcome: 'Video player verified active at https://youtube.com/watch?v=123. Playback time advanced from 1.2s to 2.4s.',
+        observedOutcome:
+          'Video player verified active at https://youtube.com/watch?v=123. Playback time advanced from 1.2s to 2.4s.',
         verified: true,
         confidence: 0.96,
         status: 'verified_successful',
@@ -150,7 +151,13 @@ describe('Milestone 3 — Memory Integrity (Priority III)', () => {
         timestamp: new Date().toISOString(),
       };
 
-      const experience = await sync.distillExperience(task, plan, [], [verifiedResult], 'https://youtube.com/watch?v=123');
+      const experience = await sync.distillExperience(
+        task,
+        plan,
+        [],
+        [verifiedResult],
+        'https://youtube.com/watch?v=123',
+      );
 
       expect(experience.success).toBe(true);
       expect(experience.verifiedFacts.length).toBe(1);
@@ -193,7 +200,7 @@ describe('Milestone 3 — Memory Integrity (Priority III)', () => {
         provenance: 'inferred_interpretation',
         interpretation: 'Hypothesis that user is fatigued',
       });
-      expect(ungroundedInterp.confidence).toBe(0.60);
+      expect(ungroundedInterp.confidence).toBe(0.6);
 
       const uncertainMem = memoryRepo.create({
         content: 'Ambiguous speech fragment transcribed from noisy audio',
@@ -326,7 +333,9 @@ describe('Milestone 3 — Memory Integrity (Priority III)', () => {
       expect(memoryRepo.getEmbedding(mem.id)).toBeNull();
 
       // Directly verify database status
-      const row = db.prepare('SELECT status, error_message FROM memory_embeddings WHERE memory_id = ?').get(mem.id) as any;
+      const row = db
+        .prepare('SELECT status, error_message FROM memory_embeddings WHERE memory_id = ?')
+        .get(mem.id) as any;
       expect(row.status).toBe('failed');
       expect(row.error_message).toContain('Inference service OOM');
     });
@@ -356,17 +365,23 @@ describe('Milestone 3 — Memory Integrity (Priority III)', () => {
 
         // Verify restored autobiographical memory with original provenance
         const allMemories = newMemRepo.list({ limit: 100 });
-        const partnerBoundaryMem = allMemories.find((m) => m.content.includes("don't call me creator"));
+        const partnerBoundaryMem = allMemories.find((m) =>
+          m.content.includes("don't call me creator"),
+        );
         expect(partnerBoundaryMem).toBeDefined();
         expect(partnerBoundaryMem?.provenance).toBe('historical_consolidation');
         expect(partnerBoundaryMem?.metadata?.epistemicStatus).toBe('explicit_boundary');
 
-        const healingMem = allMemories.find((m) => m.content.includes('nothing is as healing as a human touch'));
+        const healingMem = allMemories.find((m) =>
+          m.content.includes('nothing is as healing as a human touch'),
+        );
         expect(healingMem).toBeDefined();
         expect(healingMem?.type).toBe('semantic');
 
         // Verify that memory restoration did NOT manufacture missing or false experiences
-        const fakeMemories = allMemories.filter((m) => m.content.includes('fabricated') || m.content.includes('magical'));
+        const fakeMemories = allMemories.filter(
+          (m) => m.content.includes('fabricated') || m.content.includes('magical'),
+        );
         expect(fakeMemories.length).toBe(0);
       } finally {
         newDbService.close();

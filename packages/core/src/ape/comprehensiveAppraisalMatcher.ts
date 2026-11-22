@@ -4,10 +4,7 @@ import {
   ApeRelationshipConfig,
   ProposedEmotionTransition,
 } from '@arletex/contracts';
-import {
-  COMPLETE_143_EMOTIONS_AUDIT,
-  EmotionAuditDefinition,
-} from './taxonomyAuditData.js';
+import { COMPLETE_143_EMOTIONS_AUDIT, EmotionAuditDefinition } from './taxonomyAuditData.js';
 
 export interface AppraisalMatchResult {
   transitions: ProposedEmotionTransition[];
@@ -95,7 +92,12 @@ export class ComprehensiveAppraisalMatcher {
     if (!text) {
       return {
         transitions,
-        nuancesDetected: { negated: false, hypothetical: isHypo, thirdParty: isThird, sarcastic: isSarc },
+        nuancesDetected: {
+          negated: false,
+          hypothetical: isHypo,
+          thirdParty: isThird,
+          sarcastic: isSarc,
+        },
         matchedTriggers,
       };
     }
@@ -228,8 +230,7 @@ export class ComprehensiveAppraisalMatcher {
     return (
       /^(great,?\s*just wonderful|oh,?\s*(i\s+)?absolutely love that|sure,?\s*whatever you say|oh brilliant|fantastic,?\s*just what i needed)\b/i.test(
         text,
-      ) ||
-      /\b(oh great,?\s*(it|this)\s*(broke|failed|crashed))\b/i.test(text)
+      ) || /\b(oh great,?\s*(it|this)\s*(broke|failed|crashed))\b/i.test(text)
     );
   }
 
@@ -407,7 +408,7 @@ export class ComprehensiveAppraisalMatcher {
     let target = baseline;
 
     const socialSafety = currentState.contextual?.socialSafety ?? 0.85;
-    const emotionalOpenness = currentState.contextual?.emotionalOpenness ?? 0.70;
+    const emotionalOpenness = currentState.contextual?.emotionalOpenness ?? 0.7;
 
     // Relational modulation
     if (def.category === 'love_affection' || def.category === 'social_interpersonal') {

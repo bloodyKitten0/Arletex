@@ -1,15 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Brain,
-  Search,
-  Plus,
-  Edit3,
-  Trash2,
-  Combine,
-  Tag,
-  X,
-  AlertCircle,
-} from 'lucide-react';
+import { Brain, Search, Plus, Edit3, Trash2, Combine, Tag, X, AlertCircle } from 'lucide-react';
 import { Memory, MemoryType } from '@arletex/contracts';
 
 const MEMORY_TYPES: { id: MemoryType | 'all'; label: string }[] = [
@@ -164,7 +154,13 @@ export const MemoryView: React.FC = () => {
 
   // Delete Memory
   const handleDelete = async (id: string) => {
-    if (!api || !confirm('Permanently remove this memory? It will immediately become ineligible for retrieval.')) return;
+    if (
+      !api ||
+      !confirm(
+        'Permanently remove this memory? It will immediately become ineligible for retrieval.',
+      )
+    )
+      return;
     try {
       const res = await api.deleteMemory(id);
       if (res.success) {
@@ -188,7 +184,15 @@ export const MemoryView: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minWidth: 0 }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        width: '100%',
+        minWidth: 0,
+      }}
+    >
       {/* Header */}
       <div
         style={{
@@ -202,12 +206,22 @@ export const MemoryView: React.FC = () => {
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <h1 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h1
+              style={{
+                fontSize: '18px',
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
               <Brain size={20} color="var(--accent)" />
               <span>Autobiographical & Persistent Memory</span>
             </h1>
             <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
-              Arle's retained knowledge, identity, and experiences. Decoupled from replaceable model weights.
+              Arle's retained knowledge, identity, and experiences. Decoupled from replaceable model
+              weights.
             </p>
           </div>
 
@@ -241,7 +255,15 @@ export const MemoryView: React.FC = () => {
 
         {/* Error notification if any */}
         {error && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--danger)', fontSize: '12px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              color: 'var(--danger)',
+              fontSize: '12px',
+            }}
+          >
             <AlertCircle size={14} />
             <span>{error}</span>
           </div>
@@ -277,7 +299,11 @@ export const MemoryView: React.FC = () => {
               }}
             />
             {searchQuery && (
-              <button type="button" onClick={() => setSearchQuery('')} style={{ color: 'var(--text-muted)' }}>
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                style={{ color: 'var(--text-muted)' }}
+              >
                 <X size={14} />
               </button>
             )}
@@ -295,7 +321,8 @@ export const MemoryView: React.FC = () => {
                   borderRadius: '6px',
                   fontSize: '12px',
                   fontWeight: selectedType === t.id ? 600 : 500,
-                  backgroundColor: selectedType === t.id ? 'var(--accent-muted)' : 'var(--bg-tertiary)',
+                  backgroundColor:
+                    selectedType === t.id ? 'var(--accent-muted)' : 'var(--bg-tertiary)',
                   color: selectedType === t.id ? 'var(--accent)' : 'var(--text-secondary)',
                   border: '1px solid var(--border-subtle)',
                   whiteSpace: 'nowrap',
@@ -311,7 +338,14 @@ export const MemoryView: React.FC = () => {
       {/* Memory Cards Grid */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
         {loading && memories.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)', fontSize: '13px' }}>
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '40px',
+              color: 'var(--text-muted)',
+              fontSize: '13px',
+            }}
+          >
             Loading persistent memory records...
           </div>
         ) : memories.length === 0 ? (
@@ -321,11 +355,19 @@ export const MemoryView: React.FC = () => {
               No memories found
             </div>
             <div style={{ fontSize: '12px', marginTop: '4px' }}>
-              {searchQuery ? 'Try a different search query or clear the filter.' : 'Record experiences or converse with Arle to build her knowledge.'}
+              {searchQuery
+                ? 'Try a different search query or clear the filter.'
+                : 'Record experiences or converse with Arle to build her knowledge.'}
             </div>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+              gap: '16px',
+            }}
+          >
             {memories.map((mem) => (
               <div
                 key={mem.id}
@@ -341,7 +383,9 @@ export const MemoryView: React.FC = () => {
                 }}
               >
                 {/* Top Badge & Actions */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                >
                   <span
                     style={{
                       fontSize: '11px',
@@ -362,7 +406,11 @@ export const MemoryView: React.FC = () => {
                       type="button"
                       onClick={() => openEditModal(mem)}
                       title="Edit Memory"
-                      style={{ padding: '4px', color: 'var(--text-secondary)', borderRadius: '4px' }}
+                      style={{
+                        padding: '4px',
+                        color: 'var(--text-secondary)',
+                        borderRadius: '4px',
+                      }}
                     >
                       <Edit3 size={14} />
                     </button>
@@ -373,7 +421,11 @@ export const MemoryView: React.FC = () => {
                         setTargetMergeId('');
                       }}
                       title="Merge into another memory"
-                      style={{ padding: '4px', color: 'var(--text-secondary)', borderRadius: '4px' }}
+                      style={{
+                        padding: '4px',
+                        color: 'var(--text-secondary)',
+                        borderRadius: '4px',
+                      }}
                     >
                       <Combine size={14} />
                     </button>
@@ -389,7 +441,14 @@ export const MemoryView: React.FC = () => {
                 </div>
 
                 {/* Content */}
-                <div style={{ fontSize: '13px', lineHeight: '1.6', color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>
+                <div
+                  style={{
+                    fontSize: '13px',
+                    lineHeight: '1.6',
+                    color: 'var(--text-primary)',
+                    whiteSpace: 'pre-wrap',
+                  }}
+                >
                   {mem.content}
                 </div>
 
@@ -475,15 +534,31 @@ export const MemoryView: React.FC = () => {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>New Memory Record</h2>
-              <button type="button" onClick={() => setShowCreateModal(false)} style={{ color: 'var(--text-muted)' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                New Memory Record
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                style={{ color: 'var(--text-muted)' }}
+              >
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleCreateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <form
+              onSubmit={handleCreateSubmit}
+              style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
+            >
               <div>
-                <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+                <label
+                  style={{
+                    fontSize: '12px',
+                    color: 'var(--text-secondary)',
+                    display: 'block',
+                    marginBottom: '6px',
+                  }}
+                >
                   Memory Type
                 </label>
                 <select
@@ -508,7 +583,14 @@ export const MemoryView: React.FC = () => {
               </div>
 
               <div>
-                <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+                <label
+                  style={{
+                    fontSize: '12px',
+                    color: 'var(--text-secondary)',
+                    display: 'block',
+                    marginBottom: '6px',
+                  }}
+                >
                   Memory Content
                 </label>
                 <textarea
@@ -531,7 +613,14 @@ export const MemoryView: React.FC = () => {
               </div>
 
               <div>
-                <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+                <label
+                  style={{
+                    fontSize: '12px',
+                    color: 'var(--text-secondary)',
+                    display: 'block',
+                    marginBottom: '6px',
+                  }}
+                >
                   Tags (comma separated)
                 </label>
                 <input
@@ -553,7 +642,14 @@ export const MemoryView: React.FC = () => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
-                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+                  <label
+                    style={{
+                      fontSize: '12px',
+                      color: 'var(--text-secondary)',
+                      display: 'block',
+                      marginBottom: '6px',
+                    }}
+                  >
                     Importance: {(formImportance * 100).toFixed(0)}%
                   </label>
                   <input
@@ -567,7 +663,14 @@ export const MemoryView: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+                  <label
+                    style={{
+                      fontSize: '12px',
+                      color: 'var(--text-secondary)',
+                      display: 'block',
+                      marginBottom: '6px',
+                    }}
+                  >
                     Confidence: {(formConfidence * 100).toFixed(0)}%
                   </label>
                   <input
@@ -582,7 +685,14 @@ export const MemoryView: React.FC = () => {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '10px',
+                  marginTop: '8px',
+                }}
+              >
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
@@ -646,14 +756,28 @@ export const MemoryView: React.FC = () => {
               <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
                 Edit Memory (Audit Tracked)
               </h2>
-              <button type="button" onClick={() => setEditingMemory(null)} style={{ color: 'var(--text-muted)' }}>
+              <button
+                type="button"
+                onClick={() => setEditingMemory(null)}
+                style={{ color: 'var(--text-muted)' }}
+              >
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleUpdateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <form
+              onSubmit={handleUpdateSubmit}
+              style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
+            >
               <div>
-                <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+                <label
+                  style={{
+                    fontSize: '12px',
+                    color: 'var(--text-secondary)',
+                    display: 'block',
+                    marginBottom: '6px',
+                  }}
+                >
                   Content
                 </label>
                 <textarea
@@ -675,7 +799,14 @@ export const MemoryView: React.FC = () => {
               </div>
 
               <div>
-                <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+                <label
+                  style={{
+                    fontSize: '12px',
+                    color: 'var(--text-secondary)',
+                    display: 'block',
+                    marginBottom: '6px',
+                  }}
+                >
                   Tags (comma separated)
                 </label>
                 <input
@@ -694,7 +825,14 @@ export const MemoryView: React.FC = () => {
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '10px',
+                  marginTop: '8px',
+                }}
+              >
                 <button
                   type="button"
                   onClick={() => setEditingMemory(null)}
@@ -755,19 +893,36 @@ export const MemoryView: React.FC = () => {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>Merge Memories</h2>
-              <button type="button" onClick={() => setMergingMemory(null)} style={{ color: 'var(--text-muted)' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                Merge Memories
+              </h2>
+              <button
+                type="button"
+                onClick={() => setMergingMemory(null)}
+                style={{ color: 'var(--text-muted)' }}
+              >
                 <X size={18} />
               </button>
             </div>
 
             <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-              Combine content from this memory into another target memory. The secondary memory will be safely retired.
+              Combine content from this memory into another target memory. The secondary memory will
+              be safely retired.
             </p>
 
-            <form onSubmit={handleMergeSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <form
+              onSubmit={handleMergeSubmit}
+              style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
+            >
               <div>
-                <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
+                <label
+                  style={{
+                    fontSize: '12px',
+                    color: 'var(--text-secondary)',
+                    display: 'block',
+                    marginBottom: '6px',
+                  }}
+                >
                   Select Target Memory to Merge With
                 </label>
                 <select
@@ -794,7 +949,14 @@ export const MemoryView: React.FC = () => {
                 </select>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '10px',
+                  marginTop: '8px',
+                }}
+              >
                 <button
                   type="button"
                   onClick={() => setMergingMemory(null)}

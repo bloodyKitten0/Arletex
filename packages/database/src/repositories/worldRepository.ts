@@ -35,7 +35,9 @@ export class WorldRepository implements IWorldRepository {
 
   public getEntityByName(name: string): WorldEntity | null {
     try {
-      const row = this.db.prepare('SELECT * FROM world_entities WHERE LOWER(name) = LOWER(?)').get(name) as any;
+      const row = this.db
+        .prepare('SELECT * FROM world_entities WHERE LOWER(name) = LOWER(?)')
+        .get(name) as any;
       if (!row) return null;
       return this.mapEntityRow(row);
     } catch (err: any) {
@@ -152,11 +154,15 @@ export class WorldRepository implements IWorldRepository {
       const params: any[] = [];
 
       if (filter?.sourceEntityId) {
-        conditions.push('(source_entity_id = ? OR (is_bidirectional = 1 AND target_entity_id = ?))');
+        conditions.push(
+          '(source_entity_id = ? OR (is_bidirectional = 1 AND target_entity_id = ?))',
+        );
         params.push(filter.sourceEntityId, filter.sourceEntityId);
       }
       if (filter?.targetEntityId) {
-        conditions.push('(target_entity_id = ? OR (is_bidirectional = 1 AND source_entity_id = ?))');
+        conditions.push(
+          '(target_entity_id = ? OR (is_bidirectional = 1 AND source_entity_id = ?))',
+        );
         params.push(filter.targetEntityId, filter.targetEntityId);
       }
       if (filter?.relationType) {
@@ -248,7 +254,10 @@ export class WorldRepository implements IWorldRepository {
     }
   }
 
-  public listEnvironmentalChanges(filter?: { entityId?: string; limit?: number }): WorldEnvironmentalChange[] {
+  public listEnvironmentalChanges(filter?: {
+    entityId?: string;
+    limit?: number;
+  }): WorldEnvironmentalChange[] {
     try {
       const conditions: string[] = [];
       const params: any[] = [];
@@ -262,7 +271,9 @@ export class WorldRepository implements IWorldRepository {
       const limitClause = filter?.limit ? `LIMIT ${Number(filter.limit)}` : 'LIMIT 100';
 
       const rows = this.db
-        .prepare(`SELECT * FROM world_environmental_changes ${whereClause} ORDER BY observed_at DESC ${limitClause}`)
+        .prepare(
+          `SELECT * FROM world_environmental_changes ${whereClause} ORDER BY observed_at DESC ${limitClause}`,
+        )
         .all(...params) as any[];
 
       return rows.map((r) => ({
@@ -358,7 +369,9 @@ export class WorldRepository implements IWorldRepository {
 
   public getUnknownById(id: string): EpistemicUnknown | null {
     try {
-      const row = this.db.prepare('SELECT * FROM world_epistemic_unknowns WHERE id = ?').get(id) as any;
+      const row = this.db
+        .prepare('SELECT * FROM world_epistemic_unknowns WHERE id = ?')
+        .get(id) as any;
       if (!row) return null;
       return this.mapUnknownRow(row);
     } catch (err: any) {
@@ -382,7 +395,9 @@ export class WorldRepository implements IWorldRepository {
 
       const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
       const rows = this.db
-        .prepare(`SELECT * FROM world_epistemic_unknowns ${whereClause} ORDER BY priority DESC, created_at DESC`)
+        .prepare(
+          `SELECT * FROM world_epistemic_unknowns ${whereClause} ORDER BY priority DESC, created_at DESC`,
+        )
         .all(...params) as any[];
 
       return rows.map((r) => this.mapUnknownRow(r));
@@ -420,7 +435,10 @@ export class WorldRepository implements IWorldRepository {
           unknown.resolvedAt || null,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save epistemic unknown ${unknown.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save epistemic unknown ${unknown.id}: ${err.message}`,
+        err,
+      );
     }
   }
 

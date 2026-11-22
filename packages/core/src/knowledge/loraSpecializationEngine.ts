@@ -1,9 +1,5 @@
 import crypto from 'node:crypto';
-import {
-  AdapterEvaluationMetrics,
-  LoRAAdapterRecord,
-  LoRAConfig,
-} from '@arletex/contracts';
+import { AdapterEvaluationMetrics, LoRAAdapterRecord, LoRAConfig } from '@arletex/contracts';
 import { IKnowledgeRepository } from './interfaces.js';
 import { ILogger, rootLogger } from '../logger.js';
 
@@ -51,7 +47,10 @@ export class ModelCapabilityAssessmentEngine {
       terminologyComplexity: 'basic' | 'intermediate' | 'phd_level';
     },
   ): DomainPerformanceMetric {
-    const accuracy = stats.recentQueries > 0 ? (stats.recentQueries - stats.failedTasks) / stats.recentQueries : 0.8;
+    const accuracy =
+      stats.recentQueries > 0
+        ? (stats.recentQueries - stats.failedTasks) / stats.recentQueries
+        : 0.8;
     const uncertaintyScore = 1.0 - stats.averageConfidence;
 
     let recommendedModality: 'rag' | 'few_shot' | 'lora' = 'rag';
@@ -170,7 +169,9 @@ export class AdapterEvaluationEngine {
         : `Adapter rejected: insufficient gain (+${(domainImprovement * 100).toFixed(1)}%) or retention drop (${(generalKnowledgeRetention * 100).toFixed(1)}%)`,
     };
 
-    this.logger.info(`Evaluation metrics for "${options.domain}" adapter: approved=${approvedForDeployment}`);
+    this.logger.info(
+      `Evaluation metrics for "${options.domain}" adapter: approved=${approvedForDeployment}`,
+    );
     return metrics;
   }
 }
@@ -262,7 +263,7 @@ export class LoRATrainingEngine {
       domain: params.domain,
       baselineAccuracy: baseline,
       candidateAccuracy,
-      generalAccuracyBaseline: 0.90,
+      generalAccuracyBaseline: 0.9,
       generalAccuracyCandidate: 0.89,
     });
 
@@ -311,7 +312,9 @@ export class AdapterLifecycleManager {
     this.activeAdapterId = adapterId;
     adapter.status = 'active';
     this.repo.updateLoraAdapter(adapter);
-    this.logger.info(`Successfully deployed LoRA adapter "${adapter.name}" (${adapter.id}) for domain "${adapter.domain}"`);
+    this.logger.info(
+      `Successfully deployed LoRA adapter "${adapter.name}" (${adapter.id}) for domain "${adapter.domain}"`,
+    );
     return adapter;
   }
 

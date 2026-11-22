@@ -1,9 +1,4 @@
-import {
-  AgencyObservation,
-  AgencyPlan,
-  AgencyTask,
-  VerificationResult,
-} from '@arletex/contracts';
+import { AgencyObservation, AgencyPlan, AgencyTask, VerificationResult } from '@arletex/contracts';
 
 export interface PageObservation {
   url: string;
@@ -60,13 +55,15 @@ export interface IBrowserProvider {
   typeText(selector: string, text: string): Promise<void>;
   close(): Promise<void>;
   takeScreenshot?(): Promise<{ imageBase64: string; width: number; height: number }>;
-  extractInteractiveElements?(): Promise<Array<{
-    selector: string;
-    role: string;
-    text: string;
-    ariaLabel?: string;
-    tagName: string;
-  }>>;
+  extractInteractiveElements?(): Promise<
+    Array<{
+      selector: string;
+      role: string;
+      text: string;
+      ariaLabel?: string;
+      tagName: string;
+    }>
+  >;
   dismissDialogsAndModals?(): Promise<boolean>;
 }
 
@@ -76,9 +73,16 @@ export interface IComputerProvider {
   focusWindow(titleOrApp: string): Promise<boolean>;
   captureScreen(): Promise<{ imageBase64: string; width: number; height: number }>;
   readFile(filePath: string): Promise<string>;
-  writeFile(filePath: string, content: string, overwrite?: boolean): Promise<{ success: boolean; sizeBytes: number }>;
+  writeFile(
+    filePath: string,
+    content: string,
+    overwrite?: boolean,
+  ): Promise<{ success: boolean; sizeBytes: number }>;
   listFiles(dirPath: string): Promise<string[]>;
-  executeCommand?(command: string, args: string[]): Promise<{ exitCode: number; stdout: string; stderr: string }>;
+  executeCommand?(
+    command: string,
+    args: string[],
+  ): Promise<{ exitCode: number; stdout: string; stderr: string }>;
 }
 
 export interface IAgencyRepository {

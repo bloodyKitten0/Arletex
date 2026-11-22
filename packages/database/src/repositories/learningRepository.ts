@@ -51,15 +51,16 @@ export class SqliteLearningRepository implements ILearningRepository {
           experience.timestamp,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to record learning experience ${experience.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to record learning experience ${experience.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
   public getExperienceById(id: string): LearningExperience | null {
     try {
-      const row = this.db
-        .prepare('SELECT * FROM learning_experiences WHERE id = ?')
-        .get(id) as any;
+      const row = this.db.prepare('SELECT * FROM learning_experiences WHERE id = ?').get(id) as any;
       if (!row) return null;
       return this.mapRowToExperience(row);
     } catch (err: any) {
@@ -89,7 +90,9 @@ export class SqliteLearningRepository implements ILearningRepository {
       const limit = filter?.limit ?? 50;
 
       const rows = this.db
-        .prepare(`SELECT * FROM learning_experiences ${whereClause} ORDER BY timestamp DESC LIMIT ?`)
+        .prepare(
+          `SELECT * FROM learning_experiences ${whereClause} ORDER BY timestamp DESC LIMIT ?`,
+        )
         .all(...params, limit) as any[];
 
       return rows.map((r) => this.mapRowToExperience(r));
@@ -155,7 +158,10 @@ export class SqliteLearningRepository implements ILearningRepository {
     }
   }
 
-  public listRules(filter?: { domain?: string; minConfidence?: number }): BehavioralAdaptationRule[] {
+  public listRules(filter?: {
+    domain?: string;
+    minConfidence?: number;
+  }): BehavioralAdaptationRule[] {
     try {
       const conditions: string[] = [];
       const params: any[] = [];
@@ -172,7 +178,9 @@ export class SqliteLearningRepository implements ILearningRepository {
       const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
       const rows = this.db
-        .prepare(`SELECT * FROM behavioral_adaptation_rules ${whereClause} ORDER BY confidence DESC, success_rate DESC`)
+        .prepare(
+          `SELECT * FROM behavioral_adaptation_rules ${whereClause} ORDER BY confidence DESC, success_rate DESC`,
+        )
         .all(...params) as any[];
 
       return rows.map((r) => this.mapRowToRule(r));
@@ -207,8 +215,15 @@ export class SqliteLearningRepository implements ILearningRepository {
       outcome: row.outcome,
       outcomeDetails: row.outcome_details,
       rewardScore: row.reward_score,
-      lessonsLearned: typeof row.lessons_learned === 'string' ? JSON.parse(row.lessons_learned) : (row.lessons_learned ?? []),
-      metadata: row.metadata ? (typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata) : undefined,
+      lessonsLearned:
+        typeof row.lessons_learned === 'string'
+          ? JSON.parse(row.lessons_learned)
+          : (row.lessons_learned ?? []),
+      metadata: row.metadata
+        ? typeof row.metadata === 'string'
+          ? JSON.parse(row.metadata)
+          : row.metadata
+        : undefined,
       timestamp: row.timestamp,
     };
   }
@@ -216,7 +231,10 @@ export class SqliteLearningRepository implements ILearningRepository {
   private mapRowToRule(row: any): BehavioralAdaptationRule {
     return {
       id: row.id,
-      sourceExperienceIds: typeof row.source_experience_ids === 'string' ? JSON.parse(row.source_experience_ids) : (row.source_experience_ids ?? []),
+      sourceExperienceIds:
+        typeof row.source_experience_ids === 'string'
+          ? JSON.parse(row.source_experience_ids)
+          : (row.source_experience_ids ?? []),
       domain: row.domain,
       condition: row.condition,
       recommendedStrategy: row.recommended_strategy,
@@ -225,7 +243,10 @@ export class SqliteLearningRepository implements ILearningRepository {
       successRate: row.success_rate,
       sampleCount: row.sample_count,
       isGeneralization: row.is_generalization === 1 || row.is_generalization === true,
-      transferDomains: typeof row.transfer_domains === 'string' ? JSON.parse(row.transfer_domains) : (row.transfer_domains ?? []),
+      transferDomains:
+        typeof row.transfer_domains === 'string'
+          ? JSON.parse(row.transfer_domains)
+          : (row.transfer_domains ?? []),
       updatedAt: row.updated_at,
     };
   }

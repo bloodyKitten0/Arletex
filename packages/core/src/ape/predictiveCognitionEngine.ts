@@ -83,7 +83,8 @@ export class PredictiveCognitionEngine {
     const brierScore = Math.pow(prediction.predictedProbability - actualVal, 2);
 
     // Accurate if error <= 0.40 (or if high prob matched true, low prob matched false)
-    const isAccurate = (actualOutcome && prediction.predictedProbability >= 0.5) ||
+    const isAccurate =
+      (actualOutcome && prediction.predictedProbability >= 0.5) ||
       (!actualOutcome && prediction.predictedProbability < 0.5);
 
     const status: PredictionStatus = isAccurate ? 'resolved_accurate' : 'resolved_inaccurate';
@@ -114,7 +115,10 @@ export class PredictiveCognitionEngine {
   // 3. Obstacle Anticipation
   // ==========================================
 
-  public predictObstacles(taskOrPlanDescription: string, domain = 'operations'): CognitivePrediction[] {
+  public predictObstacles(
+    taskOrPlanDescription: string,
+    domain = 'operations',
+  ): CognitivePrediction[] {
     const lower = taskOrPlanDescription.toLowerCase();
     const predictions: CognitivePrediction[] = [];
     const now = new Date();
@@ -125,10 +129,12 @@ export class PredictiveCognitionEngine {
         this.makePrediction({
           domain,
           predictionType: 'obstacle',
-          targetStatement: 'Downstream HTTP endpoint may trigger 429 rate limiting under sustained burst concurrency',
+          targetStatement:
+            'Downstream HTTP endpoint may trigger 429 rate limiting under sustained burst concurrency',
           predictedProbability: 0.65,
           confidence: 0.75,
-          rationale: 'API endpoints without client-side request throttling historically encounter burst throttles.',
+          rationale:
+            'API endpoints without client-side request throttling historically encounter burst throttles.',
           horizonDeadline: horizon,
         }),
       );
@@ -139,7 +145,8 @@ export class PredictiveCognitionEngine {
         this.makePrediction({
           domain,
           predictionType: 'obstacle',
-          targetStatement: 'Database table lock or transaction timeout may occur during structural DDL execution',
+          targetStatement:
+            'Database table lock or transaction timeout may occur during structural DDL execution',
           predictedProbability: 0.35,
           confidence: 0.8,
           rationale: 'Concurrent write connections during DDL alter locks can stall execution.',
@@ -153,10 +160,12 @@ export class PredictiveCognitionEngine {
         this.makePrediction({
           domain,
           predictionType: 'obstacle',
-          targetStatement: 'Memory buffer allocation may approach quota threshold during heavy I/O ingest',
+          targetStatement:
+            'Memory buffer allocation may approach quota threshold during heavy I/O ingest',
           predictedProbability: 0.45,
           confidence: 0.7,
-          rationale: 'Buffering uncompressed chunks in working memory incurs temporary memory pressure.',
+          rationale:
+            'Buffering uncompressed chunks in working memory incurs temporary memory pressure.',
           horizonDeadline: horizon,
         }),
       );
@@ -170,7 +179,8 @@ export class PredictiveCognitionEngine {
           targetStatement: 'Nominal operational execution with standard non-blocking overhead',
           predictedProbability: 0.85,
           confidence: 0.8,
-          rationale: 'No prominent high-risk operational obstacle signatures detected in task description.',
+          rationale:
+            'No prominent high-risk operational obstacle signatures detected in task description.',
           horizonDeadline: horizon,
         }),
       );
@@ -183,7 +193,11 @@ export class PredictiveCognitionEngine {
   // 4. Consequence Prediction
   // ==========================================
 
-  public predictConsequences(intendedAction: string, context: string, domain = 'action_planning'): CognitivePrediction[] {
+  public predictConsequences(
+    intendedAction: string,
+    context: string,
+    domain = 'action_planning',
+  ): CognitivePrediction[] {
     const now = new Date();
     const horizon = new Date(now.getTime() + 7200 * 1000).toISOString();
 
@@ -203,7 +217,8 @@ export class PredictiveCognitionEngine {
       targetStatement: `Secondary side effects from "${intendedAction}" will remain contained within nominal resource boundaries`,
       predictedProbability: 0.92,
       confidence: 0.8,
-      rationale: 'State mutations are bounded to transactional database rows and sandboxed processes.',
+      rationale:
+        'State mutations are bounded to transactional database rows and sandboxed processes.',
       horizonDeadline: horizon,
     });
 
@@ -214,7 +229,12 @@ export class PredictiveCognitionEngine {
   // 5. Behavior Prediction
   // ==========================================
 
-  public predictBehavior(agentOrEntity: string, context: string, likelyActions: string[], domain = 'behavioral'): CognitivePrediction[] {
+  public predictBehavior(
+    agentOrEntity: string,
+    context: string,
+    likelyActions: string[],
+    domain = 'behavioral',
+  ): CognitivePrediction[] {
     const now = new Date();
     const horizon = new Date(now.getTime() + 86400 * 1000).toISOString();
 
@@ -238,7 +258,9 @@ export class PredictiveCognitionEngine {
 
   public getAccuracyMetrics(domain?: string): PredictionAccuracyMetrics {
     const predictions = this.repo.listPredictions({ domain, limit: 1000 });
-    const resolved = predictions.filter((p) => p.status === 'resolved_accurate' || p.status === 'resolved_inaccurate');
+    const resolved = predictions.filter(
+      (p) => p.status === 'resolved_accurate' || p.status === 'resolved_inaccurate',
+    );
 
     const total = predictions.length;
     const resolvedCount = resolved.length;
@@ -274,7 +296,9 @@ export class PredictiveCognitionEngine {
   public getPredictiveSummary(): PredictiveSummary {
     const predictions = this.repo.listPredictions({ limit: 1000 });
     const pending = predictions.filter((p) => p.status === 'pending');
-    const resolved = predictions.filter((p) => p.status === 'resolved_accurate' || p.status === 'resolved_inaccurate');
+    const resolved = predictions.filter(
+      (p) => p.status === 'resolved_accurate' || p.status === 'resolved_inaccurate',
+    );
 
     const accurateCount = resolved.filter((p) => p.status === 'resolved_accurate').length;
     const overallAccuracyRate = resolved.length > 0 ? accurateCount / resolved.length : 0.0;

@@ -71,7 +71,10 @@ describe('Milestone 4 — Telegram Media Ingestion & Multimodal Perception', () 
         if (url.includes('/file/bot')) {
           return new Response(validJpegBuffer, {
             status: 200,
-            headers: { 'Content-Type': 'image/jpeg', 'Content-Length': String(validJpegBuffer.length) },
+            headers: {
+              'Content-Type': 'image/jpeg',
+              'Content-Length': String(validJpegBuffer.length),
+            },
           });
         }
         return new Response('Not found', { status: 404 });
@@ -121,7 +124,10 @@ describe('Milestone 4 — Telegram Media Ingestion & Multimodal Perception', () 
         if (url.includes('/file/bot')) {
           return new Response(validMp4Buffer, {
             status: 200,
-            headers: { 'Content-Type': 'video/mp4', 'Content-Length': String(validMp4Buffer.length) },
+            headers: {
+              'Content-Type': 'video/mp4',
+              'Content-Length': String(validMp4Buffer.length),
+            },
           });
         }
         return new Response('Not found', { status: 404 });
@@ -226,13 +232,7 @@ describe('Milestone 4 — Telegram Media Ingestion & Multimodal Perception', () 
     });
 
     it('rejects invalid or malformed file identifiers', async () => {
-      const dangerousIds = [
-        '../../etc/passwd',
-        'foo/bar/baz',
-        'id with spaces',
-        'id;rm -rf /',
-        '',
-      ];
+      const dangerousIds = ['../../etc/passwd', 'foo/bar/baz', 'id with spaces', 'id;rm -rf /', ''];
 
       for (const badId of dangerousIds) {
         await expect(
@@ -417,7 +417,13 @@ describe('Milestone 4 — Telegram Media Ingestion & Multimodal Perception', () 
             media_group_id: 'album_grp_999',
             photo: [
               { file_id: 'thumb_1', file_unique_id: 'u1', width: 100, height: 100, file_size: 100 },
-              { file_id: 'large_1', file_unique_id: 'u2', width: 1200, height: 800, file_size: 1000 },
+              {
+                file_id: 'large_1',
+                file_unique_id: 'u2',
+                width: 1200,
+                height: 800,
+                file_size: 1000,
+              },
             ],
             date: Date.now(),
           },
@@ -443,10 +449,10 @@ describe('Milestone 4 — Telegram Media Ingestion & Multimodal Perception', () 
       ];
 
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-        new Response(
-          JSON.stringify({ ok: true, result: albumUpdates }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } },
-        ),
+        new Response(JSON.stringify({ ok: true, result: albumUpdates }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
       );
 
       await bridge.startPolling();
@@ -515,7 +521,8 @@ describe('Milestone 4 — Telegram Media Ingestion & Multimodal Perception', () 
               choices: [
                 {
                   message: {
-                    content: 'A high-resolution photograph of a golden retriever playing on a green lawn.',
+                    content:
+                      'A high-resolution photograph of a golden retriever playing on a green lawn.',
                   },
                 },
               ],
@@ -557,13 +564,17 @@ describe('Milestone 4 — Telegram Media Ingestion & Multimodal Perception', () 
       const userMsg = msgs.find((m: any) => m.role === 'user');
       expect(userMsg).toBeDefined();
       expect(userMsg.metadata.attachments).toBeDefined();
-      expect(userMsg.metadata.attachments[0].internalMediaId).toBe('f9b09ad3-2c1e-4581-8072-a42cb4f5539f');
+      expect(userMsg.metadata.attachments[0].internalMediaId).toBe(
+        'f9b09ad3-2c1e-4581-8072-a42cb4f5539f',
+      );
       expect(userMsg.metadata.attachments[0].status).toBe('completed');
       expect(userMsg.metadata.attachments[0].confidence).toBe(0.85);
 
       // Verify grounded episodic memory created
       const memories = (server as any).memoryRepo.list({ limit: 10 });
-      const mediaMem = memories.find((m: any) => m.tags.includes('telegram') && m.tags.includes('photo'));
+      const mediaMem = memories.find(
+        (m: any) => m.tags.includes('telegram') && m.tags.includes('photo'),
+      );
       expect(mediaMem).toBeDefined();
       expect(mediaMem.provenance).toBe('raw_observation');
       expect(mediaMem.confidence).toBe(0.85);
@@ -668,7 +679,8 @@ describe('Milestone 4 — Telegram Media Ingestion & Multimodal Perception', () 
               choices: [
                 {
                   message: {
-                    content: 'Visual keyframe displays a Linux desktop terminal running automated tests.',
+                    content:
+                      'Visual keyframe displays a Linux desktop terminal running automated tests.',
                   },
                 },
               ],
@@ -714,7 +726,9 @@ describe('Milestone 4 — Telegram Media Ingestion & Multimodal Perception', () 
 
       // Verify prompt content retains clear breakdown
       expect(userMsg.content).toContain('Visible: 18.4s video clip');
-      expect(userMsg.content).toContain('Spoken dialogue: "Testing Telegram multimodal video ingestion for Arletex."');
+      expect(userMsg.content).toContain(
+        'Spoken dialogue: "Testing Telegram multimodal video ingestion for Arletex."',
+      );
 
       // Verify episodic memory
       const memories = (server as any).memoryRepo.list({ limit: 10 });

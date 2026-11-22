@@ -51,7 +51,10 @@ export class SqliteNeedsHomeostasisRepository implements IHomeostasisRepository 
           need.updatedAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save homeostatic need ${need.category}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save homeostatic need ${need.category}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -112,7 +115,9 @@ export class SqliteNeedsHomeostasisRepository implements IHomeostasisRepository 
   public getActiveDrives(limit: number = 20): DriveState[] {
     try {
       const rows = this.db
-        .prepare(`SELECT * FROM homeostatic_drives ORDER BY intensity DESC, generated_at DESC LIMIT ?`)
+        .prepare(
+          `SELECT * FROM homeostatic_drives ORDER BY intensity DESC, generated_at DESC LIMIT ?`,
+        )
         .all(limit) as any[];
       return rows.map((r) => ({
         id: r.id,

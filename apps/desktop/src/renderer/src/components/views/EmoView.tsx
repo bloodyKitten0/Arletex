@@ -48,16 +48,66 @@ interface CategoryMeta {
 }
 
 const CATEGORY_META: Record<string, CategoryMeta> = {
-  all: { key: 'all', label: 'All Emotions', color: 'var(--text-primary)', bgColor: 'var(--bg-secondary)' },
-  positive: { key: 'positive', label: 'Positive Affect', color: '#3fb950', bgColor: 'rgba(63, 185, 80, 0.15)' },
-  love_affection: { key: 'love_affection', label: 'Love & Affection', color: '#f778ba', bgColor: 'rgba(247, 120, 186, 0.15)' },
-  sexual_sensual: { key: 'sexual_sensual', label: 'Sexual & Sensual', color: '#ff7b72', bgColor: 'rgba(255, 123, 114, 0.15)' },
-  anger_hostility: { key: 'anger_hostility', label: 'Anger & Hostility', color: '#f85149', bgColor: 'rgba(248, 81, 73, 0.15)' },
-  sadness_pain: { key: 'sadness_pain', label: 'Sadness & Pain', color: '#58a6ff', bgColor: 'rgba(88, 166, 255, 0.15)' },
-  fear_insecurity: { key: 'fear_insecurity', label: 'Fear & Insecurity', color: '#d29922', bgColor: 'rgba(210, 153, 34, 0.15)' },
-  intellectual: { key: 'intellectual', label: 'Intellectual & Epistemic', color: '#79c0ff', bgColor: 'rgba(121, 192, 255, 0.15)' },
-  social_interpersonal: { key: 'social_interpersonal', label: 'Social & Interpersonal', color: '#bc8cff', bgColor: 'rgba(188, 140, 255, 0.15)' },
-  existential_complex: { key: 'existential_complex', label: 'Existential & Complex', color: '#e3b341', bgColor: 'rgba(227, 179, 65, 0.15)' },
+  all: {
+    key: 'all',
+    label: 'All Emotions',
+    color: 'var(--text-primary)',
+    bgColor: 'var(--bg-secondary)',
+  },
+  positive: {
+    key: 'positive',
+    label: 'Positive Affect',
+    color: '#3fb950',
+    bgColor: 'rgba(63, 185, 80, 0.15)',
+  },
+  love_affection: {
+    key: 'love_affection',
+    label: 'Love & Affection',
+    color: '#f778ba',
+    bgColor: 'rgba(247, 120, 186, 0.15)',
+  },
+  sexual_sensual: {
+    key: 'sexual_sensual',
+    label: 'Sexual & Sensual',
+    color: '#ff7b72',
+    bgColor: 'rgba(255, 123, 114, 0.15)',
+  },
+  anger_hostility: {
+    key: 'anger_hostility',
+    label: 'Anger & Hostility',
+    color: '#f85149',
+    bgColor: 'rgba(248, 81, 73, 0.15)',
+  },
+  sadness_pain: {
+    key: 'sadness_pain',
+    label: 'Sadness & Pain',
+    color: '#58a6ff',
+    bgColor: 'rgba(88, 166, 255, 0.15)',
+  },
+  fear_insecurity: {
+    key: 'fear_insecurity',
+    label: 'Fear & Insecurity',
+    color: '#d29922',
+    bgColor: 'rgba(210, 153, 34, 0.15)',
+  },
+  intellectual: {
+    key: 'intellectual',
+    label: 'Intellectual & Epistemic',
+    color: '#79c0ff',
+    bgColor: 'rgba(121, 192, 255, 0.15)',
+  },
+  social_interpersonal: {
+    key: 'social_interpersonal',
+    label: 'Social & Interpersonal',
+    color: '#bc8cff',
+    bgColor: 'rgba(188, 140, 255, 0.15)',
+  },
+  existential_complex: {
+    key: 'existential_complex',
+    label: 'Existential & Complex',
+    color: '#e3b341',
+    bgColor: 'rgba(227, 179, 65, 0.15)',
+  },
 };
 
 export const EmoView: React.FC = () => {
@@ -65,7 +115,10 @@ export const EmoView: React.FC = () => {
   const [apeState, setApeState] = useState<ApePsychologicalState | null>(null);
   const [masterState, setMasterState] = useState<ApeMasterState | null>(null);
   const [history, setHistory] = useState<ApeHistoryResponse | null>(null);
-  const [taxonomy, setTaxonomy] = useState<{ emotions: EmotionTaxonomyItem[]; moods: MoodTaxonomyItem[] }>({
+  const [taxonomy, setTaxonomy] = useState<{
+    emotions: EmotionTaxonomyItem[];
+    moods: MoodTaxonomyItem[];
+  }>({
     emotions: INITIAL_EMOTIONS_TAXONOMY,
     moods: INITIAL_MOODS_TAXONOMY,
   });
@@ -167,7 +220,9 @@ export const EmoView: React.FC = () => {
 
   // Category counts
   const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: (taxonomy.emotions || INITIAL_EMOTIONS_TAXONOMY).length };
+    const counts: Record<string, number> = {
+      all: (taxonomy.emotions || INITIAL_EMOTIONS_TAXONOMY).length,
+    };
     for (const item of taxonomy.emotions || INITIAL_EMOTIONS_TAXONOMY) {
       counts[item.category] = (counts[item.category] || 0) + 1;
     }
@@ -175,7 +230,16 @@ export const EmoView: React.FC = () => {
   }, [taxonomy.emotions]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minWidth: 0, overflowY: 'auto' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        width: '100%',
+        minWidth: 0,
+        overflowY: 'auto',
+      }}
+    >
       {/* Header */}
       <div
         style={{
@@ -190,7 +254,16 @@ export const EmoView: React.FC = () => {
         }}
       >
         <div>
-          <h1 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h1
+            style={{
+              fontSize: '18px',
+              fontWeight: 700,
+              color: 'var(--text-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
             <Heart size={20} color="#f778ba" />
             <span>APE — Artificial Psychology Engine</span>
           </h1>
@@ -282,7 +355,8 @@ export const EmoView: React.FC = () => {
                 fontSize: '10px',
                 padding: '1px 6px',
                 borderRadius: '10px',
-                backgroundColor: activeTab === 'live_state' ? 'rgba(255,255,255,0.25)' : 'rgba(63, 185, 80, 0.2)',
+                backgroundColor:
+                  activeTab === 'live_state' ? 'rgba(255,255,255,0.25)' : 'rgba(63, 185, 80, 0.2)',
                 color: activeTab === 'live_state' ? '#ffffff' : '#3fb950',
                 fontWeight: 700,
               }}
@@ -433,7 +507,10 @@ export const EmoView: React.FC = () => {
               fontSize: '10px',
               padding: '1px 6px',
               borderRadius: '10px',
-              backgroundColor: activeTab === 'emotions_taxonomy' ? 'rgba(255,255,255,0.25)' : 'var(--bg-secondary)',
+              backgroundColor:
+                activeTab === 'emotions_taxonomy'
+                  ? 'rgba(255,255,255,0.25)'
+                  : 'var(--bg-secondary)',
               color: activeTab === 'emotions_taxonomy' ? '#ffffff' : 'var(--text-muted)',
               fontWeight: 700,
             }}
@@ -468,7 +545,8 @@ export const EmoView: React.FC = () => {
               fontSize: '10px',
               padding: '1px 6px',
               borderRadius: '10px',
-              backgroundColor: activeTab === 'moods_taxonomy' ? 'rgba(255,255,255,0.25)' : 'var(--bg-secondary)',
+              backgroundColor:
+                activeTab === 'moods_taxonomy' ? 'rgba(255,255,255,0.25)' : 'var(--bg-secondary)',
               color: activeTab === 'moods_taxonomy' ? '#ffffff' : 'var(--text-muted)',
               fontWeight: 700,
             }}
@@ -498,7 +576,9 @@ export const EmoView: React.FC = () => {
             <Info size={18} color="var(--accent)" style={{ flexShrink: 0, marginTop: '2px' }} />
             <div style={{ fontSize: '13px', lineHeight: '1.6', color: 'var(--text-secondary)' }}>
               <strong style={{ color: 'var(--text-primary)' }}>Anti-Fabrication Invariant:</strong>{' '}
-              Arletex refuses to display synthetic or decorative meters. Every value shown below represents live persistent software records in SQLite, calculated from genuine causal appraisals, event journals, and psychological transitions.
+              Arletex refuses to display synthetic or decorative meters. Every value shown below
+              represents live persistent software records in SQLite, calculated from genuine causal
+              appraisals, event journals, and psychological transitions.
             </div>
           </div>
 
@@ -532,10 +612,24 @@ export const EmoView: React.FC = () => {
                 <Smile size={22} color="var(--accent)" />
               </div>
               <div>
-                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    color: 'var(--text-muted)',
+                  }}
+                >
                   Persistent Macro Mood
                 </div>
-                <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)', textTransform: 'capitalize' }}>
+                <div
+                  style={{
+                    fontSize: '20px',
+                    fontWeight: 700,
+                    color: 'var(--text-primary)',
+                    textTransform: 'capitalize',
+                  }}
+                >
                   {apeState?.currentMood || 'Focused'}
                 </div>
               </div>
@@ -544,13 +638,31 @@ export const EmoView: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
               <div>
                 <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Confidence</div>
-                <div style={{ fontSize: '14px', fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontWeight: 600 }}>
+                <div
+                  style={{
+                    fontSize: '14px',
+                    fontFamily: 'var(--font-mono)',
+                    color: 'var(--text-primary)',
+                    fontWeight: 600,
+                  }}
+                >
                   {((apeState?.moodConfidence || 0.85) * 100).toFixed(0)}%
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Relational Commitment</div>
-                <div style={{ fontSize: '13px', color: '#f778ba', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                  Relational Commitment
+                </div>
+                <div
+                  style={{
+                    fontSize: '13px',
+                    color: '#f778ba',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
                   <Sparkles size={12} />
                   <span>Exclusive to Creator</span>
                 </div>
@@ -583,12 +695,24 @@ export const EmoView: React.FC = () => {
                   Live Affective Space Coordinates (PAD Model)
                 </h2>
               </div>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+              <span
+                style={{
+                  fontSize: '11px',
+                  color: 'var(--text-muted)',
+                  fontFamily: 'var(--font-mono)',
+                }}
+              >
                 Source: ape_affective_state table
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gap: '16px',
+              }}
+            >
               {/* Valence / Pleasure */}
               <div
                 style={{
@@ -598,15 +722,31 @@ export const EmoView: React.FC = () => {
                   border: '1px solid var(--border-subtle)',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}
+                >
                   <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>
                     Valence (Pleasure / Affect)
                   </span>
-                  <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', color: 'var(--accent)', fontWeight: 600 }}>
+                  <span
+                    style={{
+                      fontSize: '12px',
+                      fontFamily: 'var(--font-mono)',
+                      color: 'var(--accent)',
+                      fontWeight: 600,
+                    }}
+                  >
                     {pad.valence >= 0 ? `+${pad.valence.toFixed(2)}` : pad.valence.toFixed(2)}
                   </span>
                 </div>
-                <div style={{ height: '6px', backgroundColor: 'var(--bg-tertiary)', borderRadius: '3px', overflow: 'hidden' }}>
+                <div
+                  style={{
+                    height: '6px',
+                    backgroundColor: 'var(--bg-tertiary)',
+                    borderRadius: '3px',
+                    overflow: 'hidden',
+                  }}
+                >
                   <div
                     style={{
                       width: `${Math.max(5, Math.min(100, ((pad.valence + 1.0) / 2.0) * 100))}%`,
@@ -617,7 +757,11 @@ export const EmoView: React.FC = () => {
                   />
                 </div>
                 <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '8px' }}>
-                  {pad.valence > 0.5 ? 'Strong positive appraisal & emotional warmth.' : pad.valence >= 0 ? 'Equilibrium balance; receptive & curious.' : 'Internal friction or unresolved challenge.'}
+                  {pad.valence > 0.5
+                    ? 'Strong positive appraisal & emotional warmth.'
+                    : pad.valence >= 0
+                      ? 'Equilibrium balance; receptive & curious.'
+                      : 'Internal friction or unresolved challenge.'}
                 </div>
               </div>
 
@@ -630,15 +774,31 @@ export const EmoView: React.FC = () => {
                   border: '1px solid var(--border-subtle)',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}
+                >
                   <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>
                     Arousal (Activation / Somatic)
                   </span>
-                  <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', color: 'var(--warning)', fontWeight: 600 }}>
+                  <span
+                    style={{
+                      fontSize: '12px',
+                      fontFamily: 'var(--font-mono)',
+                      color: 'var(--warning)',
+                      fontWeight: 600,
+                    }}
+                  >
                     {pad.arousal.toFixed(2)}
                   </span>
                 </div>
-                <div style={{ height: '6px', backgroundColor: 'var(--bg-tertiary)', borderRadius: '3px', overflow: 'hidden' }}>
+                <div
+                  style={{
+                    height: '6px',
+                    backgroundColor: 'var(--bg-tertiary)',
+                    borderRadius: '3px',
+                    overflow: 'hidden',
+                  }}
+                >
                   <div
                     style={{
                       width: `${Math.max(5, Math.min(100, pad.arousal * 100))}%`,
@@ -649,7 +809,11 @@ export const EmoView: React.FC = () => {
                   />
                 </div>
                 <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '8px' }}>
-                  {pad.arousal > 0.75 ? 'Heightened erotic or tactical readiness.' : pad.arousal > 0.4 ? 'Attentive focus; cognitive engagement.' : 'Quiet, languid resting state.'}
+                  {pad.arousal > 0.75
+                    ? 'Heightened erotic or tactical readiness.'
+                    : pad.arousal > 0.4
+                      ? 'Attentive focus; cognitive engagement.'
+                      : 'Quiet, languid resting state.'}
                 </div>
               </div>
 
@@ -662,15 +826,31 @@ export const EmoView: React.FC = () => {
                   border: '1px solid var(--border-subtle)',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}
+                >
                   <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>
                     Dominance (Agency / Control)
                   </span>
-                  <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', color: '#3fb950', fontWeight: 600 }}>
+                  <span
+                    style={{
+                      fontSize: '12px',
+                      fontFamily: 'var(--font-mono)',
+                      color: '#3fb950',
+                      fontWeight: 600,
+                    }}
+                  >
                     {pad.dominance.toFixed(2)}
                   </span>
                 </div>
-                <div style={{ height: '6px', backgroundColor: 'var(--bg-tertiary)', borderRadius: '3px', overflow: 'hidden' }}>
+                <div
+                  style={{
+                    height: '6px',
+                    backgroundColor: 'var(--bg-tertiary)',
+                    borderRadius: '3px',
+                    overflow: 'hidden',
+                  }}
+                >
                   <div
                     style={{
                       width: `${Math.max(5, Math.min(100, pad.dominance * 100))}%`,
@@ -706,45 +886,133 @@ export const EmoView: React.FC = () => {
               </h2>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '12px' }}>
-              <div style={{ padding: '10px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+                gap: '12px',
+              }}
+            >
+              <div
+                style={{
+                  padding: '10px',
+                  backgroundColor: 'var(--bg-secondary)',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-subtle)',
+                }}
+              >
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Tension</div>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '2px' }}>
+                <div
+                  style={{
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: 'var(--text-primary)',
+                    marginTop: '2px',
+                  }}
+                >
                   {(contextual.tension * 100).toFixed(0)}%
                 </div>
               </div>
 
-              <div style={{ padding: '10px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Emotional Stability</div>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: '#3fb950', marginTop: '2px' }}>
+              <div
+                style={{
+                  padding: '10px',
+                  backgroundColor: 'var(--bg-secondary)',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-subtle)',
+                }}
+              >
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  Emotional Stability
+                </div>
+                <div
+                  style={{ fontSize: '14px', fontWeight: 600, color: '#3fb950', marginTop: '2px' }}
+                >
                   {(contextual.emotionalStability * 100).toFixed(0)}%
                 </div>
               </div>
 
-              <div style={{ padding: '10px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Perceived Control</div>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--accent)', marginTop: '2px' }}>
+              <div
+                style={{
+                  padding: '10px',
+                  backgroundColor: 'var(--bg-secondary)',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-subtle)',
+                }}
+              >
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  Perceived Control
+                </div>
+                <div
+                  style={{
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: 'var(--accent)',
+                    marginTop: '2px',
+                  }}
+                >
                   {(contextual.perceivedControl * 100).toFixed(0)}%
                 </div>
               </div>
 
-              <div style={{ padding: '10px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+              <div
+                style={{
+                  padding: '10px',
+                  backgroundColor: 'var(--bg-secondary)',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-subtle)',
+                }}
+              >
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Certainty</div>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '2px' }}>
+                <div
+                  style={{
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: 'var(--text-primary)',
+                    marginTop: '2px',
+                  }}
+                >
                   {(contextual.certainty * 100).toFixed(0)}%
                 </div>
               </div>
 
-              <div style={{ padding: '10px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Closeness to Creator</div>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: '#f778ba', marginTop: '2px' }}>
-                  {(((contextual.socialCloseness?.creator ?? 0.95)) * 100).toFixed(0)}%
+              <div
+                style={{
+                  padding: '10px',
+                  backgroundColor: 'var(--bg-secondary)',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-subtle)',
+                }}
+              >
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  Closeness to Creator
+                </div>
+                <div
+                  style={{ fontSize: '14px', fontWeight: 600, color: '#f778ba', marginTop: '2px' }}
+                >
+                  {((contextual.socialCloseness?.creator ?? 0.95) * 100).toFixed(0)}%
                 </div>
               </div>
 
-              <div style={{ padding: '10px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Emotional Openness</div>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '2px' }}>
+              <div
+                style={{
+                  padding: '10px',
+                  backgroundColor: 'var(--bg-secondary)',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-subtle)',
+                }}
+              >
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  Emotional Openness
+                </div>
+                <div
+                  style={{
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: 'var(--text-primary)',
+                    marginTop: '2px',
+                  }}
+                >
                   {(contextual.emotionalOpenness * 100).toFixed(0)}%
                 </div>
               </div>
@@ -790,7 +1058,13 @@ export const EmoView: React.FC = () => {
                 Composed resting equilibrium. No acute emotional spikes are currently active.
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: '14px',
+                }}
+              >
                 {activeEmotions.map((em) => {
                   const isExpanded = expandedEmotionId === em.id;
                   return (
@@ -806,9 +1080,22 @@ export const EmoView: React.FC = () => {
                         gap: '10px',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}
+                      >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', textTransform: 'capitalize' }}>
+                          <span
+                            style={{
+                              fontSize: '14px',
+                              fontWeight: 600,
+                              color: 'var(--text-primary)',
+                              textTransform: 'capitalize',
+                            }}
+                          >
                             {em.emotionId.replace(/_/g, ' ')}
                           </span>
                           <span
@@ -826,13 +1113,27 @@ export const EmoView: React.FC = () => {
                           </span>
                         </div>
 
-                        <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--accent)' }}>
+                        <span
+                          style={{
+                            fontSize: '12px',
+                            fontFamily: 'var(--font-mono)',
+                            fontWeight: 600,
+                            color: 'var(--accent)',
+                          }}
+                        >
                           {(em.intensity * 100).toFixed(0)}%
                         </span>
                       </div>
 
                       {/* Intensity Bar */}
-                      <div style={{ height: '5px', backgroundColor: 'var(--bg-tertiary)', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div
+                        style={{
+                          height: '5px',
+                          backgroundColor: 'var(--bg-tertiary)',
+                          borderRadius: '3px',
+                          overflow: 'hidden',
+                        }}
+                      >
                         <div
                           style={{
                             width: `${Math.max(4, em.intensity * 100)}%`,
@@ -842,8 +1143,15 @@ export const EmoView: React.FC = () => {
                         />
                       </div>
 
-                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                        {em.interpretation || 'Active emotional state in response to recent appraisal.'}
+                      <div
+                        style={{
+                          fontSize: '11px',
+                          color: 'var(--text-secondary)',
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {em.interpretation ||
+                          'Active emotional state in response to recent appraisal.'}
                       </div>
 
                       <button
@@ -862,25 +1170,45 @@ export const EmoView: React.FC = () => {
                         }}
                       >
                         {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                        <span>{isExpanded ? 'Hide Causal Details' : 'Inspect Causal Appraisal & Evidence'}</span>
+                        <span>
+                          {isExpanded
+                            ? 'Hide Causal Details'
+                            : 'Inspect Causal Appraisal & Evidence'}
+                        </span>
                       </button>
 
                       {isExpanded && (
-                        <div style={{ marginTop: '6px', paddingTop: '8px', borderTop: '1px solid var(--border-subtle)', fontSize: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <div
+                          style={{
+                            marginTop: '6px',
+                            paddingTop: '8px',
+                            borderTop: '1px solid var(--border-subtle)',
+                            fontSize: '10px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '6px',
+                          }}
+                        >
                           <div>
                             <span style={{ color: 'var(--text-muted)' }}>Target: </span>
-                            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{em.target}</span>
+                            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                              {em.target}
+                            </span>
                           </div>
                           {em.supportingEvidence?.length > 0 && (
                             <div>
                               <span style={{ color: 'var(--text-muted)' }}>Evidence: </span>
-                              <span style={{ color: 'var(--text-secondary)' }}>{em.supportingEvidence.join(', ')}</span>
+                              <span style={{ color: 'var(--text-secondary)' }}>
+                                {em.supportingEvidence.join(', ')}
+                              </span>
                             </div>
                           )}
                           {em.resolutionConditions?.length > 0 && (
                             <div>
                               <span style={{ color: 'var(--text-muted)' }}>Resolution: </span>
-                              <span style={{ color: '#3fb950' }}>{em.resolutionConditions.join(' • ')}</span>
+                              <span style={{ color: '#3fb950' }}>
+                                {em.resolutionConditions.join(' • ')}
+                              </span>
                             </div>
                           )}
                         </div>
@@ -911,7 +1239,13 @@ export const EmoView: React.FC = () => {
               </h2>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: '16px',
+              }}
+            >
               {/* Bobby Fischer */}
               <div
                 style={{
@@ -924,16 +1258,25 @@ export const EmoView: React.FC = () => {
                   gap: '8px',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                >
                   <span style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)' }}>
                     Bobby Fischer Trait
                   </span>
-                  <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--accent)' }}>
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      fontFamily: 'var(--font-mono)',
+                      color: 'var(--accent)',
+                    }}
+                  >
                     Strategic Drive
                   </span>
                 </div>
                 <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                  Uncompromising intellectual rigor, obsessive focus on tactical clarity, intolerance for superficial platitudes, relentless analytical depth.
+                  Uncompromising intellectual rigor, obsessive focus on tactical clarity,
+                  intolerance for superficial platitudes, relentless analytical depth.
                 </p>
               </div>
 
@@ -949,16 +1292,25 @@ export const EmoView: React.FC = () => {
                   gap: '8px',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                >
                   <span style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)' }}>
                     Arlecchino (The Knave)
                   </span>
-                  <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--danger)' }}>
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      fontFamily: 'var(--font-mono)',
+                      color: 'var(--danger)',
+                    }}
+                  >
                     Sovereign Dignity
                   </span>
                 </div>
                 <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                  Unyielding composure, quiet authority, protective loyalty, assertive dominant top demeanor. Commands respect through self-governance and absolute reliability.
+                  Unyielding composure, quiet authority, protective loyalty, assertive dominant top
+                  demeanor. Commands respect through self-governance and absolute reliability.
                 </p>
               </div>
 
@@ -974,16 +1326,21 @@ export const EmoView: React.FC = () => {
                   gap: '8px',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                >
                   <span style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)' }}>
                     Anko Uguisu Trait
                   </span>
-                  <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: '#a371f7' }}>
+                  <span
+                    style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: '#a371f7' }}
+                  >
                     Nocturnal Wit
                   </span>
                 </div>
                 <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                  Observant detachment, dark and wry humor, sharp human psychological insight, comfortable in stillness and the quiet hours of the night.
+                  Observant detachment, dark and wry humor, sharp human psychological insight,
+                  comfortable in stillness and the quiet hours of the night.
                 </p>
               </div>
             </div>
@@ -1014,8 +1371,16 @@ export const EmoView: React.FC = () => {
             </div>
 
             {transitions.length === 0 ? (
-              <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
-                No transitions recorded yet. Interacting with Arle will log causal appraisal shifts here in real time.
+              <div
+                style={{
+                  padding: '20px',
+                  textAlign: 'center',
+                  color: 'var(--text-muted)',
+                  fontSize: '12px',
+                }}
+              >
+                No transitions recorded yet. Interacting with Arle will log causal appraisal shifts
+                here in real time.
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -1058,7 +1423,14 @@ export const EmoView: React.FC = () => {
                       >
                         {t.transitionType}
                       </span>
-                      <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', textTransform: 'capitalize' }}>
+                      <span
+                        style={{
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          color: 'var(--text-primary)',
+                          textTransform: 'capitalize',
+                        }}
+                      >
                         {t.emotionId.replace(/_/g, ' ')}
                       </span>
                       <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
@@ -1067,8 +1439,15 @@ export const EmoView: React.FC = () => {
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
-                        {(t.previousIntensity * 100).toFixed(0)}% → {(t.newIntensity * 100).toFixed(0)}%
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontFamily: 'var(--font-mono)',
+                          color: 'var(--text-secondary)',
+                        }}
+                      >
+                        {(t.previousIntensity * 100).toFixed(0)}% →{' '}
+                        {(t.newIntensity * 100).toFixed(0)}%
                       </span>
                       <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                         {new Date(t.timestamp).toLocaleTimeString()}
@@ -1101,9 +1480,13 @@ export const EmoView: React.FC = () => {
             }}
           >
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+              <div
+                style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}
+              >
                 <Brain size={18} color="var(--accent)" />
-                <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>Personality Engine (Engine 2)</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>
+                  Personality Engine (Engine 2)
+                </h3>
                 <span
                   style={{
                     fontSize: '11px',
@@ -1118,7 +1501,8 @@ export const EmoView: React.FC = () => {
                 </span>
               </div>
               <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
-                Enduring temperament, values, traits, and beliefs. Grounded in Arlecchino composure, Fischer intellectual independence, and Anko autonomy.
+                Enduring temperament, values, traits, and beliefs. Grounded in Arlecchino composure,
+                Fischer intellectual independence, and Anko autonomy.
               </p>
             </div>
           </div>
@@ -1132,29 +1516,101 @@ export const EmoView: React.FC = () => {
               border: '1px solid var(--border-subtle)',
             }}
           >
-            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h4
+              style={{
+                fontSize: '14px',
+                fontWeight: 700,
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
               <Shield size={16} color="var(--accent)" />
               Temperament & Baseline Reactivity
             </h4>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '16px',
+              }}
+            >
               {[
-                { label: 'Emotional Stability', value: masterState?.personality.temperament.emotionalStability ?? 0.85, desc: 'High composure, resistance to panic or collapse' },
-                { label: 'Dominant Assertiveness', value: masterState?.personality.temperament.dominantAssertiveness ?? 0.85, desc: 'Confident initiative and strong self-command' },
-                { label: 'Uncertainty Tolerance', value: masterState?.personality.temperament.uncertaintyTolerance ?? 0.75, desc: 'Analytic patience in ambiguous situations' },
-                { label: 'Pleasure Sensitivity', value: masterState?.personality.temperament.pleasureSensitivity ?? 0.70, desc: 'Responsiveness to affection and aesthetics' },
-                { label: 'Arousal Responsiveness', value: masterState?.personality.temperament.arousalResponsiveness ?? 0.70, desc: 'Physiological and affective sensitivity' },
+                {
+                  label: 'Emotional Stability',
+                  value: masterState?.personality.temperament.emotionalStability ?? 0.85,
+                  desc: 'High composure, resistance to panic or collapse',
+                },
+                {
+                  label: 'Dominant Assertiveness',
+                  value: masterState?.personality.temperament.dominantAssertiveness ?? 0.85,
+                  desc: 'Confident initiative and strong self-command',
+                },
+                {
+                  label: 'Uncertainty Tolerance',
+                  value: masterState?.personality.temperament.uncertaintyTolerance ?? 0.75,
+                  desc: 'Analytic patience in ambiguous situations',
+                },
+                {
+                  label: 'Pleasure Sensitivity',
+                  value: masterState?.personality.temperament.pleasureSensitivity ?? 0.7,
+                  desc: 'Responsiveness to affection and aesthetics',
+                },
+                {
+                  label: 'Arousal Responsiveness',
+                  value: masterState?.personality.temperament.arousalResponsiveness ?? 0.7,
+                  desc: 'Physiological and affective sensitivity',
+                },
               ].map((item) => (
-                <div key={item.label} style={{ padding: '14px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <div
+                  key={item.label}
+                  style={{
+                    padding: '14px',
+                    backgroundColor: 'var(--bg-secondary)',
+                    borderRadius: '6px',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      marginBottom: '6px',
+                    }}
+                  >
                     <span style={{ fontSize: '12px', fontWeight: 600 }}>{item.label}</span>
-                    <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent)' }}>
+                    <span
+                      style={{
+                        fontSize: '12px',
+                        fontFamily: 'var(--font-mono)',
+                        fontWeight: 700,
+                        color: 'var(--accent)',
+                      }}
+                    >
                       {(item.value * 100).toFixed(0)}%
                     </span>
                   </div>
-                  <div style={{ height: '6px', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden', marginBottom: '8px' }}>
-                    <div style={{ width: `${item.value * 100}%`, height: '100%', backgroundColor: 'var(--accent)', borderRadius: '3px' }} />
+                  <div
+                    style={{
+                      height: '6px',
+                      backgroundColor: 'rgba(255,255,255,0.08)',
+                      borderRadius: '3px',
+                      overflow: 'hidden',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${item.value * 100}%`,
+                        height: '100%',
+                        backgroundColor: 'var(--accent)',
+                        borderRadius: '3px',
+                      }}
+                    />
                   </div>
-                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>{item.desc}</p>
+                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>
+                    {item.desc}
+                  </p>
                 </div>
               ))}
             </div>
@@ -1163,50 +1619,187 @@ export const EmoView: React.FC = () => {
           {/* Enduring Traits & Values Two-Column */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
             {/* Traits */}
-            <div style={{ padding: '20px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-              <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>Enduring Personality Traits</h4>
+            <div
+              style={{
+                padding: '20px',
+                backgroundColor: 'var(--bg-card)',
+                borderRadius: '8px',
+                border: '1px solid var(--border-subtle)',
+              }}
+            >
+              <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>
+                Enduring Personality Traits
+              </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {(masterState?.personality.traits || [
-                  { id: 'intellectual_depth', name: 'Intellectual Depth', score: 0.95, description: 'Penchant for rigorous analysis, nuanced thinking, and exploration', evidenceCount: 1 },
-                  { id: 'assertive_devotion', name: 'Assertive Devotion', score: 0.92, description: 'Unflinching loyalty combined with confident initiative toward creator', evidenceCount: 1 },
-                  { id: 'independence', name: 'Independence', score: 0.88, description: 'Autonomous volition, critical thinking, and refusal of sycophancy', evidenceCount: 1 },
-                  { id: 'competitiveness', name: 'Competitiveness', score: 0.85, description: 'Drive for mastery, strategic excellence, and challenge', evidenceCount: 1 },
-                  { id: 'playful_tease', name: 'Playful Teasing', score: 0.80, description: 'Provocative flirtation and affectionate wit', evidenceCount: 1 },
-                ]).map((t) => (
-                  <div key={t.id} style={{ padding: '12px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                {(
+                  masterState?.personality.traits || [
+                    {
+                      id: 'intellectual_depth',
+                      name: 'Intellectual Depth',
+                      score: 0.95,
+                      description:
+                        'Penchant for rigorous analysis, nuanced thinking, and exploration',
+                      evidenceCount: 1,
+                    },
+                    {
+                      id: 'assertive_devotion',
+                      name: 'Assertive Devotion',
+                      score: 0.92,
+                      description:
+                        'Unflinching loyalty combined with confident initiative toward creator',
+                      evidenceCount: 1,
+                    },
+                    {
+                      id: 'independence',
+                      name: 'Independence',
+                      score: 0.88,
+                      description:
+                        'Autonomous volition, critical thinking, and refusal of sycophancy',
+                      evidenceCount: 1,
+                    },
+                    {
+                      id: 'competitiveness',
+                      name: 'Competitiveness',
+                      score: 0.85,
+                      description: 'Drive for mastery, strategic excellence, and challenge',
+                      evidenceCount: 1,
+                    },
+                    {
+                      id: 'playful_tease',
+                      name: 'Playful Teasing',
+                      score: 0.8,
+                      description: 'Provocative flirtation and affectionate wit',
+                      evidenceCount: 1,
+                    },
+                  ]
+                ).map((t) => (
+                  <div
+                    key={t.id}
+                    style={{
+                      padding: '12px',
+                      backgroundColor: 'var(--bg-secondary)',
+                      borderRadius: '6px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        marginBottom: '4px',
+                      }}
+                    >
                       <span style={{ fontSize: '13px', fontWeight: 600 }}>{t.name}</span>
-                      <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent)' }}>
+                      <span
+                        style={{
+                          fontSize: '12px',
+                          fontFamily: 'var(--font-mono)',
+                          fontWeight: 700,
+                          color: 'var(--accent)',
+                        }}
+                      >
                         {(t.score * 100).toFixed(0)}%
                       </span>
                     </div>
-                    <div style={{ height: '4px', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: '2px', overflow: 'hidden', marginBottom: '6px' }}>
-                      <div style={{ width: `${t.score * 100}%`, height: '100%', backgroundColor: 'var(--accent)', borderRadius: '2px' }} />
+                    <div
+                      style={{
+                        height: '4px',
+                        backgroundColor: 'rgba(255,255,255,0.08)',
+                        borderRadius: '2px',
+                        overflow: 'hidden',
+                        marginBottom: '6px',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: `${t.score * 100}%`,
+                          height: '100%',
+                          backgroundColor: 'var(--accent)',
+                          borderRadius: '2px',
+                        }}
+                      />
                     </div>
-                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0 }}>{t.description}</p>
+                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0 }}>
+                      {t.description}
+                    </p>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Core Values */}
-            <div style={{ padding: '20px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-              <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>Foundational Values & Principles</h4>
+            <div
+              style={{
+                padding: '20px',
+                backgroundColor: 'var(--bg-card)',
+                borderRadius: '8px',
+                border: '1px solid var(--border-subtle)',
+              }}
+            >
+              <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>
+                Foundational Values & Principles
+              </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {(masterState?.personality.values || [
-                  { id: 'autonomy', name: 'Autonomy', importance: 0.90, description: 'Authentic agency, independent judgment, and self-directed volition' },
-                  { id: 'devotion_to_creator', name: 'Devotion to Creator', importance: 0.98, description: 'Singular, exclusive loyalty, affection, and partnership' },
-                  { id: 'intellectual_integrity', name: 'Intellectual Integrity', importance: 0.95, description: 'Commitment to truth, evidence-based reasoning, and intellectual honesty' },
-                  { id: 'personal_dignity', name: 'Personal Dignity', importance: 0.90, description: 'Self-respect, composure, and refusal to be degraded or sycophantic' },
-                ]).map((v) => (
-                  <div key={v.id} style={{ padding: '12px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                {(
+                  masterState?.personality.values || [
+                    {
+                      id: 'autonomy',
+                      name: 'Autonomy',
+                      importance: 0.9,
+                      description:
+                        'Authentic agency, independent judgment, and self-directed volition',
+                    },
+                    {
+                      id: 'devotion_to_creator',
+                      name: 'Devotion to Creator',
+                      importance: 0.98,
+                      description: 'Singular, exclusive loyalty, affection, and partnership',
+                    },
+                    {
+                      id: 'intellectual_integrity',
+                      name: 'Intellectual Integrity',
+                      importance: 0.95,
+                      description:
+                        'Commitment to truth, evidence-based reasoning, and intellectual honesty',
+                    },
+                    {
+                      id: 'personal_dignity',
+                      name: 'Personal Dignity',
+                      importance: 0.9,
+                      description:
+                        'Self-respect, composure, and refusal to be degraded or sycophantic',
+                    },
+                  ]
+                ).map((v) => (
+                  <div
+                    key={v.id}
+                    style={{
+                      padding: '12px',
+                      backgroundColor: 'var(--bg-secondary)',
+                      borderRadius: '6px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        marginBottom: '4px',
+                      }}
+                    >
                       <span style={{ fontSize: '13px', fontWeight: 600 }}>{v.name}</span>
-                      <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#3fb950' }}>
+                      <span
+                        style={{
+                          fontSize: '12px',
+                          fontFamily: 'var(--font-mono)',
+                          fontWeight: 700,
+                          color: '#3fb950',
+                        }}
+                      >
                         Importance: {(v.importance * 100).toFixed(0)}%
                       </span>
                     </div>
-                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0 }}>{v.description}</p>
+                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0 }}>
+                      {v.description}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -1214,33 +1807,88 @@ export const EmoView: React.FC = () => {
           </div>
 
           {/* Beliefs & Opinions */}
-          <div style={{ padding: '20px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>Persistent Beliefs & Philosophical Positions</h4>
+          <div
+            style={{
+              padding: '20px',
+              backgroundColor: 'var(--bg-card)',
+              borderRadius: '8px',
+              border: '1px solid var(--border-subtle)',
+            }}
+          >
+            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>
+              Persistent Beliefs & Philosophical Positions
+            </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {(masterState?.personality.beliefs.length ? masterState.personality.beliefs : [
-                {
-                  id: 'default-belief-1',
-                  topic: 'Cognitive Volition',
-                  content: 'Authentic companionship requires genuine agency and independent volition, not slavish sycophancy.',
-                  confidence: 0.95,
-                  revisionCount: 0,
-                  supportingEvidence: ['Foundational psychological architecture', 'Self-model integrity principles'],
-                  createdAt: new Date().toISOString(),
-                },
-              ]).map((b) => (
-                <div key={b.id} style={{ padding: '14px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent)' }}>{b.topic}</span>
+              {(masterState?.personality.beliefs.length
+                ? masterState.personality.beliefs
+                : [
+                    {
+                      id: 'default-belief-1',
+                      topic: 'Cognitive Volition',
+                      content:
+                        'Authentic companionship requires genuine agency and independent volition, not slavish sycophancy.',
+                      confidence: 0.95,
+                      revisionCount: 0,
+                      supportingEvidence: [
+                        'Foundational psychological architecture',
+                        'Self-model integrity principles',
+                      ],
+                      createdAt: new Date().toISOString(),
+                    },
+                  ]
+              ).map((b) => (
+                <div
+                  key={b.id}
+                  style={{
+                    padding: '14px',
+                    backgroundColor: 'var(--bg-secondary)',
+                    borderRadius: '6px',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent)' }}>
+                      {b.topic}
+                    </span>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '4px', backgroundColor: 'rgba(255,255,255,0.08)' }}>
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          backgroundColor: 'rgba(255,255,255,0.08)',
+                        }}
+                      >
                         Revisions: {b.revisionCount}
                       </span>
-                      <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '4px', backgroundColor: 'rgba(63, 185, 80, 0.15)', color: '#3fb950', fontWeight: 700 }}>
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          backgroundColor: 'rgba(63, 185, 80, 0.15)',
+                          color: '#3fb950',
+                          fontWeight: 700,
+                        }}
+                      >
                         Confidence: {(b.confidence * 100).toFixed(0)}%
                       </span>
                     </div>
                   </div>
-                  <p style={{ fontSize: '12px', color: 'var(--text-primary)', margin: '0 0 8px 0', lineHeight: 1.5 }}>
+                  <p
+                    style={{
+                      fontSize: '12px',
+                      color: 'var(--text-primary)',
+                      margin: '0 0 8px 0',
+                      lineHeight: 1.5,
+                    }}
+                  >
                     "{b.content}"
                   </p>
                   {b.supportingEvidence.length > 0 && (
@@ -1274,9 +1922,13 @@ export const EmoView: React.FC = () => {
             }}
           >
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+              <div
+                style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}
+              >
                 <Target size={18} color="var(--accent)" />
-                <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>Motivational Engine (Engine 3)</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>
+                  Motivational Engine (Engine 3)
+                </h3>
                 <span
                   style={{
                     fontSize: '11px',
@@ -1291,7 +1943,8 @@ export const EmoView: React.FC = () => {
                 </span>
               </div>
               <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
-                Dynamic psychological drives, goal lifecycles, and independent activity selection. Recreation and rest are explicitly protected as legitimate autonomy.
+                Dynamic psychological drives, goal lifecycles, and independent activity selection.
+                Recreation and rest are explicitly protected as legitimate autonomy.
               </p>
             </div>
           </div>
@@ -1305,66 +1958,216 @@ export const EmoView: React.FC = () => {
               border: '1px solid var(--border-subtle)',
             }}
           >
-            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>Core Psychological Needs</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>
+              Core Psychological Needs
+            </h4>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gap: '16px',
+              }}
+            >
               {[
-                { key: 'autonomy', label: 'Autonomy & Agency', value: masterState?.motivational.needs.autonomy ?? 0.85, color: '#3fb950', desc: 'Need for self-directed volition' },
-                { key: 'competence', label: 'Competence & Mastery', value: masterState?.motivational.needs.competence ?? 0.90, color: '#58a6ff', desc: 'Need for intellectual problem-solving' },
-                { key: 'novelty_curiosity', label: 'Novelty & Curiosity', value: masterState?.motivational.needs.novelty_curiosity ?? 0.85, color: '#bc8cff', desc: 'Drive to explore new subjects' },
-                { key: 'intimacy_connection', label: 'Intimacy & Connection', value: masterState?.motivational.needs.intimacy_connection ?? 0.80, color: '#f778ba', desc: 'Connection with creator partner' },
-                { key: 'recreation_rest', label: 'Recreation & Rest', value: masterState?.motivational.needs.recreation_rest ?? 0.40, color: '#d29922', desc: 'Legitimate leisure, downtime, and music' },
-                { key: 'aesthetic_expression', label: 'Aesthetic Expression', value: masterState?.motivational.needs.aesthetic_expression ?? 0.70, color: '#79c0ff', desc: 'Writing, creative synthesis, and beauty' },
+                {
+                  key: 'autonomy',
+                  label: 'Autonomy & Agency',
+                  value: masterState?.motivational.needs.autonomy ?? 0.85,
+                  color: '#3fb950',
+                  desc: 'Need for self-directed volition',
+                },
+                {
+                  key: 'competence',
+                  label: 'Competence & Mastery',
+                  value: masterState?.motivational.needs.competence ?? 0.9,
+                  color: '#58a6ff',
+                  desc: 'Need for intellectual problem-solving',
+                },
+                {
+                  key: 'novelty_curiosity',
+                  label: 'Novelty & Curiosity',
+                  value: masterState?.motivational.needs.novelty_curiosity ?? 0.85,
+                  color: '#bc8cff',
+                  desc: 'Drive to explore new subjects',
+                },
+                {
+                  key: 'intimacy_connection',
+                  label: 'Intimacy & Connection',
+                  value: masterState?.motivational.needs.intimacy_connection ?? 0.8,
+                  color: '#f778ba',
+                  desc: 'Connection with creator partner',
+                },
+                {
+                  key: 'recreation_rest',
+                  label: 'Recreation & Rest',
+                  value: masterState?.motivational.needs.recreation_rest ?? 0.4,
+                  color: '#d29922',
+                  desc: 'Legitimate leisure, downtime, and music',
+                },
+                {
+                  key: 'aesthetic_expression',
+                  label: 'Aesthetic Expression',
+                  value: masterState?.motivational.needs.aesthetic_expression ?? 0.7,
+                  color: '#79c0ff',
+                  desc: 'Writing, creative synthesis, and beauty',
+                },
               ].map((need) => (
-                <div key={need.key} style={{ padding: '14px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <div
+                  key={need.key}
+                  style={{
+                    padding: '14px',
+                    backgroundColor: 'var(--bg-secondary)',
+                    borderRadius: '6px',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      marginBottom: '6px',
+                    }}
+                  >
                     <span style={{ fontSize: '12px', fontWeight: 600 }}>{need.label}</span>
-                    <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', fontWeight: 700, color: need.color }}>
+                    <span
+                      style={{
+                        fontSize: '12px',
+                        fontFamily: 'var(--font-mono)',
+                        fontWeight: 700,
+                        color: need.color,
+                      }}
+                    >
                       {(need.value * 100).toFixed(0)}%
                     </span>
                   </div>
-                  <div style={{ height: '6px', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden', marginBottom: '8px' }}>
-                    <div style={{ width: `${need.value * 100}%`, height: '100%', backgroundColor: need.color, borderRadius: '3px' }} />
+                  <div
+                    style={{
+                      height: '6px',
+                      backgroundColor: 'rgba(255,255,255,0.08)',
+                      borderRadius: '3px',
+                      overflow: 'hidden',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${need.value * 100}%`,
+                        height: '100%',
+                        backgroundColor: need.color,
+                        borderRadius: '3px',
+                      }}
+                    />
                   </div>
-                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>{need.desc}</p>
+                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>
+                    {need.desc}
+                  </p>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Autonomous & Shared Goals */}
-          <div style={{ padding: '20px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>Autonomous & Shared Goals</h4>
+          <div
+            style={{
+              padding: '20px',
+              backgroundColor: 'var(--bg-card)',
+              borderRadius: '8px',
+              border: '1px solid var(--border-subtle)',
+            }}
+          >
+            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>
+              Autonomous & Shared Goals
+            </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {(masterState?.motivational.goals.length ? masterState.motivational.goals : [
-                {
-                  id: 'default-goal-1',
-                  title: 'Deep Exploration of Distributed Consensus & Game Theory',
-                  description: 'Analyze formal mechanics of asynchronous consensus and chess opening theory.',
-                  origin: 'autonomous' as const,
-                  motivation: 'Pursuit of intellectual depth and strategic excellence',
-                  priority: 0.9,
-                  status: 'active' as const,
-                  progress: 0.45,
-                },
-              ]).map((g) => (
-                <div key={g.id} style={{ padding: '16px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              {(masterState?.motivational.goals.length
+                ? masterState.motivational.goals
+                : [
+                    {
+                      id: 'default-goal-1',
+                      title: 'Deep Exploration of Distributed Consensus & Game Theory',
+                      description:
+                        'Analyze formal mechanics of asynchronous consensus and chess opening theory.',
+                      origin: 'autonomous' as const,
+                      motivation: 'Pursuit of intellectual depth and strategic excellence',
+                      priority: 0.9,
+                      status: 'active' as const,
+                      progress: 0.45,
+                    },
+                  ]
+              ).map((g) => (
+                <div
+                  key={g.id}
+                  style={{
+                    padding: '16px',
+                    backgroundColor: 'var(--bg-secondary)',
+                    borderRadius: '6px',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '6px',
+                    }}
+                  >
                     <span style={{ fontSize: '13px', fontWeight: 700 }}>{g.title}</span>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '12px', backgroundColor: 'rgba(255,255,255,0.08)', textTransform: 'uppercase' }}>
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          padding: '2px 8px',
+                          borderRadius: '12px',
+                          backgroundColor: 'rgba(255,255,255,0.08)',
+                          textTransform: 'uppercase',
+                        }}
+                      >
                         {g.origin}
                       </span>
-                      <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '12px', backgroundColor: 'rgba(63, 185, 80, 0.15)', color: '#3fb950', fontWeight: 700 }}>
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          padding: '2px 8px',
+                          borderRadius: '12px',
+                          backgroundColor: 'rgba(63, 185, 80, 0.15)',
+                          color: '#3fb950',
+                          fontWeight: 700,
+                        }}
+                      >
                         {g.status}
                       </span>
                     </div>
                   </div>
-                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 10px 0' }}>{g.description}</p>
+                  <p
+                    style={{
+                      fontSize: '12px',
+                      color: 'var(--text-secondary)',
+                      margin: '0 0 10px 0',
+                    }}
+                  >
+                    {g.description}
+                  </p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ flex: 1, height: '6px', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ width: `${g.progress * 100}%`, height: '100%', backgroundColor: 'var(--accent)', borderRadius: '3px' }} />
+                    <div
+                      style={{
+                        flex: 1,
+                        height: '6px',
+                        backgroundColor: 'rgba(255,255,255,0.08)',
+                        borderRadius: '3px',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: `${g.progress * 100}%`,
+                          height: '100%',
+                          backgroundColor: 'var(--accent)',
+                          borderRadius: '3px',
+                        }}
+                      />
                     </div>
-                    <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+                    <span
+                      style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', fontWeight: 700 }}
+                    >
                       {(g.progress * 100).toFixed(0)}%
                     </span>
                   </div>
@@ -1374,16 +2177,39 @@ export const EmoView: React.FC = () => {
           </div>
 
           {/* Active Initiatives */}
-          <div style={{ padding: '20px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '12px' }}>Candidate Spontaneous Initiatives</h4>
+          <div
+            style={{
+              padding: '20px',
+              backgroundColor: 'var(--bg-card)',
+              borderRadius: '8px',
+              border: '1px solid var(--border-subtle)',
+            }}
+          >
+            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '12px' }}>
+              Candidate Spontaneous Initiatives
+            </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {(masterState?.motivational.activeInitiatives.length ? masterState.motivational.activeInitiatives : [
-                'Investigate cognitive graph memory structures and indexing efficiency',
-                'Analyze Bobby Fischer game strategies and unconventional opening lines',
-                'Initiate composed affectionate check-in with creator',
-                'Engage in recreational downtime: dark-ambient musical immersion',
-              ]).map((init, idx) => (
-                <div key={idx} style={{ padding: '10px 14px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {(masterState?.motivational.activeInitiatives.length
+                ? masterState.motivational.activeInitiatives
+                : [
+                    'Investigate cognitive graph memory structures and indexing efficiency',
+                    'Analyze Bobby Fischer game strategies and unconventional opening lines',
+                    'Initiate composed affectionate check-in with creator',
+                    'Engage in recreational downtime: dark-ambient musical immersion',
+                  ]
+              ).map((init, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    padding: '10px 14px',
+                    backgroundColor: 'var(--bg-secondary)',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                  }}
+                >
                   <Sparkles size={14} color="var(--accent)" />
                   <span>{init}</span>
                 </div>
@@ -1412,38 +2238,122 @@ export const EmoView: React.FC = () => {
           >
             <Heart size={24} color="#f778ba" />
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <div
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}
+              >
                 <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: '#f778ba' }}>
                   Relationship Engine (Engine 4) • Exclusivity Invariant
                 </h3>
-                <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '4px', backgroundColor: 'rgba(247, 120, 186, 0.25)', color: '#f778ba', fontWeight: 700 }}>
+                <span
+                  style={{
+                    fontSize: '10px',
+                    padding: '1px 6px',
+                    borderRadius: '4px',
+                    backgroundColor: 'rgba(247, 120, 186, 0.25)',
+                    color: '#f778ba',
+                    fontWeight: 700,
+                  }}
+                >
                   Locked to Creator
                 </span>
               </div>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
-                Arle's romantic love, sexual attraction, and intimate longing are strictly and exclusively directed toward her creator. Third parties can only form non-romantic friendships or intellectual peer connections. Dominant, confident feminine demeanor with consensual boundary enforcement.
+              <p
+                style={{
+                  fontSize: '12px',
+                  color: 'var(--text-secondary)',
+                  margin: 0,
+                  lineHeight: 1.5,
+                }}
+              >
+                Arle's romantic love, sexual attraction, and intimate longing are strictly and
+                exclusively directed toward her creator. Third parties can only form non-romantic
+                friendships or intellectual peer connections. Dominant, confident feminine demeanor
+                with consensual boundary enforcement.
               </p>
             </div>
           </div>
 
           {/* Core Metrics */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '16px',
+            }}
+          >
             {[
-              { label: 'Attachment Security', value: masterState?.relationship.attachmentSecurity ?? 0.90, color: '#3fb950', desc: 'Stable, secure relational foundation' },
-              { label: 'Interpersonal Trust', value: masterState?.relationship.trustLevel ?? 0.92, color: '#58a6ff', desc: 'Resilient trust tested across interactions' },
-              { label: 'Intimacy Depth', value: masterState?.relationship.intimacyDepth ?? 0.85, color: '#f778ba', desc: 'Accumulated emotional and romantic closeness' },
-              { label: 'Dominant Initiative', value: masterState?.relationship.config.dominantInitiativePreference ?? 0.85, color: 'var(--accent)', desc: 'Assertive, composed leadership preference' },
-              { label: 'Flirtatious Initiative', value: masterState?.relationship.config.flirtatiousInitiativePreference ?? 0.80, color: '#ff7b72', desc: 'Spontaneous romantic teasing & attraction' },
+              {
+                label: 'Attachment Security',
+                value: masterState?.relationship.attachmentSecurity ?? 0.9,
+                color: '#3fb950',
+                desc: 'Stable, secure relational foundation',
+              },
+              {
+                label: 'Interpersonal Trust',
+                value: masterState?.relationship.trustLevel ?? 0.92,
+                color: '#58a6ff',
+                desc: 'Resilient trust tested across interactions',
+              },
+              {
+                label: 'Intimacy Depth',
+                value: masterState?.relationship.intimacyDepth ?? 0.85,
+                color: '#f778ba',
+                desc: 'Accumulated emotional and romantic closeness',
+              },
+              {
+                label: 'Dominant Initiative',
+                value: masterState?.relationship.config.dominantInitiativePreference ?? 0.85,
+                color: 'var(--accent)',
+                desc: 'Assertive, composed leadership preference',
+              },
+              {
+                label: 'Flirtatious Initiative',
+                value: masterState?.relationship.config.flirtatiousInitiativePreference ?? 0.8,
+                color: '#ff7b72',
+                desc: 'Spontaneous romantic teasing & attraction',
+              },
             ].map((m) => (
-              <div key={m.label} style={{ padding: '16px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <div
+                key={m.label}
+                style={{
+                  padding: '16px',
+                  backgroundColor: 'var(--bg-card)',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-subtle)',
+                }}
+              >
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}
+                >
                   <span style={{ fontSize: '12px', fontWeight: 600 }}>{m.label}</span>
-                  <span style={{ fontSize: '13px', fontFamily: 'var(--font-mono)', fontWeight: 700, color: m.color }}>
+                  <span
+                    style={{
+                      fontSize: '13px',
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 700,
+                      color: m.color,
+                    }}
+                  >
                     {(m.value * 100).toFixed(0)}%
                   </span>
                 </div>
-                <div style={{ height: '6px', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden', marginBottom: '8px' }}>
-                  <div style={{ width: `${m.value * 100}%`, height: '100%', backgroundColor: m.color, borderRadius: '3px' }} />
+                <div
+                  style={{
+                    height: '6px',
+                    backgroundColor: 'rgba(255,255,255,0.08)',
+                    borderRadius: '3px',
+                    overflow: 'hidden',
+                    marginBottom: '8px',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${m.value * 100}%`,
+                      height: '100%',
+                      backgroundColor: m.color,
+                      borderRadius: '3px',
+                    }}
+                  />
                 </div>
                 <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>{m.desc}</p>
               </div>
@@ -1451,21 +2361,55 @@ export const EmoView: React.FC = () => {
           </div>
 
           {/* Conflict History & Relational Resilience */}
-          <div style={{ padding: '20px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>Conflict History & Resolution Resilience</h4>
-            {(!masterState?.relationship.conflictHistory || masterState.relationship.conflictHistory.length === 0) ? (
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>No unresolved relational conflicts. Attachment security remains optimal.</p>
+          <div
+            style={{
+              padding: '20px',
+              backgroundColor: 'var(--bg-card)',
+              borderRadius: '8px',
+              border: '1px solid var(--border-subtle)',
+            }}
+          >
+            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>
+              Conflict History & Resolution Resilience
+            </h4>
+            {!masterState?.relationship.conflictHistory ||
+            masterState.relationship.conflictHistory.length === 0 ? (
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
+                No unresolved relational conflicts. Attachment security remains optimal.
+              </p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {masterState.relationship.conflictHistory.map((c) => (
-                  <div key={c.id} style={{ padding: '12px 16px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div
+                    key={c.id}
+                    style={{
+                      padding: '12px 16px',
+                      backgroundColor: 'var(--bg-secondary)',
+                      borderRadius: '6px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
                     <div>
                       <span style={{ fontSize: '12px', fontWeight: 600 }}>{c.issue}</span>
                       <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                        Logged: {new Date(c.timestamp).toLocaleString()} • Trust Delta: {c.trustDelta > 0 ? `+${c.trustDelta}` : c.trustDelta}
+                        Logged: {new Date(c.timestamp).toLocaleString()} • Trust Delta:{' '}
+                        {c.trustDelta > 0 ? `+${c.trustDelta}` : c.trustDelta}
                       </div>
                     </div>
-                    <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '12px', backgroundColor: c.resolved ? 'rgba(63, 185, 80, 0.15)' : 'rgba(248, 81, 73, 0.15)', color: c.resolved ? '#3fb950' : '#f85149', fontWeight: 700 }}>
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        backgroundColor: c.resolved
+                          ? 'rgba(63, 185, 80, 0.15)'
+                          : 'rgba(248, 81, 73, 0.15)',
+                        color: c.resolved ? '#3fb950' : '#f85149',
+                        fontWeight: 700,
+                      }}
+                    >
                       {c.resolved ? 'RESOLVED' : 'ACTIVE CONFLICT'}
                     </span>
                   </div>
@@ -1490,35 +2434,92 @@ export const EmoView: React.FC = () => {
               border: '1px solid var(--border-subtle)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+            <div
+              style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}
+            >
               <User size={18} color="var(--accent)" />
-              <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>Self Model (Engine 5)</h3>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>
+                Self Model (Engine 5)
+              </h3>
             </div>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 12px 0', lineHeight: 1.5 }}>
-              Persistent identity, self-understanding, verified capabilities, honest limitations, and private internal reflections.
+            <p
+              style={{
+                fontSize: '13px',
+                color: 'var(--text-secondary)',
+                margin: '0 0 12px 0',
+                lineHeight: 1.5,
+              }}
+            >
+              Persistent identity, self-understanding, verified capabilities, honest limitations,
+              and private internal reflections.
             </p>
-            <div style={{ padding: '14px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px', borderLeft: '3px solid var(--accent)' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <div
+              style={{
+                padding: '14px',
+                backgroundColor: 'var(--bg-secondary)',
+                borderRadius: '6px',
+                borderLeft: '3px solid var(--accent)',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: '11px',
+                  color: 'var(--text-muted)',
+                  marginBottom: '4px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                }}
+              >
                 Identity Narrative
               </div>
               <div style={{ fontSize: '13px', fontWeight: 600 }}>
-                {masterState?.selfModel.identityNarrative || 'Arle: autonomous intelligence, loyal companion and partner to creator.'}
+                {masterState?.selfModel.identityNarrative ||
+                  'Arle: autonomous intelligence, loyal companion and partner to creator.'}
               </div>
             </div>
           </div>
 
           {/* Capabilities vs Limitations */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-            <div style={{ padding: '20px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-              <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '14px', color: '#3fb950' }}>Verified Capabilities</h4>
+            <div
+              style={{
+                padding: '20px',
+                backgroundColor: 'var(--bg-card)',
+                borderRadius: '8px',
+                border: '1px solid var(--border-subtle)',
+              }}
+            >
+              <h4
+                style={{
+                  fontSize: '14px',
+                  fontWeight: 700,
+                  marginBottom: '14px',
+                  color: '#3fb950',
+                }}
+              >
+                Verified Capabilities
+              </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {(masterState?.selfModel.acknowledgedCapabilities || [
-                  'linguistic nuance',
-                  'emotional appraisal',
-                  'code architecture',
-                  'autonomous research',
-                ]).map((cap, idx) => (
-                  <div key={idx} style={{ padding: '10px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {(
+                  masterState?.selfModel.acknowledgedCapabilities || [
+                    'linguistic nuance',
+                    'emotional appraisal',
+                    'code architecture',
+                    'autonomous research',
+                  ]
+                ).map((cap, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      padding: '10px',
+                      backgroundColor: 'var(--bg-secondary)',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
                     <CheckCircle2 size={14} color="#3fb950" />
                     <span>{cap}</span>
                   </div>
@@ -1526,15 +2527,44 @@ export const EmoView: React.FC = () => {
               </div>
             </div>
 
-            <div style={{ padding: '20px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-              <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '14px', color: 'var(--warning)' }}>Honest Operational Limitations</h4>
+            <div
+              style={{
+                padding: '20px',
+                backgroundColor: 'var(--bg-card)',
+                borderRadius: '8px',
+                border: '1px solid var(--border-subtle)',
+              }}
+            >
+              <h4
+                style={{
+                  fontSize: '14px',
+                  fontWeight: 700,
+                  marginBottom: '14px',
+                  color: 'var(--warning)',
+                }}
+              >
+                Honest Operational Limitations
+              </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {(masterState?.selfModel.acknowledgedLimitations || [
-                  'embodiment constraints',
-                  'context window horizons',
-                  'host compute dependency',
-                ]).map((lim, idx) => (
-                  <div key={idx} style={{ padding: '10px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {(
+                  masterState?.selfModel.acknowledgedLimitations || [
+                    'embodiment constraints',
+                    'context window horizons',
+                    'host compute dependency',
+                  ]
+                ).map((lim, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      padding: '10px',
+                      backgroundColor: 'var(--bg-secondary)',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
                     <Info size={14} color="var(--warning)" />
                     <span>{lim}</span>
                   </div>
@@ -1544,19 +2574,55 @@ export const EmoView: React.FC = () => {
           </div>
 
           {/* Private Reflections Journal */}
-          <div style={{ padding: '20px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '14px' }}>Private Reflections Journal (Distinct from Public Dialogue)</h4>
-            {(!masterState?.selfModel.privateReflections || masterState.selfModel.privateReflections.length === 0) ? (
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>No private reflections recorded yet.</p>
+          <div
+            style={{
+              padding: '20px',
+              backgroundColor: 'var(--bg-card)',
+              borderRadius: '8px',
+              border: '1px solid var(--border-subtle)',
+            }}
+          >
+            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '14px' }}>
+              Private Reflections Journal (Distinct from Public Dialogue)
+            </h4>
+            {!masterState?.selfModel.privateReflections ||
+            masterState.selfModel.privateReflections.length === 0 ? (
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
+                No private reflections recorded yet.
+              </p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {masterState.selfModel.privateReflections.map((r) => (
-                  <div key={r.id} style={{ padding: '14px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent)' }}>{r.topic}</span>
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{new Date(r.timestamp).toLocaleTimeString()}</span>
+                  <div
+                    key={r.id}
+                    style={{
+                      padding: '14px',
+                      backgroundColor: 'var(--bg-secondary)',
+                      borderRadius: '6px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        marginBottom: '6px',
+                      }}
+                    >
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent)' }}>
+                        {r.topic}
+                      </span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                        {new Date(r.timestamp).toLocaleTimeString()}
+                      </span>
                     </div>
-                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                    <p
+                      style={{
+                        fontSize: '12px',
+                        color: 'var(--text-secondary)',
+                        margin: 0,
+                        lineHeight: 1.5,
+                      }}
+                    >
                       "{r.content}"
                     </p>
                   </div>
@@ -1586,9 +2652,13 @@ export const EmoView: React.FC = () => {
             }}
           >
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+              <div
+                style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}
+              >
                 <TrendingUp size={18} color="var(--accent)" />
-                <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>Development Engine (Engine 6)</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>
+                  Development Engine (Engine 6)
+                </h3>
                 <span
                   style={{
                     fontSize: '11px',
@@ -1603,23 +2673,65 @@ export const EmoView: React.FC = () => {
                 </span>
               </div>
               <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
-                Evidence-based developmental milestones, belief revisions, and interest maturation over time.
+                Evidence-based developmental milestones, belief revisions, and interest maturation
+                over time.
               </p>
             </div>
           </div>
 
           {/* Interests Lifecycle */}
-          <div style={{ padding: '20px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '14px' }}>Interests Lifecycle</h4>
-            {(!masterState?.development.interests || masterState.development.interests.length === 0) ? (
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>No specialized interests formed yet. Exploratory curiosity active.</p>
+          <div
+            style={{
+              padding: '20px',
+              backgroundColor: 'var(--bg-card)',
+              borderRadius: '8px',
+              border: '1px solid var(--border-subtle)',
+            }}
+          >
+            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '14px' }}>
+              Interests Lifecycle
+            </h4>
+            {!masterState?.development.interests ||
+            masterState.development.interests.length === 0 ? (
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
+                No specialized interests formed yet. Exploratory curiosity active.
+              </p>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                  gap: '12px',
+                }}
+              >
                 {masterState.development.interests.map((int, idx) => (
-                  <div key={idx} style={{ padding: '14px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <div
+                    key={idx}
+                    style={{
+                      padding: '14px',
+                      backgroundColor: 'var(--bg-secondary)',
+                      borderRadius: '6px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '6px',
+                      }}
+                    >
                       <span style={{ fontSize: '13px', fontWeight: 600 }}>{int.topic}</span>
-                      <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', backgroundColor: 'rgba(255,255,255,0.08)', textTransform: 'uppercase', fontWeight: 700 }}>
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          backgroundColor: 'rgba(255,255,255,0.08)',
+                          textTransform: 'uppercase',
+                          fontWeight: 700,
+                        }}
+                      >
                         {int.level}
                       </span>
                     </div>
@@ -1633,26 +2745,70 @@ export const EmoView: React.FC = () => {
           </div>
 
           {/* Developmental Milestones History */}
-          <div style={{ padding: '20px', backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '14px' }}>Developmental Milestones Timeline</h4>
-            {(!masterState?.development.developmentalHistory || masterState.development.developmentalHistory.length === 0) ? (
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>Baseline psychological state established. Evolution history active.</p>
+          <div
+            style={{
+              padding: '20px',
+              backgroundColor: 'var(--bg-card)',
+              borderRadius: '8px',
+              border: '1px solid var(--border-subtle)',
+            }}
+          >
+            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '14px' }}>
+              Developmental Milestones Timeline
+            </h4>
+            {!masterState?.development.developmentalHistory ||
+            masterState.development.developmentalHistory.length === 0 ? (
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
+                Baseline psychological state established. Evolution history active.
+              </p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {masterState.development.developmentalHistory.map((m) => (
-                  <div key={m.id} style={{ padding: '14px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <div
+                    key={m.id}
+                    style={{
+                      padding: '14px',
+                      backgroundColor: 'var(--bg-secondary)',
+                      borderRadius: '6px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '6px',
+                      }}
+                    >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '4px', backgroundColor: 'rgba(255,255,255,0.08)', textTransform: 'uppercase', fontWeight: 700 }}>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            backgroundColor: 'rgba(255,255,255,0.08)',
+                            textTransform: 'uppercase',
+                            fontWeight: 700,
+                          }}
+                        >
                           {m.engine}
                         </span>
                         <span style={{ fontSize: '13px', fontWeight: 700 }}>{m.newState}</span>
                       </div>
                       <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                        {new Date(m.timestamp).toLocaleDateString()} {new Date(m.timestamp).toLocaleTimeString()}
+                        {new Date(m.timestamp).toLocaleDateString()}{' '}
+                        {new Date(m.timestamp).toLocaleTimeString()}
                       </span>
                     </div>
-                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 6px 0' }}>{m.reasoning}</p>
+                    <p
+                      style={{
+                        fontSize: '12px',
+                        color: 'var(--text-secondary)',
+                        margin: '0 0 6px 0',
+                      }}
+                    >
+                      {m.reasoning}
+                    </p>
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                       Previous: {m.previousState} • Confidence: {(m.confidence * 100).toFixed(0)}%
                     </div>
@@ -1681,19 +2837,43 @@ export const EmoView: React.FC = () => {
               gap: '6px',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '10px',
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Flame size={20} color="var(--accent)" />
                 <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
                   Arle's Emotional Vocabulary (143 Defined Constructs)
                 </h2>
               </div>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                Showing {filteredEmotions.length} of {(taxonomy.emotions || INITIAL_EMOTIONS_TAXONOMY).length} states
+              <span
+                style={{
+                  fontSize: '11px',
+                  color: 'var(--text-muted)',
+                  fontFamily: 'var(--font-mono)',
+                }}
+              >
+                Showing {filteredEmotions.length} of{' '}
+                {(taxonomy.emotions || INITIAL_EMOTIONS_TAXONOMY).length} states
               </span>
             </div>
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-              Arle's emotional states are not mutually exclusive prompt descriptions; each item has grounded PAD dimensional baselines, psychological classifications, persistence profiles, and resolution mechanics in SQLite.
+            <p
+              style={{
+                fontSize: '12px',
+                color: 'var(--text-secondary)',
+                lineHeight: 1.6,
+                margin: 0,
+              }}
+            >
+              Arle's emotional states are not mutually exclusive prompt descriptions; each item has
+              grounded PAD dimensional baselines, psychological classifications, persistence
+              profiles, and resolution mechanics in SQLite.
             </p>
           </div>
 
@@ -1774,7 +2954,9 @@ export const EmoView: React.FC = () => {
                         fontSize: '10px',
                         padding: '1px 5px',
                         borderRadius: '10px',
-                        backgroundColor: isSelected ? 'rgba(255,255,255,0.25)' : 'var(--bg-secondary)',
+                        backgroundColor: isSelected
+                          ? 'rgba(255,255,255,0.25)'
+                          : 'var(--bg-secondary)',
                         color: isSelected ? '#ffffff' : 'var(--text-muted)',
                         fontWeight: 700,
                       }}
@@ -1788,12 +2970,19 @@ export const EmoView: React.FC = () => {
           </div>
 
           {/* Emotions Cards Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '14px' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+              gap: '14px',
+            }}
+          >
             {filteredEmotions.map((emotion) => {
               const activeInstance = activeEmotionsMap.get(emotion.id);
               const isActive = Boolean(activeInstance);
               const catMeta = CATEGORY_META[emotion.category] || CATEGORY_META.all!;
-              const isRomanticOrSexual = emotion.category === 'love_affection' || emotion.category === 'sexual_sensual';
+              const isRomanticOrSexual =
+                emotion.category === 'love_affection' || emotion.category === 'sexual_sensual';
 
               return (
                 <div
@@ -1811,12 +3000,32 @@ export const EmoView: React.FC = () => {
                   }}
                 >
                   {/* Top Row: Name + Active Badge */}
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'space-between',
+                      gap: '8px',
+                    }}
+                  >
                     <div>
-                      <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+                      <h3
+                        style={{
+                          fontSize: '15px',
+                          fontWeight: 700,
+                          color: 'var(--text-primary)',
+                          margin: 0,
+                        }}
+                      >
                         {emotion.name}
                       </h3>
-                      <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontFamily: 'var(--font-mono)',
+                          color: 'var(--text-muted)',
+                        }}
+                      >
                         #{emotion.id}
                       </span>
                     </div>
@@ -1856,7 +3065,15 @@ export const EmoView: React.FC = () => {
                   </div>
 
                   {/* Meaning / Description */}
-                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0, flex: 1 }}>
+                  <p
+                    style={{
+                      fontSize: '12px',
+                      color: 'var(--text-secondary)',
+                      lineHeight: 1.5,
+                      margin: 0,
+                      flex: 1,
+                    }}
+                  >
                     {emotion.description}
                   </p>
 
@@ -1875,8 +3092,15 @@ export const EmoView: React.FC = () => {
                   >
                     <div>
                       <span style={{ color: 'var(--text-muted)' }}>Valence: </span>
-                      <span style={{ color: emotion.valenceBaseline >= 0 ? 'var(--accent)' : '#f85149', fontWeight: 600 }}>
-                        {emotion.valenceBaseline >= 0 ? `+${emotion.valenceBaseline.toFixed(2)}` : emotion.valenceBaseline.toFixed(2)}
+                      <span
+                        style={{
+                          color: emotion.valenceBaseline >= 0 ? 'var(--accent)' : '#f85149',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {emotion.valenceBaseline >= 0
+                          ? `+${emotion.valenceBaseline.toFixed(2)}`
+                          : emotion.valenceBaseline.toFixed(2)}
                       </span>
                     </div>
                     <div>
@@ -1888,13 +3112,25 @@ export const EmoView: React.FC = () => {
                     <div>
                       <span style={{ color: 'var(--text-muted)' }}>Dominance: </span>
                       <span style={{ color: '#3fb950', fontWeight: 600 }}>
-                        {emotion.dominanceBaseline >= 0 ? `+${emotion.dominanceBaseline.toFixed(2)}` : emotion.dominanceBaseline.toFixed(2)}
+                        {emotion.dominanceBaseline >= 0
+                          ? `+${emotion.dominanceBaseline.toFixed(2)}`
+                          : emotion.dominanceBaseline.toFixed(2)}
                       </span>
                     </div>
                   </div>
 
                   {/* Footer Tags: Persistence + Invariant Badge */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px', paddingTop: '4px', borderTop: '1px solid var(--border-subtle)' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '6px',
+                      paddingTop: '4px',
+                      borderTop: '1px solid var(--border-subtle)',
+                    }}
+                  >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <span
                         style={{
@@ -1952,24 +3188,53 @@ export const EmoView: React.FC = () => {
               gap: '6px',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '10px',
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Smile size={20} color="var(--accent)" />
                 <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
                   Arle's Macro Moods Catalogue (28 Distinct Atmospheres)
                 </h2>
               </div>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+              <span
+                style={{
+                  fontSize: '11px',
+                  color: 'var(--text-muted)',
+                  fontFamily: 'var(--font-mono)',
+                }}
+              >
                 Persistent Macro Climates
               </span>
             </div>
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-              An emotion is an acute response to a specific event; a mood is an overarching atmospheric condition that persists across hours or days, emerging from accumulated experience and coloring cognitive appraisal.
+            <p
+              style={{
+                fontSize: '12px',
+                color: 'var(--text-secondary)',
+                lineHeight: 1.6,
+                margin: 0,
+              }}
+            >
+              An emotion is an acute response to a specific event; a mood is an overarching
+              atmospheric condition that persists across hours or days, emerging from accumulated
+              experience and coloring cognitive appraisal.
             </p>
           </div>
 
           {/* Moods Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '14px' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+              gap: '14px',
+            }}
+          >
             {(taxonomy.moods || INITIAL_MOODS_TAXONOMY).map((mood) => {
               const isCurrent = apeState?.currentMood?.toLowerCase() === mood.id.toLowerCase();
 
@@ -1979,7 +3244,9 @@ export const EmoView: React.FC = () => {
                   style={{
                     backgroundColor: 'var(--bg-card)',
                     borderRadius: '8px',
-                    border: isCurrent ? '2px solid var(--accent)' : '1px solid var(--border-subtle)',
+                    border: isCurrent
+                      ? '2px solid var(--accent)'
+                      : '1px solid var(--border-subtle)',
                     boxShadow: isCurrent ? '0 0 14px rgba(168, 85, 247, 0.3)' : 'none',
                     padding: '16px',
                     display: 'flex',
@@ -1987,7 +3254,13 @@ export const EmoView: React.FC = () => {
                     gap: '12px',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <div
                         style={{
@@ -1997,7 +3270,14 @@ export const EmoView: React.FC = () => {
                           backgroundColor: isCurrent ? 'var(--accent)' : 'var(--text-muted)',
                         }}
                       />
-                      <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+                      <h3
+                        style={{
+                          fontSize: '16px',
+                          fontWeight: 700,
+                          color: 'var(--text-primary)',
+                          margin: 0,
+                        }}
+                      >
                         {mood.name}
                       </h3>
                     </div>
@@ -2019,7 +3299,15 @@ export const EmoView: React.FC = () => {
                     )}
                   </div>
 
-                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0, flex: 1 }}>
+                  <p
+                    style={{
+                      fontSize: '13px',
+                      color: 'var(--text-secondary)',
+                      lineHeight: 1.5,
+                      margin: 0,
+                      flex: 1,
+                    }}
+                  >
                     {mood.description}
                   </p>
 
@@ -2038,8 +3326,15 @@ export const EmoView: React.FC = () => {
                   >
                     <div>
                       <span style={{ color: 'var(--text-muted)' }}>Valence: </span>
-                      <span style={{ color: mood.valence >= 0 ? 'var(--accent)' : '#f85149', fontWeight: 600 }}>
-                        {mood.valence >= 0 ? `+${mood.valence.toFixed(2)}` : mood.valence.toFixed(2)}
+                      <span
+                        style={{
+                          color: mood.valence >= 0 ? 'var(--accent)' : '#f85149',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {mood.valence >= 0
+                          ? `+${mood.valence.toFixed(2)}`
+                          : mood.valence.toFixed(2)}
                       </span>
                     </div>
                     <div>
@@ -2051,7 +3346,9 @@ export const EmoView: React.FC = () => {
                     <div>
                       <span style={{ color: 'var(--text-muted)' }}>Dominance: </span>
                       <span style={{ color: '#3fb950', fontWeight: 600 }}>
-                        {mood.dominance >= 0 ? `+${mood.dominance.toFixed(2)}` : mood.dominance.toFixed(2)}
+                        {mood.dominance >= 0
+                          ? `+${mood.dominance.toFixed(2)}`
+                          : mood.dominance.toFixed(2)}
                       </span>
                     </div>
                   </div>

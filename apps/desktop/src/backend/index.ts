@@ -8,7 +8,9 @@ async function main() {
   const config = createDefaultConfig();
   const server = new ArletexBackendServer(config, logger);
 
-  const desiredPort = process.env['ARLETEX_PORT'] ? parseInt(process.env['ARLETEX_PORT'], 10) : 39281;
+  const desiredPort = process.env['ARLETEX_PORT']
+    ? parseInt(process.env['ARLETEX_PORT'], 10)
+    : 39281;
   const actualPort = await server.start(desiredPort);
 
   logger.info(`Arletex Backend is ready on port ${actualPort}`);

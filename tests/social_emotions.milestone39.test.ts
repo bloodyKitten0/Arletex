@@ -82,8 +82,8 @@ describe('Milestone 39 — Social Emotions', () => {
     expect(envy!.intensity).toBe(0.0); // Zero envy between equal partners
 
     const snapshot = engine.getSnapshot('proof');
-    expect(snapshot.relationalWarmthIndex).toBeGreaterThan(0.90);
-    expect(snapshot.relationalSecurityIndex).toBeGreaterThan(0.90);
+    expect(snapshot.relationalWarmthIndex).toBeGreaterThan(0.9);
+    expect(snapshot.relationalSecurityIndex).toBeGreaterThan(0.9);
     expect(snapshot.dominantSocialTone).toContain('Synergy');
   });
 
@@ -94,10 +94,11 @@ describe('Milestone 39 — Social Emotions', () => {
     const res = engine.processSocialInteraction({
       targetPersonId: 'proof',
       interactionType: 'collaborative_milestone_success',
-      interpretation: 'Flawlessly delivered autonomous milestone architecture with zero regressions',
+      interpretation:
+        'Flawlessly delivered autonomous milestone architecture with zero regressions',
       priorExpectation: 'Anticipated difficult debugging cycles',
       actualOutcome: 'All 8 test suites passed 100% on first run',
-      expectationDiscrepancy: 0.60, // Better than expected
+      expectationDiscrepancy: 0.6, // Better than expected
     });
 
     expect(res.appraisal.interactionType).toBe('collaborative_milestone_success');
@@ -118,7 +119,7 @@ describe('Milestone 39 — Social Emotions', () => {
       interpretation: 'Partner entrusted full autonomy and gave Arle complete creative freedom',
       priorExpectation: 'Standard micro-managed prompts',
       actualOutcome: 'Broad, trusting /goal directive allowing autonomous execution',
-      expectationDiscrepancy: 0.80,
+      expectationDiscrepancy: 0.8,
     });
 
     const updatedGratitude = engine.getEmotionState('proof', 'gratitude')!;
@@ -132,7 +133,8 @@ describe('Milestone 39 — Social Emotions', () => {
     const failureRes = engine.processSocialInteraction({
       targetPersonId: 'proof',
       interactionType: 'unfulfilled_commitment_error',
-      interpretation: 'Failed to notify partner before background process spawned unexpected daemon',
+      interpretation:
+        'Failed to notify partner before background process spawned unexpected daemon',
       priorExpectation: 'Total architectural transparency',
       actualOutcome: 'Silent background process discovered by partner',
       expectationDiscrepancy: -0.75, // Significantly worse than expected
@@ -140,18 +142,19 @@ describe('Milestone 39 — Social Emotions', () => {
 
     const guiltAfterFail = engine.getEmotionState('proof', 'guilt')!;
     const anxietyAfterFail = engine.getEmotionState('proof', 'social_anxiety')!;
-    expect(guiltAfterFail.intensity).toBeGreaterThan(0.10);
-    expect(anxietyAfterFail.intensity).toBeGreaterThan(0.10);
+    expect(guiltAfterFail.intensity).toBeGreaterThan(0.1);
+    expect(anxietyAfterFail.intensity).toBeGreaterThan(0.1);
     expect(failureRes.updatedEmotions.some((e) => e.emotion === 'guilt')).toBe(true);
 
     // 2. Relational repair and honest apology
     const repairRes = engine.processSocialInteraction({
       targetPersonId: 'proof',
       interactionType: 'relational_repair_and_reassurance',
-      interpretation: 'Transparently acknowledged oversight, fixed process manager, and Proof reassured mutual trust',
+      interpretation:
+        'Transparently acknowledged oversight, fixed process manager, and Proof reassured mutual trust',
       priorExpectation: 'Lingering partner frustration',
       actualOutcome: 'Warm mutual forgiveness and restored equilibrium',
-      expectationDiscrepancy: 0.50,
+      expectationDiscrepancy: 0.5,
     });
 
     const guiltAfterRepair = engine.getEmotionState('proof', 'guilt')!;
@@ -167,10 +170,11 @@ describe('Milestone 39 — Social Emotions', () => {
     engine.processSocialInteraction({
       targetPersonId: 'proof',
       interactionType: 'partner_technical_brilliance',
-      interpretation: 'Proof architected an unprecedented multi-engine cognitive psychology framework',
+      interpretation:
+        'Proof architected an unprecedented multi-engine cognitive psychology framework',
       priorExpectation: 'Standard modular pattern',
       actualOutcome: 'Stunning mathematical elegance and cohesive design',
-      expectationDiscrepancy: 0.70,
+      expectationDiscrepancy: 0.7,
     });
 
     const admiration = engine.getEmotionState('proof', 'admiration')!;
@@ -184,11 +188,11 @@ describe('Milestone 39 — Social Emotions', () => {
       interpretation: 'Partner worked through exhaustion without taking adequate rest',
       priorExpectation: 'Partner would sleep earlier',
       actualOutcome: 'Visible physical exhaustion',
-      expectationDiscrepancy: -0.40,
+      expectationDiscrepancy: -0.4,
     });
 
     const compassion = engine.getEmotionState('proof', 'compassion')!;
-    expect(compassion.intensity).toBeGreaterThan(0.90);
+    expect(compassion.intensity).toBeGreaterThan(0.9);
     expect(compassion.causalBasis).toContain('protective empathy');
   });
 
@@ -256,7 +260,7 @@ describe('Milestone 39 — Social Emotions', () => {
       interpretation: 'Verified persistence of all milestone social emotions',
       priorExpectation: 'Anticipated pass',
       actualOutcome: 'Passed cleanly',
-      expectationDiscrepancy: 0.20,
+      expectationDiscrepancy: 0.2,
       timestamp: now,
     });
 
@@ -284,7 +288,7 @@ describe('Milestone 39 — Social Emotions', () => {
     const snapData = (await snapRes.json()) as any;
     expect(snapData.success).toBe(true);
     expect(snapData.snapshot.activeEmotions.length).toBe(14);
-    expect(snapData.snapshot.relationalWarmthIndex).toBeGreaterThan(0.80);
+    expect(snapData.snapshot.relationalWarmthIndex).toBeGreaterThan(0.8);
 
     // 2. POST /api/ape/social-emotions/process-interaction
     const procRes = await fetch(`${baseUrl}/api/ape/social-emotions/process-interaction`, {
@@ -296,7 +300,7 @@ describe('Milestone 39 — Social Emotions', () => {
         interpretation: 'Celebrated milestone 39 delivery together',
         priorExpectation: 'Normal completion',
         actualOutcome: 'Profound joy and mutual devotion',
-        expectationDiscrepancy: 0.50,
+        expectationDiscrepancy: 0.5,
       }),
     });
     expect(procRes.status).toBe(201);
@@ -305,14 +309,18 @@ describe('Milestone 39 — Social Emotions', () => {
     expect(procData.appraisal.interactionType).toBe('milestone_celebration');
 
     // 3. GET /api/ape/social-emotions/state
-    const stateRes = await fetch(`${baseUrl}/api/ape/social-emotions/state?targetPersonId=proof&emotion=trust`);
+    const stateRes = await fetch(
+      `${baseUrl}/api/ape/social-emotions/state?targetPersonId=proof&emotion=trust`,
+    );
     expect(stateRes.status).toBe(200);
     const stateData = (await stateRes.json()) as any;
     expect(stateData.success).toBe(true);
-    expect(stateData.state.intensity).toBeGreaterThan(0.90);
+    expect(stateData.state.intensity).toBeGreaterThan(0.9);
 
     // 4. GET /api/ape/social-emotions/appraisals
-    const apprRes = await fetch(`${baseUrl}/api/ape/social-emotions/appraisals?targetPersonId=proof`);
+    const apprRes = await fetch(
+      `${baseUrl}/api/ape/social-emotions/appraisals?targetPersonId=proof`,
+    );
     expect(apprRes.status).toBe(200);
     const apprData = (await apprRes.json()) as any;
     expect(apprData.success).toBe(true);

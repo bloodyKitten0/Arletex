@@ -109,8 +109,11 @@ export class ConversationRepository {
       }
 
       const title = input.title ?? existing.title;
-      const isPinned = input.isPinned !== undefined ? (input.isPinned ? 1 : 0) : (existing.isPinned ? 1 : 0);
-      const metadata = input.metadata ? { ...existing.metadata, ...input.metadata } : existing.metadata;
+      const isPinned =
+        input.isPinned !== undefined ? (input.isPinned ? 1 : 0) : existing.isPinned ? 1 : 0;
+      const metadata = input.metadata
+        ? { ...existing.metadata, ...input.metadata }
+        : existing.metadata;
       const now = new Date().toISOString();
 
       const stmt = this.db.prepare(`

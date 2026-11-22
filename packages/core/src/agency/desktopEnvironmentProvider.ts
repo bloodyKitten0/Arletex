@@ -81,7 +81,9 @@ export class DesktopEnvironmentProvider {
   /**
    * Scans system and user desktop entry directories for installed applications.
    */
-  public async discoverInstalledApplications(forceRescan = false): Promise<DesktopApplicationEntry[]> {
+  public async discoverInstalledApplications(
+    forceRescan = false,
+  ): Promise<DesktopApplicationEntry[]> {
     if (this.discoveredAppsCache && !forceRescan) {
       return this.discoveredAppsCache;
     }
@@ -115,7 +117,9 @@ export class DesktopEnvironmentProvider {
     }
 
     this.discoveredAppsCache = apps;
-    this.logger.info(`Discovered ${apps.length} installed desktop applications across host system.`);
+    this.logger.info(
+      `Discovered ${apps.length} installed desktop applications across host system.`,
+    );
     return apps;
   }
 
@@ -159,7 +163,10 @@ export class DesktopEnvironmentProvider {
     const basename = path.basename(filePath, '.desktop');
     const isFlatpak = filePath.includes('flatpak');
     const categories = fields['Categories']
-      ? fields['Categories'].split(';').map((c) => c.trim()).filter(Boolean)
+      ? fields['Categories']
+          .split(';')
+          .map((c) => c.trim())
+          .filter(Boolean)
       : [];
 
     return {
@@ -178,7 +185,10 @@ export class DesktopEnvironmentProvider {
   /**
    * Parses and cleans an Exec command line by stripping FreeDesktop field codes.
    */
-  public parseExecLine(execLine: string, extraArgs: string[] = []): { command: string; args: string[] } {
+  public parseExecLine(
+    execLine: string,
+    extraArgs: string[] = [],
+  ): { command: string; args: string[] } {
     const cleanExec = execLine.replace(/%[a-zA-Z]/g, '').trim();
     const parts = cleanExec.split(/\s+/).filter(Boolean);
     const command = parts[0] || '';
@@ -201,7 +211,8 @@ export class DesktopEnvironmentProvider {
 
     // 2. Starts with name match
     const startsWith = apps.find(
-      (a) => a.name.toLowerCase().startsWith(cleanQuery) || a.id.toLowerCase().startsWith(cleanQuery),
+      (a) =>
+        a.name.toLowerCase().startsWith(cleanQuery) || a.id.toLowerCase().startsWith(cleanQuery),
     );
     if (startsWith) return startsWith;
 
@@ -230,7 +241,9 @@ export class DesktopEnvironmentProvider {
     let cmdArgs: string[] = [];
 
     if (entry) {
-      this.logger.info(`Launching discovered desktop app: "${entry.name}" (${entry.desktopFilePath})`);
+      this.logger.info(
+        `Launching discovered desktop app: "${entry.name}" (${entry.desktopFilePath})`,
+      );
       // Parse Exec command, stripping desktop field codes (%f, %F, %u, %U, %d, %D, %n, %N, %i, %c, %k, %v, %m)
       const cleanExec = entry.exec.replace(/%[a-zA-Z]/g, '').trim();
       const parts = cleanExec.split(/\s+/).filter(Boolean);
@@ -239,7 +252,9 @@ export class DesktopEnvironmentProvider {
     } else {
       // Direct binary fallback
       if (appName.toLowerCase() === 'spotify') {
-        this.logger.info(`Spotify desktop app not installed; launching Spotify Web player in Arle's Chrome Profile 7.`);
+        this.logger.info(
+          `Spotify desktop app not installed; launching Spotify Web player in Arle's Chrome Profile 7.`,
+        );
         const browserRes = await this.openInArleBrowser('https://open.spotify.com');
         return {
           success: browserRes.success,
@@ -248,7 +263,9 @@ export class DesktopEnvironmentProvider {
         };
       }
 
-      this.logger.info(`Application "${appName}" not found in desktop manifests; attempting direct PATH launch.`);
+      this.logger.info(
+        `Application "${appName}" not found in desktop manifests; attempting direct PATH launch.`,
+      );
       command = appName;
       cmdArgs = [...args];
     }
@@ -286,10 +303,16 @@ export class DesktopEnvironmentProvider {
     url: string,
   ): Promise<{ success: boolean; pid?: number; message?: string }> {
     const targetUrl = url || 'https://google.com';
-    this.logger.info(`Opening URL in Arle's Chrome Profile 7 (arletex.email@gmail.com): ${targetUrl}`);
+    this.logger.info(
+      `Opening URL in Arle's Chrome Profile 7 (arletex.email@gmail.com): ${targetUrl}`,
+    );
 
     if (process.env['NODE_ENV'] === 'test' || process.env['VITEST']) {
-      return { success: true, pid: 99999, message: `Opened in Chrome Profile 7 (test mode): ${targetUrl}` };
+      return {
+        success: true,
+        pid: 99999,
+        message: `Opened in Chrome Profile 7 (test mode): ${targetUrl}`,
+      };
     }
 
     // Tab/Window de-duplication: avoid re-opening identical destination or duplicate tabs
@@ -298,8 +321,14 @@ export class DesktopEnvironmentProvider {
     if (isSpotify) {
       // If Spotify is already open on desktop, bring it to focus instead of spawning duplicate tabs
       const focused = await this.focusWindowByTitle('spotify');
-      if (focused && (DesktopEnvironmentProvider.lastOpenedBrowserUrl?.includes('spotify.com') || now - DesktopEnvironmentProvider.lastOpenedBrowserTime < 180000)) {
-        this.logger.info(`Spotify window already active on desktop; brought to focus without tab duplication.`);
+      if (
+        focused &&
+        (DesktopEnvironmentProvider.lastOpenedBrowserUrl?.includes('spotify.com') ||
+          now - DesktopEnvironmentProvider.lastOpenedBrowserTime < 180000)
+      ) {
+        this.logger.info(
+          `Spotify window already active on desktop; brought to focus without tab duplication.`,
+        );
         return {
           success: true,
           message: `Spotify is already open and brought to front (tab duplication prevented).`,
@@ -311,7 +340,9 @@ export class DesktopEnvironmentProvider {
       DesktopEnvironmentProvider.lastOpenedBrowserUrl === targetUrl &&
       now - DesktopEnvironmentProvider.lastOpenedBrowserTime < 30000
     ) {
-      this.logger.info(`URL "${targetUrl}" is already open in Chrome Profile 7; skipping redundant tab spawn.`);
+      this.logger.info(
+        `URL "${targetUrl}" is already open in Chrome Profile 7; skipping redundant tab spawn.`,
+      );
       return {
         success: true,
         message: `Google Chrome Profile 7 is already open at: ${targetUrl}`,
@@ -324,7 +355,8 @@ export class DesktopEnvironmentProvider {
       ...process.env,
       DISPLAY: process.env.DISPLAY || ':0',
       WAYLAND_DISPLAY: process.env.WAYLAND_DISPLAY || 'wayland-1',
-      XDG_RUNTIME_DIR: process.env.XDG_RUNTIME_DIR || `/run/user/${process.getuid ? process.getuid() : 1000}`,
+      XDG_RUNTIME_DIR:
+        process.env.XDG_RUNTIME_DIR || `/run/user/${process.getuid ? process.getuid() : 1000}`,
       XDG_SESSION_TYPE: 'wayland',
     };
 
@@ -338,15 +370,11 @@ export class DesktopEnvironmentProvider {
 
     // 1. Primary: Flatpak Google Chrome with Arle profile
     try {
-      const child = spawn(
-        'flatpak',
-        appArgs,
-        {
-          detached: true,
-          stdio: 'ignore',
-          env: envVars,
-        },
-      );
+      const child = spawn('flatpak', appArgs, {
+        detached: true,
+        stdio: 'ignore',
+        env: envVars,
+      });
       child.on('error', (err) => {
         this.logger.warn(`Failed to spawn flatpak chrome: ${err.message}`);
       });
@@ -357,20 +385,18 @@ export class DesktopEnvironmentProvider {
         message: `Opened in Google Chrome ${arleProfile} (${arleEmail}): ${targetUrl}`,
       };
     } catch (flatpakErr: any) {
-      this.logger.warn(`Flatpak Chrome launch failed: ${flatpakErr.message}; falling back to system binaries.`);
+      this.logger.warn(
+        `Flatpak Chrome launch failed: ${flatpakErr.message}; falling back to system binaries.`,
+      );
     }
 
     // 2. Secondary: System google-chrome with Arle profile
     try {
-      const child = spawn(
-        'google-chrome',
-        [`--profile-directory=${arleProfile}`, targetUrl],
-        {
-          detached: true,
-          stdio: 'ignore',
-          env: envVars,
-        },
-      );
+      const child = spawn('google-chrome', [`--profile-directory=${arleProfile}`, targetUrl], {
+        detached: true,
+        stdio: 'ignore',
+        env: envVars,
+      });
       child.on('error', (err) => {
         this.logger.warn(`Failed to spawn google-chrome: ${err.message}`);
       });
@@ -384,10 +410,18 @@ export class DesktopEnvironmentProvider {
 
     // 3. Fallback: xdg-open
     if (process.env['NODE_ENV'] === 'test' || process.env['VITEST']) {
-      return { success: true, pid: 99999, message: `Opened via default browser (test mode): ${targetUrl}` };
+      return {
+        success: true,
+        pid: 99999,
+        message: `Opened via default browser (test mode): ${targetUrl}`,
+      };
     }
     try {
-      const child = spawn('xdg-open', [targetUrl], { detached: true, stdio: 'ignore', env: envVars });
+      const child = spawn('xdg-open', [targetUrl], {
+        detached: true,
+        stdio: 'ignore',
+        env: envVars,
+      });
       child.on('error', (err) => {
         this.logger.warn(`Failed to spawn xdg-open browser: ${err.message}`);
       });
@@ -409,7 +443,9 @@ export class DesktopEnvironmentProvider {
     let resolvedPath: string | null = null;
 
     // 1. Check if raw is already an existing path
-    const candidatePath = raw.startsWith('~') ? path.join(os.homedir(), raw.slice(1)) : path.resolve(raw);
+    const candidatePath = raw.startsWith('~')
+      ? path.join(os.homedir(), raw.slice(1))
+      : path.resolve(raw);
     if (fs.existsSync(candidatePath)) {
       resolvedPath = candidatePath;
     } else {
@@ -436,7 +472,20 @@ export class DesktopEnvironmentProvider {
         }
 
         // Extension append match (e.g. "tenor (5)" -> "tenor (5).gif")
-        const commonExts = ['.gif', '.png', '.jpg', '.jpeg', '.webp', '.mp4', '.mkv', '.webm', '.pdf', '.txt', '.json', '.md'];
+        const commonExts = [
+          '.gif',
+          '.png',
+          '.jpg',
+          '.jpeg',
+          '.webp',
+          '.mp4',
+          '.mkv',
+          '.webm',
+          '.pdf',
+          '.txt',
+          '.json',
+          '.md',
+        ];
         let extFound = false;
         for (const ext of commonExts) {
           const withExt = path.join(dir, fileName + ext);
@@ -494,11 +543,18 @@ export class DesktopEnvironmentProvider {
       // If still not found, try recursive search in home directory using find with short timeout
       if (!resolvedPath) {
         try {
-          const { stdout } = await execFilePromise('find', [home, '-maxdepth', '4', '-name', `*${fileName}*`, '-type', 'f'], {
-            timeout: 3000,
-            encoding: 'utf-8',
-          });
-          const firstFound = stdout.split('\n').map((l) => l.trim()).find((l) => l.length > 0 && fs.existsSync(l));
+          const { stdout } = await execFilePromise(
+            'find',
+            [home, '-maxdepth', '4', '-name', `*${fileName}*`, '-type', 'f'],
+            {
+              timeout: 3000,
+              encoding: 'utf-8',
+            },
+          );
+          const firstFound = stdout
+            .split('\n')
+            .map((l) => l.trim())
+            .find((l) => l.length > 0 && fs.existsSync(l));
           if (firstFound) {
             resolvedPath = firstFound;
           }
@@ -514,7 +570,9 @@ export class DesktopEnvironmentProvider {
     }
 
     if (process.env['NODE_ENV'] === 'test' || process.env['VITEST']) {
-      this.logger.info(`Test environment detected: file "${resolvedPath}" verified without spawning GUI popup.`);
+      this.logger.info(
+        `Test environment detected: file "${resolvedPath}" verified without spawning GUI popup.`,
+      );
       return {
         success: true,
         resolvedPath,
@@ -527,7 +585,8 @@ export class DesktopEnvironmentProvider {
         ...process.env,
         DISPLAY: process.env.DISPLAY || ':0',
         WAYLAND_DISPLAY: process.env.WAYLAND_DISPLAY || 'wayland-1',
-        XDG_RUNTIME_DIR: process.env.XDG_RUNTIME_DIR || `/run/user/${process.getuid ? process.getuid() : 1000}`,
+        XDG_RUNTIME_DIR:
+          process.env.XDG_RUNTIME_DIR || `/run/user/${process.getuid ? process.getuid() : 1000}`,
       };
 
       const child = spawn('xdg-open', [resolvedPath], {
@@ -775,13 +834,17 @@ export class DesktopEnvironmentProvider {
         const titleMatch = metaOut.match(/string\s+"xesam:title"\s+variant\s+string\s+"([^"]+)"/);
         if (titleMatch && titleMatch[1]) trackTitle = titleMatch[1];
 
-        const artistMatch = metaOut.match(/string\s+"xesam:artist"\s+variant\s+array\s+\[\s+string\s+"([^"]+)"/);
+        const artistMatch = metaOut.match(
+          /string\s+"xesam:artist"\s+variant\s+array\s+\[\s+string\s+"([^"]+)"/,
+        );
         if (artistMatch && artistMatch[1]) artist = artistMatch[1];
 
         const albumMatch = metaOut.match(/string\s+"xesam:album"\s+variant\s+string\s+"([^"]+)"/);
         if (albumMatch && albumMatch[1]) album = albumMatch[1];
 
-        const lengthMatch = metaOut.match(/string\s+"mpris:length"\s+variant\s+(?:int64|uint64)\s+(\d+)/);
+        const lengthMatch = metaOut.match(
+          /string\s+"mpris:length"\s+variant\s+(?:int64|uint64)\s+(\d+)/,
+        );
         if (lengthMatch && lengthMatch[1]) {
           // MPRIS length is in microseconds
           durationSeconds = Math.round(parseInt(lengthMatch[1], 10) / 1000000);
@@ -923,7 +986,9 @@ export class DesktopEnvironmentProvider {
       const status = await this.getMprisMediaStatus(chosen);
       return { success: true, player: chosen, status };
     } catch (err: any) {
-      this.logger.warn(`Failed to execute MPRIS command "${method}" on "${chosen}": ${err.message}`);
+      this.logger.warn(
+        `Failed to execute MPRIS command "${method}" on "${chosen}": ${err.message}`,
+      );
       return { success: false, player: chosen };
     }
   }
@@ -987,10 +1052,21 @@ export class DesktopEnvironmentProvider {
       ]);
       const scriptId = stdout.trim();
       if (scriptId) {
-        await execFilePromise('qdbus-qt6', ['org.kde.KWin', `/Scripting/Script${scriptId}`, 'org.kde.kwin.Script.run']);
-        await execFilePromise('qdbus-qt6', ['org.kde.KWin', '/Scripting', 'org.kde.kwin.Scripting.unloadScript', scriptName]);
+        await execFilePromise('qdbus-qt6', [
+          'org.kde.KWin',
+          `/Scripting/Script${scriptId}`,
+          'org.kde.kwin.Script.run',
+        ]);
+        await execFilePromise('qdbus-qt6', [
+          'org.kde.KWin',
+          '/Scripting',
+          'org.kde.kwin.Scripting.unloadScript',
+          scriptName,
+        ]);
       }
-      try { fs.unlinkSync(scriptPath); } catch {}
+      try {
+        fs.unlinkSync(scriptPath);
+      } catch {}
       return true;
     } catch (err: any) {
       this.logger.debug(`KWin focus notice: ${err.message}`);

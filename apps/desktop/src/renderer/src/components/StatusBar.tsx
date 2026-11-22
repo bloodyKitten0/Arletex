@@ -48,7 +48,12 @@ export const StatusBar: React.FC<StatusBarProps> = ({
               display: 'inline-block',
             }}
           />
-          <span style={{ fontWeight: 500, color: isConnected ? 'var(--text-primary)' : 'var(--danger)' }}>
+          <span
+            style={{
+              fontWeight: 500,
+              color: isConnected ? 'var(--text-primary)' : 'var(--danger)',
+            }}
+          >
             {statusLabel}
           </span>
         </div>
@@ -99,11 +104,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
               color: isGenerating && speedTps > 0 ? 'var(--accent)' : 'var(--text-secondary)',
             }}
           >
-            {isGenerating
-              ? speedTps > 0
-                ? `${speedTps} t/s`
-                : 'evaluating...'
-              : '0.0 t/s'}
+            {isGenerating ? (speedTps > 0 ? `${speedTps} t/s` : 'evaluating...') : '0.0 t/s'}
           </span>
         </div>
       </div>
@@ -128,7 +129,16 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         </div>
 
         {health?.error && (
-          <span style={{ color: 'var(--danger)', fontSize: '11px', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span
+            style={{
+              color: 'var(--danger)',
+              fontSize: '11px',
+              maxWidth: '300px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
             {health.error}
           </span>
         )}

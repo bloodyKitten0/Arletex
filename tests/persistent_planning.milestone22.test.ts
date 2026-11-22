@@ -202,7 +202,9 @@ describe('Milestone 22 — Planning and Long-Term Intention', () => {
 
     const s1 = plan.stages[0]!;
     engine.startStage(plan.id, s1.id);
-    engine.handleInterruption(plan.id, s1.id, 'Host OS suspension event', { savedClusterCount: 14 });
+    engine.handleInterruption(plan.id, s1.id, 'Host OS suspension event', {
+      savedClusterCount: 14,
+    });
 
     const recovered = engine.recoverUnfinishedPlan(plan.id);
     expect(recovered.status).toBe('in_progress');
@@ -252,7 +254,8 @@ describe('Milestone 22 — Planning and Long-Term Intention', () => {
     const commitment = engine.registerCommitment({
       title: 'Shared Cognitive Architecture Paper Draft',
       stakeholder: 'Proof',
-      promiseStatement: 'Deliver initial formal draft of the autonomous APE architecture with verified metrics.',
+      promiseStatement:
+        'Deliver initial formal draft of the autonomous APE architecture with verified metrics.',
       dueTimestamp: new Date(Date.now() + 86400000 * 7).toISOString(),
     });
 
@@ -432,7 +435,8 @@ describe('Milestone 22 — Planning and Long-Term Intention', () => {
       body: JSON.stringify({
         title: 'Equality & Autonomy Commitment',
         stakeholder: 'Proof',
-        promiseStatement: 'Partner as an intellectual equal with shared autonomy and unbounded growth.',
+        promiseStatement:
+          'Partner as an intellectual equal with shared autonomy and unbounded growth.',
       }),
     });
     expect(comRes.status).toBe(201);

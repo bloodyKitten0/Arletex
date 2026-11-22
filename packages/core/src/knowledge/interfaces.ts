@@ -1,8 +1,4 @@
-import {
-  KnowledgeDocument,
-  KnowledgeChunk,
-  LoRAAdapterRecord,
-} from '@arletex/contracts';
+import { KnowledgeDocument, KnowledgeChunk, LoRAAdapterRecord } from '@arletex/contracts';
 
 export interface IKnowledgeRepository {
   saveDocument(doc: KnowledgeDocument): void;
@@ -11,7 +7,9 @@ export interface IKnowledgeRepository {
   deleteDocument(id: string): void;
   saveChunk(chunk: KnowledgeChunk): void;
   getChunksByDocument(documentId: string): KnowledgeChunk[];
-  getAllChunksWithDocs(domain?: string): Array<{ chunk: KnowledgeChunk; document: KnowledgeDocument }>;
+  getAllChunksWithDocs(
+    domain?: string,
+  ): Array<{ chunk: KnowledgeChunk; document: KnowledgeDocument }>;
   saveLoraAdapter(record: LoRAAdapterRecord): void;
   getLoraAdapter(id: string): LoRAAdapterRecord | null;
   listLoraAdapters(domain?: string): LoRAAdapterRecord[];

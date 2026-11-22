@@ -12,11 +12,7 @@ import {
   MetacognitionEngine,
   InMemoryMetacognitionRepository,
 } from '@arletex/core';
-import {
-  DatabaseService,
-  MigrationRunner,
-  SqliteMetacognitionRepository,
-} from '@arletex/database';
+import { DatabaseService, MigrationRunner, SqliteMetacognitionRepository } from '@arletex/database';
 import { ArletexBackendServer } from '../apps/desktop/src/backend/server.js';
 
 describe('Milestone 18 — Metacognition', () => {
@@ -105,7 +101,11 @@ describe('Milestone 18 — Metacognition', () => {
     const sufficient = engine.assessEvidenceSufficiency({
       claim: 'Typecheck passes across monorepo workspace projects',
       evidenceItems: [
-        { statement: 'tsc -b passed with 0 errors in contracts, core, and database', reliability: 1.0, isDirect: true },
+        {
+          statement: 'tsc -b passed with 0 errors in contracts, core, and database',
+          reliability: 1.0,
+          isDirect: true,
+        },
         { statement: 'pnpm run typecheck finished in 2.5s', reliability: 0.95, isDirect: true },
       ],
     });
@@ -116,7 +116,8 @@ describe('Milestone 18 — Metacognition', () => {
 
   // 4. Assumption Identification
   it('should uncover implicit and explicit assumptions embedded in cognitive claims', () => {
-    const text = 'Assuming that the network connection is persistent, obviously the batch download will succeed by default.';
+    const text =
+      'Assuming that the network connection is persistent, obviously the batch download will succeed by default.';
     const assumptions = engine.identifyAssumptions(text);
 
     expect(assumptions.length).toBeGreaterThanOrEqual(2);
@@ -132,14 +133,18 @@ describe('Milestone 18 — Metacognition', () => {
     });
 
     expect(circularEval.score).toBeLessThan(0.7);
-    expect(circularEval.recognizedErrors.some((e) => e.description.includes('Circular reasoning'))).toBe(true);
+    expect(
+      circularEval.recognizedErrors.some((e) => e.description.includes('Circular reasoning')),
+    ).toBe(true);
 
     const overgeneralEval = engine.assessReasoningQuality({
       premises: ['Observation: task 1 succeeded without memory leak.'],
       conclusion: 'All tasks will always succeed with zero leaks.',
     });
 
-    expect(overgeneralEval.recognizedErrors.some((e) => e.type === 'overgeneralization')).toBe(true);
+    expect(overgeneralEval.recognizedErrors.some((e) => e.type === 'overgeneralization')).toBe(
+      true,
+    );
   });
 
   // 6. Comprehensive Metacognitive Evaluation & Uncertainty Recognition
@@ -173,7 +178,8 @@ describe('Milestone 18 — Metacognition', () => {
     const correction = engine.initiateSelfCorrection({
       assessmentId: 'assess-target-1',
       originalClaim: 'Memory subsystem is completely flawless and invulnerable.',
-      correctedClaim: 'Memory subsystem is validated under normal load, but edge-case stress requires ongoing observation.',
+      correctedClaim:
+        'Memory subsystem is validated under normal load, but edge-case stress requires ongoing observation.',
       confidenceAdjustment: -0.35,
       rationale: 'Attenuated unverified absolute claim identified during metacognitive audit.',
     });
@@ -226,7 +232,9 @@ describe('Milestone 18 — Metacognition', () => {
       assessedAt: new Date().toISOString(),
     };
 
-    expect(() => assertMetacognitiveIntegrity(corruptAssessment)).toThrow(/Negative Invariant Violation \(Overconfidence\)/);
+    expect(() => assertMetacognitiveIntegrity(corruptAssessment)).toThrow(
+      /Negative Invariant Violation \(Overconfidence\)/,
+    );
   });
 
   // 10. Negative Invariant: Unaddressed high-severity contradiction check
@@ -259,7 +267,9 @@ describe('Milestone 18 — Metacognition', () => {
       assessedAt: new Date().toISOString(),
     };
 
-    expect(() => assertMetacognitiveIntegrity(ignoredContradictionAssessment)).toThrow(/Unresolved high-severity contradiction exists/);
+    expect(() => assertMetacognitiveIntegrity(ignoredContradictionAssessment)).toThrow(
+      /Unresolved high-severity contradiction exists/,
+    );
   });
 
   // 11. SQLite Repository Persistence & Roundtrip
@@ -272,7 +282,11 @@ describe('Milestone 18 — Metacognition', () => {
       claim: 'SQLite write-ahead-logging guarantees crash resilience',
       statedConfidence: 0.9,
       evidenceItems: [
-        { statement: 'Official SQLite documentation on WAL mode', reliability: 0.95, isDirect: true },
+        {
+          statement: 'Official SQLite documentation on WAL mode',
+          reliability: 0.95,
+          isDirect: true,
+        },
       ],
     });
 

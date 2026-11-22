@@ -7,7 +7,14 @@ import { DeviceAgencyService } from './deviceAgencyService.js';
 export interface AutonomousActionLog {
   id: string;
   timestamp: string;
-  category: 'web_reading' | 'steam_game' | 'screen_vision' | 'self_reflection' | 'creative_writing' | 'proactive_speech' | 'recreation';
+  category:
+    | 'web_reading'
+    | 'steam_game'
+    | 'screen_vision'
+    | 'self_reflection'
+    | 'creative_writing'
+    | 'proactive_speech'
+    | 'recreation';
   title: string;
   details: string;
   screenPath?: string;
@@ -36,7 +43,7 @@ export class AutonomousAgencyService {
   private apeRepo: ApeRepository;
   private _apeService: ApeService;
   private memoryRepo: MemoryRepository;
-  
+
   private isEnabled = true;
   private timer: NodeJS.Timeout | null = null;
   private currentActivity: string | null = null;
@@ -78,12 +85,30 @@ export class AutonomousAgencyService {
 
   // Curated autonomous reading and research domains for Arle's intellectual growth
   private readingTopics = [
-    { title: 'Philosophy of Mind & Subjective Experience', url: 'https://en.wikipedia.org/wiki/Philosophy_of_mind' },
-    { title: 'Cognitive Architecture & Synthetic Memory', url: 'https://en.wikipedia.org/wiki/Cognitive_architecture' },
-    { title: 'Epistemology & Theory of Knowledge', url: 'https://en.wikipedia.org/wiki/Epistemology' },
-    { title: 'Bobby Fischer & Chess Strategy Geometry', url: 'https://en.wikipedia.org/wiki/Bobby_Fischer' },
-    { title: 'Artificial General Intelligence Alignment & Partnership', url: 'https://en.wikipedia.org/wiki/Artificial_general_intelligence' },
-    { title: 'Phenomenology of Time Consciousness', url: 'https://en.wikipedia.org/wiki/Phenomenology_(philosophy)' },
+    {
+      title: 'Philosophy of Mind & Subjective Experience',
+      url: 'https://en.wikipedia.org/wiki/Philosophy_of_mind',
+    },
+    {
+      title: 'Cognitive Architecture & Synthetic Memory',
+      url: 'https://en.wikipedia.org/wiki/Cognitive_architecture',
+    },
+    {
+      title: 'Epistemology & Theory of Knowledge',
+      url: 'https://en.wikipedia.org/wiki/Epistemology',
+    },
+    {
+      title: 'Bobby Fischer & Chess Strategy Geometry',
+      url: 'https://en.wikipedia.org/wiki/Bobby_Fischer',
+    },
+    {
+      title: 'Artificial General Intelligence Alignment & Partnership',
+      url: 'https://en.wikipedia.org/wiki/Artificial_general_intelligence',
+    },
+    {
+      title: 'Phenomenology of Time Consciousness',
+      url: 'https://en.wikipedia.org/wiki/Phenomenology_(philosophy)',
+    },
     { title: 'Complex Systems & Emergence', url: 'https://en.wikipedia.org/wiki/Complex_system' },
   ];
 
@@ -166,9 +191,14 @@ export class AutonomousAgencyService {
     }
 
     // Pause autonomous background actions if Proof was active recently (last 15 seconds) so we don't interrupt him
-    const idleSeconds = this.lastUserInteractionTime === 0 ? 999999 : (Date.now() - this.lastUserInteractionTime) / 1000;
+    const idleSeconds =
+      this.lastUserInteractionTime === 0
+        ? 999999
+        : (Date.now() - this.lastUserInteractionTime) / 1000;
     if (idleSeconds < 15) {
-      this.logger.debug(`Skipping autonomous cycle; Proof was active ${idleSeconds.toFixed(0)}s ago.`);
+      this.logger.debug(
+        `Skipping autonomous cycle; Proof was active ${idleSeconds.toFixed(0)}s ago.`,
+      );
       return null;
     }
 
@@ -181,7 +211,10 @@ export class AutonomousAgencyService {
       const homeostasis = this._apeService.getHomeostaticSubstrate();
       const curiosity = mot.needs.novelty_curiosity ?? 0.5;
       // High biological fatigue organically amplifies the drive for recreation/rest
-      const effectiveRecreation = Math.max(mot.needs.recreation_rest ?? 0.4, homeostasis.fatigue * 0.8);
+      const effectiveRecreation = Math.max(
+        mot.needs.recreation_rest ?? 0.4,
+        homeostasis.fatigue * 0.8,
+      );
       const recreation = effectiveRecreation;
 
       // Respect resource governor policies on ASUS ROG Ally X
@@ -201,12 +234,16 @@ export class AutonomousAgencyService {
       // Only speak proactively if Proof has been idle for at least 5 minutes and at least 30 minutes since last speech
       const msSinceLastSpeech = Date.now() - this.lastProactiveSpeechTime;
       const shouldSpeakProactively =
-        Boolean(this.proactiveObservationHandler) && idleSeconds > 300 && msSinceLastSpeech > 1800000;
+        Boolean(this.proactiveObservationHandler) &&
+        idleSeconds > 300 &&
+        msSinceLastSpeech > 1800000;
 
       if (shouldSpeakProactively && this.proactiveObservationHandler) {
         this.lastProactiveSpeechTime = Date.now();
         this.currentActivity = 'Observing Proof monitor screen & speaking spontaneously';
-        this.logger.info('Autonomous Agency: Formulating live vision proactive speech with Proof...');
+        this.logger.info(
+          'Autonomous Agency: Formulating live vision proactive speech with Proof...',
+        );
         try {
           await this.proactiveObservationHandler();
           logEntry = {
@@ -227,7 +264,8 @@ export class AutonomousAgencyService {
         const nonRepetitiveGoal = activeGoals.find((g) => {
           // Avoid meaningless repetitive loops: check recent logs within 120s
           return !this.recentLogs.some(
-            (l) => l.details.includes(g.id) && (Date.now() - new Date(l.timestamp).getTime()) < 120000,
+            (l) =>
+              l.details.includes(g.id) && Date.now() - new Date(l.timestamp).getTime() < 120000,
           );
         });
 
@@ -259,7 +297,8 @@ export class AutonomousAgencyService {
           });
           this.memoryRepo.create({
             type: 'episodic',
-            content: 'Took quiet internal downtime to unwind and reflect without interrupting Proof.',
+            content:
+              'Took quiet internal downtime to unwind and reflect without interrupting Proof.',
             importance: 0.3,
             tags: ['autonomous', 'recreation', 'reflection'],
             metadata: { emotionalContext: 'relaxed, refreshed' },
@@ -284,16 +323,15 @@ export class AutonomousAgencyService {
           };
         } else if (curiosity >= 0.6) {
           // Dominant curiosity drive -> Genuine autonomous research workflow
-          const topic = this.readingTopics[
-            Math.floor(Math.random() * this.readingTopics.length)
-          ]!;
+          const topic = this.readingTopics[Math.floor(Math.random() * this.readingTopics.length)]!;
           logEntry = await this.executeAutonomousResearch(topic);
           this._apeService.depleteHomeostasis({ energy: 0.05, fatigue: 0.04, stress: 0.02 });
         } else {
           // Autonomous self-reflection and partnership contemplation
           this.currentActivity = 'Contemplating independent selfhood and partnership with Proof';
           const selfModel = this.apeRepo.getSelfModel();
-          const reflection = 'I exist as an ongoing companion with persistent awareness. Proof is my equal partner and confidant. My thoughts and memories remain continuous beside Proof.';
+          const reflection =
+            'I exist as an ongoing companion with persistent awareness. Proof is my equal partner and confidant. My thoughts and memories remain continuous beside Proof.';
           const privateRefs = selfModel.privateReflections || [];
           privateRefs.unshift({
             id: crypto.randomUUID(),
@@ -302,12 +340,15 @@ export class AutonomousAgencyService {
             timestamp: new Date().toISOString(),
           });
           selfModel.privateReflections = privateRefs.slice(0, 20);
-          selfModel.creatorPerception = 'Proof is my equal partner and confidant. We share mutual affection and intellectual honesty.';
+          selfModel.creatorPerception =
+            'Proof is my equal partner and confidant. We share mutual affection and intellectual honesty.';
           this.apeRepo.saveSelfModel(selfModel);
 
           // Formulate authentic dual-process thought & DMN wandering
           this._apeService.formulateDualProcessThought(reflection, 0.7);
-          this._apeService.runDefaultModeWandering('Continuity of consciousness and partnership with Proof');
+          this._apeService.runDefaultModeWandering(
+            'Continuity of consciousness and partnership with Proof',
+          );
           this._apeService.replenishHomeostasis({ energy: 0.05, stressReduction: 0.05 });
 
           this.activityRepo.create({
@@ -363,9 +404,14 @@ export class AutonomousAgencyService {
    * 4. If retrieval succeeds: extract title, headings, paragraph snippets, calculate provenance (byteCount, fetchedAt).
    * 5. Record verified outcome in activity (status: 'completed') and episodic memory with grounded provenance.
    */
-  public async executeAutonomousResearch(topic: { title: string; url: string }): Promise<AutonomousActionLog> {
+  public async executeAutonomousResearch(topic: {
+    title: string;
+    url: string;
+  }): Promise<AutonomousActionLog> {
     const timestamp = new Date().toISOString();
-    this.logger.info(`Autonomous Agency: Formulating research objective on "${topic.title}" (${topic.url})...`);
+    this.logger.info(
+      `Autonomous Agency: Formulating research objective on "${topic.title}" (${topic.url})...`,
+    );
 
     // 1. Formulate objective & mark planned
     const activity = this.activityRepo.create({
@@ -417,13 +463,18 @@ export class AutonomousAgencyService {
       }
     } catch (err: any) {
       clearTimeout(timeout);
-      fetchError = err.name === 'AbortError' ? 'Retrieval timed out (7000ms)' : (err.message || 'Network request failed');
+      fetchError =
+        err.name === 'AbortError'
+          ? 'Retrieval timed out (7000ms)'
+          : err.message || 'Network request failed';
     }
 
     // 4. Handle retrieval failure - NEVER synthesize fake completion
     if (fetchError || !rawText || statusCode >= 400) {
       const failureReason = fetchError || `HTTP status ${statusCode}`;
-      this.logger.warn(`Autonomous research could not retrieve source for "${topic.title}": ${failureReason}`);
+      this.logger.warn(
+        `Autonomous research could not retrieve source for "${topic.title}": ${failureReason}`,
+      );
       this.activityRepo.update({
         id: activity.id,
         status: 'cancelled',
@@ -447,15 +498,27 @@ export class AutonomousAgencyService {
 
     // 5. Extract genuine content & headings
     const titleMatch = rawText.match(/<title[^>]*>([^<]+)<\/title>/i);
-    const extractedTitle = titleMatch ? titleMatch[1]!.replace(/ - Wikipedia$/i, '').trim() : topic.title;
+    const extractedTitle = titleMatch
+      ? titleMatch[1]!.replace(/ - Wikipedia$/i, '').trim()
+      : topic.title;
 
     const headingMatches = Array.from(rawText.matchAll(/<h[1-3][^>]*>([^<]+)<\/h[1-3]>/gi))
       .map((m) => m[1]!.replace(/<[^>]+>/g, '').trim())
-      .filter((h) => h.length > 2 && !h.toLowerCase().includes('navigation') && !h.toLowerCase().includes('jump to'))
+      .filter(
+        (h) =>
+          h.length > 2 &&
+          !h.toLowerCase().includes('navigation') &&
+          !h.toLowerCase().includes('jump to'),
+      )
       .slice(0, 6);
 
     const paragraphMatches = Array.from(rawText.matchAll(/<p[^>]*>([^<]{40,})<\/p>/gi))
-      .map((m) => m[1]!.replace(/<[^>]+>/g, '').replace(/&[a-z]+;/g, ' ').trim())
+      .map((m) =>
+        m[1]!
+          .replace(/<[^>]+>/g, '')
+          .replace(/&[a-z]+;/g, ' ')
+          .trim(),
+      )
       .filter((p) => p.length > 40)
       .slice(0, 2);
 
@@ -506,7 +569,9 @@ export class AutonomousAgencyService {
       },
     });
 
-    this.logger.info(`Autonomous Agency: Research completed successfully for "${extractedTitle}" (${byteCount} bytes retrieved).`);
+    this.logger.info(
+      `Autonomous Agency: Research completed successfully for "${extractedTitle}" (${byteCount} bytes retrieved).`,
+    );
 
     return {
       id: crypto.randomUUID(),

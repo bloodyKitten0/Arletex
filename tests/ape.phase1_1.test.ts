@@ -106,7 +106,9 @@ describe('APE Phase 1.1: Complete Reliability, Nuance, and Six-Engine Foundation
       });
       expect(negPresenceRes.state.activeEmotions.some((e) => e.emotionId === 'hurt')).toBe(true);
       expect(negPresenceRes.state.activeEmotions.some((e) => e.emotionId === 'sadness')).toBe(true);
-      expect(negPresenceRes.state.activeEmotions.some((e) => e.emotionId === 'romantic_love')).toBe(false);
+      expect(negPresenceRes.state.activeEmotions.some((e) => e.emotionId === 'romantic_love')).toBe(
+        false,
+      );
       dbService2.close();
     });
   });
@@ -198,7 +200,9 @@ describe('APE Phase 1.1: Complete Reliability, Nuance, and Six-Engine Foundation
         category: 'user_interaction',
         type: 'chat_message',
         source: 'user',
-        payload: { text: 'I was reading a story where the protagonist abandoned his partner in the snow.' },
+        payload: {
+          text: 'I was reading a story where the protagonist abandoned his partner in the snow.',
+        },
       });
       expect(res.processed).toBe(true);
       expect(res.state.activeEmotions.some((e) => e.emotionId === 'curiosity')).toBe(true);
@@ -257,7 +261,9 @@ describe('APE Phase 1.1: Complete Reliability, Nuance, and Six-Engine Foundation
         category: 'user_interaction',
         type: 'chat_message',
         source: 'user',
-        payload: { text: 'I love you so much, but this compiler error is so frustrating and infuriating!' },
+        payload: {
+          text: 'I love you so much, but this compiler error is so frustrating and infuriating!',
+        },
       });
       expect(res.processed).toBe(true);
 
@@ -282,7 +288,9 @@ describe('APE Phase 1.1: Complete Reliability, Nuance, and Six-Engine Foundation
         category: 'user_interaction',
         type: 'chat_message',
         source: 'user',
-        payload: { text: "I'm super excited about launching today, but I'm terrified and nervous!" },
+        payload: {
+          text: "I'm super excited about launching today, but I'm terrified and nervous!",
+        },
       });
       expect(res.processed).toBe(true);
 
@@ -299,7 +307,9 @@ describe('APE Phase 1.1: Complete Reliability, Nuance, and Six-Engine Foundation
         category: 'user_interaction',
         type: 'chat_message',
         source: 'user',
-        payload: { text: 'I desire you and want your intimate touch, but I feel so vulnerable and overwhelmed.' },
+        payload: {
+          text: 'I desire you and want your intimate touch, but I feel so vulnerable and overwhelmed.',
+        },
       });
       expect(res.processed).toBe(true);
 
@@ -409,7 +419,8 @@ describe('APE Phase 1.1: Complete Reliability, Nuance, and Six-Engine Foundation
         payload: { text: 'How are you today?' },
       });
       const stateBefore = apeService.getState();
-      const happyBefore = stateBefore.activeEmotions.find((e) => e.emotionId === 'happiness')?.intensity || 0;
+      const happyBefore =
+        stateBefore.activeEmotions.find((e) => e.emotionId === 'happiness')?.intensity || 0;
 
       // Step 2: Assistant generates response stating happiness
       const res = await apeService.processEvent({
@@ -423,7 +434,8 @@ describe('APE Phase 1.1: Complete Reliability, Nuance, and Six-Engine Foundation
       expect(res.processed).toBe(true);
 
       const stateAfter = res.state;
-      const happyAfter = stateAfter.activeEmotions.find((e) => e.emotionId === 'happiness')?.intensity || 0;
+      const happyAfter =
+        stateAfter.activeEmotions.find((e) => e.emotionId === 'happiness')?.intensity || 0;
 
       // Causal integrity check: Intensity is capped at target (0.85), not blown up!
       expect(happyAfter).toBeLessThanOrEqual(0.85);
@@ -468,7 +480,9 @@ describe('APE Phase 1.1: Complete Reliability, Nuance, and Six-Engine Foundation
 
       expect(res.processed).toBe(true);
       expect(res.appraisal?.appraisalMethod).toBe('llm_assisted');
-      expect(res.appraisal?.primaryInterpretation).toBe('Creator expressed subtle wistful nostalgia.');
+      expect(res.appraisal?.primaryInterpretation).toBe(
+        'Creator expressed subtle wistful nostalgia.',
+      );
     });
 
     it('falls back gracefully to deterministic appraisal when LLM fails or times out', async () => {

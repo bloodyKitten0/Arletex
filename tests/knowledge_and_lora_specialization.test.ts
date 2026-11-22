@@ -13,11 +13,7 @@ import {
   AdapterLifecycleManager,
   rootLogger,
 } from '@arletex/core';
-import {
-  DatabaseService,
-  MigrationRunner,
-  SqliteKnowledgeRepository,
-} from '@arletex/database';
+import { DatabaseService, MigrationRunner, SqliteKnowledgeRepository } from '@arletex/database';
 
 describe('Phase 6: Knowledge Acquisition, RAG & Autonomous LoRA Specialization', () => {
   let tempDir: string;
@@ -82,7 +78,8 @@ In Alzheimer's disease, the hippocampus is one of the first regions of the brain
       sourceUri: 'https://harrison.med/ch3.html',
       author: 'Harrison',
       reliabilityScore: 0.98,
-      content: 'Hypoglycemia is defined as a plasma glucose concentration low enough to cause symptoms, typically below 70 mg/dL. Symptoms include sweating, tremors, tachycardia, confusion, and dizziness.',
+      content:
+        'Hypoglycemia is defined as a plasma glucose concentration low enough to cause symptoms, typically below 70 mg/dL. Symptoms include sweating, tremors, tachycardia, confusion, and dizziness.',
     });
 
     await kb.ingestAndIndex({
@@ -91,10 +88,13 @@ In Alzheimer's disease, the hippocampus is one of the first regions of the brain
       sourceUri: 'https://arxiv.org/abs/hep-th/0001',
       author: 'Weinberg',
       reliabilityScore: 0.92,
-      content: 'In quantum field theory, particle interactions are represented by Feynman diagrams and calculated using perturbation theory in Fock space.',
+      content:
+        'In quantum field theory, particle interactions are represented by Feynman diagrams and calculated using perturbation theory in Fock space.',
     });
 
-    const searchResults = await kb.search('glucose plasma concentration symptoms', { domain: 'medicine' });
+    const searchResults = await kb.search('glucose plasma concentration symptoms', {
+      domain: 'medicine',
+    });
 
     expect(searchResults.length).toBeGreaterThan(0);
     const topResult = searchResults[0]!;
@@ -108,11 +108,18 @@ In Alzheimer's disease, the hippocampus is one of the first regions of the brain
   it('3. ResearchEvaluationEngine detects contradictions and synthesizes evidence-weighted resolutions', () => {
     const engine = new ResearchEvaluationEngine();
 
-    const academicEval = engine.evaluateSource('https://ncbi.nlm.nih.gov/pmc/articles/PMC1234567/', 'Dr. Alice Smith');
+    const academicEval = engine.evaluateSource(
+      'https://ncbi.nlm.nih.gov/pmc/articles/PMC1234567/',
+      'Dr. Alice Smith',
+    );
     expect(academicEval.recommendation).toBe('trust');
     expect(academicEval.credibilityScore).toBeGreaterThanOrEqual(0.85);
 
-    const blogEval = engine.evaluateSource('http://miracle-cures-daily.xyz/page', 'Anonymous', 'CLICK HERE for 100% Guaranteed miracle remedy');
+    const blogEval = engine.evaluateSource(
+      'http://miracle-cures-daily.xyz/page',
+      'Anonymous',
+      'CLICK HERE for 100% Guaranteed miracle remedy',
+    );
     expect(blogEval.recommendation).toBe('unreliable');
     expect(blogEval.credibilityScore).toBeLessThan(0.4);
 
@@ -120,12 +127,16 @@ In Alzheimer's disease, the hippocampus is one of the first regions of the brain
       {
         documentTitle: 'Lancet Randomized Trial on Drug X',
         reliabilityScore: 0.95,
-        chunk: { content: 'Drug X is effective and proven to significantly reduce inflammatory cytokines.' },
+        chunk: {
+          content: 'Drug X is effective and proven to significantly reduce inflammatory cytokines.',
+        },
       },
       {
         documentTitle: 'Preliminary Anecdotal Blog',
-        reliabilityScore: 0.40,
-        chunk: { content: 'Drug X is ineffective and false claims have been made regarding its benefits.' },
+        reliabilityScore: 0.4,
+        chunk: {
+          content: 'Drug X is ineffective and false claims have been made regarding its benefits.',
+        },
       },
     ];
 
@@ -151,11 +162,31 @@ In Alzheimer's disease, the hippocampus is one of the first regions of the brain
 
     const dataEngine = new TrainingDataEngine();
     const mockChunks = [
-      { id: 'c1', content: 'Cerebrospinal fluid is produced predominantly by the choroid plexus of the lateral, third, and fourth ventricles.' },
-      { id: 'c2', content: 'Glomerular filtration rate is regulated by intrinsic autoregulation (myogenic mechanism and tubuloglomerular feedback).' },
-      { id: 'c3', content: 'The Frank-Starling law of the heart states that the stroke volume increases in response to an increase in end-diastolic volume.' },
-      { id: 'c4', content: 'Renin is an aspartic protease secreted by the juxtaglomerular cells of the kidney in response to low arterial pressure.' },
-      { id: 'c5', content: 'Action potentials in cardiac myocytes exhibit a prolonged plateau phase mediated by L-type calcium channels.' },
+      {
+        id: 'c1',
+        content:
+          'Cerebrospinal fluid is produced predominantly by the choroid plexus of the lateral, third, and fourth ventricles.',
+      },
+      {
+        id: 'c2',
+        content:
+          'Glomerular filtration rate is regulated by intrinsic autoregulation (myogenic mechanism and tubuloglomerular feedback).',
+      },
+      {
+        id: 'c3',
+        content:
+          'The Frank-Starling law of the heart states that the stroke volume increases in response to an increase in end-diastolic volume.',
+      },
+      {
+        id: 'c4',
+        content:
+          'Renin is an aspartic protease secreted by the juxtaglomerular cells of the kidney in response to low arterial pressure.',
+      },
+      {
+        id: 'c5',
+        content:
+          'Action potentials in cardiac myocytes exhibit a prolonged plateau phase mediated by L-type calcium channels.',
+      },
     ];
 
     const { trainSet, evalSet } = dataEngine.generateTrainingData('medicine', mockChunks);
@@ -179,9 +210,7 @@ In Alzheimer's disease, the hippocampus is one of the first regions of the brain
       driver: mockDriver,
     });
 
-    const mockDataset = [
-      { instruction: 'What produces CSF?', response: 'Choroid plexus.' },
-    ];
+    const mockDataset = [{ instruction: 'What produces CSF?', response: 'Choroid plexus.' }];
 
     const adapter = await trainer.trainAdapter({
       name: 'Arle Medical Specialist',
@@ -190,13 +219,13 @@ In Alzheimer's disease, the hippocampus is one of the first regions of the brain
       dataset: mockDataset,
       evalSet: mockDataset,
       config: { rank: 16, alpha: 32, epochs: 3 },
-      baselineAccuracy: 0.60,
+      baselineAccuracy: 0.6,
     });
 
     expect(adapter.status).toBe('registered');
     expect(adapter.weightsPath).toBe('/models/lora/medicine_specialist.safetensors');
     expect(adapter.evaluationMetrics?.approvedForDeployment).toBe(true);
-    expect(adapter.evaluationMetrics?.targetDomainScore).toBeGreaterThan(0.70);
+    expect(adapter.evaluationMetrics?.targetDomainScore).toBeGreaterThan(0.7);
     expect(adapter.evaluationMetrics?.generalKnowledgeRetention).toBeGreaterThanOrEqual(0.95);
     expect(mockDriver.executeTraining).toHaveBeenCalledTimes(1);
 
@@ -214,7 +243,14 @@ In Alzheimer's disease, the hippocampus is one of the first regions of the brain
       domain: 'medicine',
       baseModelId: 'Qwen2.5-14B-Uncensored',
       status: 'registered',
-      config: { rank: 16, alpha: 32, learningRate: 0.0002, epochs: 3, targetModules: ['q_proj'], batchSize: 4 },
+      config: {
+        rank: 16,
+        alpha: 32,
+        learningRate: 0.0002,
+        epochs: 3,
+        targetModules: ['q_proj'],
+        batchSize: 4,
+      },
       evaluationMetrics: {
         targetDomainScore: 0.88,
         generalKnowledgeRetention: 0.97,
@@ -233,7 +269,9 @@ In Alzheimer's disease, the hippocampus is one of the first regions of the brain
     expect(manager.getActiveAdapter()?.id).toBe('adapter-med-1');
 
     // Rollback
-    const rollbackRes = manager.rollbackActiveAdapter('Regression detected in conversational coherence');
+    const rollbackRes = manager.rollbackActiveAdapter(
+      'Regression detected in conversational coherence',
+    );
     expect(rollbackRes.rolledBackId).toBe('adapter-med-1');
     expect(rollbackRes.newStatus).toBe('base_model');
     expect(manager.getActiveAdapter()).toBeNull();

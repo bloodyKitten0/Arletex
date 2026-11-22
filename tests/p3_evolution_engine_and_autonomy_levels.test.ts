@@ -58,7 +58,7 @@ describe('Priority 3.3 & 3.4 — Evolution Engine & Autonomy Levels', () => {
       'regex_benchmark',
       ['case_1'],
       'Performance regression',
-      0.80,
+      0.8,
     );
 
     const proposal = evolution.createChangeProposal(
@@ -78,7 +78,7 @@ describe('Priority 3.3 & 3.4 — Evolution Engine & Autonomy Levels', () => {
     expect(updatedProposal?.status).toBe('rejected_regression');
 
     // 2. Test sandbox compilation failure
-    const compFailureEval = evolution.evaluateInSandbox(proposal, 0.90, { typecheckFails: true });
+    const compFailureEval = evolution.evaluateInSandbox(proposal, 0.9, { typecheckFails: true });
     expect(compFailureEval.decision).toBe('reject_regression');
     expect(compFailureEval.reason).toContain('Typecheck failed');
   });

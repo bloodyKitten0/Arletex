@@ -13,11 +13,7 @@ import {
   EthicalBoundariesSecurityEngine,
   rootLogger,
 } from '@arletex/core';
-import {
-  ApeRepository,
-  DatabaseService,
-  MigrationRunner,
-} from '@arletex/database';
+import { ApeRepository, DatabaseService, MigrationRunner } from '@arletex/database';
 import { TelegramBridgeService } from '../apps/desktop/src/backend/telegramBridgeService.js';
 import { ArletexBackendServer } from '../apps/desktop/src/backend/server.js';
 import { ActionProposal } from '@arletex/contracts';
@@ -235,7 +231,9 @@ describe('P0 Adversarial Correctness and Security Boundary Suite', () => {
 
     // All subsequent direct calls MUST fail closed immediately
     await expect(safeAgency.readFile(testFile)).rejects.toThrow(/Authorization denied/);
-    await expect(safeAgency.writeFile(testFile, 'malicious overwrite')).rejects.toThrow(/Authorization denied/);
+    await expect(safeAgency.writeFile(testFile, 'malicious overwrite')).rejects.toThrow(
+      /Authorization denied/,
+    );
     await expect(safeAgency.listFiles(tempDir)).rejects.toThrow(/Authorization denied/);
     await expect(safeAgency.launchApp('google-chrome')).rejects.toThrow(/Authorization denied/);
     await expect(safeAgency.executeCommand('ls', [])).rejects.toThrow(/Authorization denied/);
@@ -331,7 +329,9 @@ describe('P0 Adversarial Correctness and Security Boundary Suite', () => {
     expect(ActionPermissionController.isPrivateOrLoopbackHost('127.0.0.1')).toBe(true);
     expect(ActionPermissionController.isPrivateOrLoopbackHost('0.0.0.0')).toBe(true);
     expect(ActionPermissionController.isPrivateOrLoopbackHost('169.254.169.254')).toBe(true); // AWS/GCP metadata
-    expect(ActionPermissionController.isPrivateOrLoopbackHost('metadata.google.internal')).toBe(true);
+    expect(ActionPermissionController.isPrivateOrLoopbackHost('metadata.google.internal')).toBe(
+      true,
+    );
     expect(ActionPermissionController.isPrivateOrLoopbackHost('10.0.0.1')).toBe(true);
     expect(ActionPermissionController.isPrivateOrLoopbackHost('192.168.1.1')).toBe(true);
     expect(ActionPermissionController.isPrivateOrLoopbackHost('172.16.0.1')).toBe(true);
@@ -352,7 +352,10 @@ describe('P0 Adversarial Correctness and Security Boundary Suite', () => {
 
     // Send to authorized chat (will fail network call, but passes authorization check)
     // Send to unallowlisted chat -> denied fail-closed without network attempt
-    const deniedResult = await telegramBridge.sendMessage('99999999', 'Unauthorized exfiltration attempt');
+    const deniedResult = await telegramBridge.sendMessage(
+      '99999999',
+      'Unauthorized exfiltration attempt',
+    );
     expect(deniedResult).toBe(false);
   });
 
@@ -451,7 +454,9 @@ describe('P0 Adversarial Correctness and Security Boundary Suite', () => {
       payload: { ...action.payload, approvalToken: wrongScopeToken.token },
     });
     expect(scopeMismatchRes.decision).toBe('denied');
-    expect(scopeMismatchRes.reason).toContain('Approval token rejected: Approval token is bound to a different scope');
+    expect(scopeMismatchRes.reason).toContain(
+      'Approval token rejected: Approval token is bound to a different scope',
+    );
 
     // 14b. Token issued for a different user
     const otherUserToken = permissionController.createApprovalToken({
@@ -466,7 +471,9 @@ describe('P0 Adversarial Correctness and Security Boundary Suite', () => {
       payload: { ...action.payload, userId: 'Proof', approvalToken: otherUserToken.token },
     });
     expect(userMismatchRes.decision).toBe('denied');
-    expect(userMismatchRes.reason).toContain('Approval token is bound to a different user identity');
+    expect(userMismatchRes.reason).toContain(
+      'Approval token is bound to a different user identity',
+    );
   });
 
   // 15. Recursive canonicalization invariance
@@ -514,7 +521,11 @@ describe('P0 Adversarial Correctness and Security Boundary Suite', () => {
         return { success: true, sizeBytes: content.length };
       },
       listFiles: async () => ['file1.txt', 'file2.txt'],
-      executeCommand: async (cmd: string) => ({ exitCode: 0, stdout: `Executed ${cmd}`, stderr: '' }),
+      executeCommand: async (cmd: string) => ({
+        exitCode: 0,
+        stdout: `Executed ${cmd}`,
+        stderr: '',
+      }),
     };
 
     const verificationEngine = new VerificationEngine(rootLogger);
@@ -613,7 +624,9 @@ describe('P0 Adversarial Correctness and Security Boundary Suite', () => {
     const ver = verificationEngine.verify(action, failedObservation);
     expect(ver.verified).toBe(false);
     expect(ver.status).toBe('partially_successful');
-    expect(ver.failureReason).toContain('Application window for \'google-chrome\' not visible or failed to map');
+    expect(ver.failureReason).toContain(
+      "Application window for 'google-chrome' not visible or failed to map",
+    );
   });
 
   // 18. Token double-consumption and scope grammar unification (code_modify <-> code_modification)
@@ -628,7 +641,10 @@ describe('P0 Adversarial Correctness and Security Boundary Suite', () => {
       taskId: crypto.randomUUID(),
       stepIndex: 0,
       type: 'code_modify',
-      payload: { filePath: 'packages/core/src/ape/ethicalBoundariesSecurityEngine.ts', changes: 'test modification' },
+      payload: {
+        filePath: 'packages/core/src/ape/ethicalBoundariesSecurityEngine.ts',
+        changes: 'test modification',
+      },
       rationale: 'Modify core engine code',
       expectedOutcome: 'Code modified',
       riskLevel: 'critical',
@@ -680,19 +696,37 @@ describe('P0 Adversarial Correctness and Security Boundary Suite', () => {
 
     // 19a. Truncated HMAC signature
     const truncatedToken = `${body}.deadbeef`;
-    const checkTruncated = permController.validateApprovalToken(truncatedToken, digest, target, 'action:test', 'Proof');
+    const checkTruncated = permController.validateApprovalToken(
+      truncatedToken,
+      digest,
+      target,
+      'action:test',
+      'Proof',
+    );
     expect(checkTruncated.valid).toBe(false);
     expect(checkTruncated.reason).toContain('signature verification failed');
 
     // 19b. Oversized HMAC signature
     const oversizedToken = `${body}.${'f'.repeat(128)}`;
-    const checkOversized = permController.validateApprovalToken(oversizedToken, digest, target, 'action:test', 'Proof');
+    const checkOversized = permController.validateApprovalToken(
+      oversizedToken,
+      digest,
+      target,
+      'action:test',
+      'Proof',
+    );
     expect(checkOversized.valid).toBe(false);
     expect(checkOversized.reason).toContain('signature verification failed');
 
     // 19c. Empty signature
     const emptySigToken = `${body}.`;
-    const checkEmpty = permController.validateApprovalToken(emptySigToken, digest, target, 'action:test', 'Proof');
+    const checkEmpty = permController.validateApprovalToken(
+      emptySigToken,
+      digest,
+      target,
+      'action:test',
+      'Proof',
+    );
     expect(checkEmpty.valid).toBe(false);
   });
 

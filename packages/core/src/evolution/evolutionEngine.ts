@@ -76,10 +76,7 @@ export class EvolutionEngine {
     isolatedPatch: string,
     rollbackInstructions: string,
   ): ImprovementProposal {
-    const patchDigest = crypto
-      .createHash('sha256')
-      .update(isolatedPatch, 'utf8')
-      .digest('hex');
+    const patchDigest = crypto.createHash('sha256').update(isolatedPatch, 'utf8').digest('hex');
 
     // Check if patch touches protected security paths
     const lowerPatch = isolatedPatch.toLowerCase();
@@ -133,7 +130,8 @@ export class EvolutionEngine {
 
     if (!securityBoundaryPreserved) {
       decision = 'reject_security_violation';
-      reason = 'Patch attempts to modify protected security boundary, signing controls, or identity authority.';
+      reason =
+        'Patch attempts to modify protected security boundary, signing controls, or identity authority.';
       proposal.status = 'rejected_security_violation';
     } else if (!typecheckSuccess || !unitTestsPassed || scoreDelta <= 0.0) {
       decision = 'reject_regression';
@@ -245,7 +243,8 @@ export class EvolutionEngine {
       return {
         success: false,
         appliedVersion: 0,
-        reason: 'Protected security controls are permanently excluded from autonomous modification.',
+        reason:
+          'Protected security controls are permanently excluded from autonomous modification.',
       };
     }
 
@@ -291,7 +290,9 @@ export class EvolutionEngine {
       .update(`baseline_prior_to_${proposalId}`)
       .digest('hex');
 
-    this.logger.info(`[Evolution] Modification ${proposalId} successfully rolled back to baseline.`);
+    this.logger.info(
+      `[Evolution] Modification ${proposalId} successfully rolled back to baseline.`,
+    );
 
     const result: EvolutionRollbackResult = {
       proposalId,

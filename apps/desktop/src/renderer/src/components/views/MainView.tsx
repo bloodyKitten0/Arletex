@@ -245,7 +245,8 @@ export const MainView: React.FC<MainViewProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|mkv|avi)$/i.test(file.name);
+      const isVideo =
+        file.type.startsWith('video/') || /\.(mp4|webm|mov|mkv|avi)$/i.test(file.name);
       const filePath = (file as any).path as string | undefined;
       let base64 = '';
       if (!isVideo || !filePath) {
@@ -297,7 +298,9 @@ export const MainView: React.FC<MainViewProps> = ({
               type: 'video',
               base64,
               mimeType: file.type || 'video/mp4',
-              name: file.name || `Pasted Video ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`,
+              name:
+                file.name ||
+                `Pasted Video ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`,
               videoPath: (file as any).path,
             });
           } catch (err) {
@@ -327,8 +330,10 @@ export const MainView: React.FC<MainViewProps> = ({
     if (!file) return;
 
     try {
-      const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|mkv|avi)$/i.test(file.name);
-      const isImage = file.type.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp)$/i.test(file.name);
+      const isVideo =
+        file.type.startsWith('video/') || /\.(mp4|webm|mov|mkv|avi)$/i.test(file.name);
+      const isImage =
+        file.type.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp)$/i.test(file.name);
 
       if (isVideo || isImage) {
         const filePath = (file as any).path as string | undefined;
@@ -376,7 +381,9 @@ export const MainView: React.FC<MainViewProps> = ({
             if (window.arletexApi?.transcribeAudio) {
               const res = await window.arletexApi.transcribeAudio(base64, 'webm');
               if (res.success && res.data.transcript) {
-                setInputContent((prev) => (prev ? `${prev} ${res.data.transcript}` : res.data.transcript));
+                setInputContent((prev) =>
+                  prev ? `${prev} ${res.data.transcript}` : res.data.transcript,
+                );
               }
             }
           } catch (err) {
@@ -448,7 +455,15 @@ export const MainView: React.FC<MainViewProps> = ({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minWidth: 0 }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        width: '100%',
+        minWidth: 0,
+      }}
+    >
       {/* Presence & Controls Header */}
       <div
         style={{
@@ -478,7 +493,10 @@ export const MainView: React.FC<MainViewProps> = ({
               {conversation?.title || 'Active Dialogue & Reflection'}
             </span>
             <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-              Model: {health?.modelLoaded?.split('/').pop()?.replace('.gguf', '') || 'Qwen 2.5-14B Uncensored'} • Vulkan 780M
+              Model:{' '}
+              {health?.modelLoaded?.split('/').pop()?.replace('.gguf', '') ||
+                'Qwen 2.5-14B Uncensored'}{' '}
+              • Vulkan 780M
             </span>
           </div>
         </div>
@@ -569,7 +587,8 @@ export const MainView: React.FC<MainViewProps> = ({
             </span>
           </div>
           <p style={{ fontStyle: 'italic', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-            "Continuously observing the environment and integrating experiences. Grounded in my autobiographical memories, independent from token stream."
+            "Continuously observing the environment and integrating experiences. Grounded in my
+            autobiographical memories, independent from token stream."
           </p>
         </div>
       )}
@@ -603,7 +622,14 @@ export const MainView: React.FC<MainViewProps> = ({
         ref={messagesContainerRef}
         onScroll={handleScroll}
         onWheel={handleWheel}
-        style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '20px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+        }}
       >
         {messages.length === 0 && !streamingText && (
           <div
@@ -683,7 +709,12 @@ export const MainView: React.FC<MainViewProps> = ({
                   </>
                 )}
                 <span>•</span>
-                <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                <span>
+                  {new Date(msg.createdAt).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </span>
               </div>
 
               <div
@@ -724,91 +755,102 @@ export const MainView: React.FC<MainViewProps> = ({
                 )}
 
                 {/* Render attached video player if message contains a video */}
-                {msg.metadata && ((msg.metadata as any).videoBase64 || (msg.metadata as any).videoPath || (msg.metadata as any).hasVideo) && (
-                  <div style={{ marginBottom: '10px' }}>
-                    <video
-                      controls
-                      playsInline
-                      preload="metadata"
-                      src={
-                        (msg.metadata as any).videoPath
-                          ? `arletex-media://${encodeURI(String((msg.metadata as any).videoPath).replace(/^\/+/, ''))}`
-                          : String((msg.metadata as any).videoBase64 || '').startsWith('file://')
-                            ? String((msg.metadata as any).videoBase64).replace(/^file:\/\//, 'arletex-media://')
-                            : String((msg.metadata as any).videoBase64 || '').startsWith('arletex-media://')
-                              ? (msg.metadata as any).videoBase64
-                              : String((msg.metadata as any).videoBase64 || '').startsWith('data:')
+                {msg.metadata &&
+                  ((msg.metadata as any).videoBase64 ||
+                    (msg.metadata as any).videoPath ||
+                    (msg.metadata as any).hasVideo) && (
+                    <div style={{ marginBottom: '10px' }}>
+                      <video
+                        controls
+                        playsInline
+                        preload="metadata"
+                        src={
+                          (msg.metadata as any).videoPath
+                            ? `arletex-media://${encodeURI(String((msg.metadata as any).videoPath).replace(/^\/+/, ''))}`
+                            : String((msg.metadata as any).videoBase64 || '').startsWith('file://')
+                              ? String((msg.metadata as any).videoBase64).replace(
+                                  /^file:\/\//,
+                                  'arletex-media://',
+                                )
+                              : String((msg.metadata as any).videoBase64 || '').startsWith(
+                                    'arletex-media://',
+                                  )
                                 ? (msg.metadata as any).videoBase64
-                                : (msg.metadata as any).videoBase64
-                                  ? `data:video/mp4;base64,${(msg.metadata as any).videoBase64}`
-                                  : undefined
-                      }
-                      style={{
-                        maxWidth: '100%',
-                        maxHeight: '300px',
-                        borderRadius: '8px',
-                        display: 'block',
-                        backgroundColor: '#000000',
-                        border: '1px solid var(--border-subtle)',
-                      }}
-                    />
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        marginTop: '6px',
-                        fontSize: '11px',
-                        color: 'var(--text-muted)',
-                      }}
-                    >
-                      <Film size={12} color="var(--accent)" />
-                      <span>
-                        Video Clip {(msg.metadata as any).videoDuration ? `• ${(msg.metadata as any).videoDuration.toFixed(1)}s` : '• Watched by Arle'}
-                      </span>
-                      {(msg.metadata as any).videoTranscript && (
-                        <span style={{ fontStyle: 'italic', color: 'var(--text-secondary)' }}>
-                          • Audio: "{(msg.metadata as any).videoTranscript}"
+                                : String((msg.metadata as any).videoBase64 || '').startsWith(
+                                      'data:',
+                                    )
+                                  ? (msg.metadata as any).videoBase64
+                                  : (msg.metadata as any).videoBase64
+                                    ? `data:video/mp4;base64,${(msg.metadata as any).videoBase64}`
+                                    : undefined
+                        }
+                        style={{
+                          maxWidth: '100%',
+                          maxHeight: '300px',
+                          borderRadius: '8px',
+                          display: 'block',
+                          backgroundColor: '#000000',
+                          border: '1px solid var(--border-subtle)',
+                        }}
+                      />
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          marginTop: '6px',
+                          fontSize: '11px',
+                          color: 'var(--text-muted)',
+                        }}
+                      >
+                        <Film size={12} color="var(--accent)" />
+                        <span>
+                          Video Clip{' '}
+                          {(msg.metadata as any).videoDuration
+                            ? `• ${(msg.metadata as any).videoDuration.toFixed(1)}s`
+                            : '• Watched by Arle'}
                         </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {isUser ? (
-                  msg.content
-                ) : (
-                  (() => {
-                    const { tone, text: cleanContent } = parseToneAndText(msg.content);
-                    return (
-                      <div>
-                        {tone && (
-                          <div
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              fontSize: '10px',
-                              fontWeight: 600,
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.05em',
-                              color: 'var(--accent)',
-                              background: 'rgba(168, 85, 247, 0.12)',
-                              border: '1px solid rgba(168, 85, 247, 0.25)',
-                              padding: '2px 8px',
-                              borderRadius: '12px',
-                              marginBottom: '8px',
-                            }}
-                          >
-                            <span style={{ fontSize: '8px' }}>◈</span>
-                            <span>{tone}</span>
-                          </div>
+                        {(msg.metadata as any).videoTranscript && (
+                          <span style={{ fontStyle: 'italic', color: 'var(--text-secondary)' }}>
+                            • Audio: "{(msg.metadata as any).videoTranscript}"
+                          </span>
                         )}
-                        <div>{cleanContent}</div>
                       </div>
-                    );
-                  })()
-                )}
+                    </div>
+                  )}
+
+                {isUser
+                  ? msg.content
+                  : (() => {
+                      const { tone, text: cleanContent } = parseToneAndText(msg.content);
+                      return (
+                        <div>
+                          {tone && (
+                            <div
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontSize: '10px',
+                                fontWeight: 600,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                color: 'var(--accent)',
+                                background: 'rgba(168, 85, 247, 0.12)',
+                                border: '1px solid rgba(168, 85, 247, 0.25)',
+                                padding: '2px 8px',
+                                borderRadius: '12px',
+                                marginBottom: '8px',
+                              }}
+                            >
+                              <span style={{ fontSize: '8px' }}>◈</span>
+                              <span>{tone}</span>
+                            </div>
+                          )}
+                          <div>{cleanContent}</div>
+                        </div>
+                      );
+                    })()}
 
                 {/* Assistant Actions Bar */}
                 {!isUser && (
@@ -880,7 +922,14 @@ export const MainView: React.FC<MainViewProps> = ({
 
         {/* Streaming text */}
         {streamingText && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%' }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              width: '100%',
+            }}
+          >
             <div
               style={{
                 display: 'flex',
@@ -895,7 +944,9 @@ export const MainView: React.FC<MainViewProps> = ({
               <span style={{ color: 'var(--accent)', fontWeight: 600 }}>Arle</span>
               <span>•</span>
               <span style={{ color: 'var(--warning)', fontFamily: 'var(--font-mono)' }}>
-                {generationStats.tokensPerSecond > 0 ? `${generationStats.tokensPerSecond.toFixed(1)} t/s` : 'generating...'}
+                {generationStats.tokensPerSecond > 0
+                  ? `${generationStats.tokensPerSecond.toFixed(1)} t/s`
+                  : 'generating...'}
               </span>
             </div>
             <div
@@ -1129,7 +1180,11 @@ export const MainView: React.FC<MainViewProps> = ({
             title={isRecording ? 'Stop Recording' : 'Dictate with local Whisper STT'}
             style={{
               padding: '6px',
-              color: isRecording ? 'var(--danger)' : (isTranscribing ? 'var(--warning)' : 'var(--text-secondary)'),
+              color: isRecording
+                ? 'var(--danger)'
+                : isTranscribing
+                  ? 'var(--warning)'
+                  : 'var(--text-secondary)',
               borderRadius: '6px',
               display: 'flex',
               alignItems: 'center',
@@ -1150,11 +1205,11 @@ export const MainView: React.FC<MainViewProps> = ({
             placeholder={
               isRecording
                 ? 'Listening to microphone...'
-                : (isTranscribing
+                : isTranscribing
                   ? 'Transcribing speech via local Whisper...'
-                  : (isGenerating
+                  : isGenerating
                     ? 'Arle is formulating response...'
-                    : 'Message Arle... (Paste images/videos with Ctrl+V, or drag & drop)'))
+                    : 'Message Arle... (Paste images/videos with Ctrl+V, or drag & drop)'
             }
             disabled={isGenerating || isRecording || isTranscribing}
             rows={1}
@@ -1204,8 +1259,9 @@ export const MainView: React.FC<MainViewProps> = ({
                 width: '32px',
                 height: '32px',
                 borderRadius: '8px',
-                backgroundColor: (!inputContent.trim() && !attachedMedia) ? 'var(--bg-tertiary)' : 'var(--accent)',
-                color: (!inputContent.trim() && !attachedMedia) ? 'var(--text-muted)' : '#000',
+                backgroundColor:
+                  !inputContent.trim() && !attachedMedia ? 'var(--bg-tertiary)' : 'var(--accent)',
+                color: !inputContent.trim() && !attachedMedia ? 'var(--text-muted)' : '#000',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

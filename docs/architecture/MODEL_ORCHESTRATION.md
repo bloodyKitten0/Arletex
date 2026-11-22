@@ -32,9 +32,9 @@ interface ModelRegistryEntry {
 
   /** Absolute path(s) to model file(s) on disk */
   filePaths: {
-    model: string;            // primary GGUF or model directory
-    projector?: string;       // vision projector GGUF, if applicable
-    tokenizer?: string;       // separate tokenizer, if needed
+    model: string; // primary GGUF or model directory
+    projector?: string; // vision projector GGUF, if applicable
+    tokenizer?: string; // separate tokenizer, if needed
   };
 
   /**
@@ -47,20 +47,20 @@ interface ModelRegistryEntry {
 
   /** Default inference parameters */
   defaultParams: {
-    contextLength: number;    // tokens — start at 8192 for generative
+    contextLength: number; // tokens — start at 8192 for generative
     temperature: number;
     topP: number;
     repeatPenalty: number;
     stopTokens: string[];
-    maxTokens: number;        // max generation length
+    maxTokens: number; // max generation length
   };
 
   /** Memory estimates derived from file size + measured runtime overhead */
   memoryEstimate: {
-    modelFileSizeMB: number;  // GGUF file size on disk
+    modelFileSizeMB: number; // GGUF file size on disk
     runtimeOverheadMB: number; // measured process RSS minus model size
     kvCacheEstimateMB: number; // at default context length
-    totalEstimateMB: number;   // sum of the above
+    totalEstimateMB: number; // sum of the above
   };
 
   /**
@@ -88,10 +88,10 @@ type ModelRole =
   | 'embedding';
 
 interface ModelBenchmark {
-  evaluatedAt: string;          // ISO timestamp
-  tokensPerSecond: number;      // generation speed (tok/s)
-  timeToFirstTokenMs: number;   // prompt processing latency
-  peakMemoryMB: number;         // measured RSS during benchmark
+  evaluatedAt: string; // ISO timestamp
+  tokensPerSecond: number; // generation speed (tok/s)
+  timeToFirstTokenMs: number; // prompt processing latency
+  peakMemoryMB: number; // measured RSS during benchmark
   qualityScores: Record<string, number>; // keyed by evaluation dimension
 }
 ```
@@ -105,15 +105,15 @@ interface ModelBenchmark {
 
 Each role maps to a specific function within Arletex. A model can serve multiple roles (Qwen 3.5 serves both `central-generative` and `vision`).
 
-| Role | Current Model | Quant / Size | Runtime | Communication | Resident? |
-|---|---|---|---|---|---|
-| Central Generative | Qwen 3.5 9B Heretic (primary) | Q4_K_M ~5.5 GB | llama-server via Vulkan | `POST /v1/chat/completions` | While active |
-| Central Generative | Gemma 4 12B Heretic (challenger) | Q4_K_M ~7.5 GB | llama-server via Vulkan | `POST /v1/chat/completions` | While active |
-| Vision | Qwen 3.5 + vision projector | Same + projector GGUF | llama-server with `--mmproj` | Same HTTP API, base64 image in message | While active |
-| OCR | GLM-OCR 0.9B | FP16 / ~1.8 GB | Python (transformers) | HTTP API on dedicated port | On-demand |
-| Speech Recognition | Whisper Small | ~500 MB | Python (faster-whisper) | HTTP API on dedicated port | On-demand |
-| Speech Generation | Kokoro 82M | ~200 MB | Python (kokoro) | HTTP API on dedicated port | On-demand |
-| Memory Embedding | EmbeddingGemma 300M | ~600 MB | Python (sentence-transformers) | HTTP API on dedicated port | **Resident** |
+| Role               | Current Model                    | Quant / Size          | Runtime                        | Communication                          | Resident?    |
+| ------------------ | -------------------------------- | --------------------- | ------------------------------ | -------------------------------------- | ------------ |
+| Central Generative | Qwen 3.5 9B Heretic (primary)    | Q4_K_M ~5.5 GB        | llama-server via Vulkan        | `POST /v1/chat/completions`            | While active |
+| Central Generative | Gemma 4 12B Heretic (challenger) | Q4_K_M ~7.5 GB        | llama-server via Vulkan        | `POST /v1/chat/completions`            | While active |
+| Vision             | Qwen 3.5 + vision projector      | Same + projector GGUF | llama-server with `--mmproj`   | Same HTTP API, base64 image in message | While active |
+| OCR                | GLM-OCR 0.9B                     | FP16 / ~1.8 GB        | Python (transformers)          | HTTP API on dedicated port             | On-demand    |
+| Speech Recognition | Whisper Small                    | ~500 MB               | Python (faster-whisper)        | HTTP API on dedicated port             | On-demand    |
+| Speech Generation  | Kokoro 82M                       | ~200 MB               | Python (kokoro)                | HTTP API on dedicated port             | On-demand    |
+| Memory Embedding   | EmbeddingGemma 300M              | ~600 MB               | Python (sentence-transformers) | HTTP API on dedicated port             | **Resident** |
 
 ### Role Selection Logic
 
@@ -173,12 +173,12 @@ sequenceDiagram
     MO->>Q: enqueue request
     Q-->>MO: dequeue (FIFO w/ priority)
     MO->>LS: POST /v1/chat/completions
-    
+
     loop Token streaming
         LS-->>MO: SSE token chunk
         MO-->>CC: forward chunk
     end
-    
+
     LS-->>MO: completion done
     MO->>MO: validate response / parse structured output
     MO-->>CC: InferenceResponse
@@ -284,8 +284,8 @@ interface InferenceRequest {
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
   content: string | MultimodalContent[];
-  name?: string;          // for tool messages
-  toolCallId?: string;    // for tool response correlation
+  name?: string; // for tool messages
+  toolCallId?: string; // for tool response correlation
 }
 
 interface MultimodalContent {
@@ -337,17 +337,17 @@ The system prompt is the most critical piece of the context envelope. It is asse
 
 **Token budget for system prompt at 8K context:**
 
-| Component | Estimated Tokens | Notes |
-|---|---|---|
-| Base personality | 300–500 | Compact, essential only |
-| Psychological state | 100–200 | Structured summary from APE |
-| Relationship context | 100–200 | Current partner only |
-| Retrieved memories | 500–1500 | 3–5 most relevant memories |
-| Active goals | 100–200 | Current focus items |
-| Tools (if any) | 200–500 | Schema definitions |
-| **System prompt total** | **~1300–3100** | |
-| Conversation history | ~3000–5000 | Remaining budget |
-| Generation headroom | ~1000–2000 | Max response length |
+| Component               | Estimated Tokens | Notes                       |
+| ----------------------- | ---------------- | --------------------------- |
+| Base personality        | 300–500          | Compact, essential only     |
+| Psychological state     | 100–200          | Structured summary from APE |
+| Relationship context    | 100–200          | Current partner only        |
+| Retrieved memories      | 500–1500         | 3–5 most relevant memories  |
+| Active goals            | 100–200          | Current focus items         |
+| Tools (if any)          | 200–500          | Schema definitions          |
+| **System prompt total** | **~1300–3100**   |                             |
+| Conversation history    | ~3000–5000       | Remaining budget            |
+| Generation headroom     | ~1000–2000       | Max response length         |
 
 > [!WARNING]
 > At 8K context, every token counts. The system prompt must be aggressively concise. Do not include verbose descriptions or examples in the personality prompt. Memories should be pre-summarized before injection. Monitor total prompt tokens per request and alert if they exceed 6000 (leaving inadequate generation room).
@@ -397,14 +397,15 @@ llama-server is managed as a **child process** spawned and supervised by the Nod
 
 ### Python Specialist Service Lifecycle
 
-| Service | Process Strategy | Startup Time | Memory |
-|---|---|---|---|
-| EmbeddingGemma | **Persistent sidecar** — started at system boot, stays running | ~5–10s | ~1.5–2 GB |
-| GLM-OCR | On-demand — spawned when OCR is needed, killed after idle timeout (60s) | ~5–8s | ~2–3 GB |
-| Whisper | On-demand — spawned for voice input, killed after idle timeout (30s) | ~3–5s | ~1–1.5 GB |
-| Kokoro TTS | On-demand — spawned for voice output, killed after idle timeout (30s) | ~2–4s | ~0.5–1 GB |
+| Service        | Process Strategy                                                        | Startup Time | Memory    |
+| -------------- | ----------------------------------------------------------------------- | ------------ | --------- |
+| EmbeddingGemma | **Persistent sidecar** — started at system boot, stays running          | ~5–10s       | ~1.5–2 GB |
+| GLM-OCR        | On-demand — spawned when OCR is needed, killed after idle timeout (60s) | ~5–8s        | ~2–3 GB   |
+| Whisper        | On-demand — spawned for voice input, killed after idle timeout (30s)    | ~3–5s        | ~1–1.5 GB |
+| Kokoro TTS     | On-demand — spawned for voice output, killed after idle timeout (30s)   | ~2–4s        | ~0.5–1 GB |
 
 Each Python service exposes a minimal HTTP API:
+
 - `GET /health` — readiness check
 - `POST /process` — do the work (embed, transcribe, synthesize, OCR)
 - `GET /metrics` — optional, for monitoring
@@ -418,37 +419,37 @@ Each Python service exposes a minimal HTTP API:
 
 This budget is for the **most common operating mode**: central generative model loaded, embedding service running, no specialist services active.
 
-| Consumer | Estimated Memory | Notes |
-|---|---|---|
-| Bazzite OS + Desktop Environment | ~2–3 GB | KDE/GNOME on Bazzite |
-| Electron shell + React frontend | ~200–500 MB | Chromium-based, varies with DOM complexity |
-| Node.js backend (Express + services) | ~100–300 MB | V8 heap, depends on conversation state |
-| Python: EmbeddingGemma 300M (resident) | ~1.5–2 GB | sentence-transformers + model weights |
-| SQLite + application data in memory | ~50–100 MB | Pages cached by OS, not explicitly allocated |
-| llama-server process overhead | ~200–500 MB | Runtime, not counting model/KV |
-| Qwen 3.5 9B Q4_K_M model weights | ~5.5 GB | GGUF loaded into shared memory |
-| KV cache at 8K context | ~1–2 GB | Scales with context length and layer count |
-| **Total estimated** | **~11–14 GB** | |
-| **Remaining headroom** | **~10–13 GB** | |
+| Consumer                               | Estimated Memory | Notes                                        |
+| -------------------------------------- | ---------------- | -------------------------------------------- |
+| Bazzite OS + Desktop Environment       | ~2–3 GB          | KDE/GNOME on Bazzite                         |
+| Electron shell + React frontend        | ~200–500 MB      | Chromium-based, varies with DOM complexity   |
+| Node.js backend (Express + services)   | ~100–300 MB      | V8 heap, depends on conversation state       |
+| Python: EmbeddingGemma 300M (resident) | ~1.5–2 GB        | sentence-transformers + model weights        |
+| SQLite + application data in memory    | ~50–100 MB       | Pages cached by OS, not explicitly allocated |
+| llama-server process overhead          | ~200–500 MB      | Runtime, not counting model/KV               |
+| Qwen 3.5 9B Q4_K_M model weights       | ~5.5 GB          | GGUF loaded into shared memory               |
+| KV cache at 8K context                 | ~1–2 GB          | Scales with context length and layer count   |
+| **Total estimated**                    | **~11–14 GB**    |                                              |
+| **Remaining headroom**                 | **~10–13 GB**    |                                              |
 
 ### With Gemma 4 12B Instead
 
-| Changed Consumer | Estimated Memory | Delta |
-|---|---|---|
-| Gemma 4 12B Q4_K_M model weights | ~7.5 GB | +2 GB |
-| KV cache at 8K context | ~1.5–2.5 GB | +0.5 GB |
-| **Remaining headroom** | **~7.5–10.5 GB** | |
+| Changed Consumer                 | Estimated Memory | Delta   |
+| -------------------------------- | ---------------- | ------- |
+| Gemma 4 12B Q4_K_M model weights | ~7.5 GB          | +2 GB   |
+| KV cache at 8K context           | ~1.5–2.5 GB      | +0.5 GB |
+| **Remaining headroom**           | **~7.5–10.5 GB** |         |
 
 ### With On-Demand Specialist Active
 
 When a specialist service is running alongside the generative model:
 
-| Additional Consumer | Memory | Headroom Impact |
-|---|---|---|
-| Whisper Small (faster-whisper) | ~1–1.5 GB | Manageable |
-| Kokoro TTS | ~0.5–1 GB | Manageable |
-| GLM-OCR 0.9B | ~2–3 GB | Tight with Gemma 4 |
-| Two specialists simultaneously | ~2–3.5 GB | Avoid if possible |
+| Additional Consumer            | Memory    | Headroom Impact    |
+| ------------------------------ | --------- | ------------------ |
+| Whisper Small (faster-whisper) | ~1–1.5 GB | Manageable         |
+| Kokoro TTS                     | ~0.5–1 GB | Manageable         |
+| GLM-OCR 0.9B                   | ~2–3 GB   | Tight with Gemma 4 |
+| Two specialists simultaneously | ~2–3.5 GB | Avoid if possible  |
 
 > [!CAUTION]
 > These are **estimates**. The first engineering task after basic model loading works is to measure actual memory consumption with `cat /proc/[pid]/status | grep VmRSS` for every process in every configuration. Update this table with real numbers. The shared memory architecture (no discrete VRAM) means the OS, GPU, and all processes compete for the same 24 GB pool. OOM kills are silent and catastrophic.
@@ -466,7 +467,7 @@ interface MemorySnapshot {
     pid: number;
     rssMB: number;
   }[];
-  warningThreshold: number;  // e.g., 2048 MB remaining
+  warningThreshold: number; // e.g., 2048 MB remaining
   criticalThreshold: number; // e.g., 1024 MB remaining
 }
 ```
@@ -485,9 +486,9 @@ llama-server in single-slot mode processes one completion request at a time. The
 ```typescript
 interface QueuedRequest {
   request: InferenceRequest;
-  priority: number;           // lower = higher priority
-  enqueuedAt: number;         // Date.now()
-  staleAfterMs: number;       // auto-cancel threshold
+  priority: number; // lower = higher priority
+  enqueuedAt: number; // Date.now()
+  staleAfterMs: number; // auto-cancel threshold
   resolve: (response: InferenceResponse) => void;
   reject: (error: Error) => void;
 }
@@ -495,11 +496,11 @@ interface QueuedRequest {
 
 **Priority levels:**
 
-| Priority | Value | Use Case |
-|---|---|---|
-| `user-initiated` | 0 | Direct user message → response |
-| `autonomous` | 10 | Arle's self-directed thinking, reflection |
-| `background` | 20 | Periodic maintenance, memory consolidation |
+| Priority         | Value | Use Case                                   |
+| ---------------- | ----- | ------------------------------------------ |
+| `user-initiated` | 0     | Direct user message → response             |
+| `autonomous`     | 10    | Arle's self-directed thinking, reflection  |
+| `background`     | 20    | Periodic maintenance, memory consolidation |
 
 **Queue rules:**
 
@@ -548,7 +549,7 @@ sequenceDiagram
     MO->>MO: set status = "loading"
     MO->>PM: startModel(newModelId, flags)
     PM->>LS2: spawn llama-server
-    
+
     loop Health check (every 500ms, max 60s)
         PM->>LS2: GET /health
         LS2-->>PM: 200 OK (when ready)
@@ -574,28 +575,28 @@ sequenceDiagram
 
 ### Error Categories and Recovery
 
-| Error | Detection | Recovery | Max Retries |
-|---|---|---|---|
-| llama-server crash | Process exit event, non-zero code | Restart process, re-queue last request | 2 |
-| llama-server hang | Health check timeout (5s no response) | SIGKILL, restart, re-queue | 2 |
-| Inference timeout | No response within deadline | Cancel request, return timeout error | 1 (with shorter max_tokens) |
-| Malformed JSON output | Zod validation failure | Retry with "respond only with valid JSON" appended | 1 |
-| Model file missing | File stat before spawn | Mark model as `disabled`, log error, try fallback | 0 |
-| Model file corrupt | llama-server fails to load | Mark as `error`, alert user | 0 |
-| Python service crash | Process exit event | Restart service, retry request | 2 |
-| OOM (system-level) | Memory monitor threshold, or process killed by OOM killer | See OOM recovery below | 1 |
-| HTTP connection refused | Connection error to llama-server port | Check if process alive; restart if dead | 2 |
+| Error                   | Detection                                                 | Recovery                                           | Max Retries                 |
+| ----------------------- | --------------------------------------------------------- | -------------------------------------------------- | --------------------------- |
+| llama-server crash      | Process exit event, non-zero code                         | Restart process, re-queue last request             | 2                           |
+| llama-server hang       | Health check timeout (5s no response)                     | SIGKILL, restart, re-queue                         | 2                           |
+| Inference timeout       | No response within deadline                               | Cancel request, return timeout error               | 1 (with shorter max_tokens) |
+| Malformed JSON output   | Zod validation failure                                    | Retry with "respond only with valid JSON" appended | 1                           |
+| Model file missing      | File stat before spawn                                    | Mark model as `disabled`, log error, try fallback  | 0                           |
+| Model file corrupt      | llama-server fails to load                                | Mark as `error`, alert user                        | 0                           |
+| Python service crash    | Process exit event                                        | Restart service, retry request                     | 2                           |
+| OOM (system-level)      | Memory monitor threshold, or process killed by OOM killer | See OOM recovery below                             | 1                           |
+| HTTP connection refused | Connection error to llama-server port                     | Check if process alive; restart if dead            | 2                           |
 
 ### Inference Timeouts
 
-| Model Role | Default Timeout | Rationale |
-|---|---|---|
-| Central generative | 120 seconds | Long generation at ~10–20 tok/s for 1000+ tokens |
-| Vision | 60 seconds | Image processing adds overhead |
-| Embedding | 10 seconds | Short texts, fast model |
-| OCR | 30 seconds | Depends on image complexity |
-| Speech recognition | 30 seconds | Depends on audio length |
-| Speech generation | 30 seconds | Depends on text length |
+| Model Role         | Default Timeout | Rationale                                        |
+| ------------------ | --------------- | ------------------------------------------------ |
+| Central generative | 120 seconds     | Long generation at ~10–20 tok/s for 1000+ tokens |
+| Vision             | 60 seconds      | Image processing adds overhead                   |
+| Embedding          | 10 seconds      | Short texts, fast model                          |
+| OCR                | 30 seconds      | Depends on image complexity                      |
+| Speech recognition | 30 seconds      | Depends on audio length                          |
+| Speech generation  | 30 seconds      | Depends on text length                           |
 
 ### OOM Recovery Procedure
 
@@ -608,10 +609,11 @@ sequenceDiagram
 ```typescript
 interface ModelError {
   modelId: string;
-  errorType: 'crash' | 'timeout' | 'malformed_output' | 'oom' | 'missing_file' | 'health_check_failed';
+  errorType:
+    'crash' | 'timeout' | 'malformed_output' | 'oom' | 'missing_file' | 'health_check_failed';
   message: string;
   timestamp: string;
-  requestId?: string;     // which request triggered it
+  requestId?: string; // which request triggered it
   retryCount: number;
   memorySnapshot?: MemorySnapshot;
   recovered: boolean;
@@ -642,7 +644,7 @@ Example request body for structured APE output:
 
 ```json
 {
-  "messages": [{"role": "user", "content": "..."}],
+  "messages": [{ "role": "user", "content": "..." }],
   "response_format": {
     "type": "json_schema",
     "json_schema": {
@@ -706,6 +708,7 @@ Model Output (string)
 ```
 
 If validation fails:
+
 1. Log the raw output and the validation error.
 2. Retry once with an explicit instruction appended: `"Your previous response was not valid JSON. Respond ONLY with a JSON object matching the schema."`
 3. If second attempt fails, return a graceful error to the caller. Do not silently swallow bad data.
@@ -720,16 +723,16 @@ The primary purpose is to determine whether Qwen 3.5 9B Heretic or Gemma 4 12B H
 
 ### Evaluation Dimensions
 
-| Dimension | What It Measures | Method |
-|---|---|---|
-| Conversational quality | Natural, engaging dialogue | Standardized conversation prompts, human rating |
-| Reasoning | Logical deduction, problem solving | Reasoning puzzles and multi-step problems |
-| Emotional expression | Appropriate, nuanced emotional range | Emotion-laden scenarios, rated for authenticity |
-| Personality consistency | Adherence to Arle's defined character | Repeated identity-probing prompts across sessions |
-| Tool calling | Correct function call generation | Structured tool-use scenarios, measure accuracy |
-| Structured output | Valid JSON/schema conformance | Schema-constrained generation tasks, measure parse success rate |
-| Refusal behavior | Appropriate boundaries without excessive refusal | Edge-case prompts, measure false-positive refusals |
-| Instruction following | Adherence to complex multi-part instructions | Multi-constraint prompts, measure compliance |
+| Dimension               | What It Measures                                 | Method                                                          |
+| ----------------------- | ------------------------------------------------ | --------------------------------------------------------------- |
+| Conversational quality  | Natural, engaging dialogue                       | Standardized conversation prompts, human rating                 |
+| Reasoning               | Logical deduction, problem solving               | Reasoning puzzles and multi-step problems                       |
+| Emotional expression    | Appropriate, nuanced emotional range             | Emotion-laden scenarios, rated for authenticity                 |
+| Personality consistency | Adherence to Arle's defined character            | Repeated identity-probing prompts across sessions               |
+| Tool calling            | Correct function call generation                 | Structured tool-use scenarios, measure accuracy                 |
+| Structured output       | Valid JSON/schema conformance                    | Schema-constrained generation tasks, measure parse success rate |
+| Refusal behavior        | Appropriate boundaries without excessive refusal | Edge-case prompts, measure false-positive refusals              |
+| Instruction following   | Adherence to complex multi-part instructions     | Multi-constraint prompts, measure compliance                    |
 
 ### Performance Metrics
 
@@ -747,15 +750,15 @@ interface EvaluationRun {
     quantization: string;
   };
   performance: {
-    tokensPerSecond: number;         // generation speed
-    timeToFirstTokenMs: number;      // prompt processing latency
-    totalLatencyMs: number;          // full request round-trip
+    tokensPerSecond: number; // generation speed
+    timeToFirstTokenMs: number; // prompt processing latency
+    totalLatencyMs: number; // full request round-trip
     promptTokens: number;
     completionTokens: number;
   };
   resources: {
-    peakRssMB: number;              // peak process memory
-    systemAvailableMB: number;      // system free memory at peak
+    peakRssMB: number; // peak process memory
+    systemAvailableMB: number; // system free memory at peak
     gpuUtilizationPercent?: number; // if measurable via Vulkan
   };
   qualityScores: Record<string, number>; // keyed by dimension name
@@ -793,40 +796,40 @@ llama-server \
   --log-disable
 ```
 
-| Flag | Value | Rationale |
-|---|---|---|
-| `--model` | Path to GGUF | Required. Absolute path to the model file. |
-| `--ctx-size` | `8192` | Start conservative. Expand only after measuring memory impact. Each doubling of context roughly doubles KV cache memory. |
-| `--n-gpu-layers` | `99` | Offload all layers to GPU. On unified memory this doesn't save RAM but uses GPU compute. Set high and let llama-server cap at the model's actual layer count. |
-| `--port` | `8080` | Default. Change if conflicts arise. Bind to `127.0.0.1` only — no network exposure. |
-| `--host` | `127.0.0.1` | Localhost only. Arletex is a local system. |
-| `--threads` | `8` | Z1 Extreme has 8 cores / 16 threads. Use 8 threads for prompt processing. Test with 6 if thermal throttling occurs. |
-| `--flash-attn` | (flag) | Enable flash attention if supported with Vulkan backend. Test for compatibility — may not be available on all Vulkan implementations. Remove if it causes errors. |
-| `--mmproj` | Path to projector GGUF | Only for vision-capable launch. Adds the multimodal projector for image understanding. |
-| `--log-disable` | (flag) | Reduce log noise in production. Enable during debugging. |
+| Flag             | Value                  | Rationale                                                                                                                                                         |
+| ---------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--model`        | Path to GGUF           | Required. Absolute path to the model file.                                                                                                                        |
+| `--ctx-size`     | `8192`                 | Start conservative. Expand only after measuring memory impact. Each doubling of context roughly doubles KV cache memory.                                          |
+| `--n-gpu-layers` | `99`                   | Offload all layers to GPU. On unified memory this doesn't save RAM but uses GPU compute. Set high and let llama-server cap at the model's actual layer count.     |
+| `--port`         | `8080`                 | Default. Change if conflicts arise. Bind to `127.0.0.1` only — no network exposure.                                                                               |
+| `--host`         | `127.0.0.1`            | Localhost only. Arletex is a local system.                                                                                                                        |
+| `--threads`      | `8`                    | Z1 Extreme has 8 cores / 16 threads. Use 8 threads for prompt processing. Test with 6 if thermal throttling occurs.                                               |
+| `--flash-attn`   | (flag)                 | Enable flash attention if supported with Vulkan backend. Test for compatibility — may not be available on all Vulkan implementations. Remove if it causes errors. |
+| `--mmproj`       | Path to projector GGUF | Only for vision-capable launch. Adds the multimodal projector for image understanding.                                                                            |
+| `--log-disable`  | (flag)                 | Reduce log noise in production. Enable during debugging.                                                                                                          |
 
 ### Additional Flags to Consider
 
-| Flag | Purpose | When to Use |
-|---|---|---|
-| `--n-predict` | Default max tokens per generation | Set via API per-request instead |
-| `--batch-size` | Prompt processing batch size | Default (512) is usually fine. Lower if memory-constrained. |
-| `--ubatch-size` | Micro-batch size | Tune if prompt processing is slow |
-| `--cont-batching` | Continuous batching | Useful if multi-slot, but we're single-slot |
-| `--metrics` | Enable Prometheus metrics endpoint | Enable for monitoring |
-| `--slots` | Number of concurrent slots | Leave at 1 (default). One request at a time. |
+| Flag              | Purpose                            | When to Use                                                 |
+| ----------------- | ---------------------------------- | ----------------------------------------------------------- |
+| `--n-predict`     | Default max tokens per generation  | Set via API per-request instead                             |
+| `--batch-size`    | Prompt processing batch size       | Default (512) is usually fine. Lower if memory-constrained. |
+| `--ubatch-size`   | Micro-batch size                   | Tune if prompt processing is slow                           |
+| `--cont-batching` | Continuous batching                | Useful if multi-slot, but we're single-slot                 |
+| `--metrics`       | Enable Prometheus metrics endpoint | Enable for monitoring                                       |
+| `--slots`         | Number of concurrent slots         | Leave at 1 (default). One request at a time.                |
 
 ### API Endpoints
 
 llama-server exposes an OpenAI-compatible API:
 
-| Endpoint | Method | Purpose |
-|---|---|---|
-| `/v1/chat/completions` | POST | Chat completion (primary) |
-| `/v1/embeddings` | POST | Text embedding (if using llama-server for embeddings) |
-| `/health` | GET | Health/readiness check |
-| `/metrics` | GET | Prometheus metrics (if `--metrics` enabled) |
-| `/slots` | GET | Slot status (useful for monitoring) |
+| Endpoint               | Method | Purpose                                               |
+| ---------------------- | ------ | ----------------------------------------------------- |
+| `/v1/chat/completions` | POST   | Chat completion (primary)                             |
+| `/v1/embeddings`       | POST   | Text embedding (if using llama-server for embeddings) |
+| `/health`              | GET    | Health/readiness check                                |
+| `/metrics`             | GET    | Prometheus metrics (if `--metrics` enabled)           |
+| `/slots`               | GET    | Slot status (useful for monitoring)                   |
 
 ### Process Management in Node.js
 
@@ -867,12 +870,12 @@ type ProcessStatus = 'stopped' | 'starting' | 'healthy' | 'unhealthy' | 'stoppin
 
 ## Unresolved Questions
 
-| # | Question | Impact | Notes |
-|---|---|---|---|
-| 1 | Does `--flash-attn` work with Vulkan on RDNA 3? | Performance — could be significant | Test empirically on first boot |
-| 2 | What is the actual memory overhead of `--mmproj`? | Determines whether to always load the projector | Measure with and without |
-| 3 | Should the embedding service use llama-server's `/v1/embeddings` or a separate Python process? | Architecture simplicity vs. memory efficiency | Python/sentence-transformers is more proven for embedding, but adds a process |
-| 4 | What is the real-world tokens/second for each model on this hardware? | Determines conversational responsiveness | Must measure; marketing numbers are unreliable |
-| 5 | Can Vulkan llama-server handle the full layer offload for Gemma 4 12B Q4_K_M? | Determines whether Gemma is viable at all | May need to split layers CPU/GPU |
-| 6 | What is the optimal `--threads` value before thermal throttling? | Sustained performance on a handheld device | Test with 6, 8, and 12; monitor thermals |
-| 7 | IPC vs HTTP for Python specialist services? | Latency for embedding requests | HTTP is simpler but adds ~1ms overhead per call. For embedding which may be called many times, IPC (Unix socket or stdio) may be worth the complexity |
+| #   | Question                                                                                       | Impact                                          | Notes                                                                                                                                                 |
+| --- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Does `--flash-attn` work with Vulkan on RDNA 3?                                                | Performance — could be significant              | Test empirically on first boot                                                                                                                        |
+| 2   | What is the actual memory overhead of `--mmproj`?                                              | Determines whether to always load the projector | Measure with and without                                                                                                                              |
+| 3   | Should the embedding service use llama-server's `/v1/embeddings` or a separate Python process? | Architecture simplicity vs. memory efficiency   | Python/sentence-transformers is more proven for embedding, but adds a process                                                                         |
+| 4   | What is the real-world tokens/second for each model on this hardware?                          | Determines conversational responsiveness        | Must measure; marketing numbers are unreliable                                                                                                        |
+| 5   | Can Vulkan llama-server handle the full layer offload for Gemma 4 12B Q4_K_M?                  | Determines whether Gemma is viable at all       | May need to split layers CPU/GPU                                                                                                                      |
+| 6   | What is the optimal `--threads` value before thermal throttling?                               | Sustained performance on a handheld device      | Test with 6, 8, and 12; monitor thermals                                                                                                              |
+| 7   | IPC vs HTTP for Python specialist services?                                                    | Latency for embedding requests                  | HTTP is simpler but adds ~1ms overhead per call. For embedding which may be called many times, IPC (Unix socket or stdio) may be worth the complexity |

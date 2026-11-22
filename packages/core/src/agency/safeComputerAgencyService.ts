@@ -65,7 +65,10 @@ export class SafeComputerAgencyService implements IComputerProvider {
    * Launches an application using argument arrays (spawn), completely eliminating shell string injection.
    * Validates against the supported applications allowlist and detects immediate process startup failure.
    */
-  public async launchApp(appName: string, args: string[] = []): Promise<{ pid: number; isRunning: boolean }> {
+  public async launchApp(
+    appName: string,
+    args: string[] = [],
+  ): Promise<{ pid: number; isRunning: boolean }> {
     const auth = this.permissionController.authorize({
       id: crypto.randomUUID(),
       taskId: crypto.randomUUID(),
@@ -206,9 +209,13 @@ export class SafeComputerAgencyService implements IComputerProvider {
     this.logger.info(`Focusing window matching: "${titleOrApp}"`);
     return new Promise((resolve) => {
       try {
-        const child = spawn('xdotool', ['search', '--onlyvisible', '--name', titleOrApp, 'windowactivate'], {
-          env: { ...process.env, DISPLAY: this.display },
-        });
+        const child = spawn(
+          'xdotool',
+          ['search', '--onlyvisible', '--name', titleOrApp, 'windowactivate'],
+          {
+            env: { ...process.env, DISPLAY: this.display },
+          },
+        );
 
         child.on('close', (code) => {
           resolve(code === 0);
@@ -223,7 +230,12 @@ export class SafeComputerAgencyService implements IComputerProvider {
   /**
    * Captures screen using spectacle (KDE Wayland) or ffmpeg (X11) safely.
    */
-  public async captureScreen(): Promise<{ imagePath: string; imageBase64: string; width: number; height: number }> {
+  public async captureScreen(): Promise<{
+    imagePath: string;
+    imageBase64: string;
+    width: number;
+    height: number;
+  }> {
     const tempDir = '/tmp/arletex_vision';
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir, { recursive: true });

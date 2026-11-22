@@ -99,11 +99,15 @@ export class SqliteCuriosityExplorationRepository implements ICuriosityExplorati
       let rows: any[];
       if (domain) {
         rows = this.db
-          .prepare(`SELECT * FROM knowledge_gaps WHERE domain = ? ORDER BY epistemic_uncertainty DESC, identified_at DESC LIMIT ?`)
+          .prepare(
+            `SELECT * FROM knowledge_gaps WHERE domain = ? ORDER BY epistemic_uncertainty DESC, identified_at DESC LIMIT ?`,
+          )
           .all(domain, limit) as any[];
       } else {
         rows = this.db
-          .prepare(`SELECT * FROM knowledge_gaps ORDER BY epistemic_uncertainty DESC, identified_at DESC LIMIT ?`)
+          .prepare(
+            `SELECT * FROM knowledge_gaps ORDER BY epistemic_uncertainty DESC, identified_at DESC LIMIT ?`,
+          )
           .all(limit) as any[];
       }
       return rows.map((r) => ({
@@ -143,7 +147,10 @@ export class SqliteCuriosityExplorationRepository implements ICuriosityExplorati
           question.formulatedAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save exploratory question ${question.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save exploratory question ${question.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -152,7 +159,9 @@ export class SqliteCuriosityExplorationRepository implements ICuriosityExplorati
       let rows: any[];
       if (knowledgeGapId) {
         rows = this.db
-          .prepare(`SELECT * FROM exploratory_questions WHERE knowledge_gap_id = ? ORDER BY formulated_at DESC LIMIT ?`)
+          .prepare(
+            `SELECT * FROM exploratory_questions WHERE knowledge_gap_id = ? ORDER BY formulated_at DESC LIMIT ?`,
+          )
           .all(knowledgeGapId, limit) as any[];
       } else {
         rows = this.db
@@ -204,7 +213,10 @@ export class SqliteCuriosityExplorationRepository implements ICuriosityExplorati
           inv.timestamp,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save independent investigation ${inv.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save independent investigation ${inv.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -213,7 +225,9 @@ export class SqliteCuriosityExplorationRepository implements ICuriosityExplorati
       let rows: any[];
       if (domain) {
         rows = this.db
-          .prepare(`SELECT * FROM independent_investigations WHERE domain = ? ORDER BY timestamp DESC LIMIT ?`)
+          .prepare(
+            `SELECT * FROM independent_investigations WHERE domain = ? ORDER BY timestamp DESC LIMIT ?`,
+          )
           .all(domain, limit) as any[];
       } else {
         rows = this.db
@@ -271,15 +285,16 @@ export class SqliteCuriosityExplorationRepository implements ICuriosityExplorati
           interest.lastExploredAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save discovered interest ${interest.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save discovered interest ${interest.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
   public getInterestById(id: string): DiscoveredInterest | null {
     try {
-      const row = this.db
-        .prepare(`SELECT * FROM discovered_interests WHERE id = ?`)
-        .get(id) as any;
+      const row = this.db.prepare(`SELECT * FROM discovered_interests WHERE id = ?`).get(id) as any;
       if (!row) return null;
       return this.mapInterestRow(row);
     } catch (err: any) {
@@ -290,7 +305,9 @@ export class SqliteCuriosityExplorationRepository implements ICuriosityExplorati
   public listInterests(limit: number = 50): DiscoveredInterest[] {
     try {
       const rows = this.db
-        .prepare(`SELECT * FROM discovered_interests ORDER BY curiosity_intensity DESC, last_explored_at DESC LIMIT ?`)
+        .prepare(
+          `SELECT * FROM discovered_interests ORDER BY curiosity_intensity DESC, last_explored_at DESC LIMIT ?`,
+        )
         .all(limit) as any[];
       return rows.map((r) => this.mapInterestRow(r));
     } catch (err: any) {

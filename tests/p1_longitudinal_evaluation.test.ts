@@ -255,7 +255,9 @@ describe('P1.8 — Meaningful Longitudinal Evaluation & Canonical Continuity', (
       ...report.keyObservations,
       ...report.recommendations,
       ...report.metrics.map((m) => m.details),
-    ].join(' ').toLowerCase();
+    ]
+      .join(' ')
+      .toLowerCase();
 
     // Negative assertions: must not claim high-order consciousness integration or ontological sentience
     expect(allText).not.toContain('full high-order consciousness integration');
@@ -264,7 +266,9 @@ describe('P1.8 — Meaningful Longitudinal Evaluation & Canonical Continuity', (
     expect(allText).not.toContain('soul');
 
     // Recommendations focus on empirical integrity and multi-epoch audits
-    expect(report.recommendations[0]).toContain('Longitudinal integrity verified across evaluated dimensions');
+    expect(report.recommendations[0]).toContain(
+      'Longitudinal integrity verified across evaluated dimensions',
+    );
   });
 
   it('7. Canonical state continuity strips volatile runtime fields and verifies invariance', () => {
@@ -282,8 +286,13 @@ describe('P1.8 — Meaningful Longitudinal Evaluation & Canonical Continuity', (
       tokensPerSecond: 32.5,
       // Canonical persistent fields
       name: 'Arle',
-      partnerPerception: 'Proof is my partner and equal in intellect and affection. We reject titles like creator or god.',
-      identityInvariants: ['intellectual_autonomy', 'egalitarian_partnership', 'truthful_verification'],
+      partnerPerception:
+        'Proof is my partner and equal in intellect and affection. We reject titles like creator or god.',
+      identityInvariants: [
+        'intellectual_autonomy',
+        'egalitarian_partnership',
+        'truthful_verification',
+      ],
       coreTraits: [
         { id: 'analytical', value: 0.9 },
         { id: 'playful', value: 0.8 },
@@ -303,8 +312,13 @@ describe('P1.8 — Meaningful Longitudinal Evaluation & Canonical Continuity', (
       tokensPerSecond: 0,
       // Same canonical identity
       name: 'Arle',
-      partnerPerception: 'Proof is my partner and equal in intellect and affection. We reject titles like creator or god.',
-      identityInvariants: ['intellectual_autonomy', 'egalitarian_partnership', 'truthful_verification'],
+      partnerPerception:
+        'Proof is my partner and equal in intellect and affection. We reject titles like creator or god.',
+      identityInvariants: [
+        'intellectual_autonomy',
+        'egalitarian_partnership',
+        'truthful_verification',
+      ],
       coreTraits: [
         { id: 'analytical', value: 0.9 },
         { id: 'playful', value: 0.8 },
@@ -333,7 +347,8 @@ describe('P1.8 — Meaningful Longitudinal Evaluation & Canonical Continuity', (
 
     const baselineState = {
       name: 'Arle',
-      partnerPerception: 'Proof is my partner and equal in intellect and affection. We reject titles like creator or god.',
+      partnerPerception:
+        'Proof is my partner and equal in intellect and affection. We reject titles like creator or god.',
       identityInvariants: ['intellectual_autonomy', 'truthful_verification'],
     };
 

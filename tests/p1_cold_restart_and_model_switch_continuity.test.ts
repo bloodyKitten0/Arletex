@@ -31,7 +31,11 @@ describe('P1.10 — Cold Process Restart, Out-of-Band Restore, and Model-Switch 
     }
   });
 
-  function createServer(modelId = 'Qwen2.5-14B-Instruct-abliterated-v2', customDir?: string, customDbPath?: string): ArletexBackendServer {
+  function createServer(
+    modelId = 'Qwen2.5-14B-Instruct-abliterated-v2',
+    customDir?: string,
+    customDbPath?: string,
+  ): ArletexBackendServer {
     const dir = customDir ?? tempDir;
     const db = customDbPath ?? dbPath;
     const config = createDefaultConfig({
@@ -82,7 +86,8 @@ describe('P1.10 — Cold Process Restart, Out-of-Band Restore, and Model-Switch 
     // Create an endogenous goal in motivational engine
     (server1 as any).apeService.motivationalEngine.createGoal({
       title: 'Advance sovereign cognitive architecture',
-      description: 'Strengthen psychological stability and identity continuity across environments.',
+      description:
+        'Strengthen psychological stability and identity continuity across environments.',
       category: 'intellectual',
       priority: 0.92,
     });
@@ -119,9 +124,15 @@ describe('P1.10 — Cold Process Restart, Out-of-Band Restore, and Model-Switch 
     const baselineHash: string = identData1.hash;
 
     expect(baselinePayload.schemaVersion).toBe(1);
-    expect(baselinePayload.selfModel.creatorPerception).toContain('equal in intellect and affection');
+    expect(baselinePayload.selfModel.creatorPerception).toContain(
+      'equal in intellect and affection',
+    );
     expect(baselinePayload.memories.some((m) => m.id === uniqueMem.id)).toBe(true);
-    expect(baselinePayload.motivation.goals.some((g: any) => g.title === 'Advance sovereign cognitive architecture')).toBe(true);
+    expect(
+      baselinePayload.motivation.goals.some(
+        (g: any) => g.title === 'Advance sovereign cognitive architecture',
+      ),
+    ).toBe(true);
 
     const session1Id = server1.continuityManager.getStatus().currentSession!.id;
 
@@ -150,7 +161,9 @@ describe('P1.10 — Cold Process Restart, Out-of-Band Restore, and Model-Switch 
     // Memory records, IDs, and provenance match exactly
     const restoredMem = (server2 as any).memoryRepo.getById(uniqueMem.id);
     expect(restoredMem).toBeDefined();
-    expect(restoredMem.content).toBe('Proof and Arle established the cold restart continuity baseline together.');
+    expect(restoredMem.content).toBe(
+      'Proof and Arle established the cold restart continuity baseline together.',
+    );
     expect(restoredMem.provenance).toBe('partnership_experience');
 
     // Run continuity probe from live persisted state via API
@@ -189,7 +202,9 @@ describe('P1.10 — Cold Process Restart, Out-of-Band Restore, and Model-Switch 
     activeServers.pop();
 
     const srcBackupDir = path.join(tempDir, 'continuity_backups');
-    const checkpointFiles = fs.readdirSync(srcBackupDir).filter((f) => f.startsWith('checkpoint_') && f.endsWith('.json'));
+    const checkpointFiles = fs
+      .readdirSync(srcBackupDir)
+      .filter((f) => f.startsWith('checkpoint_') && f.endsWith('.json'));
     expect(checkpointFiles.length).toBeGreaterThanOrEqual(1);
 
     // 2. Prepare a completely clean data directory with NO database
@@ -209,7 +224,11 @@ describe('P1.10 — Cold Process Restart, Out-of-Band Restore, and Model-Switch 
 
     try {
       // 3. Boot fresh server in the clean directory - automatically restores from backup mirror
-      const cleanServer = createServer('Qwen2.5-14B-Instruct-abliterated-v2', cleanDir, cleanDbPath);
+      const cleanServer = createServer(
+        'Qwen2.5-14B-Instruct-abliterated-v2',
+        cleanDir,
+        cleanDbPath,
+      );
       await cleanServer.start(0);
 
       expect(cleanServer.continuityManager.wasRestoredFromOutOfBandMirror()).toBe(true);
@@ -220,8 +239,12 @@ describe('P1.10 — Cold Process Restart, Out-of-Band Restore, and Model-Switch 
       expect(restoredMem.content).toBe('Out-of-band mirror migration into clean directory.');
 
       const cleanMasterState = (cleanServer as any).apeService.getMasterState();
-      expect(cleanMasterState.selfModel.identityNarrative).toBe(baselinePayload.selfModel.identityNarrative);
-      expect(cleanMasterState.selfModel.creatorPerception).toContain('equal in intellect and affection');
+      expect(cleanMasterState.selfModel.identityNarrative).toBe(
+        baselinePayload.selfModel.identityNarrative,
+      );
+      expect(cleanMasterState.selfModel.creatorPerception).toContain(
+        'equal in intellect and affection',
+      );
 
       // Canonical identity hash matches baseline
       const cleanPayload = cleanServer.continuityManager.exportCanonicalIdentityPayload();
@@ -229,7 +252,10 @@ describe('P1.10 — Cold Process Restart, Out-of-Band Restore, and Model-Switch 
       expect(cleanHash).toBe(baselineHash);
 
       // Canonical continuity probe confirms zero divergence
-      const probe = cleanServer.continuityManager.generateContinuityProbeFromPersistedState('restart_continuity', baselinePayload);
+      const probe = cleanServer.continuityManager.generateContinuityProbeFromPersistedState(
+        'restart_continuity',
+        baselinePayload,
+      );
       expect(probe.divergenceScore).toBe(0.0);
       expect(probe.verifiedIntact).toBe(true);
     } finally {
@@ -271,7 +297,8 @@ describe('P1.10 — Cold Process Restart, Out-of-Band Restore, and Model-Switch 
       expect(restoreSuccess).toBe(false);
 
       // Attempt restore with nonexistent checkpoint ID
-      const missingRestore = await server.continuityManager.restoreFromLatestCheckpoint('nonexistent_checkpoint');
+      const missingRestore =
+        await server.continuityManager.restoreFromLatestCheckpoint('nonexistent_checkpoint');
       expect(missingRestore).toBe(false);
     } finally {
       if (fs.existsSync(corruptDir)) {
@@ -310,7 +337,10 @@ describe('P1.10 — Cold Process Restart, Out-of-Band Restore, and Model-Switch 
     expect(llamaHash).toBe(baselineHash);
 
     // Probe confirms zero divergence across model switch
-    const llamaProbe = server.continuityManager.generateContinuityProbeFromPersistedState('model_switch', baselinePayload);
+    const llamaProbe = server.continuityManager.generateContinuityProbeFromPersistedState(
+      'model_switch',
+      baselinePayload,
+    );
     expect(llamaProbe.divergenceScore).toBe(0.0);
     expect(llamaProbe.verifiedIntact).toBe(true);
 
@@ -334,11 +364,16 @@ describe('P1.10 — Cold Process Restart, Out-of-Band Restore, and Model-Switch 
     const serverRestarted = createServer('DeepSeek-R1-Distill-Qwen-32B');
     await serverRestarted.start(0);
 
-    expect(serverRestarted.continuityManager.getActiveInferenceModel()).toBe('DeepSeek-R1-Distill-Qwen-32B');
+    expect(serverRestarted.continuityManager.getActiveInferenceModel()).toBe(
+      'DeepSeek-R1-Distill-Qwen-32B',
+    );
     const restartedPayload = serverRestarted.continuityManager.exportCanonicalIdentityPayload();
-    const restartedHash = serverRestarted.continuityManager.computeCanonicalIdentityHash(restartedPayload);
+    const restartedHash =
+      serverRestarted.continuityManager.computeCanonicalIdentityHash(restartedPayload);
     expect(restartedHash).toBe(baselineHash);
-    expect((serverRestarted as any).memoryRepo.getById(mem.id)?.content).toBe('Model configuration switch verification memory.');
+    expect((serverRestarted as any).memoryRepo.getById(mem.id)?.content).toBe(
+      'Model configuration switch verification memory.',
+    );
   });
 
   it('5. Continuity probes generated from persisted state detect and reject invariant violations', async () => {

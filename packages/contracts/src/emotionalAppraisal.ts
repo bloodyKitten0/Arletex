@@ -25,19 +25,23 @@ export const AppraisalInterpretationComparisonSchema = z.object({
   id: z.string().min(1),
   eventId: z.string().min(1),
   eventContent: z.string().min(1),
-  interpretations: z.array(
-    z.object({
-      interpretationKey: z.string(),
-      appraisal: ApeAppraisalSchema,
-      dominantEmotionId: z.string(),
-      dominantIntensity: z.number().min(0.0).max(1.0),
-    }),
-  ).min(2),
+  interpretations: z
+    .array(
+      z.object({
+        interpretationKey: z.string(),
+        appraisal: ApeAppraisalSchema,
+        dominantEmotionId: z.string(),
+        dominantIntensity: z.number().min(0.0).max(1.0),
+      }),
+    )
+    .min(2),
   emotionalDivergenceScore: z.number().min(0.0).max(1.0),
   divergenceExplanation: z.string().min(1),
   evaluatedAt: z.string(),
 });
-export type AppraisalInterpretationComparison = z.infer<typeof AppraisalInterpretationComparisonSchema>;
+export type AppraisalInterpretationComparison = z.infer<
+  typeof AppraisalInterpretationComparisonSchema
+>;
 
 /**
  * Validates negative invariants for emotional appraisal:

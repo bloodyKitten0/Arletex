@@ -62,7 +62,10 @@ export class SqliteAutonomousAgencyRepository implements IAutonomousActivityRepo
           activity.interruptedAt ?? null,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save autonomous activity ${activity.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save autonomous activity ${activity.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -130,10 +133,14 @@ export class SqliteAutonomousAgencyRepository implements IAutonomousActivityRepo
       permissionLevel: row.permission_level,
       targetResource: row.target_resource,
       parameters: JSON.parse(row.parameters_json || '{}'),
-      executionResult: row.execution_result_json ? JSON.parse(row.execution_result_json) : undefined,
+      executionResult: row.execution_result_json
+        ? JSON.parse(row.execution_result_json)
+        : undefined,
       verification: row.verification_json ? JSON.parse(row.verification_json) : undefined,
       failureInfo: row.failure_info_json ? JSON.parse(row.failure_info_json) : undefined,
-      proactiveMessage: row.proactive_message_json ? JSON.parse(row.proactive_message_json) : undefined,
+      proactiveMessage: row.proactive_message_json
+        ? JSON.parse(row.proactive_message_json)
+        : undefined,
       status: row.status as AutonomousActivityStatus,
       initiatedAt: row.initiated_at,
       completedAt: row.completed_at || undefined,

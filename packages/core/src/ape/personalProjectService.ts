@@ -104,14 +104,20 @@ export class PersonalProjectService {
   /**
    * Records verifiable progress on a specific project milestone.
    */
-  public recordMilestoneProgress(projectId: string, milestoneId: string, evidence: string): ApePersonalProject {
+  public recordMilestoneProgress(
+    projectId: string,
+    milestoneId: string,
+    evidence: string,
+  ): ApePersonalProject {
     const project = this.repo.getPersonalProjectById(projectId);
     if (!project) {
       throw new Error(`Personal project with id ${projectId} not found`);
     }
 
     if (!evidence || typeof evidence !== 'string' || evidence.trim().length < 5) {
-      throw new Error(`Milestone progress requires substantive empirical evidence (at least 5 characters). Received: "${evidence}"`);
+      throw new Error(
+        `Milestone progress requires substantive empirical evidence (at least 5 characters). Received: "${evidence}"`,
+      );
     }
 
     const milestones = project.milestones.map((m) => {
@@ -127,7 +133,8 @@ export class PersonalProjectService {
     });
 
     const completedCount = milestones.filter((m) => m.completed).length;
-    const progress = milestones.length > 0 ? Number((completedCount / milestones.length).toFixed(3)) : 0.0;
+    const progress =
+      milestones.length > 0 ? Number((completedCount / milestones.length).toFixed(3)) : 0.0;
     const status: ApeProjectStatus = progress >= 1.0 ? 'completed' : project.status;
 
     const updated = this.repo.updatePersonalProject({
@@ -169,9 +176,13 @@ export class PersonalProjectService {
     const deliverables = [...project.deliverables, newDeliverable];
     // Calculate progress grounded in completed milestones and deliverables
     const completedMilestones = project.milestones.filter((m) => m.completed).length;
-    const milestoneRatio = project.milestones.length > 0 ? completedMilestones / project.milestones.length : 0.0;
+    const milestoneRatio =
+      project.milestones.length > 0 ? completedMilestones / project.milestones.length : 0.0;
     const deliverableContribution = Math.min(0.3, deliverables.length * 0.15);
-    const progress = Math.min(1.0, Number((milestoneRatio * 0.7 + deliverableContribution).toFixed(3)));
+    const progress = Math.min(
+      1.0,
+      Number((milestoneRatio * 0.7 + deliverableContribution).toFixed(3)),
+    );
     const status: ApeProjectStatus = progress >= 1.0 ? 'completed' : project.status;
 
     const updated = this.repo.updatePersonalProject({
@@ -224,7 +235,9 @@ export class PersonalProjectService {
       status: 'abandoned',
       abandonmentReason: justification,
     });
-    this.logger.info(`Personal project abandoned: "${updated.title}" (Justification: ${justification})`);
+    this.logger.info(
+      `Personal project abandoned: "${updated.title}" (Justification: ${justification})`,
+    );
     return updated;
   }
 
@@ -238,8 +251,13 @@ export class PersonalProjectService {
     }
 
     if (project.milestones.length > 0 && project.milestones.some((m) => !m.completed)) {
-      const remaining = project.milestones.filter((m) => !m.completed).map((m) => m.title).join(', ');
-      throw new Error(`Cannot complete project "${project.title}": incomplete milestones remain: [${remaining}]`);
+      const remaining = project.milestones
+        .filter((m) => !m.completed)
+        .map((m) => m.title)
+        .join(', ');
+      throw new Error(
+        `Cannot complete project "${project.title}": incomplete milestones remain: [${remaining}]`,
+      );
     }
 
     const updated = this.repo.updatePersonalProject({
@@ -255,7 +273,10 @@ export class PersonalProjectService {
     return this.repo.getPersonalProjectById(projectId);
   }
 
-  public listProjects(filter?: { status?: ApeProjectStatus; category?: ApeProjectCategory }): ApePersonalProject[] {
+  public listProjects(filter?: {
+    status?: ApeProjectStatus;
+    category?: ApeProjectCategory;
+  }): ApePersonalProject[] {
     return this.repo.listPersonalProjects(filter);
   }
 

@@ -85,7 +85,9 @@ export class PerceptionRepository implements IPerceptionRepository {
 
   public getLatestFrame(): UnifiedMultimodalFrame | null {
     try {
-      const row = this.db.prepare('SELECT * FROM perceptual_frames ORDER BY timestamp DESC LIMIT 1').get() as any;
+      const row = this.db
+        .prepare('SELECT * FROM perceptual_frames ORDER BY timestamp DESC LIMIT 1')
+        .get() as any;
       if (!row) return null;
       return this.mapFrameRow(row);
     } catch (err: any) {
@@ -156,7 +158,9 @@ export class PerceptionRepository implements IPerceptionRepository {
       const limitClause = filter?.limit ? `LIMIT ${Number(filter.limit)}` : 'LIMIT 50';
 
       const rows = this.db
-        .prepare(`SELECT * FROM perceptual_events ${whereClause} ORDER BY timestamp DESC ${limitClause}`)
+        .prepare(
+          `SELECT * FROM perceptual_events ${whereClause} ORDER BY timestamp DESC ${limitClause}`,
+        )
         .all(...params) as any[];
 
       return rows.map((r) => ({
@@ -209,7 +213,11 @@ export class PerceptionRepository implements IPerceptionRepository {
     }
   }
 
-  public listDetectedObjects(filter?: { label?: string; category?: string; limit?: number }): DetectedObject[] {
+  public listDetectedObjects(filter?: {
+    label?: string;
+    category?: string;
+    limit?: number;
+  }): DetectedObject[] {
     try {
       const conditions: string[] = [];
       const params: any[] = [];
@@ -227,7 +235,9 @@ export class PerceptionRepository implements IPerceptionRepository {
       const limitClause = filter?.limit ? `LIMIT ${Number(filter.limit)}` : 'LIMIT 50';
 
       const rows = this.db
-        .prepare(`SELECT * FROM perceptual_detected_objects ${whereClause} ORDER BY created_at DESC ${limitClause}`)
+        .prepare(
+          `SELECT * FROM perceptual_detected_objects ${whereClause} ORDER BY created_at DESC ${limitClause}`,
+        )
         .all(...params) as any[];
 
       return rows.map((r) => ({

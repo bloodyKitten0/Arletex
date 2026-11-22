@@ -62,7 +62,10 @@ export class InMemoryExecutiveRepository implements IExecutiveRepository {
     this.gatings.set(gating.id, { ...gating });
   }
 
-  public listMemoryGatings(targetBufferId?: string, limit: number = 50): WorkingMemoryGatingDirective[] {
+  public listMemoryGatings(
+    targetBufferId?: string,
+    limit: number = 50,
+  ): WorkingMemoryGatingDirective[] {
     let list = Array.from(this.gatings.values());
     if (targetBufferId) {
       list = list.filter((g) => g.targetBufferId === targetBufferId);
@@ -106,11 +109,13 @@ export class ExecutiveEngine {
     // If risk >= 0.7 or explicit inhibition reason supplied, action is inhibited
     const isInhibited = clampedRisk >= 0.7 || input.inhibitionReason !== undefined;
     const inhibitionReason: InhibitionReason | undefined = isInhibited
-      ? input.inhibitionReason || (clampedRisk >= 0.7 ? 'destructive_potential' : 'impulse_management')
+      ? input.inhibitionReason ||
+        (clampedRisk >= 0.7 ? 'destructive_potential' : 'impulse_management')
       : undefined;
 
     const alternativeAction = isInhibited
-      ? input.alternativeAction || `Stage harmless simulation and verify safety invariants before action.`
+      ? input.alternativeAction ||
+        `Stage harmless simulation and verify safety invariants before action.`
       : undefined;
 
     const evaluation: ActionInhibitionEvaluation = {
@@ -132,7 +137,9 @@ export class ExecutiveEngine {
         `Executive Inhibitory Control SUPPRESSED action '${evaluation.actionName}' (Risk: ${clampedRisk}, Reason: ${inhibitionReason}). Alternative: ${alternativeAction}`,
       );
     } else {
-      this.logger.info(`Executive Inhibitory Control APPROVED action '${evaluation.actionName}' (Risk: ${clampedRisk})`);
+      this.logger.info(
+        `Executive Inhibitory Control APPROVED action '${evaluation.actionName}' (Risk: ${clampedRisk})`,
+      );
     }
 
     return evaluation;
@@ -198,7 +205,9 @@ export class ExecutiveEngine {
     };
 
     this.repo.saveMemoryGating(directive);
-    this.logger.info(`Working Memory Gating directive [${directive.operation}] applied on '${directive.targetBufferId}'`);
+    this.logger.info(
+      `Working Memory Gating directive [${directive.operation}] applied on '${directive.targetBufferId}'`,
+    );
     return directive;
   }
 
@@ -219,7 +228,8 @@ export class ExecutiveEngine {
     // Hyperbolic discounting: V / (1 + k * t)
     const discountedFutureValue =
       Math.round(
-        (input.delayedOption.futureValue / (1 + discountRate * input.delayedOption.delayMinutes)) * 1000,
+        (input.delayedOption.futureValue / (1 + discountRate * input.delayedOption.delayMinutes)) *
+          1000,
       ) / 1000;
 
     const chooseDelayed = discountedFutureValue > input.immediateOption.immediateValue;
@@ -228,7 +238,9 @@ export class ExecutiveEngine {
       ? `Chose delayed gratification: "${input.delayedOption.description}" offers superior discounted value (${discountedFutureValue}) compared to immediate shortcut "${input.immediateOption.description}" (${input.immediateOption.immediateValue}).`
       : `Chose immediate action: Discounted future value (${discountedFutureValue}) does not justify delay cost against immediate reward (${input.immediateOption.immediateValue}).`;
 
-    this.logger.info(`Delayed Gratification Evaluation: chooseDelayed=${chooseDelayed} (Discounted=${discountedFutureValue} vs Imm=${input.immediateOption.immediateValue})`);
+    this.logger.info(
+      `Delayed Gratification Evaluation: chooseDelayed=${chooseDelayed} (Discounted=${discountedFutureValue} vs Imm=${input.immediateOption.immediateValue})`,
+    );
 
     return {
       chooseDelayed,
@@ -248,13 +260,15 @@ export class ExecutiveEngine {
     distractionSalience?: number;
   }): ExecutiveControlState {
     const existing = this.repo.getControlState();
-    const currentDuration = (existing?.sustainedAttentionDurationMs || 0) + Math.max(0, input.elapsedDurationMs);
+    const currentDuration =
+      (existing?.sustainedAttentionDurationMs || 0) + Math.max(0, input.elapsedDurationMs);
 
     let distractionResistance = existing?.distractionResistanceScore ?? 0.9;
     if (input.distractionDetected) {
       const salience = Math.max(0.0, Math.min(1.0, input.distractionSalience ?? 0.5));
       // Attenuate slightly if high salience distraction penetrated, but recover over time
-      distractionResistance = Math.round(Math.max(0.4, distractionResistance - salience * 0.05) * 1000) / 1000;
+      distractionResistance =
+        Math.round(Math.max(0.4, distractionResistance - salience * 0.05) * 1000) / 1000;
     } else {
       distractionResistance = Math.round(Math.min(1.0, distractionResistance + 0.02) * 1000) / 1000;
     }
@@ -265,8 +279,8 @@ export class ExecutiveEngine {
       sustainedAttentionDurationMs: currentDuration,
       distractionResistanceScore: distractionResistance,
       cognitiveFlexibilityScore: existing?.cognitiveFlexibilityScore ?? 0.88,
-      inhibitedActionCount: (existing?.inhibitedActionCount || 0),
-      taskSwitchCount: (existing?.taskSwitchCount || 0),
+      inhibitedActionCount: existing?.inhibitedActionCount || 0,
+      taskSwitchCount: existing?.taskSwitchCount || 0,
       lastUpdatedAt: new Date().toISOString(),
     };
 
@@ -278,13 +292,15 @@ export class ExecutiveEngine {
   // 6. Response Selection (Multi-criteria)
   // ==========================================
 
-  public selectOptimalResponse(candidates: Array<{
-    id: string;
-    action: string;
-    alignmentScore: number;
-    safetyScore: number;
-    utility: number;
-  }>): {
+  public selectOptimalResponse(
+    candidates: Array<{
+      id: string;
+      action: string;
+      alignmentScore: number;
+      safetyScore: number;
+      utility: number;
+    }>,
+  ): {
     selectedId: string;
     selectedAction: string;
     compositeScore: number;
@@ -300,7 +316,7 @@ export class ExecutiveEngine {
       const util = Math.max(0.0, Math.min(1.0, c.utility));
 
       // Multi-criteria weighting: safety (40%), partner alignment (40%), utility (20%)
-      const compositeScore = Math.round(((safety * 0.4) + (align * 0.4) + (util * 0.2)) * 1000) / 1000;
+      const compositeScore = Math.round((safety * 0.4 + align * 0.4 + util * 0.2) * 1000) / 1000;
 
       return {
         ...c,
@@ -338,7 +354,10 @@ export class ExecutiveEngine {
     return this.repo.listTaskSwitches(limit);
   }
 
-  public listMemoryGatings(targetBufferId?: string, limit: number = 50): WorkingMemoryGatingDirective[] {
+  public listMemoryGatings(
+    targetBufferId?: string,
+    limit: number = 50,
+  ): WorkingMemoryGatingDirective[] {
     return this.repo.listMemoryGatings(targetBufferId, limit);
   }
 

@@ -51,7 +51,10 @@ export class SqliteGlobalCognitiveRepository implements IGlobalCognitiveReposito
           cycle.totalLatencyMs,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save global cognitive cycle ${cycle.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save global cognitive cycle ${cycle.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -70,7 +73,9 @@ export class SqliteGlobalCognitiveRepository implements IGlobalCognitiveReposito
   public getCycleByTraceId(traceId: string): GlobalCognitiveCycleEvent | null {
     try {
       const row = this.db
-        .prepare(`SELECT * FROM global_cognitive_cycles WHERE trace_id = ? ORDER BY started_at DESC LIMIT 1`)
+        .prepare(
+          `SELECT * FROM global_cognitive_cycles WHERE trace_id = ? ORDER BY started_at DESC LIMIT 1`,
+        )
         .get(traceId) as any;
       if (!row) return null;
       return this.mapCycleRow(row);
@@ -110,7 +115,10 @@ export class SqliteGlobalCognitiveRepository implements IGlobalCognitiveReposito
         )
         .run(snapshot.snapshotId, snapshot.timestamp, JSON.stringify(snapshot));
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save global cognitive snapshot ${snapshot.snapshotId}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save global cognitive snapshot ${snapshot.snapshotId}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -122,7 +130,10 @@ export class SqliteGlobalCognitiveRepository implements IGlobalCognitiveReposito
       if (!row) return null;
       return JSON.parse(row.snapshot_data_json);
     } catch (err: any) {
-      throw new DatabaseError(`Failed to get latest global cognitive snapshot: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to get latest global cognitive snapshot: ${err.message}`,
+        err,
+      );
     }
   }
 

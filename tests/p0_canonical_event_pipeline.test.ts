@@ -17,10 +17,7 @@ import {
   ApeService,
   rootLogger,
 } from '@arletex/core';
-import {
-  CognitiveEvent,
-  ActionProposal,
-} from '@arletex/contracts';
+import { CognitiveEvent, ActionProposal } from '@arletex/contracts';
 
 describe('Priority 0 — Canonical Cognitive Event Pipeline & Recoverability (P0.5 & P0.6)', () => {
   let tempDir: string;
@@ -244,10 +241,16 @@ describe('Priority 0 — Canonical Cognitive Event Pipeline & Recoverability (P0
       // 4. Verify identity, memories, and integrity survived intact
       const loadedMems = freshMemoryRepo.list(5);
       expect(loadedMems.length).toBeGreaterThan(0);
-      expect(loadedMems.some((m) => m.content.includes('Proof calibrated my psychological architecture'))).toBe(true);
+      expect(
+        loadedMems.some((m) =>
+          m.content.includes('Proof calibrated my psychological architecture'),
+        ),
+      ).toBe(true);
 
       // SQLite integrity check passes
-      const integrity = freshDb.prepare('PRAGMA integrity_check').get() as { integrity_check: string };
+      const integrity = freshDb.prepare('PRAGMA integrity_check').get() as {
+        integrity_check: string;
+      };
       expect(integrity.integrity_check).toBe('ok');
 
       freshDbService.close();

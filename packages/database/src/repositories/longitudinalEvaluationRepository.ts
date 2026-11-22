@@ -1,8 +1,5 @@
 import Database from 'better-sqlite3';
-import {
-  LongitudinalEvaluationReport,
-  ContinuityVerificationProbe,
-} from '@arletex/contracts';
+import { LongitudinalEvaluationReport, ContinuityVerificationProbe } from '@arletex/contracts';
 import { DatabaseError, ILongitudinalEvaluationRepository } from '@arletex/core';
 
 export class SqliteLongitudinalEvaluationRepository implements ILongitudinalEvaluationRepository {
@@ -57,7 +54,10 @@ export class SqliteLongitudinalEvaluationRepository implements ILongitudinalEval
       if (!row) return null;
       return this.mapReportRow(row);
     } catch (err: any) {
-      throw new DatabaseError(`Failed to get longitudinal evaluation report ${id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to get longitudinal evaluation report ${id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -66,10 +66,15 @@ export class SqliteLongitudinalEvaluationRepository implements ILongitudinalEval
       const query = limit
         ? `SELECT * FROM longitudinal_evaluation_reports ORDER BY timestamp DESC LIMIT ?`
         : `SELECT * FROM longitudinal_evaluation_reports ORDER BY timestamp DESC`;
-      const rows = (limit ? this.db.prepare(query).all(limit) : this.db.prepare(query).all()) as any[];
+      const rows = (
+        limit ? this.db.prepare(query).all(limit) : this.db.prepare(query).all()
+      ) as any[];
       return rows.map((r) => this.mapReportRow(r));
     } catch (err: any) {
-      throw new DatabaseError(`Failed to list longitudinal evaluation reports: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to list longitudinal evaluation reports: ${err.message}`,
+        err,
+      );
     }
   }
 

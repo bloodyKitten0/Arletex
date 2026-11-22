@@ -70,7 +70,8 @@ describe('Milestone 6 — Repository-Wide Integration Scenarios and State Consis
     it('retrieves, validates magic bytes, observes visual content, and commits memory with empirical provenance', async () => {
       // 1. Authorized user sends image
       const validJpegBuffer = Buffer.from([
-        0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x01, 0x00, 0x48,
+        0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x01, 0x00,
+        0x48,
       ]);
 
       // 2. Validate magic signature
@@ -85,7 +86,8 @@ describe('Milestone 6 — Repository-Wide Integration Scenarios and State Consis
 
       // 4. Visual perception analyzes it (simulating VLM observation)
       const simulatedVlmObservation = {
-        description: 'A schematic architectural diagram of the APE cognitive engine showing 6 interconnected submodules.',
+        description:
+          'A schematic architectural diagram of the APE cognitive engine showing 6 interconnected submodules.',
         labels: ['diagram', 'architecture', 'graph'],
         textDetected: 'Artificial Psychology Engine v2',
         confidence: 0.94,
@@ -143,7 +145,8 @@ describe('Milestone 6 — Repository-Wide Integration Scenarios and State Consis
     it('validates video signature, extracts keyframe metadata, and distinguishes frames from inference', async () => {
       // 1. Valid MP4 header
       const validMp4Buffer = Buffer.from([
-        0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d, 0x00, 0x00, 0x02, 0x00,
+        0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d, 0x00, 0x00, 0x02,
+        0x00,
       ]);
 
       const detectedMime = validateTelegramMediaSignature(validMp4Buffer, 'video');
@@ -161,7 +164,8 @@ describe('Milestone 6 — Repository-Wide Integration Scenarios and State Consis
         durationSeconds: 5.0,
         inspectedKeyframes: keyframesMock.length,
         transcribedAudio: audioTranscriptionMock,
-        inferredSummary: 'Video shows a chess puzzle demonstrating a classic Greek gift sacrifice on h7.',
+        inferredSummary:
+          'Video shows a chess puzzle demonstrating a classic Greek gift sacrifice on h7.',
       };
 
       expect(videoObservation.inspectedKeyframes).toBe(2);
@@ -224,9 +228,13 @@ describe('Milestone 6 — Repository-Wide Integration Scenarios and State Consis
 
       // 4. Activate goal and simulate structured empirical research execution
       apeService.motivationalEngine.activateGoal(researchGoal.id);
-      expect(apeService.motivationalEngine.getState().goals.find((g) => g.id === researchGoal.id)?.status).toBe('active');
+      expect(
+        apeService.motivationalEngine.getState().goals.find((g) => g.id === researchGoal.id)
+          ?.status,
+      ).toBe('active');
 
-      const researchEvidence = 'Extracted survey on persistent homology barcode algorithms and filtration complexes.';
+      const researchEvidence =
+        'Extracted survey on persistent homology barcode algorithms and filtration complexes.';
       const researchVerified = true;
 
       // 5. Verification Engine confirms the evidence
@@ -319,13 +327,17 @@ describe('Milestone 6 — Repository-Wide Integration Scenarios and State Consis
       const selfModel = apeService.selfModelEngine;
 
       // 1. Arle attempts an authorized operation that fails
-      const operationAttempt = selfModel.recordOperationAttempt('Vulkan Raytracing Pipeline Compilation', 'Radeon 780M');
+      const operationAttempt = selfModel.recordOperationAttempt(
+        'Vulkan Raytracing Pipeline Compilation',
+        'Radeon 780M',
+      );
       expect(operationAttempt.id).toBeDefined();
 
       const failedOutcome = {
         operation: 'Vulkan Raytracing Pipeline Compilation',
         success: false,
-        evidence: 'Shader compiler returned SPIRV-Cross syntax failure: ray query extensions disabled in hardware mode',
+        evidence:
+          'Shader compiler returned SPIRV-Cross syntax failure: ray query extensions disabled in hardware mode',
         provenance: 'spirv-compiler-stderr',
         confidence: 0.99,
         error: 'Hardware ray query extension unavailable',
@@ -336,13 +348,23 @@ describe('Milestone 6 — Repository-Wide Integration Scenarios and State Consis
 
       // 3. Verify self-model state
       const state = selfModel.getState();
-      expect(state.acknowledgedLimitations.some((lim) => lim.includes('Vulkan Raytracing Pipeline Compilation'))).toBe(true);
+      expect(
+        state.acknowledgedLimitations.some((lim) =>
+          lim.includes('Vulkan Raytracing Pipeline Compilation'),
+        ),
+      ).toBe(true);
       // MUST NEVER claim as demonstrated capability!
-      expect(state.acknowledgedCapabilities.some((cap) => cap.includes('Vulkan Raytracing Pipeline Compilation'))).toBe(false);
+      expect(
+        state.acknowledgedCapabilities.some((cap) =>
+          cap.includes('Vulkan Raytracing Pipeline Compilation'),
+        ),
+      ).toBe(false);
 
       // 4. No successful memory is fabricated
       const allMemories = memoryRepo.list({ limit: 100 });
-      const hasFalseMemory = allMemories.some((m) => m.content.includes('Successfully compiled Vulkan Raytracing Pipeline'));
+      const hasFalseMemory = allMemories.some((m) =>
+        m.content.includes('Successfully compiled Vulkan Raytracing Pipeline'),
+      );
       expect(hasFalseMemory).toBe(false);
     });
   });
@@ -440,7 +462,9 @@ describe('Milestone 6 — Repository-Wide Integration Scenarios and State Consis
       const reloadedMemory = restartedMemoryRepo.getById(memory.id);
       expect(reloadedMemory).not.toBeNull();
       expect(reloadedMemory?.content).toBe(memory.content);
-      expect((reloadedMemory?.metadata as Record<string, unknown>)?.evidence).toBe('interactive-analysis-session');
+      expect((reloadedMemory?.metadata as Record<string, unknown>)?.evidence).toBe(
+        'interactive-analysis-session',
+      );
 
       // Relationship parameters & baseline composure recovered
       expect(afterMaster.relationship.trustLevel).toBe(beforeMaster.relationship.trustLevel);

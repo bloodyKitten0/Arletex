@@ -39,13 +39,7 @@ export class InferenceProviderRegistry implements IInferenceProvider {
     this.hardwareDetector = options.hardwareDetector || new HardwareProfileDetector(this.logger);
 
     // Default fallback order
-    this.fallbackOrder = [
-      'llama.cpp',
-      'ollama',
-      'openai_compatible',
-      'vllm',
-      'colibri',
-    ];
+    this.fallbackOrder = ['llama.cpp', 'ollama', 'openai_compatible', 'vllm', 'colibri'];
 
     if (options.providers) {
       this.providers = options.providers;
@@ -57,7 +51,10 @@ export class InferenceProviderRegistry implements IInferenceProvider {
           {
             ...this.config,
             provider: 'llama.cpp',
-            serverUrl: this.config.provider === 'llama.cpp' ? this.config.serverUrl : 'http://127.0.0.1:8080',
+            serverUrl:
+              this.config.provider === 'llama.cpp'
+                ? this.config.serverUrl
+                : 'http://127.0.0.1:8080',
           },
           this.logger,
         ),
@@ -69,7 +66,8 @@ export class InferenceProviderRegistry implements IInferenceProvider {
           {
             ...this.config,
             provider: 'ollama',
-            serverUrl: this.config.provider === 'ollama' ? this.config.serverUrl : 'http://127.0.0.1:11434',
+            serverUrl:
+              this.config.provider === 'ollama' ? this.config.serverUrl : 'http://127.0.0.1:11434',
           },
           this.logger,
         ),
@@ -81,7 +79,10 @@ export class InferenceProviderRegistry implements IInferenceProvider {
           {
             ...this.config,
             provider: 'openai_compatible',
-            serverUrl: this.config.provider === 'openai_compatible' ? this.config.serverUrl : 'http://127.0.0.1:8000',
+            serverUrl:
+              this.config.provider === 'openai_compatible'
+                ? this.config.serverUrl
+                : 'http://127.0.0.1:8000',
           },
           { providerType: 'openai_compatible', logger: this.logger },
         ),
@@ -93,7 +94,8 @@ export class InferenceProviderRegistry implements IInferenceProvider {
           {
             ...this.config,
             provider: 'vllm',
-            serverUrl: this.config.provider === 'vllm' ? this.config.serverUrl : 'http://127.0.0.1:8000',
+            serverUrl:
+              this.config.provider === 'vllm' ? this.config.serverUrl : 'http://127.0.0.1:8000',
           },
           { providerType: 'vllm', name: 'vLLM Engine', logger: this.logger },
         ),
@@ -105,7 +107,8 @@ export class InferenceProviderRegistry implements IInferenceProvider {
           {
             ...this.config,
             provider: 'colibri',
-            serverUrl: this.config.provider === 'colibri' ? this.config.serverUrl : 'http://127.0.0.1:8000',
+            serverUrl:
+              this.config.provider === 'colibri' ? this.config.serverUrl : 'http://127.0.0.1:8000',
           },
           this.logger,
         ),
@@ -279,7 +282,9 @@ export class InferenceProviderRegistry implements IInferenceProvider {
         throw err;
       }
 
-      this.logger.warn(`Primary provider '${this.activeType}' failed: ${err.message}. Cascading to fallbacks...`);
+      this.logger.warn(
+        `Primary provider '${this.activeType}' failed: ${err.message}. Cascading to fallbacks...`,
+      );
 
       for (const fallbackType of this.fallbackOrder) {
         if (fallbackType === this.activeType) continue;

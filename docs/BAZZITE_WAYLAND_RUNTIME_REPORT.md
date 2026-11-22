@@ -6,20 +6,20 @@
 **Total System Memory:** 24 GB LPDDR5X-7500 (UMA architecture, dynamically shared between CPU and GPU)  
 **Host Operating System:** Bazzite Linux (Fedora Silverblue-based immutable Ostree distribution)  
 **Desktop Environment:** KDE Plasma 6 / Gamescope  
-**Display Server Protocol:** Wayland (`XDG_SESSION_TYPE=wayland`)  
+**Display Server Protocol:** Wayland (`XDG_SESSION_TYPE=wayland`)
 
 ---
 
 ## 1. Subsystem Audit & Runtime Capabilities
 
-| Subsystem | Host Configuration | Provider Implementation | Validation Outcome |
-|---|---|---|---|
-| **Display Server** | Wayland native compositor | `DesktopEnvironmentProvider` (captures screenshots via native tools or DBus portals, queries windows via DBus/KWin) | **VERIFIED** |
-| **Virtual Input** | `ydotool` daemon (`ydotoold`) on `/tmp/ydotool.sock` | `DesktopEnvironmentProvider.mouseClick`, `keyTap`, `typeText` via `ydotool` | **VERIFIED** |
-| **Media & Audio Architecture** | PipeWire 1.x + WirePlumber (`wpctl`) + MPRIS D-Bus | `VerificationEngine` queries MPRIS `PlaybackStatus` and PipeWire active audio streams before declaring playback verified | **VERIFIED** |
-| **Web Browser Isolation** | Google Chrome Flatpak (`com.google.Chrome`) | Chrome Profile 7 (`Profile 7`) dedicated to Arletex (`arletex.email@gmail.com`) with independent cookies and session | **VERIFIED** |
-| **Local LLM Engine** | `llama-server` on `127.0.0.1:8080` (Qwen2.5-14B-Instruct-abliterated-v2.Q4_K_M.gguf) | Offloading 36 GPU layers to AMD Radeon 780M iGPU with 12K context window | **VERIFIED** |
-| **Voice & Multimodal Stack** | Kokoro 82M TTS + FastEmbed embeddings on `127.0.0.1:39282` | `specialists_server.py` microservice handling voice synthesis and dense embeddings | **VERIFIED** |
+| Subsystem                      | Host Configuration                                                                   | Provider Implementation                                                                                                  | Validation Outcome |
+| ------------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | ------------------ |
+| **Display Server**             | Wayland native compositor                                                            | `DesktopEnvironmentProvider` (captures screenshots via native tools or DBus portals, queries windows via DBus/KWin)      | **VERIFIED**       |
+| **Virtual Input**              | `ydotool` daemon (`ydotoold`) on `/tmp/ydotool.sock`                                 | `DesktopEnvironmentProvider.mouseClick`, `keyTap`, `typeText` via `ydotool`                                              | **VERIFIED**       |
+| **Media & Audio Architecture** | PipeWire 1.x + WirePlumber (`wpctl`) + MPRIS D-Bus                                   | `VerificationEngine` queries MPRIS `PlaybackStatus` and PipeWire active audio streams before declaring playback verified | **VERIFIED**       |
+| **Web Browser Isolation**      | Google Chrome Flatpak (`com.google.Chrome`)                                          | Chrome Profile 7 (`Profile 7`) dedicated to Arletex (`arletex.email@gmail.com`) with independent cookies and session     | **VERIFIED**       |
+| **Local LLM Engine**           | `llama-server` on `127.0.0.1:8080` (Qwen2.5-14B-Instruct-abliterated-v2.Q4_K_M.gguf) | Offloading 36 GPU layers to AMD Radeon 780M iGPU with 12K context window                                                 | **VERIFIED**       |
+| **Voice & Multimodal Stack**   | Kokoro 82M TTS + FastEmbed embeddings on `127.0.0.1:39282`                           | `specialists_server.py` microservice handling voice synthesis and dense embeddings                                       | **VERIFIED**       |
 
 ---
 

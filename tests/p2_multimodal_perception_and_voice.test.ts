@@ -418,12 +418,23 @@ describe('P2.3 — Complete Multimodal Perception and Voice Stack', () => {
       const server = createServer();
       const port = await server.start(0);
 
+      let synthStarted!: () => void;
+      const synthStartedPromise = new Promise<void>((resolve) => {
+        synthStarted = resolve;
+      });
+
       // Simulate a long synthesis fetch that gets aborted
       vi.spyOn(globalThis, 'fetch').mockImplementation(async (url: any, opts: any) => {
         if (String(url).includes(':39282/synthesize')) {
+          synthStarted();
           return new Promise((_, reject) => {
             const signal = opts?.signal as AbortSignal | undefined;
             if (signal) {
+              if (signal.aborted) {
+                const err = new Error('The operation was aborted');
+                err.name = 'AbortError';
+                return reject(err);
+              }
               signal.addEventListener('abort', () => {
                 const err = new Error('The operation was aborted');
                 err.name = 'AbortError';
@@ -435,15 +446,14 @@ describe('P2.3 — Complete Multimodal Perception and Voice Stack', () => {
         return originalFetch(url, opts);
       });
 
-      // Launch request and immediately cancel all TTS
+      // Launch request and wait until specialist fetch is actively underway
       const synthPromise = fetch(`http://127.0.0.1:${port}/api/voice/synthesize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: 'This should be interrupted immediately.' }),
       });
 
-      // Yield event loop then cancel
-      await new Promise((r) => setTimeout(r, 10));
+      await synthStartedPromise;
       server.cancelAllActiveTts();
 
       const synthRes = await synthPromise;
@@ -534,7 +544,11 @@ describe('P2.3 — Complete Multimodal Perception and Voice Stack', () => {
       const repo = new InMemoryPerceptionRepository();
       const engine = new MultimodalPerceptionEngine(repo);
 
-      const imgRes = engine.interpretImage({ width: 1920, height: 1080, contextHint: 'code editor' });
+      const imgRes = engine.interpretImage({
+        width: 1920,
+        height: 1080,
+        contextHint: 'code editor',
+      });
       const audioRes = engine.interpretAudio({ durationSeconds: 2.0, transcript: 'Build passed.' });
       const screenRes = engine.interpretScreen({
         width: 1920,

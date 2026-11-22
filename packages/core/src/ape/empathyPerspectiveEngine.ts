@@ -116,23 +116,25 @@ export class EmpathyPerspectiveEngine {
   public inferExperience(params: InferExperienceParams): InferredExperience {
     const { targetPersonId, cues, contextSummary, suggestedAffect, rawConfidence = 0.75 } = params;
 
-    if (!targetPersonId || targetPersonId.trim().length === 0) throw new Error('Target person ID cannot be empty');
+    if (!targetPersonId || targetPersonId.trim().length === 0)
+      throw new Error('Target person ID cannot be empty');
     if (!cues || cues.length === 0) throw new Error('At least one emotional cue must be provided');
 
     for (const c of cues) {
       if (!c.signal || c.signal.trim().length === 0) throw new Error('Cue signal cannot be empty');
-      if (c.intensity < 0.1 || c.intensity > 1.0) throw new Error('Cue intensity must be between 0.1 and 1.0');
+      if (c.intensity < 0.1 || c.intensity > 1.0)
+        throw new Error('Cue intensity must be between 0.1 and 1.0');
     }
 
     // Acceptance Criteria Invariant:
     // "Adapt her responses to another person's likely circumstances without claiming certainty about inaccessible internal experiences"
     // Confidence is strictly clamped to [0.10, 0.88]
-    const clampedConfidence = Number(Math.max(0.10, Math.min(0.88, rawConfidence)).toFixed(3));
+    const clampedConfidence = Number(Math.max(0.1, Math.min(0.88, rawConfidence)).toFixed(3));
 
     let epistemicModality: InferredExperience['epistemicModality'] = 'likely';
-    if (clampedConfidence < 0.40) epistemicModality = 'speculative';
+    if (clampedConfidence < 0.4) epistemicModality = 'speculative';
     else if (clampedConfidence < 0.65) epistemicModality = 'tentative';
-    else if (clampedConfidence < 0.80) epistemicModality = 'plausible';
+    else if (clampedConfidence < 0.8) epistemicModality = 'plausible';
 
     // Inferred primary affect
     let primaryInferredAffect = suggestedAffect;
@@ -185,9 +187,12 @@ export class EmpathyPerspectiveEngine {
       relationshipBond = 'equal_partner',
     } = params;
 
-    if (!targetPersonId || targetPersonId.trim().length === 0) throw new Error('Target person ID cannot be empty');
-    if (!currentContext || currentContext.trim().length === 0) throw new Error('Current context cannot be empty');
-    if (!inferredPointOfView || inferredPointOfView.trim().length === 0) throw new Error('Inferred point of view cannot be empty');
+    if (!targetPersonId || targetPersonId.trim().length === 0)
+      throw new Error('Target person ID cannot be empty');
+    if (!currentContext || currentContext.trim().length === 0)
+      throw new Error('Current context cannot be empty');
+    if (!inferredPointOfView || inferredPointOfView.trim().length === 0)
+      throw new Error('Inferred point of view cannot be empty');
 
     const model: PerspectiveTakingModel = {
       id: `persp_${crypto.randomUUID()}`,
@@ -200,7 +205,9 @@ export class EmpathyPerspectiveEngine {
     };
 
     this.repo.savePerspectiveModel(model);
-    this.logger.info(`Established perspective-taking model for ${targetPersonId}: "${inferredPointOfView.slice(0, 50)}..."`);
+    this.logger.info(
+      `Established perspective-taking model for ${targetPersonId}: "${inferredPointOfView.slice(0, 50)}..."`,
+    );
     return model;
   }
 
@@ -215,12 +222,17 @@ export class EmpathyPerspectiveEngine {
       supportiveActionSuggestion,
     } = params;
 
-    if (!targetPersonId || targetPersonId.trim().length === 0) throw new Error('Target person ID cannot be empty');
-    if (!experienceId || experienceId.trim().length === 0) throw new Error('Experience ID cannot be empty');
-    if (!perspectiveId || perspectiveId.trim().length === 0) throw new Error('Perspective ID cannot be empty');
+    if (!targetPersonId || targetPersonId.trim().length === 0)
+      throw new Error('Target person ID cannot be empty');
+    if (!experienceId || experienceId.trim().length === 0)
+      throw new Error('Experience ID cannot be empty');
+    if (!perspectiveId || perspectiveId.trim().length === 0)
+      throw new Error('Perspective ID cannot be empty');
 
     const exp = this.repo.getExperienceById(experienceId);
-    const affectDesc = exp ? exp.primaryInferredAffect.replace(/_/g, ' ') : 'current emotional load';
+    const affectDesc = exp
+      ? exp.primaryInferredAffect.replace(/_/g, ' ')
+      : 'current emotional load';
 
     let empathyStatement = customEmpathyStatement;
     if (!empathyStatement) {
@@ -268,13 +280,19 @@ export class EmpathyPerspectiveEngine {
   } {
     const { perspectiveId, targetPersonId, newPointOfView, newPressures, revisionReason } = params;
 
-    if (!perspectiveId || perspectiveId.trim().length === 0) throw new Error('Perspective ID cannot be empty');
-    if (!targetPersonId || targetPersonId.trim().length === 0) throw new Error('Target person ID cannot be empty');
-    if (!newPointOfView || newPointOfView.trim().length === 0) throw new Error('New point of view cannot be empty');
-    if (!revisionReason || revisionReason.trim().length === 0) throw new Error('Revision reason cannot be empty');
+    if (!perspectiveId || perspectiveId.trim().length === 0)
+      throw new Error('Perspective ID cannot be empty');
+    if (!targetPersonId || targetPersonId.trim().length === 0)
+      throw new Error('Target person ID cannot be empty');
+    if (!newPointOfView || newPointOfView.trim().length === 0)
+      throw new Error('New point of view cannot be empty');
+    if (!revisionReason || revisionReason.trim().length === 0)
+      throw new Error('Revision reason cannot be empty');
 
     let current = this.repo.getPerspectiveModel(targetPersonId);
-    const previousUnderstanding = current ? current.inferredPointOfView : 'Initial uncalibrated perspective';
+    const previousUnderstanding = current
+      ? current.inferredPointOfView
+      : 'Initial uncalibrated perspective';
 
     if (!current) {
       current = {

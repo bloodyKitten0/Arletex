@@ -2,10 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs';
-import {
-  GlobalCognitiveCycleEvent,
-  assertGlobalCycleIntegrity,
-} from '@arletex/contracts';
+import { GlobalCognitiveCycleEvent, assertGlobalCycleIntegrity } from '@arletex/contracts';
 import {
   createDefaultConfig,
   GlobalCognitiveIntegrationEngine,
@@ -57,7 +54,8 @@ describe('Milestone 19 — Global Cognitive Integration', () => {
     const cycle = await engine.processGlobalEvent({
       originSubsystem: 'perception',
       eventType: 'complex_multi_agent_directive',
-      description: 'Proof requested full autonomous execution across remaining cognitive milestones.',
+      description:
+        'Proof requested full autonomous execution across remaining cognitive milestones.',
       payload: { targetMilestones: ['19', '20', '21'] },
     });
 
@@ -304,7 +302,9 @@ describe('Milestone 19 — Global Cognitive Integration', () => {
     expect(cycles.length).toBeGreaterThanOrEqual(1);
 
     // GET /api/ape/integration/cycles/:id
-    const getRes = await fetch(`http://127.0.0.1:${port}/api/ape/integration/cycles/${cycleData.cycle.id}`);
+    const getRes = await fetch(
+      `http://127.0.0.1:${port}/api/ape/integration/cycles/${cycleData.cycle.id}`,
+    );
     expect(getRes.status).toBe(200);
     const singleCycle = (await getRes.json()) as any;
     expect(singleCycle.id).toBe(cycleData.cycle.id);

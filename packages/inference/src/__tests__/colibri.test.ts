@@ -48,7 +48,9 @@ describe('ColibriAdapter & InferenceGateway Integration', () => {
         }
       });
 
-      await new Promise<void>((resolve) => mockColibriServer!.listen(0, '127.0.0.1', () => resolve()));
+      await new Promise<void>((resolve) =>
+        mockColibriServer!.listen(0, '127.0.0.1', () => resolve()),
+      );
       const port = (mockColibriServer.address() as AddressInfo).port;
 
       const adapter = new ColibriAdapter({
@@ -73,9 +75,13 @@ describe('ColibriAdapter & InferenceGateway Integration', () => {
           });
 
           // Simulate thinking model emitting reasoning tokens first, then content
-          res.write('data: {"choices":[{"delta":{"reasoning_content":"Thinking about the answer..."}}]}\n\n');
+          res.write(
+            'data: {"choices":[{"delta":{"reasoning_content":"Thinking about the answer..."}}]}\n\n',
+          );
           setTimeout(() => {
-            res.write('data: {"choices":[{"delta":{"content":"Here is the verified answer."}}]}\n\n');
+            res.write(
+              'data: {"choices":[{"delta":{"content":"Here is the verified answer."}}]}\n\n',
+            );
             setTimeout(() => {
               res.write('data: [DONE]\n\n');
               res.end();
@@ -84,7 +90,9 @@ describe('ColibriAdapter & InferenceGateway Integration', () => {
         }
       });
 
-      await new Promise<void>((resolve) => mockColibriServer!.listen(0, '127.0.0.1', () => resolve()));
+      await new Promise<void>((resolve) =>
+        mockColibriServer!.listen(0, '127.0.0.1', () => resolve()),
+      );
       const port = (mockColibriServer.address() as AddressInfo).port;
 
       const adapter = new ColibriAdapter({
@@ -115,7 +123,9 @@ describe('ColibriAdapter & InferenceGateway Integration', () => {
         }
       });
 
-      await new Promise<void>((resolve) => mockColibriServer!.listen(0, '127.0.0.1', () => resolve()));
+      await new Promise<void>((resolve) =>
+        mockColibriServer!.listen(0, '127.0.0.1', () => resolve()),
+      );
       const port = (mockColibriServer.address() as AddressInfo).port;
 
       const adapter = new ColibriAdapter({
@@ -152,7 +162,9 @@ describe('ColibriAdapter & InferenceGateway Integration', () => {
           res.end();
         }
       });
-      await new Promise<void>((resolve) => mockColibriServer!.listen(0, '127.0.0.1', () => resolve()));
+      await new Promise<void>((resolve) =>
+        mockColibriServer!.listen(0, '127.0.0.1', () => resolve()),
+      );
       const colibriPort = (mockColibriServer.address() as AddressInfo).port;
 
       const gateway = new InferenceGateway({
@@ -181,7 +193,9 @@ describe('ColibriAdapter & InferenceGateway Integration', () => {
           res.end(JSON.stringify({ data: [{ id: 'llama-fallback-model' }] }));
         }
       });
-      await new Promise<void>((resolve) => mockLlamaServer!.listen(0, '127.0.0.1', () => resolve()));
+      await new Promise<void>((resolve) =>
+        mockLlamaServer!.listen(0, '127.0.0.1', () => resolve()),
+      );
       const llamaPort = (mockLlamaServer.address() as AddressInfo).port;
 
       const gateway = new InferenceGateway({
@@ -215,7 +229,9 @@ describe('ColibriAdapter & InferenceGateway Integration', () => {
           }, 20);
         }
       });
-      await new Promise<void>((resolve) => mockLlamaServer!.listen(0, '127.0.0.1', () => resolve()));
+      await new Promise<void>((resolve) =>
+        mockLlamaServer!.listen(0, '127.0.0.1', () => resolve()),
+      );
       const llamaPort = (mockLlamaServer.address() as AddressInfo).port;
 
       const gateway = new InferenceGateway({

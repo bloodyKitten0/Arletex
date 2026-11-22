@@ -93,7 +93,7 @@ describe('Milestone 2 — APE Integration: Causal Six-Engine Dynamic Wiring', ()
 
       // Verify that appraisal personalSignificance and goalRelevance were dynamically boosted
       expect(result.appraisal.dimensions.personalSignificance).toBeGreaterThanOrEqual(0.85);
-      expect(result.appraisal.dimensions.goalRelevance).toBeGreaterThanOrEqual(0.70);
+      expect(result.appraisal.dimensions.goalRelevance).toBeGreaterThanOrEqual(0.7);
     });
 
     it('modulates appraisal under high partner trust to interpret teasing as affectionate banter', async () => {
@@ -114,7 +114,7 @@ describe('Milestone 2 — APE Integration: Causal Six-Engine Dynamic Wiring', ()
 
       // Threat should be zeroed and social meaning marked as affectionate banter
       expect(result.appraisal.dimensions.threat).toBe(0.0);
-      expect(result.appraisal.dimensions.fairness).toBeGreaterThanOrEqual(0.90);
+      expect(result.appraisal.dimensions.fairness).toBeGreaterThanOrEqual(0.9);
       expect(result.appraisal.dimensions.socialMeaning).toMatch(/affectionate|playful/i);
     });
 
@@ -147,7 +147,9 @@ describe('Milestone 2 — APE Integration: Causal Six-Engine Dynamic Wiring', ()
 
       // Elevated threat and boundary clarification requirement
       expect(result.appraisal.dimensions.threat).toBeGreaterThan(0.2);
-      expect(result.appraisal.dimensions.relationshipImplications).toMatch(/clarification|reconciliation/i);
+      expect(result.appraisal.dimensions.relationshipImplications).toMatch(
+        /clarification|reconciliation/i,
+      );
     });
 
     it('modulates appraisal through self-model to clamp controllability on impossible physical tasks', async () => {
@@ -167,7 +169,9 @@ describe('Milestone 2 — APE Integration: Causal Six-Engine Dynamic Wiring', ()
 
       // Controllability clamped to 0.0 with empirical limitation note
       expect(result.appraisal.dimensions.controllability).toBe(0.0);
-      expect(result.appraisal.primaryInterpretation).toMatch(/limitation recognized|biological physical/i);
+      expect(result.appraisal.primaryInterpretation).toMatch(
+        /limitation recognized|biological physical/i,
+      );
     });
 
     it('modulates appraisal through development engine when an established interest is engaged', async () => {
@@ -233,19 +237,30 @@ describe('Milestone 2 — APE Integration: Causal Six-Engine Dynamic Wiring', ()
 
       // 2. Commit desire into intention
       apeService.motivationalEngine.commitGoal(desire.id);
-      expect(apeService.motivationalEngine.getState().goals.find((g) => g.id === desire.id)?.status).toBe('committed');
+      expect(
+        apeService.motivationalEngine.getState().goals.find((g) => g.id === desire.id)?.status,
+      ).toBe('committed');
 
       // 3. Activate goal
       apeService.motivationalEngine.activateGoal(desire.id);
-      expect(apeService.motivationalEngine.getState().goals.find((g) => g.id === desire.id)?.status).toBe('active');
+      expect(
+        apeService.motivationalEngine.getState().goals.find((g) => g.id === desire.id)?.status,
+      ).toBe('active');
 
       // 4. Pause goal due to resource constraint
-      apeService.motivationalEngine.pauseGoal(desire.id, 'Resource contention with active inference server');
-      expect(apeService.motivationalEngine.getState().goals.find((g) => g.id === desire.id)?.status).toBe('paused');
+      apeService.motivationalEngine.pauseGoal(
+        desire.id,
+        'Resource contention with active inference server',
+      );
+      expect(
+        apeService.motivationalEngine.getState().goals.find((g) => g.id === desire.id)?.status,
+      ).toBe('paused');
 
       // 5. Resume goal
       apeService.motivationalEngine.resumeGoal(desire.id);
-      expect(apeService.motivationalEngine.getState().goals.find((g) => g.id === desire.id)?.status).toBe('active');
+      expect(
+        apeService.motivationalEngine.getState().goals.find((g) => g.id === desire.id)?.status,
+      ).toBe('active');
 
       // 6. Complete goal
       const completed = apeService.motivationalEngine.updateGoalProgress(desire.id, 1.0);
@@ -301,7 +316,9 @@ describe('Milestone 2 — APE Integration: Causal Six-Engine Dynamic Wiring', ()
 
     it('Personality Stability: Resists single contradictory events and requires accumulated evidence', () => {
       const traitId = 'competitiveness';
-      const initialTrait = apeService.personalityEngine.getState().traits.find((t) => t.id === traitId);
+      const initialTrait = apeService.personalityEngine
+        .getState()
+        .traits.find((t) => t.id === traitId);
       const initialScore = initialTrait?.score ?? 0.85;
       const initialConf = initialTrait?.confidence ?? 0.85;
 
@@ -321,7 +338,9 @@ describe('Milestone 2 — APE Integration: Causal Six-Engine Dynamic Wiring', ()
         isSupporting: false,
         explanation: 'Deferred decision to user without pushback',
       });
-      expect(apeService.personalityEngine.getState().traits.find((t) => t.id === traitId)?.score).toBe(initialScore);
+      expect(
+        apeService.personalityEngine.getState().traits.find((t) => t.id === traitId)?.score,
+      ).toBe(initialScore);
 
       // 3rd contradictory observation -> Now threshold is met, score adapts gradually
       const after3 = apeService.personalityEngine.recordTraitEvidence(traitId, {
@@ -406,12 +425,16 @@ describe('Milestone 2 — APE Integration: Causal Six-Engine Dynamic Wiring', ()
       expect(restoredMaster.affective.activeEmotions.length).toBeGreaterThan(0);
 
       // Engine 2
-      const epistemicBelief = restoredMaster.personality.beliefs.find((b) => b.topic === 'epistemic_integrity');
+      const epistemicBelief = restoredMaster.personality.beliefs.find(
+        (b) => b.topic === 'epistemic_integrity',
+      );
       expect(epistemicBelief).toBeDefined();
       expect(epistemicBelief?.confidence).toBe(0.98);
 
       // Engine 3
-      const persistedGoal = restoredMaster.motivational.goals.find((g) => g.title === 'Persistent Identity Goal');
+      const persistedGoal = restoredMaster.motivational.goals.find(
+        (g) => g.title === 'Persistent Identity Goal',
+      );
       expect(persistedGoal).toBeDefined();
       expect(persistedGoal?.priority).toBe(0.85);
 
@@ -420,11 +443,19 @@ describe('Milestone 2 — APE Integration: Causal Six-Engine Dynamic Wiring', ()
       expect(restoredMaster.relationship.config.isExclusivelyCommitted).toBe(true);
 
       // Engine 5
-      expect(restoredMaster.selfModel.privateReflections.some((r) => r.topic === 'Cold Restart Continuity')).toBe(true);
+      expect(
+        restoredMaster.selfModel.privateReflections.some(
+          (r) => r.topic === 'Cold Restart Continuity',
+        ),
+      ).toBe(true);
       expect(restoredMaster.selfModel.competencies?.['formal_methods']?.verifiedSuccesses).toBe(1);
 
       // Engine 6
-      expect(restoredMaster.development.developmentalHistory.some((m) => m.newState === 'milestone-2-verified')).toBe(true);
+      expect(
+        restoredMaster.development.developmentalHistory.some(
+          (m) => m.newState === 'milestone-2-verified',
+        ),
+      ).toBe(true);
 
       newDbService.close();
     });

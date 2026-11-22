@@ -164,7 +164,10 @@ export class OfflineCognitiveActivityEngine {
     const isGroundless =
       !input.rationale ||
       input.rationale.trim().length < 10 ||
-      (!input.sourceGoalId && !input.sourceProjectId && !input.sourceQuestionId && !input.isSimulation);
+      (!input.sourceGoalId &&
+        !input.sourceProjectId &&
+        !input.sourceQuestionId &&
+        !input.isSimulation);
 
     if (isGroundless) {
       throw new Error(
@@ -173,11 +176,15 @@ export class OfflineCognitiveActivityEngine {
     }
 
     const now = new Date().toISOString();
-    const inputIds = input.inputRecordIds ?? (
-      input.sourceGoalId ? [input.sourceGoalId] :
-      input.sourceProjectId ? [input.sourceProjectId] :
-      input.sourceQuestionId ? [input.sourceQuestionId] : []
-    );
+    const inputIds =
+      input.inputRecordIds ??
+      (input.sourceGoalId
+        ? [input.sourceGoalId]
+        : input.sourceProjectId
+          ? [input.sourceProjectId]
+          : input.sourceQuestionId
+            ? [input.sourceQuestionId]
+            : []);
 
     const activity: OfflineActivityRecord = {
       id: crypto.randomUUID(),
@@ -244,26 +251,31 @@ export class OfflineCognitiveActivityEngine {
       activity.progress = executionResult.progress ?? 0.0;
       activity.metadata = {
         ...activity.metadata,
-        failureReason: executionResult.failureReason || 'Inference provider or external dependency unavailable',
+        failureReason:
+          executionResult.failureReason || 'Inference provider or external dependency unavailable',
         failedAt: now,
       };
       this.repository.saveActivity(activity);
       return activity;
     }
 
-    const hasArtifacts = Boolean(executionResult?.artifacts && executionResult.artifacts.length > 0);
+    const hasArtifacts = Boolean(
+      executionResult?.artifacts && executionResult.artifacts.length > 0,
+    );
     const hasInsights = Boolean(executionResult?.insights && executionResult.insights.length > 0);
     const hasTangibleDeliverables = hasArtifacts || hasInsights;
 
     // Verification check: Research activities must produce artifacts or extracted evidence
     if (activity.activityType === 'independent_research') {
-      const producesArtifactOrEvidence = hasArtifacts || (hasInsights && executionResult!.insights!.some((i) => i.length > 20));
+      const producesArtifactOrEvidence =
+        hasArtifacts || (hasInsights && executionResult!.insights!.some((i) => i.length > 20));
       if (!producesArtifactOrEvidence && executionResult?.status === 'completed') {
         activity.status = 'paused';
         activity.progress = 0.5;
         activity.metadata = {
           ...activity.metadata,
-          failureReason: 'Research activity incomplete: deliverable artifact or substantiated evidence required.',
+          failureReason:
+            'Research activity incomplete: deliverable artifact or substantiated evidence required.',
         };
         this.repository.saveActivity(activity);
         return activity;
@@ -271,7 +283,8 @@ export class OfflineCognitiveActivityEngine {
     }
 
     const defaultProgress = hasTangibleDeliverables ? 1.0 : 0.0;
-    const progress = executionResult?.progress !== undefined ? executionResult.progress : defaultProgress;
+    const progress =
+      executionResult?.progress !== undefined ? executionResult.progress : defaultProgress;
     activity.progress = Math.min(1.0, Math.max(0, progress));
 
     if (executionResult?.status) {
@@ -327,24 +340,27 @@ export class OfflineCognitiveActivityEngine {
     if (this.memoryRepository) {
       try {
         const memRepo = this.memoryRepository as any;
-        const mems = typeof memRepo.list === 'function'
-          ? memRepo.list({ limit: 50 }) || []
-          : typeof memRepo.listEntries === 'function'
-          ? memRepo.listEntries({ limit: 50 }) || []
-          : [];
+        const mems =
+          typeof memRepo.list === 'function'
+            ? memRepo.list({ limit: 50 }) || []
+            : typeof memRepo.listEntries === 'function'
+              ? memRepo.listEntries({ limit: 50 }) || []
+              : [];
 
         if (examined === undefined) {
           examined = mems.length;
         }
 
-        mems.forEach((m: any) => { if (m.id) examinedIds.push(m.id); });
+        mems.forEach((m: any) => {
+          if (m.id) examinedIds.push(m.id);
+        });
 
         if (mems.length > 0) {
-          const consolidatedMems = mems.filter(
-            (m: any) => (m.importance ?? 0.5) >= 0.5,
-          );
+          const consolidatedMems = mems.filter((m: any) => (m.importance ?? 0.5) >= 0.5);
           consolidated = consolidatedMems.length;
-          consolidatedMems.forEach((m: any) => { if (m.id) consolidatedIds.push(m.id); });
+          consolidatedMems.forEach((m: any) => {
+            if (m.id) consolidatedIds.push(m.id);
+          });
         } else {
           consolidated = 0;
         }
@@ -359,8 +375,8 @@ export class OfflineCognitiveActivityEngine {
           typeof this.goalRepository.listActiveGoals === 'function'
             ? this.goalRepository.listActiveGoals()
             : typeof this.goalRepository.listGoals === 'function'
-            ? this.goalRepository.listGoals()
-            : [];
+              ? this.goalRepository.listGoals()
+              : [];
         if (intentions === undefined && activeGoals) {
           intentions = activeGoals.length;
         }
@@ -371,9 +387,10 @@ export class OfflineCognitiveActivityEngine {
 
     if (this.causalRepository && beliefs === undefined) {
       try {
-        const graphs = typeof this.causalRepository.listGraphs === 'function'
-          ? this.causalRepository.listGraphs(10)
-          : [];
+        const graphs =
+          typeof this.causalRepository.listGraphs === 'function'
+            ? this.causalRepository.listGraphs(10)
+            : [];
         beliefs = graphs.length;
       } catch {
         // Fallback
@@ -420,10 +437,13 @@ export class OfflineCognitiveActivityEngine {
           typeof this.goalRepository.listActiveGoals === 'function'
             ? this.goalRepository.listActiveGoals()
             : typeof this.goalRepository.listGoals === 'function'
-            ? this.goalRepository.listGoals()
-            : [];
+              ? this.goalRepository.listGoals()
+              : [];
         itemsToProcess = activeGoals
-          .filter((g: any) => g.status === 'active' || g.status === 'in_progress' || g.status === 'committed')
+          .filter(
+            (g: any) =>
+              g.status === 'active' || g.status === 'in_progress' || g.status === 'committed',
+          )
           .map((g: any) => ({
             workType: 'project' as const,
             referenceId: g.id,
@@ -451,7 +471,10 @@ export class OfflineCognitiveActivityEngine {
       } catch {}
     }
 
-    if (this.inquiryRepository && typeof this.inquiryRepository.listUnresolvedQuestions === 'function') {
+    if (
+      this.inquiryRepository &&
+      typeof this.inquiryRepository.listUnresolvedQuestions === 'function'
+    ) {
       try {
         const questions = this.inquiryRepository.listUnresolvedQuestions();
         for (const q of questions) {
@@ -559,7 +582,8 @@ export class OfflineCognitiveActivityEngine {
       const restActivity = this.scheduleActivity({
         activityType: 'downtime_rest',
         title: 'Cognitive Substrate Quiescence & Rejuvenation',
-        rationale: 'Scheduled rest period to manage interoceptive strain and maintain computational balance.',
+        rationale:
+          'Scheduled rest period to manage interoceptive strain and maintain computational balance.',
         isSimulation: true,
         simulationContext: 'Downtime self-regulation routine',
       });
@@ -588,7 +612,9 @@ export class OfflineCognitiveActivityEngine {
       });
 
       const completed = this.executeActivity(goalActivity.id, {
-        insights: [`Formulated next step milestones for goal "${topGoal.title}" based on current state.`],
+        insights: [
+          `Formulated next step milestones for goal "${topGoal.title}" based on current state.`,
+        ],
         examinedRecordIds: [topGoal.id],
         evidenceReferences: [topGoal.id],
       });
@@ -611,7 +637,8 @@ export class OfflineCognitiveActivityEngine {
           status: 'paused',
           progress: 0.0,
           providerFailed: true,
-          failureReason: 'Local inference provider offline; cannot generate synthetic research without model.',
+          failureReason:
+            'Local inference provider offline; cannot generate synthetic research without model.',
         });
         executedActivities.push(failedResearch);
       } else {
@@ -629,9 +656,12 @@ export class OfflineCognitiveActivityEngine {
       let memoryIds: string[] = [];
       if (this.memoryRepository) {
         try {
-          const mems = typeof this.memoryRepository.list === 'function'
-            ? this.memoryRepository.list({ limit: 5 })
-            : (typeof this.memoryRepository.listEntries === 'function' ? this.memoryRepository.listEntries({ limit: 5 }) : []);
+          const mems =
+            typeof this.memoryRepository.list === 'function'
+              ? this.memoryRepository.list({ limit: 5 })
+              : typeof this.memoryRepository.listEntries === 'function'
+                ? this.memoryRepository.listEntries({ limit: 5 })
+                : [];
           memoryIds = mems.map((m: any) => m.id).filter(Boolean);
         } catch {}
       }
@@ -639,7 +669,8 @@ export class OfflineCognitiveActivityEngine {
       const reflection = this.scheduleActivity({
         activityType: 'background_reflection',
         title: 'Reflective Integration on Collaborative Partnership',
-        rationale: 'Self-directed synthesis of collaborative dynamics and mutual intellectual growth with Proof.',
+        rationale:
+          'Self-directed synthesis of collaborative dynamics and mutual intellectual growth with Proof.',
         sourceGoalId: 'goal_sovereign_partnership',
         objective: 'Consolidate reflections from recent interactive memories with Proof',
         expectedDeliverable: 'grounded_relational_reflection',
@@ -664,7 +695,12 @@ export class OfflineCognitiveActivityEngine {
 
     // 6. Proactive proposals for Proof when research or project insights are ready
     const proactiveProposals: ProactiveNotificationProposal[] = [];
-    if (!context?.userActive && executedActivities.some((a) => a.activityType === 'independent_research' && a.status === 'completed')) {
+    if (
+      !context?.userActive &&
+      executedActivities.some(
+        (a) => a.activityType === 'independent_research' && a.status === 'completed',
+      )
+    ) {
       const proposal = this.generateProactiveProposal(
         'Research Insight Ready',
         'I examined our unresolved inquiry while you were away and synthesized several promising conclusions.',

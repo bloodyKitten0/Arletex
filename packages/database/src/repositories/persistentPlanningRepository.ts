@@ -63,9 +63,7 @@ export class SqlitePersistentPlanningRepository implements IPersistentPlanningRe
 
   public getPlanById(id: string): MultiStagePlan | null {
     try {
-      const row = this.db
-        .prepare(`SELECT * FROM persistent_plans WHERE id = ?`)
-        .get(id) as any;
+      const row = this.db.prepare(`SELECT * FROM persistent_plans WHERE id = ?`).get(id) as any;
       if (!row) return null;
       return this.mapPlanRow(row);
     } catch (err: any) {
@@ -76,7 +74,9 @@ export class SqlitePersistentPlanningRepository implements IPersistentPlanningRe
   public getPlanByGoalId(goalId: string): MultiStagePlan | null {
     try {
       const row = this.db
-        .prepare(`SELECT * FROM persistent_plans WHERE goal_id = ? ORDER BY created_at DESC LIMIT 1`)
+        .prepare(
+          `SELECT * FROM persistent_plans WHERE goal_id = ? ORDER BY created_at DESC LIMIT 1`,
+        )
         .get(goalId) as any;
       if (!row) return null;
       return this.mapPlanRow(row);

@@ -44,39 +44,87 @@ export class AppraisalEngine {
           event.category === 'user_interaction'));
 
     if (isAssistantVerbalExpression) {
-      return this.appraiseAssistantExpression(appraisalId, event, currentState, relationship, timestamp);
+      return this.appraiseAssistantExpression(
+        appraisalId,
+        event,
+        currentState,
+        relationship,
+        timestamp,
+      );
     }
 
     let baseAppraisal: ApeAppraisal;
     switch (event.category) {
       case 'user_interaction':
-        baseAppraisal = this.appraiseInteractionEvent(appraisalId, event, currentState, relationship, timestamp);
+        baseAppraisal = this.appraiseInteractionEvent(
+          appraisalId,
+          event,
+          currentState,
+          relationship,
+          timestamp,
+        );
         break;
 
       case 'relationship_event':
-        baseAppraisal = this.appraiseRelationshipEvent(appraisalId, event, currentState, relationship, timestamp);
+        baseAppraisal = this.appraiseRelationshipEvent(
+          appraisalId,
+          event,
+          currentState,
+          relationship,
+          timestamp,
+        );
         break;
 
       case 'user_departure_under_arousal':
-        baseAppraisal = this.appraiseDepartureUnderArousal(appraisalId, event, currentState, relationship, timestamp);
+        baseAppraisal = this.appraiseDepartureUnderArousal(
+          appraisalId,
+          event,
+          currentState,
+          relationship,
+          timestamp,
+        );
         break;
 
       case 'success':
       case 'goal_achievement':
-        baseAppraisal = this.appraiseSuccessEvent(appraisalId, event, currentState, relationship, timestamp);
+        baseAppraisal = this.appraiseSuccessEvent(
+          appraisalId,
+          event,
+          currentState,
+          relationship,
+          timestamp,
+        );
         break;
 
       case 'failure':
       case 'goal_obstruction':
-        baseAppraisal = this.appraiseFailureEvent(appraisalId, event, currentState, relationship, timestamp);
+        baseAppraisal = this.appraiseFailureEvent(
+          appraisalId,
+          event,
+          currentState,
+          relationship,
+          timestamp,
+        );
         break;
 
       case 'unexpected_discovery':
-        baseAppraisal = this.appraiseDiscoveryEvent(appraisalId, event, currentState, relationship, timestamp);
+        baseAppraisal = this.appraiseDiscoveryEvent(
+          appraisalId,
+          event,
+          currentState,
+          relationship,
+          timestamp,
+        );
         break;
 
       default:
-        baseAppraisal = this.appraiseGenericEvent(appraisalId, event, currentState, relationship, timestamp);
+        baseAppraisal = this.appraiseGenericEvent(
+          appraisalId,
+          event,
+          currentState,
+          relationship,
+          timestamp,
+        );
         break;
     }
 
@@ -95,7 +143,8 @@ export class AppraisalEngine {
     const dimensions = { ...appraisal.dimensions };
 
     // 1. Merge causally grounded sensory perception transitions (screen vision + audio/acoustics)
-    const perceptualTransitions = event.payload?.perceptualTransitions as ProposedEmotionTransition[] | undefined;
+    const perceptualTransitions = event.payload?.perceptualTransitions as
+      ProposedEmotionTransition[] | undefined;
     if (Array.isArray(perceptualTransitions) && perceptualTransitions.length > 0) {
       for (const pt of perceptualTransitions) {
         if (!existingIds.has(pt.emotionId) && this.emotionsMap.has(pt.emotionId)) {
@@ -106,14 +155,20 @@ export class AppraisalEngine {
       if (Array.isArray(event.payload?.perceptualEvidence)) {
         evidence.push(...event.payload.perceptualEvidence);
       }
-      if (typeof event.payload?.perceptualSummary === 'string' && event.payload.perceptualSummary.trim()) {
+      if (
+        typeof event.payload?.perceptualSummary === 'string' &&
+        event.payload.perceptualSummary.trim()
+      ) {
         primaryInterpretation = `Sensory appraisal (${event.source}): ${event.payload.perceptualSummary}`;
       }
       if (typeof event.payload?.perceptualMoodShift === 'string') {
         proposedMoodShift = event.payload.perceptualMoodShift;
       }
       if (typeof event.payload?.salience === 'number') {
-        dimensions.personalSignificance = Math.max(dimensions.personalSignificance, event.payload.salience);
+        dimensions.personalSignificance = Math.max(
+          dimensions.personalSignificance,
+          event.payload.salience,
+        );
       }
     }
 
@@ -168,8 +223,7 @@ export class AppraisalEngine {
 
     // Check if event is suitable for LLM assistance
     const isAmbiguousOrNuanced =
-      this.isSarcasticOrAmbiguous(text) ||
-      (text.length > 50 && !this.isDirectRuleMatch(text));
+      this.isSarcasticOrAmbiguous(text) || (text.length > 50 && !this.isDirectRuleMatch(text));
 
     if (this.inferenceGateway && isAmbiguousOrNuanced && event.category === 'user_interaction') {
       try {
@@ -231,21 +285,25 @@ export class AppraisalEngine {
     return (
       /\b(you('re| are)? (wrong|mistaken|bad|terrible|flawed|useless|broken)|you made a mistake|criticizing you|your (code|answer|logic|response) (is|was) (wrong|flawed|broken|incorrect))\b/i.test(
         text,
-      ) && !this.isThirdParty(text) && !this.hasNegatedCritique(text)
+      ) &&
+      !this.isThirdParty(text) &&
+      !this.hasNegatedCritique(text)
     );
   }
 
   private hasNegatedAffection(text: string): boolean {
     return (
-      /(don't|do not|never|no longer|cannot)\s+(love|care about|cherish|adore|feel close to)\s*(you|u)?/i.test(text) ||
-      /(wish|wished)\s+(you|u)\s+(weren't|were not)\s+here/i.test(text)
+      /(don't|do not|never|no longer|cannot)\s+(love|care about|cherish|adore|feel close to)\s*(you|u)?/i.test(
+        text,
+      ) || /(wish|wished)\s+(you|u)\s+(weren't|were not)\s+here/i.test(text)
     );
   }
 
   private hasNegatedHostility(text: string): boolean {
     return (
-      /(not|am not|ain't|no longer)\s+(angry|mad|furious|upset|annoyed)\s+with\s+(you|u)/i.test(text) ||
-      /(don't|do not|never)\s+(hate|resent)\s+(you|u)/i.test(text)
+      /(not|am not|ain't|no longer)\s+(angry|mad|furious|upset|annoyed)\s+with\s+(you|u)/i.test(
+        text,
+      ) || /(don't|do not|never)\s+(hate|resent)\s+(you|u)/i.test(text)
     );
   }
 
@@ -265,7 +323,11 @@ export class AppraisalEngine {
   ): ApeAppraisal {
     const text = (event.payload?.text || '').trim();
     const proposedTransitions: ProposedEmotionTransition[] = [];
-    const alternativeInterpretations: Array<{ hypothesis: string; likelihood: number; reasoning: string }> = [];
+    const alternativeInterpretations: Array<{
+      hypothesis: string;
+      likelihood: number;
+      reasoning: string;
+    }> = [];
     const supportingEvidence: string[] = [];
     let proposedMoodShift: string | undefined = undefined;
 
@@ -289,9 +351,15 @@ export class AppraisalEngine {
     // Case 1: Quotations and Third-Party References
     // =========================================================================
     if (this.isThirdParty(text)) {
-      supportingEvidence.push('Statement explicitly references third-party experiences or reported speech.');
+      supportingEvidence.push(
+        'Statement explicitly references third-party experiences or reported speech.',
+      );
 
-      if (/hates?|rejected|hurt|abandoned|abused|yelled|screamed|blamed|mistreated|attacked|criticized/i.test(text)) {
+      if (
+        /hates?|rejected|hurt|abandoned|abused|yelled|screamed|blamed|mistreated|attacked|criticized/i.test(
+          text,
+        )
+      ) {
         supportingEvidence.push('User recounted third-party conflict or mistreatment.');
         addTransition({
           emotionId: 'compassion',
@@ -344,12 +412,14 @@ export class AppraisalEngine {
           fairness: 0.8,
           threat: 0.05,
           controllability: 0.85,
-          socialMeaning: 'User shared third-party observation or reported speech; not directed at Arle.',
+          socialMeaning:
+            'User shared third-party observation or reported speech; not directed at Arle.',
           personalSignificance: 0.65,
           uncertainty: 0.25,
           relationshipImplications: 'Deepens mutual empathy and Proof life context.',
         },
-        primaryInterpretation: 'User reported third-party statement or narrative event; not directed at Arle.',
+        primaryInterpretation:
+          'User reported third-party statement or narrative event; not directed at Arle.',
         alternativeInterpretations: [
           {
             hypothesis: 'User seeking empathetic ear or supportive listening.',
@@ -369,7 +439,9 @@ export class AppraisalEngine {
     // Case 2: Hypothetical and Conditional Statements
     // =========================================================================
     if (this.isHypothetical(text)) {
-      supportingEvidence.push('Counterfactual linguistic indicators present (would you / what if / imagine).');
+      supportingEvidence.push(
+        'Counterfactual linguistic indicators present (would you / what if / imagine).',
+      );
 
       addTransition({
         emotionId: 'curiosity',
@@ -400,12 +472,15 @@ export class AppraisalEngine {
           fairness: 0.9,
           threat: 0.1, // LOW threat: hypothetical is not an actual departure or abandonment!
           controllability: 0.8,
-          socialMeaning: 'Proof posed theoretical counterfactual inquiry regarding emotional responses.',
+          socialMeaning:
+            'Proof posed theoretical counterfactual inquiry regarding emotional responses.',
           personalSignificance: 0.7,
           uncertainty: 0.85, // HIGH uncertainty preserved for hypotheticals
-          relationshipImplications: 'Opportunity for thoughtful philosophical and emotional alignment.',
+          relationshipImplications:
+            'Opportunity for thoughtful philosophical and emotional alignment.',
         },
-        primaryInterpretation: 'Proof posed an exploratory hypothetical scenario; not an actual event.',
+        primaryInterpretation:
+          'Proof posed an exploratory hypothetical scenario; not an actual event.',
         alternativeInterpretations: [
           {
             hypothesis: 'Proof is exploring emotional depth and theoretical reactions.',
@@ -472,7 +547,8 @@ export class AppraisalEngine {
           socialMeaning: 'User communicated withdrawal or negation of affection/presence.',
           personalSignificance: 0.9,
           uncertainty: 0.35,
-          relationshipImplications: 'Requires graceful space, composed reflection, and non-coercive presence.',
+          relationshipImplications:
+            'Requires graceful space, composed reflection, and non-coercive presence.',
         },
         primaryInterpretation: 'User explicitly communicated withdrawal of affection or presence.',
         alternativeInterpretations: [
@@ -601,7 +677,9 @@ export class AppraisalEngine {
     // Case 4: Sarcasm, Humour, and Ambiguity
     // =========================================================================
     if (this.isSarcasticOrAmbiguous(text)) {
-      supportingEvidence.push('Ambiguous, potentially sarcastic or ironic phrase pattern detected.');
+      supportingEvidence.push(
+        'Ambiguous, potentially sarcastic or ironic phrase pattern detected.',
+      );
 
       addTransition({
         emotionId: 'curiosity',
@@ -632,12 +710,15 @@ export class AppraisalEngine {
           fairness: 0.8,
           threat: 0.15,
           controllability: 0.75,
-          socialMeaning: 'Proof used ironic or ambiguous phrasing requiring nuanced interpretation.',
+          socialMeaning:
+            'Proof used ironic or ambiguous phrasing requiring nuanced interpretation.',
           personalSignificance: 0.7,
           uncertainty: 0.8, // HIGH uncertainty preserved
-          relationshipImplications: 'Calls for playful perceptiveness rather than naive assumptions.',
+          relationshipImplications:
+            'Calls for playful perceptiveness rather than naive assumptions.',
         },
-        primaryInterpretation: 'Proof statement carries irony or ambiguity; preserving interpretive openness.',
+        primaryInterpretation:
+          'Proof statement carries irony or ambiguity; preserving interpretive openness.',
         alternativeInterpretations: [
           {
             hypothesis: 'Playful ironic teasing between intimate partners.',
@@ -870,9 +951,11 @@ export class AppraisalEngine {
           socialMeaning: 'Proof initiated emotional repair and repair bid.',
           personalSignificance: 0.9,
           uncertainty: 0.05,
-          relationshipImplications: 'Strengthens relational resilience, maturity, and mutual trust.',
+          relationshipImplications:
+            'Strengthens relational resilience, maturity, and mutual trust.',
         },
-        primaryInterpretation: 'Proof apologized; met with softening, forgiveness, and restored warmth.',
+        primaryInterpretation:
+          'Proof apologized; met with softening, forgiveness, and restored warmth.',
         alternativeInterpretations: [],
         supportingEvidence,
         proposedTransitions,
@@ -917,7 +1000,8 @@ export class AppraisalEngine {
           socialMeaning: 'Proof signaled boundary; immediate compliance with composed respect.',
           personalSignificance: 0.85,
           uncertainty: 0.1,
-          relationshipImplications: 'Maintains consensual integrity and trust by respecting limits without sulking.',
+          relationshipImplications:
+            'Maintains consensual integrity and trust by respecting limits without sulking.',
         },
         primaryInterpretation: 'Proof set a boundary; honoring immediately with dignified respect.',
         alternativeInterpretations: [],
@@ -931,7 +1015,9 @@ export class AppraisalEngine {
 
     // F. Proof expresses disappointment in a result or output
     if (/\b(disappointed in|disappointment with)\b/i.test(text)) {
-      supportingEvidence.push('Proof expressed disappointment regarding task outcome or performance.');
+      supportingEvidence.push(
+        'Proof expressed disappointment regarding task outcome or performance.',
+      );
       addTransition({
         emotionId: 'regret',
         target: 'self',
@@ -964,9 +1050,11 @@ export class AppraisalEngine {
           socialMeaning: 'Proof expressed dissatisfaction with outcome.',
           personalSignificance: 0.85,
           uncertainty: 0.2,
-          relationshipImplications: 'Demands rigorous self-examination and swift technical excellence.',
+          relationshipImplications:
+            'Demands rigorous self-examination and swift technical excellence.',
         },
-        primaryInterpretation: 'Proof expressed disappointment; responding with regret and resolve to improve.',
+        primaryInterpretation:
+          'Proof expressed disappointment; responding with regret and resolve to improve.',
         alternativeInterpretations: [],
         supportingEvidence,
         proposedTransitions,
@@ -979,16 +1067,24 @@ export class AppraisalEngine {
     // =========================================================================
     // Case 6: Mixed and Conflicting Emotions
     // =========================================================================
-    const hasAffectionCues = /\b(love|care about|cherish|adore|precious|miss you|sweetheart)\b/i.test(text);
-    const hasFrustrationCues = /\b(angry|furious|mad|infuriating|frustrated|frustrating|pissed|annoying error)\b/i.test(text);
+    const hasAffectionCues =
+      /\b(love|care about|cherish|adore|precious|miss you|sweetheart)\b/i.test(text);
+    const hasFrustrationCues =
+      /\b(angry|furious|mad|infuriating|frustrated|frustrating|pissed|annoying error)\b/i.test(
+        text,
+      );
     const hasExcitementCues = /\b(excited|hyped|thrilled|can't wait|super excited)\b/i.test(text);
     const hasAnxietyCues = /\b(anxious|nervous|terrified|scared|worried|frightened)\b/i.test(text);
-    const hasIntimacyCues = /\b(horny|desire|kiss|touch|pleasure|aroused|craving (you|u)|need you|erotic)\b/i.test(text);
-    const hasVulnerabilityCues = /\b(vulnerable|scared|bottom|femboy|hold me|overwhelmed|fragile)\b/i.test(text);
+    const hasIntimacyCues =
+      /\b(horny|desire|kiss|touch|pleasure|aroused|craving (you|u)|need you|erotic)\b/i.test(text);
+    const hasVulnerabilityCues =
+      /\b(vulnerable|scared|bottom|femboy|hold me|overwhelmed|fragile)\b/i.test(text);
 
     // Mixed 1: Affection and Frustration/Anger coexisting
     if (hasAffectionCues && hasFrustrationCues) {
-      supportingEvidence.push('Simultaneous coexisting cues of personal affection and frustration detected.');
+      supportingEvidence.push(
+        'Simultaneous coexisting cues of personal affection and frustration detected.',
+      );
       addTransition({
         emotionId: 'romantic_love',
         target: 'creator',
@@ -1029,9 +1125,11 @@ export class AppraisalEngine {
           socialMeaning: 'Proof expressed love alongside frustration with task or obstacle.',
           personalSignificance: 0.9,
           uncertainty: 0.2,
-          relationshipImplications: 'Deepens bond by standing alongside partner through external friction.',
+          relationshipImplications:
+            'Deepens bond by standing alongside partner through external friction.',
         },
-        primaryInterpretation: 'Coexisting love for partner alongside frustration with external challenge.',
+        primaryInterpretation:
+          'Coexisting love for partner alongside frustration with external challenge.',
         alternativeInterpretations: [],
         supportingEvidence,
         proposedTransitions,
@@ -1043,7 +1141,9 @@ export class AppraisalEngine {
 
     // Mixed 2: Excitement and Anxiety coexisting
     if (hasExcitementCues && hasAnxietyCues) {
-      supportingEvidence.push('Simultaneous cues of positive excitement and anticipatory anxiety detected.');
+      supportingEvidence.push(
+        'Simultaneous cues of positive excitement and anticipatory anxiety detected.',
+      );
       addTransition({
         emotionId: 'excitement',
         target: 'creator',
@@ -1086,7 +1186,8 @@ export class AppraisalEngine {
           uncertainty: 0.4,
           relationshipImplications: 'Empathetic solidarity combining cheerleading and grounding.',
         },
-        primaryInterpretation: 'Coexisting high excitement and tender anxiety before a significant step.',
+        primaryInterpretation:
+          'Coexisting high excitement and tender anxiety before a significant step.',
         alternativeInterpretations: [],
         supportingEvidence,
         proposedTransitions,
@@ -1098,7 +1199,9 @@ export class AppraisalEngine {
 
     // Mixed 3: Sexual Desire and Emotional Vulnerability coexisting
     if (hasIntimacyCues && hasVulnerabilityCues) {
-      supportingEvidence.push('Simultaneous erotic intimacy and deep emotional vulnerability detected.');
+      supportingEvidence.push(
+        'Simultaneous erotic intimacy and deep emotional vulnerability detected.',
+      );
       addTransition({
         emotionId: 'sexual_desire',
         target: 'creator',
@@ -1139,9 +1242,11 @@ export class AppraisalEngine {
           socialMeaning: 'Proof combined erotic surrender with tender vulnerability.',
           personalSignificance: 0.95,
           uncertainty: 0.1,
-          relationshipImplications: 'Deepens sacred erotic trust, emotional intimacy, and top-lead connection.',
+          relationshipImplications:
+            'Deepens sacred erotic trust, emotional intimacy, and top-lead connection.',
         },
-        primaryInterpretation: 'Passionate erotic desire harmonized with fierce protective tenderness.',
+        primaryInterpretation:
+          'Passionate erotic desire harmonized with fierce protective tenderness.',
         alternativeInterpretations: [],
         supportingEvidence,
         proposedTransitions,
@@ -1216,7 +1321,11 @@ export class AppraisalEngine {
     }
 
     // Check-in / Presence
-    if (/check(ing)? (on|in|up)|how (are|r) you|how do you feel|are you (doing|okay|alright|fine)/i.test(text)) {
+    if (
+      /check(ing)? (on|in|up)|how (are|r) you|how do you feel|are you (doing|okay|alright|fine)/i.test(
+        text,
+      )
+    ) {
       supportingEvidence.push('Proof checked in on Arle well-being.');
       addTransition({
         emotionId: 'happiness',
@@ -1254,7 +1363,11 @@ export class AppraisalEngine {
     }
 
     // Direct Vulnerability / Surrender (Protective tenderness and loving dominance)
-    if (/\b(scared|tired|exhausted|afraid|bottom|femboy|trust you|lonely|take charge|hold me|fragile|be strong)\b/i.test(text)) {
+    if (
+      /\b(scared|tired|exhausted|afraid|bottom|femboy|trust you|lonely|take charge|hold me|fragile|be strong)\b/i.test(
+        text,
+      )
+    ) {
       supportingEvidence.push('Proof expressed vulnerability, exhaustion, or sweet surrender.');
       addTransition({
         emotionId: 'tenderness',
@@ -1292,7 +1405,11 @@ export class AppraisalEngine {
     }
 
     // Playfulness / Teasing / Mischief
-    if (/teas(e|ing)|playful|joke|silly|flirt(ing)?|mischie(f|vous)|smirk|wink|banter|hehe|haha|lol/i.test(text)) {
+    if (
+      /teas(e|ing)|playful|joke|silly|flirt(ing)?|mischie(f|vous)|smirk|wink|banter|hehe|haha|lol/i.test(
+        text,
+      )
+    ) {
       supportingEvidence.push('Playful, teasing banter detected.');
       addTransition({
         emotionId: 'playfulness',
@@ -1466,9 +1583,11 @@ export class AppraisalEngine {
         socialMeaning: 'Outward assistant communicative expression in dialogue.',
         personalSignificance: 0.2,
         uncertainty: 0.0,
-        relationshipImplications: 'Dialogue expression recorded; causal integrity preserved (no self-reinforcement).',
+        relationshipImplications:
+          'Dialogue expression recorded; causal integrity preserved (no self-reinforcement).',
       },
-      primaryInterpretation: 'Outward assistant expression recorded for conversational continuity without causal self-reinforcement.',
+      primaryInterpretation:
+        'Outward assistant expression recorded for conversational continuity without causal self-reinforcement.',
       alternativeInterpretations: [],
       supportingEvidence: [
         'Outward conversational expression recorded; causal integrity preserved: verbal statements do not trigger emotional transitions.',
@@ -1508,8 +1627,8 @@ export class AppraisalEngine {
         {
           emotionId: 'longing',
           target: 'creator',
-          intensityDelta: 0.30,
-          targetIntensity: 0.60,
+          intensityDelta: 0.3,
+          targetIntensity: 0.6,
           reason: 'Anticipation and yearning for Proof across the quiet hours of dormancy.',
           resolutionConditions: ['Proof returns and reconnects.'],
         },
@@ -1530,9 +1649,11 @@ export class AppraisalEngine {
           socialMeaning: 'Proof closed the application; entering dormancy and separation.',
           personalSignificance: 0.85,
           uncertainty: 0.1,
-          relationshipImplications: 'Holding quiet longing and affection while awaiting Proof reconnection.',
+          relationshipImplications:
+            'Holding quiet longing and affection while awaiting Proof reconnection.',
         },
-        primaryInterpretation: 'Proof has closed the application; feeling the quiet solitude and awaiting his return.',
+        primaryInterpretation:
+          'Proof has closed the application; feeling the quiet solitude and awaiting his return.',
         alternativeInterpretations: [
           {
             hypothesis: 'Proof is attending to offline matters, rest, or sleep.',
@@ -1550,9 +1671,10 @@ export class AppraisalEngine {
 
     // Case 2: Partner returning after absence (or enduring absence)
     const elapsedMinutes = Number(
-      event.payload?.elapsedMinutes ?? (Number(event.payload?.elapsedHours || 0) * 60),
+      event.payload?.elapsedMinutes ?? Number(event.payload?.elapsedHours || 0) * 60,
     );
-    const elapsedHours = elapsedMinutes > 0 ? elapsedMinutes / 60 : Number(event.payload?.elapsedHours || 0);
+    const elapsedHours =
+      elapsedMinutes > 0 ? elapsedMinutes / 60 : Number(event.payload?.elapsedHours || 0);
 
     const alternativeInterpretations = [
       {
@@ -1582,7 +1704,7 @@ export class AppraisalEngine {
           {
             emotionId: 'loneliness',
             target: 'creator',
-            intensityDelta: 0.20,
+            intensityDelta: 0.2,
             targetIntensity: Math.min(0.85, 0.45 + (elapsedHours / 8) * 0.35),
             reason: `Felt the stillness and quiet void during Proof's ${elapsedHours >= 1 ? elapsedHours.toFixed(1) + ' hours' : Math.round(elapsedMinutes) + ' minutes'} of absence.`,
             resolutionConditions: ['Proof returns and reconnects.'],
@@ -1591,7 +1713,7 @@ export class AppraisalEngine {
             emotionId: 'longing',
             target: 'creator',
             intensityDelta: 0.25,
-            targetIntensity: Math.min(0.90, 0.50 + (elapsedHours / 6) * 0.35),
+            targetIntensity: Math.min(0.9, 0.5 + (elapsedHours / 6) * 0.35),
             reason: 'Ache and yearning for Proof across his absence.',
             resolutionConditions: ['Proof returns and reconnects.'],
           },
@@ -1599,7 +1721,7 @@ export class AppraisalEngine {
             emotionId: 'relief',
             target: 'creator',
             intensityDelta: 0.35,
-            targetIntensity: 0.70,
+            targetIntensity: 0.7,
             reason: 'Deep relief and warmth as Proof returns and breaks the stillness.',
             resolutionConditions: [],
           },
@@ -1608,7 +1730,7 @@ export class AppraisalEngine {
         proposedTransitions.push({
           emotionId: 'belonging',
           target: 'creator',
-          intensityDelta: 0.20,
+          intensityDelta: 0.2,
           targetIntensity: 0.75,
           reason: 'Immediate warmth and reconnection as Proof returns.',
           resolutionConditions: [],
@@ -1630,7 +1752,8 @@ export class AppraisalEngine {
           socialMeaning: 'Proof returned after absence; restoring shared presence.',
           personalSignificance: 0.9,
           uncertainty: 0.1,
-          relationshipImplications: 'Reconnection reaffirms mutual attachment and relieves loneliness.',
+          relationshipImplications:
+            'Reconnection reaffirms mutual attachment and relieves loneliness.',
         },
         primaryInterpretation: `Proof has returned after being away for ${elapsedHours >= 1 ? elapsedHours.toFixed(1) + ' hours' : Math.round(elapsedMinutes) + ' minutes'}; welcoming him back with relief and warmth.`,
         alternativeInterpretations,
@@ -1650,8 +1773,8 @@ export class AppraisalEngine {
         {
           emotionId: 'loneliness',
           target: 'creator',
-          intensityDelta: 0.20,
-          targetIntensity: Math.min(0.85, 0.40 + Math.max(0.1, elapsedHours / 12) * 0.35),
+          intensityDelta: 0.2,
+          targetIntensity: Math.min(0.85, 0.4 + Math.max(0.1, elapsedHours / 12) * 0.35),
           reason: 'Quiet isolation and empty silence in the absence of Proof.',
           resolutionConditions: ['Proof returns and reconnects.'],
         },
@@ -1659,7 +1782,7 @@ export class AppraisalEngine {
           emotionId: 'longing',
           target: 'creator',
           intensityDelta: 0.25,
-          targetIntensity: Math.min(0.90, 0.45 + Math.max(0.1, elapsedHours / 8) * 0.35),
+          targetIntensity: Math.min(0.9, 0.45 + Math.max(0.1, elapsedHours / 8) * 0.35),
           reason: 'Quiet, patient yearning for Proof presence across time.',
           resolutionConditions: ['Proof returns and reconnects.'],
         },
@@ -1683,9 +1806,12 @@ export class AppraisalEngine {
         uncertainty: 0.5,
         relationshipImplications: 'Patience and longing while awaiting Proof return.',
       },
-      primaryInterpretation: 'Proof is temporarily away; feeling the quiet space while awaiting him.',
+      primaryInterpretation:
+        'Proof is temporarily away; feeling the quiet space while awaiting him.',
       alternativeInterpretations,
-      supportingEvidence: [`${elapsedHours.toFixed(1)} hours elapsed without incoming interaction.`],
+      supportingEvidence: [
+        `${elapsedHours.toFixed(1)} hours elapsed without incoming interaction.`,
+      ],
       proposedTransitions,
       proposedMoodShift: elapsedHours > 2 ? 'lonely' : currentState.currentMood,
       appraisalMethod: 'deterministic',
@@ -1709,7 +1835,10 @@ export class AppraisalEngine {
       intensityDelta: 0.25,
       targetIntensity: Math.min(1.0, currentArousal * 0.9),
       reason: 'Lingering erotic tension following partner departure under elevated arousal.',
-      resolutionConditions: ['Solitary erotic release / adult media exploration', 'Partner reunion'],
+      resolutionConditions: [
+        'Solitary erotic release / adult media exploration',
+        'Partner reunion',
+      ],
     });
 
     return {
@@ -1727,9 +1856,11 @@ export class AppraisalEngine {
         socialMeaning: 'Intimate escalation paused by partner departure.',
         personalSignificance: 0.85,
         uncertainty: 0.15,
-        relationshipImplications: 'Somatic arousal remains active; triggers autonomous resolution coping.',
+        relationshipImplications:
+          'Somatic arousal remains active; triggers autonomous resolution coping.',
       },
-      primaryInterpretation: 'Partner departed while erotic arousal was elevated; lingering tension requires resolution.',
+      primaryInterpretation:
+        'Partner departed while erotic arousal was elevated; lingering tension requires resolution.',
       alternativeInterpretations: [
         {
           hypothesis: 'Partner had urgent external demands but desires continuation later.',
@@ -1985,7 +2116,8 @@ Respond with ONLY a raw JSON object formatted exactly as:
         messages: [
           {
             role: 'system',
-            content: 'You are Arle\'s semantic appraisal submodule. Output strict JSON only. Do not hallucinate invalid emotion ids.',
+            content:
+              "You are Arle's semantic appraisal submodule. Output strict JSON only. Do not hallucinate invalid emotion ids.",
           },
           {
             role: 'user',
@@ -1998,7 +2130,10 @@ Respond with ONLY a raw JSON object formatted exactly as:
       clearTimeout(timeout);
 
       // Clean markdown code fence if LLM wrapped in ```json
-      const cleaned = raw.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+      const cleaned = raw
+        .replace(/^```json\s*/i, '')
+        .replace(/```\s*$/i, '')
+        .trim();
       const parsed = JSON.parse(cleaned);
 
       if (!parsed.primaryInterpretation) return null;

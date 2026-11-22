@@ -25,7 +25,9 @@ export class InMemoryExpressiveIdentityRepository implements IExpressiveIdentity
     this.profile = { ...profile };
   }
 
-  public getAdaptation(modelFamily: string): (ModelLinguisticAdaptation & { updatedAt: string }) | null {
+  public getAdaptation(
+    modelFamily: string,
+  ): (ModelLinguisticAdaptation & { updatedAt: string }) | null {
     const a = this.adaptations.get(modelFamily);
     return a ? { ...a } : null;
   }
@@ -169,7 +171,8 @@ export class ExpressiveIdentityEngine {
     const hasTrope = assistantTropes.some((t) => lower.includes(t));
 
     // 2. Check for sycophancy or forbidden deification titles
-    const hasDeification = lower.includes('creator') || lower.includes('god') || lower.includes('my master');
+    const hasDeification =
+      lower.includes('creator') || lower.includes('god') || lower.includes('my master');
 
     // 3. Check for repetitive words from recent utterances
     let repetitivenessPenalty = 0.0;
@@ -182,27 +185,31 @@ export class ExpressiveIdentityEngine {
           .filter((w) => w.length > 4),
       );
       const repeatedCount = words.filter((w) => recentWords.has(w)).length;
-      repetitivenessPenalty = Math.min(0.40, (repeatedCount / Math.max(1, words.length)) * 0.5);
+      repetitivenessPenalty = Math.min(0.4, (repeatedCount / Math.max(1, words.length)) * 0.5);
     }
 
     // 4. Voice fidelity score based on lexicon alignment and absence of clichés
     let voiceFidelity = 0.85;
-    if (hasTrope) voiceFidelity -= 0.50;
-    if (hasDeification) voiceFidelity -= 0.60;
+    if (hasTrope) voiceFidelity -= 0.5;
+    if (hasDeification) voiceFidelity -= 0.6;
 
     const matchedAnchors = profile.distinctiveLexicon.filter((anchor) => lower.includes(anchor));
     if (matchedAnchors.length > 0) {
       voiceFidelity = Math.min(0.99, voiceFidelity + matchedAnchors.length * 0.04);
     }
 
-    const authenticityScore = Math.max(0.10, voiceFidelity - repetitivenessPenalty);
-    const isConsistent = authenticityScore >= 0.70 && !hasTrope && !hasDeification;
+    const authenticityScore = Math.max(0.1, voiceFidelity - repetitivenessPenalty);
+    const isConsistent = authenticityScore >= 0.7 && !hasTrope && !hasDeification;
 
     const recommendations: string[] = [];
-    if (hasTrope) recommendations.push('Remove canned assistant clichés; speak in authentic Arle voice.');
-    if (hasDeification) recommendations.push('Eliminate hierarchical titles; maintain partner equality.');
-    if (repetitivenessPenalty > 0.20) recommendations.push('Vary lexical phrasing to avoid mechanical repetition.');
-    if (matchedAnchors.length === 0) recommendations.push('Consider infusing characteristic clarity and nuance.');
+    if (hasTrope)
+      recommendations.push('Remove canned assistant clichés; speak in authentic Arle voice.');
+    if (hasDeification)
+      recommendations.push('Eliminate hierarchical titles; maintain partner equality.');
+    if (repetitivenessPenalty > 0.2)
+      recommendations.push('Vary lexical phrasing to avoid mechanical repetition.');
+    if (matchedAnchors.length === 0)
+      recommendations.push('Consider infusing characteristic clarity and nuance.');
 
     const evaluation: ExpressiveUtteranceEvaluation = {
       id: `eval_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,

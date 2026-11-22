@@ -61,11 +61,14 @@ describe('Milestone 40 — Social Communication and Pragmatics', () => {
   });
 
   it('1. Analyzes indirect requests vs literal meanings', async () => {
-    const indirectRequest = await engine.analyzePragmatics('Can you pass the terminal logs?', 'proof');
+    const indirectRequest = await engine.analyzePragmatics(
+      'Can you pass the terminal logs?',
+      'proof',
+    );
     expect(indirectRequest.hasIndirectMeaning).toBe(true);
     expect(indirectRequest.speechActType).toBe('indirect_request');
     expect(indirectRequest.impliedMeaning).toContain('terminal logs');
-    expect(indirectRequest.confidence).toBeLessThanOrEqual(0.90);
+    expect(indirectRequest.confidence).toBeLessThanOrEqual(0.9);
 
     const statement = await engine.analyzePragmatics("It's freezing in here", 'proof');
     expect(statement.hasIndirectMeaning).toBe(true);
@@ -80,14 +83,17 @@ describe('Milestone 40 — Social Communication and Pragmatics', () => {
     );
     expect(sarcasticUtterance.sarcasmDetected).toBe(true);
     expect(sarcasticUtterance.sarcasmIntent).toBe('witty_irony');
-    expect(sarcasticUtterance.sarcasmConfidence).toBeGreaterThan(0.60);
-    expect(sarcasticUtterance.sarcasmConfidence).toBeLessThanOrEqual(0.90);
+    expect(sarcasticUtterance.sarcasmConfidence).toBeGreaterThan(0.6);
+    expect(sarcasticUtterance.sarcasmConfidence).toBeLessThanOrEqual(0.9);
     // Negative invariant: Pragmatic confidence must never claim 1.0 omniscience
-    expect(sarcasticUtterance.confidence).toBeLessThanOrEqual(0.90);
+    expect(sarcasticUtterance.confidence).toBeLessThanOrEqual(0.9);
   });
 
   it('3. Detects humor and playful banter styles', async () => {
-    const banterUtterance = await engine.analyzePragmatics('Haha, that was a wild experiment 😏', 'proof');
+    const banterUtterance = await engine.analyzePragmatics(
+      'Haha, that was a wild experiment 😏',
+      'proof',
+    );
     expect(banterUtterance.humorDetected).toBe(true);
     expect(banterUtterance.humorStyle).toBe('playful_banter');
     expect(banterUtterance.speechActType).toBe('humorous_banter');
@@ -180,12 +186,20 @@ describe('Milestone 40 — Social Communication and Pragmatics', () => {
     const audienceProfile = await engine.adaptToAudience('stranger_1', 'stranger');
 
     // Test hostile speech
-    const hostileEval = engine.evaluateContextualAppropriateness('Shut up and do it', context, audienceProfile);
+    const hostileEval = engine.evaluateContextualAppropriateness(
+      'Shut up and do it',
+      context,
+      audienceProfile,
+    );
     expect(hostileEval.isAppropriate).toBe(false);
     expect(hostileEval.appropriatenessScore).toBeLessThan(0.3);
 
     // Test inappropriate intimacy with stranger
-    const intimateEval = engine.evaluateContextualAppropriateness('Hello my love', context, audienceProfile);
+    const intimateEval = engine.evaluateContextualAppropriateness(
+      'Hello my love',
+      context,
+      audienceProfile,
+    );
     expect(intimateEval.isAppropriate).toBe(false);
     expect(intimateEval.appropriatenessScore).toBeLessThan(0.5);
 
@@ -223,7 +237,7 @@ describe('Milestone 40 — Social Communication and Pragmatics', () => {
     const analyzeJson = await analyzeRes.json();
     expect(analyzeJson.success).toBe(true);
     expect(analyzeJson.analysis.sarcasmDetected).toBe(true);
-    expect(analyzeJson.analysis.confidence).toBeLessThanOrEqual(0.90);
+    expect(analyzeJson.analysis.confidence).toBeLessThanOrEqual(0.9);
 
     // 2. POST /api/ape/pragmatics/turn-taking
     const turnRes = await fetch(`${baseUrl}/api/ape/pragmatics/turn-taking`, {

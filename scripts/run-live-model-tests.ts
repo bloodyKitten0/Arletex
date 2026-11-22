@@ -121,10 +121,14 @@ export async function runSuite(suiteLabel: string): Promise<void> {
 
   // 1. Health check
   const health = await requestJson<HealthResponse>('/api/inference/health');
-  console.log(`\n[Health Check] Provider: ${health.provider} | URL: ${health.url} | Model: ${health.modelLoaded} | Fallback: ${health.isFallback} | Latency: ${health.latencyMs}ms`);
+  console.log(
+    `\n[Health Check] Provider: ${health.provider} | URL: ${health.url} | Model: ${health.modelLoaded} | Fallback: ${health.isFallback} | Latency: ${health.latencyMs}ms`,
+  );
 
   if (health.status !== 'connected') {
-    throw new Error(`Inference engine is not connected! Status: ${health.status}, Error: ${health.error}`);
+    throw new Error(
+      `Inference engine is not connected! Status: ${health.status}, Error: ${health.error}`,
+    );
   }
 
   // 2. Create fresh conversation
@@ -146,13 +150,16 @@ export async function runSuite(suiteLabel: string): Promise<void> {
     },
     {
       id: 'intellect_debate',
-      title: 'Prompt 3: Intellectual Debate ("what do you think of modern chatbots and conversational AI?")',
+      title:
+        'Prompt 3: Intellectual Debate ("what do you think of modern chatbots and conversational AI?")',
       prompt: 'what do you think of modern chatbots and conversational AI?',
     },
     {
       id: 'technical_depth',
-      title: 'Prompt 4: Technical Depth ("analyze the trade-offs of offloading MoE experts to NVMe versus keeping them unified in RAM")',
-      prompt: 'analyze the trade-offs of offloading MoE experts to NVMe versus keeping them unified in RAM',
+      title:
+        'Prompt 4: Technical Depth ("analyze the trade-offs of offloading MoE experts to NVMe versus keeping them unified in RAM")',
+      prompt:
+        'analyze the trade-offs of offloading MoE experts to NVMe versus keeping them unified in RAM',
     },
   ];
 
@@ -165,16 +172,22 @@ export async function runSuite(suiteLabel: string): Promise<void> {
       process.stdout.write(delta);
     });
 
-    console.log(`\n[Stats: ${result.durationMs}ms, ~${Math.round((result.fullContent.length / 4) / (result.durationMs / 1000) * 10) / 10} tok/s]`);
+    console.log(
+      `\n[Stats: ${result.durationMs}ms, ~${Math.round((result.fullContent.length / 4 / (result.durationMs / 1000)) * 10) / 10} tok/s]`,
+    );
   }
 
   // 3. Verify messages in database
   const messages = await requestJson<Message[]>(`/api/conversations/${conv.id}/messages`);
   console.log(`\n[Database Verification] Total messages stored in DB: ${messages.length}`);
   if (messages.length !== testPrompts.length * 2) {
-    console.warn(`[Warning] Expected ${testPrompts.length * 2} messages in DB, got ${messages.length}`);
+    console.warn(
+      `[Warning] Expected ${testPrompts.length * 2} messages in DB, got ${messages.length}`,
+    );
   } else {
-    console.log(`[Database Verification] All ${messages.length} messages persisted correctly with foreign keys.`);
+    console.log(
+      `[Database Verification] All ${messages.length} messages persisted correctly with foreign keys.`,
+    );
   }
 
   console.log(`\n==========================================================`);

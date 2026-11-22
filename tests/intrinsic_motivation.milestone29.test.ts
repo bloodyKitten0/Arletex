@@ -276,7 +276,8 @@ describe('Milestone 29 — Intrinsic and Extrinsic Motivation', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         activityId: extData.activity.id,
-        internalizedRationale: 'Defrag ensures prompt responses for Proof during our deep creative sessions.',
+        internalizedRationale:
+          'Defrag ensures prompt responses for Proof during our deep creative sessions.',
       }),
     });
     expect(intRes.status).toBe(200);
@@ -311,13 +312,17 @@ describe('Milestone 29 — Intrinsic and Extrinsic Motivation', () => {
     expect(reData.success).toBe(true);
 
     // 7. GET /api/ape/motivation/internalizations
-    const internListRes = await fetch(`${baseUrl}/api/ape/motivation/internalizations?activityId=${extData.activity.id}`);
+    const internListRes = await fetch(
+      `${baseUrl}/api/ape/motivation/internalizations?activityId=${extData.activity.id}`,
+    );
     expect(internListRes.status).toBe(200);
     const internListData = (await internListRes.json()) as any[];
     expect(internListData.length).toBe(1);
 
     // 8. GET /api/ape/motivation/reassessments
-    const reassessListRes = await fetch(`${baseUrl}/api/ape/motivation/reassessments?activityId=${extData.activity.id}`);
+    const reassessListRes = await fetch(
+      `${baseUrl}/api/ape/motivation/reassessments?activityId=${extData.activity.id}`,
+    );
     expect(reassessListRes.status).toBe(200);
     const reassessListData = (await reassessListRes.json()) as any[];
     expect(reassessListData.length).toBe(1);

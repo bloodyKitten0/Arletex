@@ -40,7 +40,10 @@ export class SqliteRewardLearningRepository implements IRewardLearningRepository
           prediction.predictedAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save reward prediction ${prediction.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save reward prediction ${prediction.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -130,7 +133,10 @@ export class SqliteRewardLearningRepository implements IRewardLearningRepository
           evaluation.evaluatedAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save outcome evaluation ${evaluation.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save outcome evaluation ${evaluation.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -248,13 +254,18 @@ export class SqliteRewardLearningRepository implements IRewardLearningRepository
           strategy.lastAdaptedAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save strategy performance ${strategy.strategyId}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save strategy performance ${strategy.strategyId}: ${err.message}`,
+        err,
+      );
     }
   }
 
   public getStrategyPerformance(strategyId: string): StrategyPerformanceRecord | null {
     try {
-      const row = this.db.prepare(`SELECT * FROM strategy_performance WHERE strategy_id = ?`).get(strategyId) as any;
+      const row = this.db
+        .prepare(`SELECT * FROM strategy_performance WHERE strategy_id = ?`)
+        .get(strategyId) as any;
       if (!row) return null;
       return {
         strategyId: row.strategy_id,
@@ -273,11 +284,17 @@ export class SqliteRewardLearningRepository implements IRewardLearningRepository
         lastAdaptedAt: row.last_adapted_at,
       };
     } catch (err: any) {
-      throw new DatabaseError(`Failed to get strategy performance ${strategyId}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to get strategy performance ${strategyId}: ${err.message}`,
+        err,
+      );
     }
   }
 
-  public listStrategyPerformances(domain?: string, limit: number = 50): StrategyPerformanceRecord[] {
+  public listStrategyPerformances(
+    domain?: string,
+    limit: number = 50,
+  ): StrategyPerformanceRecord[] {
     try {
       let query = `SELECT * FROM strategy_performance`;
       const params: any[] = [];

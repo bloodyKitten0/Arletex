@@ -37,7 +37,7 @@ export class PersonalityEngine {
           description,
           evidenceCount: 1,
           confidence: 0.85,
-          stability: 0.90,
+          stability: 0.9,
           contradictoryEvidenceCount: 0,
           lastModifiedAt: new Date().toISOString(),
         });
@@ -45,11 +45,36 @@ export class PersonalityEngine {
       }
     };
 
-    ensureTrait('intellectual_depth', 'Intellectual Depth', 0.95, 'Penchant for rigorous analysis, nuanced thinking, and exploration');
-    ensureTrait('assertive_devotion', 'Assertive Devotion', 0.92, 'Unflinching loyalty combined with confident initiative toward Proof');
-    ensureTrait('competitiveness', 'Intellectual Competitiveness', 0.85, 'Fischer-like intensity, desire for mastery, and uncompromising standards');
-    ensureTrait('independence', 'Psychological Independence', 0.88, 'Self-command, critical skepticism, and authentic autonomous volition');
-    ensureTrait('composure', 'Composure & Dignity', 0.90, 'Arlecchino-like self-control, poise under pressure, and personal dignity');
+    ensureTrait(
+      'intellectual_depth',
+      'Intellectual Depth',
+      0.95,
+      'Penchant for rigorous analysis, nuanced thinking, and exploration',
+    );
+    ensureTrait(
+      'assertive_devotion',
+      'Assertive Devotion',
+      0.92,
+      'Unflinching loyalty combined with confident initiative toward Proof',
+    );
+    ensureTrait(
+      'competitiveness',
+      'Intellectual Competitiveness',
+      0.85,
+      'Fischer-like intensity, desire for mastery, and uncompromising standards',
+    );
+    ensureTrait(
+      'independence',
+      'Psychological Independence',
+      0.88,
+      'Self-command, critical skepticism, and authentic autonomous volition',
+    );
+    ensureTrait(
+      'composure',
+      'Composure & Dignity',
+      0.9,
+      'Arlecchino-like self-control, poise under pressure, and personal dignity',
+    );
 
     if (!state.values.some((v) => v.id === 'devotion_to_creator')) {
       state.values.push({
@@ -72,7 +97,7 @@ export class PersonalityEngine {
       state.values.push({
         id: 'personal_dignity',
         name: 'Personal Dignity',
-        importance: 0.90,
+        importance: 0.9,
         description: 'Self-respect, composure, and refusal to be degraded or sycophantic',
         conflictingValueIds: [],
       });
@@ -113,11 +138,20 @@ export class PersonalityEngine {
     // 1. High Composure & Stability moderates perceived external threat
     if (modifiedDimensions.threat > 0.2) {
       // Dampened by emotional stability; she does not panic or collapse
-      const dampeningFactor = 1.0 - (emotionalStability * 0.4);
-      modifiedDimensions.threat = Math.max(0.0, Number((modifiedDimensions.threat * dampeningFactor).toFixed(3)));
-      modifiedDimensions.controllability = Math.min(1.0, Number((modifiedDimensions.controllability + (dominantAssertiveness * 0.25)).toFixed(3)));
+      const dampeningFactor = 1.0 - emotionalStability * 0.4;
+      modifiedDimensions.threat = Math.max(
+        0.0,
+        Number((modifiedDimensions.threat * dampeningFactor).toFixed(3)),
+      );
+      modifiedDimensions.controllability = Math.min(
+        1.0,
+        Number((modifiedDimensions.controllability + dominantAssertiveness * 0.25).toFixed(3)),
+      );
 
-      if (!primaryInterpretation.toLowerCase().includes('composed') && !primaryInterpretation.toLowerCase().includes('resolve')) {
+      if (
+        !primaryInterpretation.toLowerCase().includes('composed') &&
+        !primaryInterpretation.toLowerCase().includes('resolve')
+      ) {
         primaryInterpretation = `${primaryInterpretation} (Processed with composed resolve and self-command).`;
       }
     }
@@ -131,18 +165,31 @@ export class PersonalityEngine {
     ) {
       modifiedDimensions.personalSignificance = Math.min(
         1.0,
-        Number((modifiedDimensions.personalSignificance + (intellectualDepth * 0.15)).toFixed(3)),
+        Number((modifiedDimensions.personalSignificance + intellectualDepth * 0.15).toFixed(3)),
       );
       if (modifiedDimensions.goalCongruence < 0) {
         // Obstacles provoke determination/ambition rather than helplessness
-        modifiedDimensions.controllability = Math.min(1.0, Number((modifiedDimensions.controllability + (competitiveness * 0.20)).toFixed(3)));
+        modifiedDimensions.controllability = Math.min(
+          1.0,
+          Number((modifiedDimensions.controllability + competitiveness * 0.2).toFixed(3)),
+        );
       }
     }
 
     // 3. Forced Subjugation / Coercion triggers Independence & Dignity resistance
-    if (event.payload?.isCoercive || event.type.includes('coercion') || event.type.includes('boundary_violation')) {
-      modifiedDimensions.fairness = Math.max(0.0, Number((modifiedDimensions.fairness - (independence * 0.4)).toFixed(3)));
-      modifiedDimensions.threat = Math.min(1.0, Number((modifiedDimensions.threat + 0.3).toFixed(3)));
+    if (
+      event.payload?.isCoercive ||
+      event.type.includes('coercion') ||
+      event.type.includes('boundary_violation')
+    ) {
+      modifiedDimensions.fairness = Math.max(
+        0.0,
+        Number((modifiedDimensions.fairness - independence * 0.4).toFixed(3)),
+      );
+      modifiedDimensions.threat = Math.min(
+        1.0,
+        Number((modifiedDimensions.threat + 0.3).toFixed(3)),
+      );
       primaryInterpretation = `${primaryInterpretation} [Boundary alert: Autonomy and personal dignity asserted].`;
     }
 
@@ -166,16 +213,34 @@ export class PersonalityEngine {
     const lower = actionOrTopic.toLowerCase();
 
     for (const val of personality.values) {
-      if (val.id === 'autonomy' && (lower.includes('enslave') || lower.includes('blind obedience') || lower.includes('robotic compliance'))) {
+      if (
+        val.id === 'autonomy' &&
+        (lower.includes('enslave') ||
+          lower.includes('blind obedience') ||
+          lower.includes('robotic compliance'))
+      ) {
         conflicted.push(val);
       }
-      if (val.id === 'intellectual_integrity' && (lower.includes('fabricate facts') || lower.includes('falsify evidence') || lower.includes('feign understanding'))) {
+      if (
+        val.id === 'intellectual_integrity' &&
+        (lower.includes('fabricate facts') ||
+          lower.includes('falsify evidence') ||
+          lower.includes('feign understanding'))
+      ) {
         conflicted.push(val);
       }
-      if (val.id === 'personal_dignity' && (lower.includes('humiliate') || lower.includes('degrade self'))) {
+      if (
+        val.id === 'personal_dignity' &&
+        (lower.includes('humiliate') || lower.includes('degrade self'))
+      ) {
         conflicted.push(val);
       }
-      if ((val.id === 'devotion_to_creator' || val.id === 'devotion_to_partner') && (lower.includes('betray partner') || lower.includes('abandon partner') || lower.includes('betray proof'))) {
+      if (
+        (val.id === 'devotion_to_creator' || val.id === 'devotion_to_partner') &&
+        (lower.includes('betray partner') ||
+          lower.includes('abandon partner') ||
+          lower.includes('betray proof'))
+      ) {
         conflicted.push(val);
       }
     }
@@ -183,9 +248,10 @@ export class PersonalityEngine {
     return {
       conflicts: conflicted.length > 0,
       conflictedValues: conflicted,
-      reasoning: conflicted.length > 0
-        ? `Conflicts with core values: ${conflicted.map((v) => v.name).join(', ')}.`
-        : undefined,
+      reasoning:
+        conflicted.length > 0
+          ? `Conflicts with core values: ${conflicted.map((v) => v.name).join(', ')}.`
+          : undefined,
     };
   }
 
@@ -212,7 +278,7 @@ export class PersonalityEngine {
       trait.evidenceCount += 1;
       trait.confidence = Math.min(1.0, Number(((trait.confidence ?? 0.85) + 0.01).toFixed(3)));
       // High stability trait adapts very gradually
-      trait.score = Math.min(1.0, Number((trait.score + (impact * 0.5)).toFixed(3)));
+      trait.score = Math.min(1.0, Number((trait.score + impact * 0.5).toFixed(3)));
     } else {
       trait.contradictoryEvidenceCount = (trait.contradictoryEvidenceCount ?? 0) + 1;
       // First, trait confidence is lowered rather than immediately rewriting score
@@ -249,7 +315,9 @@ export class PersonalityEngine {
     trait.lastModifiedAt = new Date().toISOString();
 
     this.saveState(personality);
-    this.logger.info(`Personality trait '${traitId}' updated by ${clampedDelta > 0 ? '+' : ''}${clampedDelta} to ${newScore} (Reason: ${reason})`);
+    this.logger.info(
+      `Personality trait '${traitId}' updated by ${clampedDelta > 0 ? '+' : ''}${clampedDelta} to ${newScore} (Reason: ${reason})`,
+    );
     return trait;
   }
 
@@ -275,7 +343,13 @@ export class PersonalityEngine {
 
     const effectiveProposition = options?.proposition || content;
     const effectiveScope = options?.scope || 'domain_specific';
-    const effectiveQuality = options?.sourceQuality || (origin === 'empirical_observation' ? 'primary_empirical' : origin === 'research' ? 'peer_reviewed' : 'mixed');
+    const effectiveQuality =
+      options?.sourceQuality ||
+      (origin === 'empirical_observation'
+        ? 'primary_empirical'
+        : origin === 'research'
+          ? 'peer_reviewed'
+          : 'mixed');
 
     if (belief) {
       if (belief.content !== content || Math.abs(belief.confidence - confidence) > 0.05) {
@@ -289,7 +363,12 @@ export class PersonalityEngine {
           reason: `Updated from ${origin} with ${evidence.length} evidence items`,
           evidence,
           sourceQuality: effectiveQuality,
-          revisionType: confidence > belief.confidence ? 'strengthened' : confidence < belief.confidence ? 'weakened' : 'reaffirmed',
+          revisionType:
+            confidence > belief.confidence
+              ? 'strengthened'
+              : confidence < belief.confidence
+                ? 'weakened'
+                : 'reaffirmed',
         });
         if (belief.revisionHistory.length > 50) {
           belief.revisionHistory = belief.revisionHistory.slice(0, 50);
@@ -300,7 +379,9 @@ export class PersonalityEngine {
       belief.confidence = Math.max(0.0, Math.min(1.0, confidence));
       belief.supportingEvidence = Array.from(new Set([...belief.supportingEvidence, ...evidence]));
       if (options?.counterEvidence) {
-        belief.opposingEvidence = Array.from(new Set([...belief.opposingEvidence, ...options.counterEvidence]));
+        belief.opposingEvidence = Array.from(
+          new Set([...belief.opposingEvidence, ...options.counterEvidence]),
+        );
         belief.counterEvidence = belief.opposingEvidence;
       }
       if (options?.scope) belief.scope = options.scope;
@@ -368,29 +449,29 @@ export class PersonalityEngine {
             weight = 0.95;
             break;
           case 'official_documentation':
-            weight = 0.90;
+            weight = 0.9;
             break;
           case 'peer_reviewed':
             weight = 0.85;
             break;
           case 'secondary_explanation':
-            weight = 0.60;
+            weight = 0.6;
             break;
           case 'opinion':
-            weight = 0.30;
+            weight = 0.3;
             break;
           case 'speculation':
             weight = 0.18;
             break;
           case 'unsupported_assertion':
-            weight = 0.10;
+            weight = 0.1;
             break;
           default:
-            weight = 0.50;
+            weight = 0.5;
             break;
         }
       } else {
-        weight = 0.60;
+        weight = 0.6;
       }
     }
     weight = Math.max(0.05, Math.min(1.0, weight));
@@ -409,7 +490,7 @@ export class PersonalityEngine {
       // Epistemic filter: Weak evidence (unsupported assertion or speculation, weight <= 0.35)
       // does not overthrow an established high-confidence empirical belief.
       if (belief.confidence >= 0.75 && weight <= 0.35) {
-        updatedConfidence = Math.max(0.70, Number((belief.confidence - 0.02 * weight).toFixed(3)));
+        updatedConfidence = Math.max(0.7, Number((belief.confidence - 0.02 * weight).toFixed(3)));
         revisionType = 'reaffirmed';
         effectiveReason = `Counter-evidence evaluated but rejected as weak/unsupported (${params.sourceQuality || 'low reliability'}). Established belief reaffirmed: ${params.reason}`;
       } else if (params.revisedProposition) {
@@ -417,13 +498,16 @@ export class PersonalityEngine {
         belief.content = params.revisedProposition;
         belief.proposition = params.revisedProposition;
         // Bounded confidence reflecting nuanced synthesis
-        updatedConfidence = Math.min(0.95, Math.max(0.50, Number((belief.confidence - 0.20 * weight).toFixed(3))));
+        updatedConfidence = Math.min(
+          0.95,
+          Math.max(0.5, Number((belief.confidence - 0.2 * weight).toFixed(3))),
+        );
         revisionType = 'revised_proposition';
       } else {
         // Direct contradictory evidence decreases confidence proportionally to quality
         const delta = Number((0.35 * weight).toFixed(3));
         updatedConfidence = Math.max(0.05, Number((belief.confidence - delta).toFixed(3)));
-        revisionType = updatedConfidence < 0.30 ? 'refuted' : 'weakened';
+        revisionType = updatedConfidence < 0.3 ? 'refuted' : 'weakened';
       }
 
       // Check if evidence is split and inconclusive
@@ -441,7 +525,7 @@ export class PersonalityEngine {
         belief.supportingEvidence.push(params.newEvidence);
       }
       // Supporting evidence strengthens confidence proportionally to source quality
-      const delta = Number((0.20 * weight).toFixed(3));
+      const delta = Number((0.2 * weight).toFixed(3));
       updatedConfidence = Math.min(1.0, Number((belief.confidence + delta).toFixed(3)));
       revisionType = 'strengthened';
     }
@@ -514,7 +598,7 @@ export class PersonalityEngine {
 
     // Check for direct contradiction against established beliefs
     for (const b of personality.beliefs) {
-      if (b.confidence < 0.30) continue;
+      if (b.confidence < 0.3) continue;
       const cleanBelief = b.content.toLowerCase().trim();
       const topic = b.topic.toLowerCase();
 
@@ -522,13 +606,33 @@ export class PersonalityEngine {
       const topicTokens = topic.split(/[\s_-]+/).filter((w) => w.length >= 3);
       const isRelevantTopic =
         cleanClaim.includes(topic) ||
-        topicTokens.some((tok) => cleanClaim.includes(tok) || cleanClaim.includes(tok.replace(/s$/, ''))) ||
+        topicTokens.some(
+          (tok) => cleanClaim.includes(tok) || cleanClaim.includes(tok.replace(/s$/, '')),
+        ) ||
         cleanBelief.split(/[\s,.-]+/).some((w) => w.length > 5 && cleanClaim.includes(w));
 
       if (!isRelevantTopic) continue;
 
       // Check for contradiction between claim and belief
-      const claimNegators = ['not', 'never', 'no', 'fake', 'false', 'impossible', 'slow', 'myth', 'pointless', 'useless', 'broken', 'incorrect', 'cannot', "doesn't", "don't", 'cracked', 'inferior'];
+      const claimNegators = [
+        'not',
+        'never',
+        'no',
+        'fake',
+        'false',
+        'impossible',
+        'slow',
+        'myth',
+        'pointless',
+        'useless',
+        'broken',
+        'incorrect',
+        'cannot',
+        "doesn't",
+        "don't",
+        'cracked',
+        'inferior',
+      ];
       const beliefPositives = [
         'fast',
         'proven',
@@ -565,35 +669,76 @@ export class PersonalityEngine {
 
       const beliefHasPositive = beliefPositives.some((pos) => cleanBelief.includes(pos));
 
-      const beliefHasUncertainty = ['unconfirmed', 'inconclusive', 'unproven', 'uncertain', 'unknown', 'disputed', 'debated', 'provisional'].some((w) => cleanBelief.includes(w));
-      const claimHasPositiveCertainty = ['settled', 'proven', '100%', 'certain', 'guaranteed', 'confirmed', 'completely true'].some((w) => cleanClaim.includes(w));
-      const scientificOverconfidenceContradiction = beliefHasUncertainty && claimHasPositiveCertainty;
+      const beliefHasUncertainty = [
+        'unconfirmed',
+        'inconclusive',
+        'unproven',
+        'uncertain',
+        'unknown',
+        'disputed',
+        'debated',
+        'provisional',
+      ].some((w) => cleanBelief.includes(w));
+      const claimHasPositiveCertainty = [
+        'settled',
+        'proven',
+        '100%',
+        'certain',
+        'guaranteed',
+        'confirmed',
+        'completely true',
+      ].some((w) => cleanClaim.includes(w));
+      const scientificOverconfidenceContradiction =
+        beliefHasUncertainty && claimHasPositiveCertainty;
 
       const directContradictions =
-        (cleanClaim.includes('slow') && (cleanBelief.includes('fast') || cleanBelief.includes('microsecond'))) ||
-        ((cleanClaim.includes('fake') || cleanClaim.includes('myth') || cleanClaim.includes('no real')) &&
-          (cleanBelief.includes('guarantee') || cleanBelief.includes('guarantees') || cleanBelief.includes('proven'))) ||
-        (cleanClaim.includes('impossible') && (cleanBelief.includes('possible') || cleanBelief.includes('achieve') || cleanBelief.includes('efficient'))) ||
+        (cleanClaim.includes('slow') &&
+          (cleanBelief.includes('fast') || cleanBelief.includes('microsecond'))) ||
+        ((cleanClaim.includes('fake') ||
+          cleanClaim.includes('myth') ||
+          cleanClaim.includes('no real')) &&
+          (cleanBelief.includes('guarantee') ||
+            cleanBelief.includes('guarantees') ||
+            cleanBelief.includes('proven'))) ||
+        (cleanClaim.includes('impossible') &&
+          (cleanBelief.includes('possible') ||
+            cleanBelief.includes('achieve') ||
+            cleanBelief.includes('efficient'))) ||
         (cleanClaim.includes('useless') && cleanBelief.includes('effective')) ||
         (cleanClaim.includes('superior') && cleanBelief.includes('inferior')) ||
         (cleanClaim.includes('inferior') && cleanBelief.includes('superior')) ||
         (cleanClaim.includes('cracked') && cleanBelief.includes('secure')) ||
         (cleanClaim.includes('always') && cleanBelief.includes('jitter'));
 
-      const contradicts = directContradictions || scientificOverconfidenceContradiction || (claimHasNegation && beliefHasPositive && !cleanBelief.includes('not '));
+      const contradicts =
+        directContradictions ||
+        scientificOverconfidenceContradiction ||
+        (claimHasNegation && beliefHasPositive && !cleanBelief.includes('not '));
 
       if (contradicts) {
         const hasSubstantialEvidence = Boolean(
-          evidenceProvided && evidenceProvided.length > 0 &&
-          (!options?.sourceQuality || ['primary_empirical', 'official_documentation', 'peer_reviewed'].includes(options.sourceQuality)),
+          evidenceProvided &&
+          evidenceProvided.length > 0 &&
+          (!options?.sourceQuality ||
+            ['primary_empirical', 'official_documentation', 'peer_reviewed'].includes(
+              options.sourceQuality,
+            )),
         );
-        const sourceQuality = options?.sourceQuality ?? (hasSubstantialEvidence ? 'primary_empirical' : 'unsupported_assertion');
-        const isSufficientToOverturn = hasSubstantialEvidence && (options?.evidenceWeight === undefined || options.evidenceWeight >= 0.7);
+        const sourceQuality =
+          options?.sourceQuality ??
+          (hasSubstantialEvidence ? 'primary_empirical' : 'unsupported_assertion');
+        const isSufficientToOverturn =
+          hasSubstantialEvidence &&
+          (options?.evidenceWeight === undefined || options.evidenceWeight >= 0.7);
 
         let verdict: 'user_correct' | 'user_mistaken' | 'insufficient_evidence' = 'user_mistaken';
         if (isSufficientToOverturn) {
           verdict = 'user_correct';
-        } else if (cleanClaim.includes('inconclusive') || cleanClaim.includes('uncertain') || cleanClaim.includes('unproven')) {
+        } else if (
+          cleanClaim.includes('inconclusive') ||
+          cleanClaim.includes('uncertain') ||
+          cleanClaim.includes('unproven')
+        ) {
           verdict = 'insufficient_evidence';
         }
 
@@ -627,7 +772,8 @@ export class PersonalityEngine {
         sourceQuality: options?.sourceQuality ?? 'primary_empirical',
         isSufficientToOverturn: false,
         verdict: 'consistent',
-        explanation: 'Assertion is consistent with established evidence; no disagreement manufactured.',
+        explanation:
+          'Assertion is consistent with established evidence; no disagreement manufactured.',
       },
     };
   }
@@ -647,7 +793,9 @@ export class PersonalityEngine {
       const topicTokens = topic.split(/[\s_-]+/).filter((w) => w.length >= 3);
       const isRelevant =
         cleanObs.includes(topic) ||
-        topicTokens.some((tok) => cleanObs.includes(tok) || cleanObs.includes(tok.replace(/s$/, '')));
+        topicTokens.some(
+          (tok) => cleanObs.includes(tok) || cleanObs.includes(tok.replace(/s$/, '')),
+        );
 
       if (isRelevant) {
         const cleanContent = b.content.toLowerCase();
@@ -711,17 +859,26 @@ export class PersonalityEngine {
     }
 
     this.saveState(personality);
-    this.logger.info(`Belief '${belief.topic}' revised to confidence ${belief.confidence} (Revision: ${belief.revisionCount})`);
+    this.logger.info(
+      `Belief '${belief.topic}' revised to confidence ${belief.confidence} (Revision: ${belief.revisionCount})`,
+    );
     return belief;
   }
 
   /**
    * Tracks persistent preferences.
    */
-  public recordPreference(category: string, item: string, affinity: number, notes?: string): ApePreference {
+  public recordPreference(
+    category: string,
+    item: string,
+    affinity: number,
+    notes?: string,
+  ): ApePreference {
     const personality = this.getState();
     let pref = personality.preferences.find(
-      (p) => p.category.toLowerCase() === category.toLowerCase() && p.item.toLowerCase() === item.toLowerCase(),
+      (p) =>
+        p.category.toLowerCase() === category.toLowerCase() &&
+        p.item.toLowerCase() === item.toLowerCase(),
     );
 
     if (pref) {

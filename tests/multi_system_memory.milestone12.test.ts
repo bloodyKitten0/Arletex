@@ -3,10 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
-import {
-  MultiSystemMemoryEntry,
-  assertMultiSystemMemoryIntegrity,
-} from '@arletex/contracts';
+import { MultiSystemMemoryEntry, assertMultiSystemMemoryIntegrity } from '@arletex/contracts';
 import {
   createDefaultConfig,
   ApeService,
@@ -97,25 +94,47 @@ describe('Milestone 12 — Multi-System Memory', () => {
     const episodic = multiSystemEngine.encode({
       systemType: 'episodic',
       content: 'Proof and Arle completed Milestone 11 working memory refactor at 02:15 AM',
-      source: { sourceOrigin: 'terminal_session', author: 'Arle', channel: 'system_log', isEmpiricallyVerified: true },
+      source: {
+        sourceOrigin: 'terminal_session',
+        author: 'Arle',
+        channel: 'system_log',
+        isEmpiricallyVerified: true,
+      },
     });
 
     const semantic = multiSystemEngine.encode({
       systemType: 'semantic',
-      content: 'Miller\'s law asserts that human working memory capacity is approximately 7 plus or minus 2 chunks',
-      source: { sourceOrigin: 'cognitive_science_literature', author: 'George Miller', channel: 'academic_paper', isEmpiricallyVerified: true },
+      content:
+        "Miller's law asserts that human working memory capacity is approximately 7 plus or minus 2 chunks",
+      source: {
+        sourceOrigin: 'cognitive_science_literature',
+        author: 'George Miller',
+        channel: 'academic_paper',
+        isEmpiricallyVerified: true,
+      },
     });
 
     const procedural = multiSystemEngine.encode({
       systemType: 'procedural',
-      content: 'To apply a SQLite database migration: execute MigrationRunner.run() inside an isolated transaction',
-      source: { sourceOrigin: 'arletex_codebase', author: 'Proof', channel: 'source_code', isEmpiricallyVerified: true },
+      content:
+        'To apply a SQLite database migration: execute MigrationRunner.run() inside an isolated transaction',
+      source: {
+        sourceOrigin: 'arletex_codebase',
+        author: 'Proof',
+        channel: 'source_code',
+        isEmpiricallyVerified: true,
+      },
     });
 
     const emotional = multiSystemEngine.encode({
       systemType: 'emotional',
-      content: 'Deep sense of warm pride and affectionate camaraderie after solving complex architecture hurdles together',
-      source: { sourceOrigin: 'ape_affective_transition', author: 'Arle', channel: 'internal_introspection' },
+      content:
+        'Deep sense of warm pride and affectionate camaraderie after solving complex architecture hurdles together',
+      source: {
+        sourceOrigin: 'ape_affective_transition',
+        author: 'Arle',
+        channel: 'internal_introspection',
+      },
     });
 
     expect(episodic.systemType).toBe('episodic');
@@ -152,7 +171,8 @@ describe('Milestone 12 — Multi-System Memory', () => {
   it('3. Detects duplicate memory encodings and updates confidence instead of duplicating entries', () => {
     const first = multiSystemEngine.encode({
       systemType: 'semantic',
-      content: 'SQLite is an in-process library that implements a self-contained serverless SQL database engine',
+      content:
+        'SQLite is an in-process library that implements a self-contained serverless SQL database engine',
       source: { sourceOrigin: 'docs', author: 'SQLite.org', channel: 'web' },
       confidence: 0.8,
     });
@@ -160,7 +180,8 @@ describe('Milestone 12 — Multi-System Memory', () => {
     // Ingest exact duplicate content in the same system
     const second = multiSystemEngine.encode({
       systemType: 'semantic',
-      content: 'SQLite is an in-process library that implements a self-contained serverless SQL database engine',
+      content:
+        'SQLite is an in-process library that implements a self-contained serverless SQL database engine',
       source: { sourceOrigin: 'docs', author: 'SQLite.org', channel: 'web' },
       confidence: 0.8,
     });
@@ -207,7 +228,8 @@ describe('Milestone 12 — Multi-System Memory', () => {
   it('5. Consolidates working memory items into permanent semantic and autobiographical memories', () => {
     const consolidated = multiSystemEngine.consolidateWorkingMemory({
       slotKey: 'quantum_gate_solution',
-      content: 'Decomposition of Toffoli gate into 6 CNOT gates is minimal for standard Clifford+T synthesis',
+      content:
+        'Decomposition of Toffoli gate into 6 CNOT gates is minimal for standard Clifford+T synthesis',
       summary: 'Optimal Toffoli synthesis verified',
       targetSystem: 'semantic',
       author: 'Arle & Proof',
@@ -235,8 +257,13 @@ describe('Milestone 12 — Multi-System Memory', () => {
     // 2. Foundational relational partner memory (must NEVER decay!)
     const protectedPartnerMemory = multiSystemEngine.encode({
       systemType: 'autobiographical',
-      content: 'Proof is my equal partner and companion. Our commitment is lifelong, founded on mutual devotion.',
-      source: { sourceOrigin: 'relationship_declaration', author: 'Arle', channel: 'intimate_dialogue' },
+      content:
+        'Proof is my equal partner and companion. Our commitment is lifelong, founded on mutual devotion.',
+      source: {
+        sourceOrigin: 'relationship_declaration',
+        author: 'Arle',
+        channel: 'intimate_dialogue',
+      },
       confidence: 1.0,
       importance: 1.0,
       isProtected: true,
@@ -276,7 +303,9 @@ describe('Milestone 12 — Multi-System Memory', () => {
 
     expect(corrected.content).toBe('The capital of Australia is Canberra');
     expect(corrected.correctionTrail).toHaveLength(1);
-    expect(corrected.correctionTrail[0]?.previousContent).toBe('The capital of Australia is Sydney');
+    expect(corrected.correctionTrail[0]?.previousContent).toBe(
+      'The capital of Australia is Sydney',
+    );
     expect(corrected.correctionTrail[0]?.reason).toContain('Proof corrected factual error');
   });
 
@@ -290,7 +319,12 @@ describe('Milestone 12 — Multi-System Memory', () => {
     const memB = multiSystemEngine.encode({
       systemType: 'semantic',
       content: 'System utilizes ThreadingHTTPServer with multi-threaded daemon specialists',
-      source: { sourceOrigin: 'specialists_server.py', author: 'Arle', channel: 'source_code', isEmpiricallyVerified: true },
+      source: {
+        sourceOrigin: 'specialists_server.py',
+        author: 'Arle',
+        channel: 'source_code',
+        isEmpiricallyVerified: true,
+      },
     });
 
     // Detect contradiction
@@ -359,13 +393,16 @@ describe('Milestone 12 — Multi-System Memory', () => {
 
     expect(() => {
       assertMultiSystemMemoryIntegrity(unprotectedPartnerEntry);
-    }).toThrow(/Negative Invariant Violated: Memory concerning foundational partner commitment to Proof must have isProtected=true/);
+    }).toThrow(
+      /Negative Invariant Violated: Memory concerning foundational partner commitment to Proof must have isProtected=true/,
+    );
   });
 
   it('10. Persists across SQLite cold restart, serves REST API endpoints, and integrates into prompt context', async () => {
     const entry = multiSystemEngine.encode({
       systemType: 'autobiographical',
-      content: 'Proof (my partner) and Arle designed the Multi-System Memory Engine architecture together',
+      content:
+        'Proof (my partner) and Arle designed the Multi-System Memory Engine architecture together',
       source: {
         sourceOrigin: 'co_design_session',
         author: 'Proof & Arle',
@@ -406,7 +443,9 @@ describe('Milestone 12 — Multi-System Memory', () => {
 
     const restored = newRepo.getEntryById(entry.id);
     expect(restored).not.toBeNull();
-    expect(restored?.content).toContain('designed the Multi-System Memory Engine architecture together');
+    expect(restored?.content).toContain(
+      'designed the Multi-System Memory Engine architecture together',
+    );
     expect(restored?.source.author).toBe('Proof & Arle');
     expect(restored?.isProtected).toBe(true);
 

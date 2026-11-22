@@ -81,7 +81,11 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           value={content}
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={isGenerating ? 'Arle is responding...' : 'Message Arle... (Enter to send, Shift+Enter for newline)'}
+          placeholder={
+            isGenerating
+              ? 'Arle is responding...'
+              : 'Message Arle... (Enter to send, Shift+Enter for newline)'
+          }
           disabled={disabled || isGenerating}
           rows={1}
           style={{

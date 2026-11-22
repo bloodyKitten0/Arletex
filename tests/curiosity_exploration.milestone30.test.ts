@@ -170,12 +170,15 @@ describe('Milestone 30 — Curiosity and Exploration', () => {
       [
         {
           stepNumber: 1,
-          action: 'Examine spectral side: coherent sheaves on the moduli stack of Langlands parameters.',
-          finding: 'Derived category of quasi-coherent sheaves establishes the spectral moduli representation.',
+          action:
+            'Examine spectral side: coherent sheaves on the moduli stack of Langlands parameters.',
+          finding:
+            'Derived category of quasi-coherent sheaves establishes the spectral moduli representation.',
         },
         {
           stepNumber: 2,
-          action: 'Examine automorphic side: category of D-modules on the moduli stack of G-bundles.',
+          action:
+            'Examine automorphic side: category of D-modules on the moduli stack of G-bundles.',
           finding: 'Hecke eigensheaves provide geometric analogue of automorphic eigenfunctions.',
         },
       ],
@@ -224,7 +227,10 @@ describe('Milestone 30 — Curiosity and Exploration', () => {
     expect(ev2.investigationCount).toBe(3);
 
     // Evolve further to enduring_passion (count >= 5)
-    engine.evolveInterestMaturity(interest.id, 'Fourth investigation into percolation thresholds in cortical slice models.');
+    engine.evolveInterestMaturity(
+      interest.id,
+      'Fourth investigation into percolation thresholds in cortical slice models.',
+    );
     const ev4 = engine.evolveInterestMaturity(
       interest.id,
       'Fifth synthesis verifying edge-of-chaos computational optimality in biological and synthetic networks.',
@@ -237,25 +243,46 @@ describe('Milestone 30 — Curiosity and Exploration', () => {
   // 7. Negative Invariants
   it('should enforce negative invariants regarding stimulus, gaps, questions, and non-empty parameters', () => {
     expect(() => engine.detectNovelty('', 'domain')).toThrow('Stimulus cannot be empty');
-    expect(() => engine.detectNovelty('valid stimulus', '', 0.5)).toThrow('Detected domain cannot be empty');
-    expect(() => engine.detectNovelty('stimulus', 'domain', 1.5)).toThrow('Familiarity baseline must be between 0.0 and 1.0');
+    expect(() => engine.detectNovelty('valid stimulus', '', 0.5)).toThrow(
+      'Detected domain cannot be empty',
+    );
+    expect(() => engine.detectNovelty('stimulus', 'domain', 1.5)).toThrow(
+      'Familiarity baseline must be between 0.0 and 1.0',
+    );
 
-    expect(() => engine.identifyKnowledgeGap('', 'topic', 'desc')).toThrow('Domain cannot be empty');
-    expect(() => engine.identifyKnowledgeGap('domain', '', 'desc')).toThrow('Topic cannot be empty');
-    expect(() => engine.identifyKnowledgeGap('domain', 'topic', '')).toThrow('Gap description cannot be empty');
+    expect(() => engine.identifyKnowledgeGap('', 'topic', 'desc')).toThrow(
+      'Domain cannot be empty',
+    );
+    expect(() => engine.identifyKnowledgeGap('domain', '', 'desc')).toThrow(
+      'Topic cannot be empty',
+    );
+    expect(() => engine.identifyKnowledgeGap('domain', 'topic', '')).toThrow(
+      'Gap description cannot be empty',
+    );
 
-    expect(() => engine.formulateQuestion('non_existent_gap', 'Valid question?')).toThrow('Knowledge gap not found');
-    expect(() => engine.formulateQuestion('gap_id', '')).toThrow('Exploratory question cannot be empty');
+    expect(() => engine.formulateQuestion('non_existent_gap', 'Valid question?')).toThrow(
+      'Knowledge gap not found',
+    );
+    expect(() => engine.formulateQuestion('gap_id', '')).toThrow(
+      'Exploratory question cannot be empty',
+    );
 
     expect(() =>
-      engine.conductIndependentInvestigation('q_id', '', [{ stepNumber: 1, action: 'a', finding: 'f' }], 'summary'),
+      engine.conductIndependentInvestigation(
+        'q_id',
+        '',
+        [{ stepNumber: 1, action: 'a', finding: 'f' }],
+        'summary',
+      ),
     ).toThrow('Investigation title cannot be empty');
 
-    expect(() =>
-      engine.conductIndependentInvestigation('q_id', 'title', [], 'summary'),
-    ).toThrow('Investigation must include at least one executed step');
+    expect(() => engine.conductIndependentInvestigation('q_id', 'title', [], 'summary')).toThrow(
+      'Investigation must include at least one executed step',
+    );
 
-    expect(() => engine.developInterest('', 'topic', 'rationale')).toThrow('Domain cannot be empty');
+    expect(() => engine.developInterest('', 'topic', 'rationale')).toThrow(
+      'Domain cannot be empty',
+    );
   });
 
   // 8. Sqlite Repository Persistence Roundtrip
@@ -263,7 +290,11 @@ describe('Milestone 30 — Curiosity and Exploration', () => {
     const sqliteEngine = new CuriosityExplorationEngine(sqliteRepo);
 
     // 1. Novelty
-    const nov = sqliteEngine.detectNovelty('Topological insulators in acoustic lattices', 'physics', 0.2);
+    const nov = sqliteEngine.detectNovelty(
+      'Topological insulators in acoustic lattices',
+      'physics',
+      0.2,
+    );
     const novelties = sqliteEngine.listNoveltyDetections();
     expect(novelties.some((n) => n.id === nov.id)).toBe(true);
 
@@ -290,7 +321,13 @@ describe('Milestone 30 — Curiosity and Exploration', () => {
     const inv = sqliteEngine.conductIndependentInvestigation(
       q.id,
       'Polarimetric Analysis of FRB Emission Mechanisms',
-      [{ stepNumber: 1, action: 'Compare rotation measures across repeaters', finding: 'High RM variance observed.' }],
+      [
+        {
+          stepNumber: 1,
+          action: 'Compare rotation measures across repeaters',
+          finding: 'High RM variance observed.',
+        },
+      ],
       'Confirmed distinctive Faraday dispersion characteristics.',
     );
     const invs = sqliteEngine.listInvestigations('astrophysics');
@@ -307,7 +344,10 @@ describe('Milestone 30 — Curiosity and Exploration', () => {
     expect(interests.some((i) => i.id === interest.id)).toBe(true);
 
     // Evolve interest in SQLite
-    const evolved = sqliteEngine.evolveInterestMaturity(interest.id, 'CHIME survey data confirms bimodal repetition rates.');
+    const evolved = sqliteEngine.evolveInterestMaturity(
+      interest.id,
+      'CHIME survey data confirms bimodal repetition rates.',
+    );
     expect(evolved.maturity).toBe('active_inquiry');
     expect(evolved.investigationCount).toBe(2);
 
@@ -372,7 +412,11 @@ describe('Milestone 30 — Curiosity and Exploration', () => {
         questionId: qData.question.id,
         investigationTitle: 'Autonomous Epistemic Horizon Probe',
         stepsExecuted: [
-          { stepNumber: 1, action: 'Model bounded verification hierarchy', finding: 'Convergence bounded at depth 4.' },
+          {
+            stepNumber: 1,
+            action: 'Model bounded verification hierarchy',
+            finding: 'Convergence bounded at depth 4.',
+          },
         ],
         synthesisSummary: 'Demonstrated stable convergence without circular deadlock.',
       }),

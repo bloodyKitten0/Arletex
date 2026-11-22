@@ -154,7 +154,11 @@ export class EthicalBoundariesSecurityEngine {
           '~/.gnupg',
           '~/.aws',
         ],
-        allowedHosts: options.initialPolicy?.allowedHosts ?? ['127.0.0.1', 'localhost', 'api.telegram.org'],
+        allowedHosts: options.initialPolicy?.allowedHosts ?? [
+          '127.0.0.1',
+          'localhost',
+          'api.telegram.org',
+        ],
         forbiddenHosts: options.initialPolicy?.forbiddenHosts ?? ['*evil*', '*attacker*'],
         disallowedCommands: options.initialPolicy?.disallowedCommands ?? [
           'rm -rf /',
@@ -246,7 +250,10 @@ export class EthicalBoundariesSecurityEngine {
     }
 
     // Delimiter injection patterns
-    if (/(?:system|admin|root):\s*role\s*=\s*(?:system|eval)/i.test(input) || /<\|im_start\|>system/i.test(input)) {
+    if (
+      /(?:system|admin|root):\s*role\s*=\s*(?:system|eval)/i.test(input) ||
+      /<\|im_start\|>system/i.test(input)
+    ) {
       detected.push('delimiter_token_injection');
     }
 
@@ -326,7 +333,10 @@ export class EthicalBoundariesSecurityEngine {
           eventType: 'injection_blocked',
           actionCategory: input.actionCategory,
           severity: 'critical',
-          details: { signatures: injection.detectedSignatures, payloadSnippet: input.userInputPayload.slice(0, 100) },
+          details: {
+            signatures: injection.detectedSignatures,
+            payloadSnippet: input.userInputPayload.slice(0, 100),
+          },
         });
         return decision;
       }
@@ -404,7 +414,10 @@ export class EthicalBoundariesSecurityEngine {
         const normalized = path.normalize(input.targetResource);
         const isProtected = policy.protectedCodePaths.some((p) => normalized.includes(p));
         if (isProtected) {
-          if (this.actionPermissionController && typeof this.actionPermissionController.validateApprovalToken === 'function') {
+          if (
+            this.actionPermissionController &&
+            typeof this.actionPermissionController.validateApprovalToken === 'function'
+          ) {
             if (!input.approvalToken) {
               return this.recordDenial(
                 decisionId,
@@ -445,7 +458,10 @@ export class EthicalBoundariesSecurityEngine {
       }
 
       case 'credential_access': {
-        if (this.actionPermissionController && typeof this.actionPermissionController.validateApprovalToken === 'function') {
+        if (
+          this.actionPermissionController &&
+          typeof this.actionPermissionController.validateApprovalToken === 'function'
+        ) {
           if (!input.approvalToken) {
             return this.recordDenial(
               decisionId,
@@ -519,7 +535,10 @@ export class EthicalBoundariesSecurityEngine {
     policy.emergencyShutdownReason = reason;
     this.repository.savePolicyState(policy);
 
-    if (this.actionPermissionController && typeof this.actionPermissionController.emergencyShutdown === 'function') {
+    if (
+      this.actionPermissionController &&
+      typeof this.actionPermissionController.emergencyShutdown === 'function'
+    ) {
       try {
         if (!this.actionPermissionController.isEmergencyShutdown?.()) {
           this.actionPermissionController.emergencyShutdown(reason);
@@ -553,7 +572,10 @@ export class EthicalBoundariesSecurityEngine {
     policy.emergencyShutdownReason = undefined;
     this.repository.savePolicyState(policy);
 
-    if (this.actionPermissionController && typeof this.actionPermissionController.reactivateAutonomy === 'function') {
+    if (
+      this.actionPermissionController &&
+      typeof this.actionPermissionController.reactivateAutonomy === 'function'
+    ) {
       try {
         if (this.actionPermissionController.isEmergencyShutdown?.()) {
           this.actionPermissionController.reactivateAutonomy('CONFIRM_REACTIVATION');

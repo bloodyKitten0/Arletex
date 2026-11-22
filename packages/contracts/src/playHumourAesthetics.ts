@@ -69,7 +69,9 @@ export const InitiateRecreationalActivityRequestSchema = z.object({
   sharedWithProof: z.boolean().default(true),
   customTitle: z.string().optional(),
 });
-export type InitiateRecreationalActivityRequest = z.infer<typeof InitiateRecreationalActivityRequestSchema>;
+export type InitiateRecreationalActivityRequest = z.infer<
+  typeof InitiateRecreationalActivityRequestSchema
+>;
 
 export const RegisterAestheticPreferenceRequestSchema = z.object({
   category: AestheticCategorySchema,
@@ -78,7 +80,9 @@ export const RegisterAestheticPreferenceRequestSchema = z.object({
   aestheticCritique: z.string().min(1),
   tags: z.array(z.string()).default([]),
 });
-export type RegisterAestheticPreferenceRequest = z.infer<typeof RegisterAestheticPreferenceRequestSchema>;
+export type RegisterAestheticPreferenceRequest = z.infer<
+  typeof RegisterAestheticPreferenceRequestSchema
+>;
 
 export const PlayIntellectualGameRequestSchema = z.object({
   playType: z.enum([

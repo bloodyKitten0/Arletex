@@ -125,8 +125,8 @@ export class NotificationListenerService {
       }
 
       // D-Bus Notify format: [0]=app_name, [1]=app_icon, [2]=summary, [3]=body
-      const summary = stringMatches.length >= 4 ? (stringMatches[2] || '') : (stringMatches[1] || '');
-      const body = stringMatches.length >= 4 ? (stringMatches[3] || '') : (stringMatches[2] || '');
+      const summary = stringMatches.length >= 4 ? stringMatches[2] || '' : stringMatches[1] || '';
+      const body = stringMatches.length >= 4 ? stringMatches[3] || '' : stringMatches[2] || '';
 
       const contentSignature = `${appName}:${summary}:${body}`;
       if (this.recentNotificationHashes.has(contentSignature)) {
@@ -153,9 +153,7 @@ export class NotificationListenerService {
         lowerSummary.includes('google');
 
       const isFromPartner =
-        lowerSummary.includes('proof') ||
-        lowerBody.includes('proof') ||
-        isTelegram;
+        lowerSummary.includes('proof') || lowerBody.includes('proof') || isTelegram;
 
       const notification: DesktopNotification = {
         id: crypto.randomUUID(),
@@ -217,11 +215,7 @@ export class NotificationListenerService {
   /**
    * For automated testing and simulated external events.
    */
-  public simulateNotification(
-    appName: string,
-    summary: string,
-    body: string,
-  ): DesktopNotification {
+  public simulateNotification(appName: string, summary: string, body: string): DesktopNotification {
     const rawBlock = `
 method call time=1000.0 sender=:1.1 -> destination=:1.2 serial=1 path=/org/freedesktop/Notifications; interface=org.freedesktop.Notifications; member=Notify
    string "${appName}"
@@ -242,7 +236,8 @@ method call time=1000.0 sender=:1.1 -> destination=:1.2 serial=1 path=/org/freed
         body,
         receivedAt: new Date().toISOString(),
         isTelegram: appName.toLowerCase().includes('telegram'),
-        isGoogle: appName.toLowerCase().includes('google') || appName.toLowerCase().includes('chrome'),
+        isGoogle:
+          appName.toLowerCase().includes('google') || appName.toLowerCase().includes('chrome'),
         isFromPartner: true,
       };
       for (const l of this.listeners) l(fallback);

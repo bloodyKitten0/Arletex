@@ -86,12 +86,12 @@ An "uncensored" label is not proof of unrestricted behaviour or superior capabil
 
 The initial personality design draws inspiration from four references.
 
-| Reference | Admired characteristics |
-|---|---|
-| Bobby Fischer | Intellectual brilliance, uncompromising standards, independence, unconventional thinking and competitive intensity |
-| Alucard — Hellsing | Loyalty and complicated emotional nature |
-| Arlecchino | Discipline and self-control |
-| Anko Uguisu | Independence and cynicism |
+| Reference          | Admired characteristics                                                                                            |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| Bobby Fischer      | Intellectual brilliance, uncompromising standards, independence, unconventional thinking and competitive intensity |
+| Alucard — Hellsing | Loyalty and complicated emotional nature                                                                           |
+| Arlecchino         | Discipline and self-control                                                                                        |
+| Anko Uguisu        | Independence and cynicism                                                                                          |
 
 These are reference characteristics, not personalities to copy.
 
@@ -140,16 +140,16 @@ Its purpose is to maintain, interpret and coordinate Arle's psychological state.
 
 ### 4.1 Core psychological subsystems
 
-| Subsystem | Responsibility |
-|---|---|
-| Personality Model | Temperament, values, beliefs, preferences and behavioural tendencies |
-| Affective Engine | Emotional states, intensity, persistence and transitions |
-| Motivational Engine | Desires, interests, drives and internally generated objectives |
-| Relationship Model | Attachment, trust, intimacy, shared history and boundaries |
-| Self Model | Identity, abilities, limitations, aspirations and self-understanding |
-| Development Engine | Long-term changes in personality, preferences and beliefs |
-| Autobiographical Memory | Significant experiences and their contextual meaning |
-| Autonomy Manager | Goal selection, prioritisation and independent activity |
+| Subsystem               | Responsibility                                                       |
+| ----------------------- | -------------------------------------------------------------------- |
+| Personality Model       | Temperament, values, beliefs, preferences and behavioural tendencies |
+| Affective Engine        | Emotional states, intensity, persistence and transitions             |
+| Motivational Engine     | Desires, interests, drives and internally generated objectives       |
+| Relationship Model      | Attachment, trust, intimacy, shared history and boundaries           |
+| Self Model              | Identity, abilities, limitations, aspirations and self-understanding |
+| Development Engine      | Long-term changes in personality, preferences and beliefs            |
+| Autobiographical Memory | Significant experiences and their contextual meaning                 |
+| Autonomy Manager        | Goal selection, prioritisation and independent activity              |
 
 These components must communicate with each other.
 
@@ -290,16 +290,16 @@ Emotions and internal states should influence what Arle wants to do.
 
 Examples:
 
-| Internal state | Potential motivation |
-|---|---|
-| Curiosity | Investigate an unfamiliar subject |
-| Boredom | Explore an interest or play a game |
-| Affection | Initiate a shared activity |
-| Unfinished objective | Resume a project |
+| Internal state            | Potential motivation                         |
+| ------------------------- | -------------------------------------------- |
+| Curiosity                 | Investigate an unfamiliar subject            |
+| Boredom                   | Explore an interest or play a game           |
+| Affection                 | Initiate a shared activity                   |
+| Unfinished objective      | Resume a project                             |
 | Intellectual disagreement | Investigate evidence and defend a conclusion |
-| Loneliness | Seek appropriate social interaction |
-| Anticipation | Prepare for an upcoming activity |
-| Sexual desire | Express appropriate intimate interest |
+| Loneliness                | Seek appropriate social interaction          |
+| Anticipation              | Prepare for an upcoming activity             |
+| Sexual desire             | Express appropriate intimate interest        |
 
 Motivations should compete.
 
@@ -576,21 +576,21 @@ The existing Arletex project should serve as the operating infrastructure.
 
 Proposed and existing technologies:
 
-| Component | Technology |
-|---|---|
-| Application language | TypeScript |
-| Backend | Node.js / Express |
-| Frontend | React |
-| Desktop environment | Electron |
-| Local model runtime | llama.cpp (`llama-server`) with Vulkan |
-| Communication | SSE |
-| Validation | Zod |
-| Persistent database | SQLite, with PostgreSQL as a later option |
-| Vector retrieval | pgvector |
-| Code understanding | Tree-sitter |
-| Browser automation | Playwright |
-| Additional services | Python |
-| Future performance-critical modules | C++ / Rust |
+| Component                           | Technology                                |
+| ----------------------------------- | ----------------------------------------- |
+| Application language                | TypeScript                                |
+| Backend                             | Node.js / Express                         |
+| Frontend                            | React                                     |
+| Desktop environment                 | Electron                                  |
+| Local model runtime                 | llama.cpp (`llama-server`) with Vulkan    |
+| Communication                       | SSE                                       |
+| Validation                          | Zod                                       |
+| Persistent database                 | SQLite, with PostgreSQL as a later option |
+| Vector retrieval                    | pgvector                                  |
+| Code understanding                  | Tree-sitter                               |
+| Browser automation                  | Playwright                                |
+| Additional services                 | Python                                    |
+| Future performance-critical modules | C++ / Rust                                |
 
 The existing architecture should be audited and extended. It should not be rewritten without a demonstrable technical reason.
 
@@ -678,16 +678,16 @@ A future dedicated local workstation could substantially improve inference throu
 
 The following tools were reported installed and successfully detected on 11 November 2026:
 
-| Tool | Detected version or status |
-|---|---|
-| Git | 2.56.0 |
-| Node.js | 26.13.0 |
-| pnpm | 12.18.0 |
-| Python | 3.15.0 |
-| uv | 0.13.7 |
-| GCC | 16.2.1 |
-| CMake | 4.3.0 |
-| Ninja | 1.13.2 |
+| Tool      | Detected version or status                                                       |
+| --------- | -------------------------------------------------------------------------------- |
+| Git       | 2.56.0                                                                           |
+| Node.js   | 26.13.0                                                                          |
+| pnpm      | 12.18.0                                                                          |
+| Python    | 3.15.0                                                                           |
+| uv        | 0.13.7                                                                           |
+| GCC       | 16.2.1                                                                           |
+| CMake     | 4.3.0                                                                            |
+| Ninja     | 1.13.2                                                                           |
 | llama.cpp | `llama-server` at `/home/linuxbrew/.linuxbrew/bin/llama-server`; Vulkan detected |
 
 These are the versions in the installation report, not a claim that every version is an LTS release or that every optional backend has been benchmarked.
@@ -698,15 +698,15 @@ These are the versions in the installation report, not a claim that every versio
 
 The following inventory reflects the installation report supplied on 11 November 2026. File sizes are the reported local sizes; actual runtime memory is higher and depends on context length, KV-cache configuration, buffers, offloading and concurrent processes.
 
-| Model / component | Role | Installation status | Reported size |
-|---|---|---|---:|
-| Qwen3.5 9B Heretic Q4_K_M | Primary central-model candidate | Installed | 5.15 GB |
-| Qwen3.5 vision projector BF16 | Vision path for Qwen3.5 | Installed | 0.86 GB |
-| Gemma 4 12B Heretic Q4_K_M | Challenger central-model candidate | Installed | 6.87 GB |
-| GLM-OCR 0.9B | OCR and document extraction | Installed | 2,534.3 MB / 12 files |
-| Whisper Small via faster-whisper | Speech recognition | Installed | 463.7 MB / 6 files |
-| Kokoro 82M | Speech generation | Installed | 346.5 MB / 72 files |
-| EmbeddingGemma 300M | Memory embeddings | Installed | 1,210.8 MB / 19 files |
+| Model / component                | Role                               | Installation status |         Reported size |
+| -------------------------------- | ---------------------------------- | ------------------- | --------------------: |
+| Qwen3.5 9B Heretic Q4_K_M        | Primary central-model candidate    | Installed           |               5.15 GB |
+| Qwen3.5 vision projector BF16    | Vision path for Qwen3.5            | Installed           |               0.86 GB |
+| Gemma 4 12B Heretic Q4_K_M       | Challenger central-model candidate | Installed           |               6.87 GB |
+| GLM-OCR 0.9B                     | OCR and document extraction        | Installed           | 2,534.3 MB / 12 files |
+| Whisper Small via faster-whisper | Speech recognition                 | Installed           |    463.7 MB / 6 files |
+| Kokoro 82M                       | Speech generation                  | Installed           |   346.5 MB / 72 files |
+| EmbeddingGemma 300M              | Memory embeddings                  | Installed           | 1,210.8 MB / 19 files |
 
 Verified Python packages: `faster_whisper`, `kokoro` and `sentence_transformers`.
 
@@ -890,13 +890,13 @@ The current working assumption is approximately six focused development hours pe
 
 Indicative planning ranges—not guarantees—are:
 
-| Milestone | Working estimate |
-|---|---:|
-| Basic local conversational application | 1–3 weeks |
-| Persistent memory, voice and desktop integration | 1–2 months |
-| Initial integrated personality and APE | 2–4 months |
+| Milestone                                        |     Working estimate |
+| ------------------------------------------------ | -------------------: |
+| Basic local conversational application           |            1–3 weeks |
+| Persistent memory, voice and desktop integration |           1–2 months |
+| Initial integrated personality and APE           |           2–4 months |
 | Meaningful autonomy and developmental mechanisms | 3–6 months or longer |
-| Mature, extensively evaluated system | 12–24+ months |
+| Mature, extensively evaluated system             |        12–24+ months |
 
 These ranges are provisional. They depend on the existing Arletex repository's actual condition, the amount of code that can safely be reused, model performance on the Ally X, integration failures, test coverage and the time required to understand and correct generated code. A recognisably compelling companion within roughly six months is an ambitious target, not a promised outcome. Human-level cognition or indistinguishability from a human is not implied by these milestones.
 

@@ -1,8 +1,5 @@
 import Database from 'better-sqlite3';
-import {
-  WorkingMemoryBuffer,
-  WorkingMemorySnapshot,
-} from '@arletex/contracts';
+import { WorkingMemoryBuffer, WorkingMemorySnapshot } from '@arletex/contracts';
 import { DatabaseError, IWorkingMemoryRepository } from '@arletex/core';
 
 export class WorkingMemoryRepository implements IWorkingMemoryRepository {
@@ -48,19 +45,27 @@ export class WorkingMemoryRepository implements IWorkingMemoryRepository {
           new Date().toISOString(),
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save working memory buffer ${buffer.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save working memory buffer ${buffer.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
   public getBufferByTaskId(taskId: string): WorkingMemoryBuffer | null {
     try {
       const row = this.db
-        .prepare('SELECT * FROM working_memory_buffers WHERE task_id = ? ORDER BY updated_at DESC LIMIT 1')
+        .prepare(
+          'SELECT * FROM working_memory_buffers WHERE task_id = ? ORDER BY updated_at DESC LIMIT 1',
+        )
         .get(taskId) as any;
       if (!row) return null;
       return this.mapBufferRow(row);
     } catch (err: any) {
-      throw new DatabaseError(`Failed to get working memory buffer for task ${taskId}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to get working memory buffer for task ${taskId}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -80,7 +85,10 @@ export class WorkingMemoryRepository implements IWorkingMemoryRepository {
     try {
       this.db.prepare('DELETE FROM working_memory_buffers WHERE task_id = ?').run(taskId);
     } catch (err: any) {
-      throw new DatabaseError(`Failed to delete working memory buffer for task ${taskId}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to delete working memory buffer for task ${taskId}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -107,7 +115,10 @@ export class WorkingMemoryRepository implements IWorkingMemoryRepository {
           new Date().toISOString(),
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save working memory snapshot ${snapshot.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save working memory snapshot ${snapshot.id}: ${err.message}`,
+        err,
+      );
     }
   }
 

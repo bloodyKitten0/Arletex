@@ -123,20 +123,11 @@ export function validateTelegramMediaSignature(
     detectedMime = 'video/webm';
   }
   // MP3: ID3 header ('ID3')
-  else if (
-    buffer.length >= 3 &&
-    buffer[0] === 0x49 &&
-    buffer[1] === 0x44 &&
-    buffer[2] === 0x33
-  ) {
+  else if (buffer.length >= 3 && buffer[0] === 0x49 && buffer[1] === 0x44 && buffer[2] === 0x33) {
     detectedMime = 'audio/mpeg';
   }
   // MP3: MPEG frame sync (0xFF, 0xFB / 0xF3 / 0xF2)
-  else if (
-    buffer.length >= 2 &&
-    buffer[0] === 0xff &&
-    (buffer[1]! & 0xe0) === 0xe0
-  ) {
+  else if (buffer.length >= 2 && buffer[0] === 0xff && (buffer[1]! & 0xe0) === 0xe0) {
     detectedMime = 'audio/mpeg';
   }
   // OGG / Opus: 'OggS'
@@ -190,7 +181,10 @@ export function validateTelegramMediaSignature(
     }
     if (isText) {
       const sampleStr = sample.toString('utf8').trim();
-      if ((sampleStr.startsWith('{') && sampleStr.includes('}')) || (sampleStr.startsWith('[') && sampleStr.includes(']'))) {
+      if (
+        (sampleStr.startsWith('{') && sampleStr.includes('}')) ||
+        (sampleStr.startsWith('[') && sampleStr.includes(']'))
+      ) {
         detectedMime = 'application/json';
       } else if (declaredMime === 'text/markdown') {
         detectedMime = 'text/markdown';
@@ -247,9 +241,7 @@ export function validateTelegramMediaSignature(
       );
     }
     if (isDeclaredPdf && detectedMime !== 'application/pdf') {
-      throw new Error(
-        `File signature mismatch: document declared as PDF but got ${detectedMime}`,
-      );
+      throw new Error(`File signature mismatch: document declared as PDF but got ${detectedMime}`);
     }
   }
 
@@ -302,7 +294,7 @@ export class TelegramBridgeService {
       }
     }
     this.logger.info(
-      `Telegram configured. Token present: ${!!this.botToken}, Target Chat ID: ${this.targetChatId || 'Not set'}, Allowlisted Chats: ${this.allowedChatIds.size}, Allowlisted Users: ${this.allowedUserIds.size}`
+      `Telegram configured. Token present: ${!!this.botToken}, Target Chat ID: ${this.targetChatId || 'Not set'}, Allowlisted Chats: ${this.allowedChatIds.size}, Allowlisted Users: ${this.allowedUserIds.size}`,
     );
   }
 
@@ -310,7 +302,7 @@ export class TelegramBridgeService {
     this.allowedChatIds = new Set(chatIds.map((id) => String(id).trim()));
     this.allowedUserIds = new Set(userIds || []);
     this.logger.info(
-      `Updated Telegram allowlist (fail-closed): ${this.allowedChatIds.size} chats, ${this.allowedUserIds.size} users`
+      `Updated Telegram allowlist (fail-closed): ${this.allowedChatIds.size} chats, ${this.allowedUserIds.size} users`,
     );
   }
 
@@ -531,7 +523,8 @@ export class TelegramBridgeService {
                 messageId: msg.message_id,
                 chatId: msg.chat.id,
                 fromId: msg.from?.id,
-                fromName: `${msg.from?.first_name || ''} ${msg.from?.last_name || ''}`.trim() || 'Partner',
+                fromName:
+                  `${msg.from?.first_name || ''} ${msg.from?.last_name || ''}`.trim() || 'Partner',
                 username: msg.from?.username,
                 text: textContent,
                 caption: msg.caption,
@@ -596,7 +589,11 @@ export class TelegramBridgeService {
     }
 
     // 1. Validate fileId pattern
-    if (!attachment.fileId || typeof attachment.fileId !== 'string' || !/^[A-Za-z0-9_\-]+$/.test(attachment.fileId)) {
+    if (
+      !attachment.fileId ||
+      typeof attachment.fileId !== 'string' ||
+      !/^[A-Za-z0-9_\-]+$/.test(attachment.fileId)
+    ) {
       throw new Error(`Invalid or malformed Telegram file_id: ${attachment.fileId}`);
     }
 
@@ -612,12 +609,12 @@ export class TelegramBridgeService {
     const isPhoto = attachment.type === 'photo';
 
     const maxLimit = isVideo
-      ? options.maxVideoSizeBytes ?? 50 * 1024 * 1024
+      ? (options.maxVideoSizeBytes ?? 50 * 1024 * 1024)
       : isAudio
-        ? options.maxAudioSizeBytes ?? 30 * 1024 * 1024
+        ? (options.maxAudioSizeBytes ?? 30 * 1024 * 1024)
         : isPhoto
-          ? options.maxPhotoSizeBytes ?? 20 * 1024 * 1024
-          : options.maxDocumentSizeBytes ?? 50 * 1024 * 1024;
+          ? (options.maxPhotoSizeBytes ?? 20 * 1024 * 1024)
+          : (options.maxDocumentSizeBytes ?? 50 * 1024 * 1024);
 
     if (typeof attachment.fileSize === 'number' && attachment.fileSize > maxLimit) {
       throw new Error(
@@ -717,7 +714,11 @@ export class TelegramBridgeService {
 
     const targetDir =
       options.targetDirectory ||
-      path.resolve(process.env.ARLETEX_DATA_DIR || path.join(os.homedir(), '.arletex'), 'media', 'telegram');
+      path.resolve(
+        process.env.ARLETEX_DATA_DIR || path.join(os.homedir(), '.arletex'),
+        'media',
+        'telegram',
+      );
 
     await fs.mkdir(targetDir, { recursive: true });
     const targetFilePath = path.join(targetDir, `${internalMediaId}${ext}`);
@@ -761,7 +762,11 @@ export class TelegramBridgeService {
     }
     const dir =
       targetDirectory ||
-      path.resolve(process.env.ARLETEX_DATA_DIR || path.join(os.homedir(), '.arletex'), 'media', 'telegram');
+      path.resolve(
+        process.env.ARLETEX_DATA_DIR || path.join(os.homedir(), '.arletex'),
+        'media',
+        'telegram',
+      );
 
     try {
       const entries = await fs.readdir(dir);
@@ -802,7 +807,7 @@ export class TelegramBridgeService {
     // Fail-closed outbound restriction (P0.3): Restrict outbound messages to allowlisted chats only
     if (!this.isChatAuthorized(chatIdStr)) {
       this.logger.error(
-        `Outbound Telegram denied fail-closed: Chat ID "${chatIdStr}" is not in the configured allowlist.`
+        `Outbound Telegram denied fail-closed: Chat ID "${chatIdStr}" is not in the configured allowlist.`,
       );
       return {
         ok: false,
@@ -928,7 +933,7 @@ export class TelegramBridgeService {
           formData.append(k, String(v));
         }
       }
-      const blob = new Blob([buffer]);
+      const blob = new Blob([new Uint8Array(buffer)]);
       formData.append(fieldName, blob, fileName);
 
       const res = await fetch(url, {

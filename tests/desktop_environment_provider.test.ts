@@ -205,7 +205,10 @@ NoDisplay=true
     const mockAgencyRepo: any = {
       savePlan: (p: any) => plans.set(p.taskId, p),
       getPlanByTask: (tId: string) => plans.get(tId) || null,
-      createTask: (t: any) => { tasks.set(t.id, t); return t; },
+      createTask: (t: any) => {
+        tasks.set(t.id, t);
+        return t;
+      },
       saveTask: (t: any) => tasks.set(t.id, t),
       getTask: (id: string) => tasks.get(id) || null,
       updateTask: (id: string, updates: any) => {
@@ -238,7 +241,9 @@ NoDisplay=true
     expect(result.success).toBe(true);
     expect(result.verifications.length).toBe(1);
     expect(result.verifications[0]!.verified).toBe(true);
-    expect(result.verifications[0]!.observedOutcome).toContain('opened on desktop with default viewer');
+    expect(result.verifications[0]!.observedOutcome).toContain(
+      'opened on desktop with default viewer',
+    );
   });
 
   it('11. Resolves filenames with spaces, parentheses, and typos via fuzzy matching', async () => {
@@ -352,7 +357,8 @@ NoDisplay=true
     const mockRepo: any = { savePlan: () => {}, updateTask: () => {} };
     const planner = new PlanningInterface(mockRepo);
 
-    const rawUrl = 'https://accounts.spotify.com/ar/login?method=google&continue=https%3A%2F%2Fopen.spotify.com';
+    const rawUrl =
+      'https://accounts.spotify.com/ar/login?method=google&continue=https%3A%2F%2Fopen.spotify.com';
     const taskUrl: any = {
       id: 'task-direct-url',
       objective: rawUrl,

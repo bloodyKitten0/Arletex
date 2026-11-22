@@ -38,7 +38,10 @@ export const OfflineActivityRecordSchema = z.object({
   sourceGoalId: z.string().optional(),
   sourceProjectId: z.string().optional(),
   sourceQuestionId: z.string().optional(),
-  resourceCost: OfflineResourceCostSchema.default({ cpuTokensEstimated: 100, memoryIntensity: 'low' }),
+  resourceCost: OfflineResourceCostSchema.default({
+    cpuTokensEstimated: 100,
+    memoryIntensity: 'low',
+  }),
   status: OfflineActivityStatusSchema.default('pending'),
   isSimulation: z.boolean().default(false),
   simulationContext: z.string().optional(),

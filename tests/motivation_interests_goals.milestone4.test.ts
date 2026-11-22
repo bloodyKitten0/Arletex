@@ -3,11 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import Database from 'better-sqlite3';
-import {
-  ApeRepository,
-  DatabaseService,
-  MigrationRunner,
-} from '@arletex/database';
+import { ApeRepository, DatabaseService, MigrationRunner } from '@arletex/database';
 import {
   ApeService,
   CognitiveControlBus,
@@ -161,14 +157,22 @@ describe('Milestone 4 — Independent Motivation, Interests, and Goals', () => {
       });
 
       // Weaken
-      const weakened = devEngine.weakenInterest('Cryptocurrency Trading Algorithms', 'High noise-to-signal ratio and low intellectual depth');
+      const weakened = devEngine.weakenInterest(
+        'Cryptocurrency Trading Algorithms',
+        'High noise-to-signal ratio and low intellectual depth',
+      );
       expect(weakened).toBeDefined();
       expect(weakened?.currentMotivationalStrength).toBeLessThan(0.7);
 
       // Abandon
-      const abandoned = devEngine.abandonInterest('Cryptocurrency Trading Algorithms', 'Determined to be misaligned with long-term intellectual values');
+      const abandoned = devEngine.abandonInterest(
+        'Cryptocurrency Trading Algorithms',
+        'Determined to be misaligned with long-term intellectual values',
+      );
       expect(abandoned?.developmentStage).toBe('abandoned');
-      expect(abandoned?.abandonmentReason).toContain('misaligned with long-term intellectual values');
+      expect(abandoned?.abandonmentReason).toContain(
+        'misaligned with long-term intellectual values',
+      );
       expect(abandoned?.currentMotivationalStrength).toBe(0.0);
     });
 
@@ -222,7 +226,8 @@ describe('Milestone 4 — Independent Motivation, Interests, and Goals', () => {
       const goal = motEngine.formulateGoalFromInterest({
         interestTopic: 'Distributed Consensus Protocols',
         objective: 'Implement Raft state machine in TypeScript with verifiable log replication',
-        description: 'Construct a self-contained Raft cluster implementation to master leader election invariants',
+        description:
+          'Construct a self-contained Raft cluster implementation to master leader election invariants',
         category: 'learning',
         priority: 0.8,
         expectedValue: 0.85,
@@ -287,9 +292,11 @@ describe('Milestone 4 — Independent Motivation, Interests, and Goals', () => {
     it('proposes, activates, and progresses personal projects with milestones', () => {
       const project = projectService.proposeProject({
         title: 'Simplicial Complex Topological Analysis',
-        description: 'Develop a persistent homology exploratory tool for analyzing high-dimensional embeddings',
+        description:
+          'Develop a persistent homology exploratory tool for analyzing high-dimensional embeddings',
         category: 'research',
-        motivation: 'Understanding non-linear geometric structures in semantic representation spaces',
+        motivation:
+          'Understanding non-linear geometric structures in semantic representation spaces',
         associatedInterestTopic: 'Topological Data Analysis',
         milestones: [
           { title: 'Define Vietoris-Rips filtration algorithm' },
@@ -348,7 +355,10 @@ describe('Milestone 4 — Independent Motivation, Interests, and Goals', () => {
       projectService.activateProject(project.id);
 
       // Pause
-      const paused = projectService.pauseProject(project.id, 'Deferred to focus on higher-urgency cognitive bus migration');
+      const paused = projectService.pauseProject(
+        project.id,
+        'Deferred to focus on higher-urgency cognitive bus migration',
+      );
       expect(paused.status).toBe('paused');
 
       // Resume
@@ -356,7 +366,10 @@ describe('Milestone 4 — Independent Motivation, Interests, and Goals', () => {
       expect(resumed.status).toBe('active');
 
       // Abandon
-      const abandoned = projectService.abandonProject(project.id, 'Discontinued after determining alternative repertoire better reflects dynamic tactical play');
+      const abandoned = projectService.abandonProject(
+        project.id,
+        'Discontinued after determining alternative repertoire better reflects dynamic tactical play',
+      );
       expect(abandoned.status).toBe('abandoned');
       expect(abandoned.abandonmentReason).toContain('alternative repertoire better reflects');
     });
@@ -412,7 +425,9 @@ describe('Milestone 4 — Independent Motivation, Interests, and Goals', () => {
 
       expect(resolution.actionType).toBe('user_engagement');
       expect(resolution.priorityScore).toBe(1.0);
-      expect(resolution.justification).toContain('user communication takes absolute conversational and social precedence');
+      expect(resolution.justification).toContain(
+        'user communication takes absolute conversational and social precedence',
+      );
       expect(resolution.deferredGoalIds.length).toBeGreaterThan(0);
     });
 
@@ -430,7 +445,9 @@ describe('Milestone 4 — Independent Motivation, Interests, and Goals', () => {
       });
 
       expect(resolution.actionType).toBe('recreation');
-      expect(resolution.justification).toContain('Cognitive rest and recreation prioritized to maintain psychological equilibrium');
+      expect(resolution.justification).toContain(
+        'Cognitive rest and recreation prioritized to maintain psychological equilibrium',
+      );
     });
 
     it('triggers strategy reassessment when high-priority goals stall', () => {
@@ -466,7 +483,9 @@ describe('Milestone 4 — Independent Motivation, Interests, and Goals', () => {
       });
 
       expect(resolution.actionType).toBe('throttle_backoff');
-      expect(resolution.justification).toContain('throttling heavy compute to preserve battery and thermal headroom');
+      expect(resolution.justification).toContain(
+        'throttling heavy compute to preserve battery and thermal headroom',
+      );
     });
   });
 
@@ -482,7 +501,11 @@ describe('Milestone 4 — Independent Motivation, Interests, and Goals', () => {
       expect(feasibility.reason).toContain('User is actively interacting');
 
       // 2. Budget is low -> high CPU task rejected
-      resourceGovernor.updateProfile({ cpuBudget: 'low', gpuAllowed: false, isUserInteracting: false });
+      resourceGovernor.updateProfile({
+        cpuBudget: 'low',
+        gpuAllowed: false,
+        isUserInteracting: false,
+      });
       // Reset user activity timestamp into past
       (resourceGovernor as any).lastUserInteractionTimestamp = Date.now() - 60000;
 
@@ -566,7 +589,11 @@ describe('Milestone 4 — Independent Motivation, Interests, and Goals', () => {
         status: 'active',
         milestones: [{ title: 'Calculate Fisher information matrix' }],
       });
-      projectService.recordMilestoneProgress(project.id, project.milestones[0]!.id, 'Fisher matrix formulated');
+      projectService.recordMilestoneProgress(
+        project.id,
+        project.milestones[0]!.id,
+        'Fisher matrix formulated',
+      );
       projectService.recordDeliverable(project.id, {
         title: 'Draft Chapter 1',
         type: 'document',
@@ -582,7 +609,9 @@ describe('Milestone 4 — Independent Motivation, Interests, and Goals', () => {
       const newApeService = new ApeService(newApeRepo, undefined, rootLogger);
 
       // Verify interests restoration
-      const restoredInterest = newApeService.developmentEngine.getInterest('Quantum Information Geometry');
+      const restoredInterest = newApeService.developmentEngine.getInterest(
+        'Quantum Information Geometry',
+      );
       expect(restoredInterest).toBeDefined();
       expect(restoredInterest?.currentMotivationalStrength).toBe(0.95);
 

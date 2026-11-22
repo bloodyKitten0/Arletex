@@ -89,7 +89,9 @@ export class EmotionalRegulationEngine {
 
     if (activeHighAlert.length > 0) {
       primaryEscalatingEmotion = activeHighAlert[0]!.emotionKey;
-      riskFactors.push(`High intensity ${primaryEscalatingEmotion} (${activeHighAlert[0]!.intensity.toFixed(2)})`);
+      riskFactors.push(
+        `High intensity ${primaryEscalatingEmotion} (${activeHighAlert[0]!.intensity.toFixed(2)})`,
+      );
     }
 
     if (activeHighAlert.length >= 2) {
@@ -142,7 +144,9 @@ export class EmotionalRegulationEngine {
       throw new Error(`Raw intensity must be between 0.0 and 1.0. Given: ${rawIntensity}`);
     }
     if (controllability < 0.0 || controllability > 1.0) {
-      throw new Error(`Controllability estimate must be between 0.0 and 1.0. Given: ${controllability}`);
+      throw new Error(
+        `Controllability estimate must be between 0.0 and 1.0. Given: ${controllability}`,
+      );
     }
 
     // Determine severity
@@ -172,7 +176,9 @@ export class EmotionalRegulationEngine {
     };
 
     this.repo.saveSetback(incident);
-    this.logger.info(`Registered setback ${incident.id}: severity=${severity}, manageable=${isManageable}`);
+    this.logger.info(
+      `Registered setback ${incident.id}: severity=${severity}, manageable=${isManageable}`,
+    );
     return incident;
   }
 
@@ -219,7 +225,8 @@ export class EmotionalRegulationEngine {
       preIntensity,
       postIntensity,
       intensityDelta: Number((postIntensity - preIntensity).toFixed(2)),
-      reappraisalNarrative: reappraisalNarrative || `Applied ${strategy} to address ${setback.category}`,
+      reappraisalNarrative:
+        reappraisalNarrative || `Applied ${strategy} to address ${setback.category}`,
       outcomeStatus,
       failureAcknowledged,
       failureExplanation,

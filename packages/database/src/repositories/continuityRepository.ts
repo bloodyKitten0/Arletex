@@ -122,11 +122,15 @@ export class ContinuityRepository implements IContinuityRepository {
   public markUnexpectedShutdown(sessionId: string, endedAt?: string): void {
     try {
       const ended = endedAt || new Date().toISOString();
-      this.db.prepare(`
+      this.db
+        .prepare(
+          `
         UPDATE identity_sessions
         SET ended_at = ?, shutdown_type = 'unexpected_crash'
         WHERE id = ?
-      `).run(ended, sessionId);
+      `,
+        )
+        .run(ended, sessionId);
     } catch (err) {
       throw new DatabaseError(`Failed to mark unexpected shutdown for session ${sessionId}`, err);
     }
@@ -274,11 +278,15 @@ export class ContinuityRepository implements IContinuityRepository {
 
   public markCheckpointInvalid(id: string): void {
     try {
-      this.db.prepare(`
+      this.db
+        .prepare(
+          `
         UPDATE identity_checkpoints
         SET is_verified_valid = 0
         WHERE id = ?
-      `).run(id);
+      `,
+        )
+        .run(id);
     } catch (err) {
       throw new DatabaseError(`Failed to invalidate checkpoint ${id}`, err);
     }

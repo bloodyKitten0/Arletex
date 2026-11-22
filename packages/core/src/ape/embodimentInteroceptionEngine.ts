@@ -48,7 +48,9 @@ export class EmbodimentInteroceptionEngine {
   // 1. Digital Physiology Probing
   // ==========================================
 
-  public async probeDigitalPhysiology(telemetryOverride?: Partial<ComputationalResourceMetrics>): Promise<ComputationalResourceMetrics> {
+  public async probeDigitalPhysiology(
+    telemetryOverride?: Partial<ComputationalResourceMetrics>,
+  ): Promise<ComputationalResourceMetrics> {
     const timestamp = new Date().toISOString();
     const cpu = telemetryOverride?.cpu ?? this.readCpuMetrics();
     const memory = telemetryOverride?.memory ?? this.readMemoryMetrics();
@@ -99,8 +101,14 @@ export class EmbodimentInteroceptionEngine {
         specialistsOnline = true;
         const data = (await res.json()) as any;
         models = {
-          embeddingGemma: Boolean(data.embeddingGemma ?? data.modelsInstalled?.embeddingGemma ?? data.modelsLoaded?.embeddingGemma),
-          whisper: Boolean(data.whisper ?? data.modelsInstalled?.whisper ?? data.modelsLoaded?.whisper),
+          embeddingGemma: Boolean(
+            data.embeddingGemma ??
+            data.modelsInstalled?.embeddingGemma ??
+            data.modelsLoaded?.embeddingGemma,
+          ),
+          whisper: Boolean(
+            data.whisper ?? data.modelsInstalled?.whisper ?? data.modelsLoaded?.whisper,
+          ),
           kokoro: Boolean(data.kokoro ?? data.modelsInstalled?.kokoro ?? data.modelsLoaded?.kokoro),
           rvc: Boolean(data.rvc ?? data.modelsInstalled?.rvc ?? data.modelsLoaded?.rvc),
         };
@@ -208,7 +216,9 @@ export class EmbodimentInteroceptionEngine {
     const gpuTemp = resources.gpu.temperatureC;
     if ((cpuTemp !== null && cpuTemp >= 80) || (gpuTemp !== null && gpuTemp >= 80)) {
       thermalPressure = true;
-      constraints.push(`Thermal pressure detected: CPU ${cpuTemp ?? '--'}°C, GPU ${gpuTemp ?? '--'}°C (threshold: 80°C)`);
+      constraints.push(
+        `Thermal pressure detected: CPU ${cpuTemp ?? '--'}°C, GPU ${gpuTemp ?? '--'}°C (threshold: 80°C)`,
+      );
     }
 
     // B. Memory threshold checks
@@ -220,7 +230,12 @@ export class EmbodimentInteroceptionEngine {
     }
 
     // C. Battery preservation checks
-    if (resources.battery.available && resources.battery.percent !== null && resources.battery.percent <= 20 && !resources.battery.isCharging) {
+    if (
+      resources.battery.available &&
+      resources.battery.percent !== null &&
+      resources.battery.percent <= 20 &&
+      !resources.battery.isCharging
+    ) {
       batteryPreservation = true;
       constraints.push(`Low battery state: ${resources.battery.percent}% remaining, discharging`);
     }
@@ -228,23 +243,32 @@ export class EmbodimentInteroceptionEngine {
     // D. Service availability degradation
     if (!models.llamaServer.online) {
       serviceDegradation = true;
-      constraints.push(`Primary cognitive engine (llama-server port ${models.llamaServer.port}) is offline`);
+      constraints.push(
+        `Primary cognitive engine (llama-server port ${models.llamaServer.port}) is offline`,
+      );
     }
     if (!models.specialistsServer.online) {
       serviceDegradation = true;
-      constraints.push(`Specialist microservice (port ${models.specialistsServer.port}) is offline`);
+      constraints.push(
+        `Specialist microservice (port ${models.specialistsServer.port}) is offline`,
+      );
     }
 
     // Determine operational mode
     let mode: OperationalMode = 'optimal';
-    const isCriticalThermal = (cpuTemp !== null && cpuTemp >= 88) || (gpuTemp !== null && gpuTemp >= 88);
+    const isCriticalThermal =
+      (cpuTemp !== null && cpuTemp >= 88) || (gpuTemp !== null && gpuTemp >= 88);
     const isCriticalMemory = resources.memory.usagePercent >= 95;
 
     if (isCriticalThermal || isCriticalMemory) {
       mode = 'emergency';
     } else if (thermalPressure || memoryPressure || workload.perceivedStrain === 'critical') {
       mode = 'throttled';
-    } else if (batteryPreservation || serviceDegradation || workload.perceivedStrain === 'elevated') {
+    } else if (
+      batteryPreservation ||
+      serviceDegradation ||
+      workload.perceivedStrain === 'elevated'
+    ) {
       mode = 'conservative';
     }
 
@@ -346,7 +370,9 @@ export class EmbodimentInteroceptionEngine {
   ): string {
     const ramGbUsed = (resources.memory.usedBytes / 1024 ** 3).toFixed(1);
     const ramGbTotal = (resources.memory.totalBytes / 1024 ** 3).toFixed(1);
-    const cpuGhz = resources.cpu.frequencyMhz ? `${(resources.cpu.frequencyMhz / 1000).toFixed(2)} GHz` : '--';
+    const cpuGhz = resources.cpu.frequencyMhz
+      ? `${(resources.cpu.frequencyMhz / 1000).toFixed(2)} GHz`
+      : '--';
     const cpuTemp = resources.cpu.temperatureC !== null ? `${resources.cpu.temperatureC}°C` : 'N/A';
     const gpuTemp = resources.gpu.temperatureC !== null ? `${resources.gpu.temperatureC}°C` : 'N/A';
     const gpuLoad = resources.gpu.usagePercent !== null ? `${resources.gpu.usagePercent}%` : 'N/A';
@@ -354,8 +380,12 @@ export class EmbodimentInteroceptionEngine {
       ? `${resources.battery.percent}% (${resources.battery.isCharging ? 'AC charging' : 'battery discharging'})`
       : 'AC mains';
 
-    const llamaStatus = models.llamaServer.online ? `ONLINE (port ${models.llamaServer.port})` : 'OFFLINE';
-    const specStatus = models.specialistsServer.online ? `ONLINE (port ${models.specialistsServer.port})` : 'OFFLINE';
+    const llamaStatus = models.llamaServer.online
+      ? `ONLINE (port ${models.llamaServer.port})`
+      : 'OFFLINE';
+    const specStatus = models.specialistsServer.online
+      ? `ONLINE (port ${models.specialistsServer.port})`
+      : 'OFFLINE';
 
     const report = [
       `[Interoception Mode: ${constraintState.mode.toUpperCase()}]`,
@@ -370,7 +400,9 @@ export class EmbodimentInteroceptionEngine {
     // Strict invariant check
     const validation = validateEpistemicInteroception(report);
     if (!validation.valid) {
-      throw new Error(`Epistemic integrity violation in digital physiological report: ${validation.violation}`);
+      throw new Error(
+        `Epistemic integrity violation in digital physiological report: ${validation.violation}`,
+      );
     }
 
     return report;
@@ -451,7 +483,9 @@ export class EmbodimentInteroceptionEngine {
   }): PlanningResourceAllocationAdjustment {
     const latestSnapshot = this.repo.getLatestSnapshot();
     const mode = latestSnapshot?.operationalMode ?? this.currentMode;
-    const isThermal = latestSnapshot?.resources.cpu.temperatureC !== null && (latestSnapshot?.resources.cpu.temperatureC ?? 0) >= 78;
+    const isThermal =
+      latestSnapshot?.resources.cpu.temperatureC !== null &&
+      (latestSnapshot?.resources.cpu.temperatureC ?? 0) >= 78;
     const isMemoryConstrained = (latestSnapshot?.resources.memory.usagePercent ?? 0) >= 80;
 
     let allowedParallelSubtasks = 4;
@@ -466,14 +500,18 @@ export class EmbodimentInteroceptionEngine {
         maxFrameRateOrFrames = 2;
         allowBackgroundSelfRefinement = false;
         recommendedThinkingBudgetTokens = 1024;
-        reasons.push('Emergency mode: serial execution strictly enforced to prevent device crashes');
+        reasons.push(
+          'Emergency mode: serial execution strictly enforced to prevent device crashes',
+        );
         break;
       case 'throttled':
         allowedParallelSubtasks = 1;
         maxFrameRateOrFrames = 4;
         allowBackgroundSelfRefinement = false;
         recommendedThinkingBudgetTokens = 2048;
-        reasons.push('Throttled mode: single subtask execution to dissipate thermal and memory load');
+        reasons.push(
+          'Throttled mode: single subtask execution to dissipate thermal and memory load',
+        );
         break;
       case 'conservative':
         allowedParallelSubtasks = 2;
@@ -488,7 +526,9 @@ export class EmbodimentInteroceptionEngine {
         maxFrameRateOrFrames = 12;
         allowBackgroundSelfRefinement = true;
         recommendedThinkingBudgetTokens = 4096;
-        reasons.push('Optimal compute capacity: nominal parallel execution and full cognitive budget permitted');
+        reasons.push(
+          'Optimal compute capacity: nominal parallel execution and full cognitive budget permitted',
+        );
         break;
     }
 
@@ -543,7 +583,10 @@ export class EmbodimentInteroceptionEngine {
       }
 
       // Check hwmon thermal sensors for CPU
-      const hwmonDirs = ['/sys/class/thermal/thermal_zone0/temp', '/sys/class/hwmon/hwmon1/temp1_input'];
+      const hwmonDirs = [
+        '/sys/class/thermal/thermal_zone0/temp',
+        '/sys/class/hwmon/hwmon1/temp1_input',
+      ];
       for (const p of hwmonDirs) {
         if (fs.existsSync(p)) {
           const milli = parseInt(fs.readFileSync(p, 'utf8').trim(), 10);
@@ -558,7 +601,11 @@ export class EmbodimentInteroceptionEngine {
       usagePercent,
       frequencyMhz,
       temperatureC,
-      loadAverage: [parseFloat(loadavg[0]?.toFixed(2) || '0'), parseFloat(loadavg[1]?.toFixed(2) || '0'), parseFloat(loadavg[2]?.toFixed(2) || '0')],
+      loadAverage: [
+        parseFloat(loadavg[0]?.toFixed(2) || '0'),
+        parseFloat(loadavg[1]?.toFixed(2) || '0'),
+        parseFloat(loadavg[2]?.toFixed(2) || '0'),
+      ],
       model: os.cpus()[0]?.model || null,
     };
   }
@@ -585,8 +632,10 @@ export class EmbodimentInteroceptionEngine {
     } catch {}
 
     const usedBytes = Math.max(0, totalBytes - availableBytes);
-    const usagePercent = totalBytes > 0 ? parseFloat(((usedBytes / totalBytes) * 100).toFixed(1)) : 0;
-    const swapUsagePercent = swapTotalBytes > 0 ? parseFloat(((swapUsedBytes / swapTotalBytes) * 100).toFixed(1)) : 0;
+    const usagePercent =
+      totalBytes > 0 ? parseFloat(((usedBytes / totalBytes) * 100).toFixed(1)) : 0;
+    const swapUsagePercent =
+      swapTotalBytes > 0 ? parseFloat(((swapUsedBytes / swapTotalBytes) * 100).toFixed(1)) : 0;
 
     return {
       totalBytes,

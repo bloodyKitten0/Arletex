@@ -76,7 +76,10 @@ export class MessageRepository {
         metadata: JSON.parse(r.metadata || '{}'),
       }));
     } catch (err) {
-      throw new DatabaseError(`Failed to list recent messages for conversation ${conversationId}`, err);
+      throw new DatabaseError(
+        `Failed to list recent messages for conversation ${conversationId}`,
+        err,
+      );
     }
   }
 

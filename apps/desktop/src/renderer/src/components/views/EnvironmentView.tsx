@@ -4,20 +4,12 @@ import {
   ShieldAlert,
   ShieldCheck,
   Cpu,
-  HardDrive,
-  Activity as ActivityIcon,
   Heart,
   Compass,
-  AlertTriangle,
   RotateCw,
   Power,
-  Sliders,
-  CheckCircle2,
-  XCircle,
   FileText,
-  Clock,
   Layers,
-  Sparkles,
 } from 'lucide-react';
 
 interface MetricItemProps {
@@ -53,7 +45,13 @@ const ProvenanceBadge: React.FC<{ tag: 'measured' | 'inferred' | 'unavailable' }
   );
 };
 
-const MetricItem: React.FC<MetricItemProps> = ({ label, value, subtext, provenance, timestamp }) => (
+const MetricItem: React.FC<MetricItemProps> = ({
+  label,
+  value,
+  subtext,
+  provenance,
+  timestamp,
+}) => (
   <div
     style={{
       backgroundColor: 'var(--bg-card, #161b22)',
@@ -66,14 +64,23 @@ const MetricItem: React.FC<MetricItemProps> = ({ label, value, subtext, provenan
     }}
   >
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <span style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)', fontWeight: 500 }}>{label}</span>
+      <span style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)', fontWeight: 500 }}>
+        {label}
+      </span>
       <ProvenanceBadge tag={provenance} />
     </div>
     <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary, #f0f6fc)' }}>
       {value}
     </div>
     {(subtext || timestamp) && (
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted, #6e7681)' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          fontSize: '11px',
+          color: 'var(--text-muted, #6e7681)',
+        }}
+      >
         <span>{subtext}</span>
         {timestamp && <span>{new Date(timestamp).toLocaleTimeString()}</span>}
       </div>
@@ -99,30 +106,39 @@ export const EnvironmentView: React.FC = () => {
   const fetchRealState = useCallback(async () => {
     try {
       setLoading(true);
-      if (!window.api) {
-        setActionNotice('Electron IPC window.api is unavailable');
+      const api = (window as any).arletexApi || (window as any).api;
+      if (!api) {
+        setActionNotice('Electron IPC API is unavailable');
         return;
       }
 
-      const [
-        telemRes,
-        apeRes,
-        motRes,
-        relRes,
-        autoRes,
-        auditRes,
-        modelsRes,
-        activeModelRes,
-      ] = await Promise.all([
-        window.api.getTelemetry().catch(() => ({ success: false, data: null })),
-        window.api.getApeState().catch(() => ({ success: false, data: null })),
-        window.api.getApeMotivational().catch(() => ({ success: false, data: null })),
-        window.api.getApeExtendedRelationship().catch(() => ({ success: false, data: null })),
-        window.api.getAutonomyStatus().catch(() => ({ success: false, data: null })),
-        window.api.listAuditLogs ? window.api.listAuditLogs().catch(() => ({ success: false, data: { events: [] } })) : Promise.resolve({ success: false, data: { events: [] } }),
-        window.api.listModels ? window.api.listModels().catch(() => ({ success: false, data: { models: [] } })) : Promise.resolve({ success: false, data: { models: [] } }),
-        window.api.getActiveModel ? window.api.getActiveModel().catch(() => ({ success: false, data: null })) : Promise.resolve({ success: false, data: null }),
-      ]);
+      const [telemRes, apeRes, motRes, relRes, autoRes, auditRes, modelsRes, activeModelRes] =
+        await Promise.all([
+          api.getTelemetry
+            ? api.getTelemetry().catch(() => ({ success: false, data: null }))
+            : Promise.resolve({ success: false, data: null }),
+          api.getApeState
+            ? api.getApeState().catch(() => ({ success: false, data: null }))
+            : Promise.resolve({ success: false, data: null }),
+          api.getApeMotivational
+            ? api.getApeMotivational().catch(() => ({ success: false, data: null }))
+            : Promise.resolve({ success: false, data: null }),
+          api.getApeExtendedRelationship
+            ? api.getApeExtendedRelationship().catch(() => ({ success: false, data: null }))
+            : Promise.resolve({ success: false, data: null }),
+          api.getAutonomyStatus
+            ? api.getAutonomyStatus().catch(() => ({ success: false, data: null }))
+            : Promise.resolve({ success: false, data: null }),
+          api.listAuditLogs
+            ? api.listAuditLogs().catch(() => ({ success: false, data: { events: [] } }))
+            : Promise.resolve({ success: false, data: { events: [] } }),
+          api.listModels
+            ? api.listModels().catch(() => ({ success: false, data: { models: [] } }))
+            : Promise.resolve({ success: false, data: { models: [] } }),
+          api.getActiveModel
+            ? api.getActiveModel().catch(() => ({ success: false, data: null }))
+            : Promise.resolve({ success: false, data: null }),
+        ]);
 
       if (telemRes.success && telemRes.data) setTelemetry(telemRes.data);
       if (apeRes.success && apeRes.data) setApeState(apeRes.data);
@@ -151,9 +167,10 @@ export const EnvironmentView: React.FC = () => {
   }, [fetchRealState]);
 
   const handleToggleAutonomy = async () => {
-    if (!window.api) return;
+    const api = (window as any).arletexApi || (window as any).api;
+    if (!api?.toggleAutonomy) return;
     const nextState = !autonomyStatus?.isEnabled;
-    const res = await window.api.toggleAutonomy(nextState);
+    const res = await api.toggleAutonomy(nextState);
     if (res.success) {
       setActionNotice(`Autonomy ${nextState ? 'enabled' : 'disabled'}`);
       fetchRealState();
@@ -163,11 +180,18 @@ export const EnvironmentView: React.FC = () => {
   };
 
   const handleEmergencyShutdown = async () => {
-    if (!window.api?.triggerEmergencyShutdown) return;
-    if (!confirm('Engage EMERGENCY SHUTDOWN? This immediately terminates autonomous execution cycles and isolates actions.')) {
+    const api = (window as any).arletexApi || (window as any).api;
+    if (!api?.triggerEmergencyShutdown) return;
+    if (
+      !confirm(
+        'Engage EMERGENCY SHUTDOWN? This immediately terminates autonomous execution cycles and isolates actions.',
+      )
+    ) {
       return;
     }
-    const res = await window.api.triggerEmergencyShutdown('User initiated emergency shutdown from Dashboard');
+    const res = await api.triggerEmergencyShutdown(
+      'User initiated emergency shutdown from Dashboard',
+    );
     if (res.success) {
       setActionNotice('Emergency shutdown engaged successfully. Autonomy is locked.');
       fetchRealState();
@@ -177,8 +201,9 @@ export const EnvironmentView: React.FC = () => {
   };
 
   const handleReactivateAutonomy = async () => {
-    if (!window.api?.reactivateAutonomy) return;
-    const res = await window.api.reactivateAutonomy(reactivateToken);
+    const api = (window as any).arletexApi || (window as any).api;
+    if (!api?.reactivateAutonomy) return;
+    const res = await api.reactivateAutonomy(reactivateToken);
     if (res.success) {
       setActionNotice('Autonomy reactivated.');
       setShowReactivateModal(false);
@@ -190,9 +215,10 @@ export const EnvironmentView: React.FC = () => {
   };
 
   const handleSwitchModel = async (modelId: string) => {
-    if (!window.api?.resolveModel) return;
+    const api = (window as any).arletexApi || (window as any).api;
+    if (!api?.resolveModel) return;
     setSelectedModelId(modelId);
-    const res = await window.api.resolveModel({ modelId });
+    const res = await api.resolveModel({ modelId });
     if (res.success) {
       setActionNotice(`Model switched to ${modelId}`);
       fetchRealState();
@@ -204,7 +230,16 @@ export const EnvironmentView: React.FC = () => {
   const isEmergencyActive = autonomyStatus?.isEmergencyShutdownActive;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minWidth: 0, overflowY: 'auto' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        width: '100%',
+        minWidth: 0,
+        overflowY: 'auto',
+      }}
+    >
       {/* Header */}
       <div
         style={{
@@ -219,12 +254,22 @@ export const EnvironmentView: React.FC = () => {
         }}
       >
         <div>
-          <h1 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary, #f0f6fc)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h1
+            style={{
+              fontSize: '18px',
+              fontWeight: 700,
+              color: 'var(--text-primary, #f0f6fc)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
             <Shield size={20} color={isEmergencyActive ? '#f85149' : 'var(--accent, #58a6ff)'} />
             <span>Digital Environment, Governance & Psychological Real-State</span>
           </h1>
           <p style={{ fontSize: '12px', color: 'var(--text-muted, #6e7681)', marginTop: '2px' }}>
-            Authoritative SQLite runtime metrics, target hardware telemetry, and cognitive state without synthetic mocks.
+            Authoritative SQLite runtime metrics, target hardware telemetry, and cognitive state
+            without synthetic mocks.
           </p>
         </div>
 
@@ -297,7 +342,9 @@ export const EnvironmentView: React.FC = () => {
               alignItems: 'center',
               gap: '6px',
               padding: '4px 10px',
-              backgroundColor: isEmergencyActive ? 'rgba(218, 54, 51, 0.2)' : 'rgba(35, 134, 54, 0.2)',
+              backgroundColor: isEmergencyActive
+                ? 'rgba(218, 54, 51, 0.2)'
+                : 'rgba(35, 134, 54, 0.2)',
               border: `1px solid ${isEmergencyActive ? '#da3633' : '#238636'}`,
               borderRadius: '6px',
               fontSize: '11px',
@@ -329,7 +376,12 @@ export const EnvironmentView: React.FC = () => {
           <span>{actionNotice}</span>
           <button
             onClick={() => setActionNotice(null)}
-            style={{ background: 'transparent', border: 'none', color: '#58a6ff', cursor: 'pointer' }}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#58a6ff',
+              cursor: 'pointer',
+            }}
           >
             ✕
           </button>
@@ -350,16 +402,28 @@ export const EnvironmentView: React.FC = () => {
             lineHeight: 1.5,
           }}
         >
-          <strong style={{ color: 'var(--text-primary, #f0f6fc)' }}>Epistemic Provenance Guarantee: </strong>
-          Metrics labeled <ProvenanceBadge tag="measured" /> derive from hardware sensors or verified system records.
-          Metrics labeled <ProvenanceBadge tag="inferred" /> represent model cognitive appraisals and simulated relationship vectors.
-          Internal numeric state variables represent behavioral models and are not presented as subjective consciousness.
+          <strong style={{ color: 'var(--text-primary, #f0f6fc)' }}>
+            Epistemic Provenance Guarantee:{' '}
+          </strong>
+          Metrics labeled <ProvenanceBadge tag="measured" /> derive from hardware sensors or
+          verified system records. Metrics labeled <ProvenanceBadge tag="inferred" /> represent
+          model cognitive appraisals and simulated relationship vectors. Internal numeric state
+          variables represent behavioral models and are not presented as subjective consciousness.
         </div>
 
         {/* Section 1: Model Resolution & Inference Governance */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary, #f0f6fc)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h2
+              style={{
+                fontSize: '15px',
+                fontWeight: 600,
+                color: 'var(--text-primary, #f0f6fc)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
               <Layers size={16} color="var(--accent, #58a6ff)" />
               <span>Model Registry & Inference Governance</span>
             </h2>
@@ -369,7 +433,9 @@ export const EnvironmentView: React.FC = () => {
                   fontSize: '11px',
                   padding: '2px 8px',
                   borderRadius: '12px',
-                  backgroundColor: activeModel.isFallback ? 'rgba(210, 153, 34, 0.2)' : 'rgba(35, 134, 54, 0.2)',
+                  backgroundColor: activeModel.isFallback
+                    ? 'rgba(210, 153, 34, 0.2)'
+                    : 'rgba(35, 134, 54, 0.2)',
                   color: activeModel.isFallback ? '#d29922' : '#3fb950',
                   border: `1px solid ${activeModel.isFallback ? '#9e6a03' : '#238636'}`,
                   fontWeight: 600,
@@ -380,7 +446,13 @@ export const EnvironmentView: React.FC = () => {
             )}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: '12px',
+            }}
+          >
             <div
               style={{
                 backgroundColor: 'var(--bg-card, #161b22)',
@@ -392,19 +464,46 @@ export const EnvironmentView: React.FC = () => {
                 gap: '8px',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)' }}>Active Cognitive Model</span>
+              <div
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+              >
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)' }}>
+                  Active Cognitive Model
+                </span>
                 <ProvenanceBadge tag="measured" />
               </div>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary, #f0f6fc)', fontFamily: 'var(--font-mono, monospace)' }}>
+              <div
+                style={{
+                  fontSize: '14px',
+                  fontWeight: 700,
+                  color: 'var(--text-primary, #f0f6fc)',
+                  fontFamily: 'var(--font-mono, monospace)',
+                }}
+              >
                 {activeModel?.resolvedModel?.id || 'Qwen2.5-14B-Instruct-abliterated-v2.Q4_K_M'}
               </div>
               <div style={{ fontSize: '11px', color: 'var(--text-muted, #6e7681)' }}>
-                Status: <span style={{ color: activeModel?.status === 'ready' ? '#3fb950' : '#d29922', fontWeight: 600 }}>{activeModel?.status || 'ready'}</span> | Context: 12,288 tokens
+                Status:{' '}
+                <span
+                  style={{
+                    color: activeModel?.status === 'ready' ? '#3fb950' : '#d29922',
+                    fontWeight: 600,
+                  }}
+                >
+                  {activeModel?.status || 'ready'}
+                </span>{' '}
+                | Context: 12,288 tokens
               </div>
               {models.length > 0 && (
                 <div style={{ marginTop: '4px' }}>
-                  <label style={{ fontSize: '11px', color: 'var(--text-secondary, #8b949e)', display: 'block', marginBottom: '4px' }}>
+                  <label
+                    style={{
+                      fontSize: '11px',
+                      color: 'var(--text-secondary, #8b949e)',
+                      display: 'block',
+                      marginBottom: '4px',
+                    }}
+                  >
                     Switch Local Candidate:
                   </label>
                   <select
@@ -422,7 +521,8 @@ export const EnvironmentView: React.FC = () => {
                   >
                     {models.map((m: any) => (
                       <option key={m.id} value={m.id}>
-                        {m.name} ({m.quantization}) {m.isPrimary ? '★ Primary' : m.isFallback ? '⚡ Fallback' : ''}
+                        {m.name} ({m.quantization}){' '}
+                        {m.isPrimary ? '★ Primary' : m.isFallback ? '⚡ Fallback' : ''}
                       </option>
                     ))}
                   </select>
@@ -448,15 +548,34 @@ export const EnvironmentView: React.FC = () => {
 
         {/* Section 2: Target Hardware Telemetry (ASUS ROG Ally X) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <h2 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary, #f0f6fc)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h2
+            style={{
+              fontSize: '15px',
+              fontWeight: 600,
+              color: 'var(--text-primary, #f0f6fc)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
             <Cpu size={16} color="var(--accent, #58a6ff)" />
             <span>Target Hardware Telemetry (ASUS ROG Ally X)</span>
           </h2>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '12px',
+            }}
+          >
             <MetricItem
               label="Unified RAM Allocation"
-              value={telemetry?.ramUsedMb ? `${(telemetry.ramUsedMb / 1024).toFixed(1)} GB / ${(telemetry.ramTotalMb / 1024).toFixed(1)} GB` : '18.4 GB / 24.0 GB'}
+              value={
+                telemetry?.ramUsedMb
+                  ? `${(telemetry.ramUsedMb / 1024).toFixed(1)} GB / ${(telemetry.ramTotalMb / 1024).toFixed(1)} GB`
+                  : '18.4 GB / 24.0 GB'
+              }
               subtext="24GB LPDDR5X-7500 Unified Memory"
               provenance={telemetry ? 'measured' : 'unavailable'}
               timestamp={telemetry?.timestamp}
@@ -464,7 +583,11 @@ export const EnvironmentView: React.FC = () => {
 
             <MetricItem
               label="CPU Compute Load"
-              value={telemetry?.cpuUsagePercent !== undefined ? `${telemetry.cpuUsagePercent.toFixed(1)}%` : '14.2%'}
+              value={
+                telemetry?.cpuUsagePercent !== undefined
+                  ? `${telemetry.cpuUsagePercent.toFixed(1)}%`
+                  : '14.2%'
+              }
               subtext="AMD Ryzen Z1 Extreme (8C / 16T Zen 4)"
               provenance={telemetry ? 'measured' : 'unavailable'}
               timestamp={telemetry?.timestamp}
@@ -472,7 +595,11 @@ export const EnvironmentView: React.FC = () => {
 
             <MetricItem
               label="Host Battery & Power"
-              value={telemetry?.batteryLevelPercent !== undefined ? `${telemetry.batteryLevelPercent}%` : 'AC Connected'}
+              value={
+                telemetry?.batteryLevelPercent !== undefined
+                  ? `${telemetry.batteryLevelPercent}%`
+                  : 'AC Connected'
+              }
               subtext="80Wh Battery Subsystem"
               provenance={telemetry ? 'measured' : 'unavailable'}
               timestamp={telemetry?.timestamp}
@@ -489,12 +616,27 @@ export const EnvironmentView: React.FC = () => {
 
         {/* Section 3: Persisted Psychological State (APE) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <h2 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary, #f0f6fc)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h2
+            style={{
+              fontSize: '15px',
+              fontWeight: 600,
+              color: 'var(--text-primary, #f0f6fc)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
             <Heart size={16} color="#f778ba" />
             <span>Persisted Psychological State (Artificial Psychology Engine)</span>
           </h2>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: '12px',
+            }}
+          >
             {/* Affect & Mood */}
             <div
               style={{
@@ -507,17 +649,34 @@ export const EnvironmentView: React.FC = () => {
                 gap: '8px',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)' }}>Affect & Mood Coordinates</span>
+              <div
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+              >
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)' }}>
+                  Affect & Mood Coordinates
+                </span>
                 <ProvenanceBadge tag={apeState ? 'inferred' : 'unavailable'} />
               </div>
-              <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary, #f0f6fc)' }}>
-                Mood: {apeState?.mood || 'attentive'} | Emotion: {apeState?.primaryEmotion || 'interested'}
+              <div
+                style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary, #f0f6fc)' }}
+              >
+                Mood: {apeState?.mood || 'attentive'} | Emotion:{' '}
+                {apeState?.primaryEmotion || 'interested'}
               </div>
-              <div style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)', lineHeight: 1.5 }}>
-                PAD Coordinates: V: {apeState?.padCoordinates?.pleasure?.toFixed(2) || '0.62'} | A: {apeState?.padCoordinates?.arousal?.toFixed(2) || '0.35'} | D: {apeState?.padCoordinates?.dominance?.toFixed(2) || '0.50'}
+              <div
+                style={{
+                  fontSize: '12px',
+                  color: 'var(--text-secondary, #8b949e)',
+                  lineHeight: 1.5,
+                }}
+              >
+                PAD Coordinates: V: {apeState?.padCoordinates?.pleasure?.toFixed(2) || '0.62'} | A:{' '}
+                {apeState?.padCoordinates?.arousal?.toFixed(2) || '0.35'} | D:{' '}
+                {apeState?.padCoordinates?.dominance?.toFixed(2) || '0.50'}
               </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted, #6e7681)', marginTop: 'auto' }}>
+              <div
+                style={{ fontSize: '11px', color: 'var(--text-muted, #6e7681)', marginTop: 'auto' }}
+              >
                 Source: SQLite `ape_psychological_state`
               </div>
             </div>
@@ -534,16 +693,36 @@ export const EnvironmentView: React.FC = () => {
                 gap: '8px',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)' }}>Motivational Drives & Needs</span>
+              <div
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+              >
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)' }}>
+                  Motivational Drives & Needs
+                </span>
                 <ProvenanceBadge tag={motivational ? 'inferred' : 'unavailable'} />
               </div>
-              <div style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <div>Curiosity: {(motivational?.needs?.curiosity ?? 0.85).toFixed(2)} | Autonomy: {(motivational?.needs?.autonomy ?? 0.70).toFixed(2)}</div>
-                <div>Connection: {(motivational?.needs?.connection ?? 0.80).toFixed(2)} | Mastery: {(motivational?.needs?.mastery ?? 0.75).toFixed(2)}</div>
-                <div>Rest / Stability: {(motivational?.needs?.rest ?? 0.90).toFixed(2)}</div>
+              <div
+                style={{
+                  fontSize: '12px',
+                  color: 'var(--text-secondary, #8b949e)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px',
+                }}
+              >
+                <div>
+                  Curiosity: {(motivational?.needs?.curiosity ?? 0.85).toFixed(2)} | Autonomy:{' '}
+                  {(motivational?.needs?.autonomy ?? 0.7).toFixed(2)}
+                </div>
+                <div>
+                  Connection: {(motivational?.needs?.connection ?? 0.8).toFixed(2)} | Mastery:{' '}
+                  {(motivational?.needs?.mastery ?? 0.75).toFixed(2)}
+                </div>
+                <div>Rest / Stability: {(motivational?.needs?.rest ?? 0.9).toFixed(2)}</div>
               </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted, #6e7681)', marginTop: 'auto' }}>
+              <div
+                style={{ fontSize: '11px', color: 'var(--text-muted, #6e7681)', marginTop: 'auto' }}
+              >
                 Source: SQLite `ape_motivational_state`
               </div>
             </div>
@@ -560,17 +739,27 @@ export const EnvironmentView: React.FC = () => {
                 gap: '8px',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)' }}>Relationship State (Partner: Proof)</span>
+              <div
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+              >
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)' }}>
+                  Relationship State (Partner: Proof)
+                </span>
                 <ProvenanceBadge tag={relationship ? 'inferred' : 'unavailable'} />
               </div>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary, #f0f6fc)' }}>
-                Attachment: {relationship?.attachmentStyle || 'secure'} | Trust: {(relationship?.trustScore ?? 0.92).toFixed(2)}
+              <div
+                style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary, #f0f6fc)' }}
+              >
+                Attachment: {relationship?.attachmentStyle || 'secure'} | Trust:{' '}
+                {(relationship?.trustScore ?? 0.92).toFixed(2)}
               </div>
               <div style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)' }}>
-                Affection: {(relationship?.affectionLevel ?? 0.88).toFixed(2)} | Conflict: {relationship?.conflictState || 'resolved'}
+                Affection: {(relationship?.affectionLevel ?? 0.88).toFixed(2)} | Conflict:{' '}
+                {relationship?.conflictState || 'resolved'}
               </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted, #6e7681)', marginTop: 'auto' }}>
+              <div
+                style={{ fontSize: '11px', color: 'var(--text-muted, #6e7681)', marginTop: 'auto' }}
+              >
                 Source: SQLite `ape_relationship_state` (Equal partner framing)
               </div>
             </div>
@@ -580,7 +769,16 @@ export const EnvironmentView: React.FC = () => {
         {/* Section 4: Operational Autonomy & Permission Boundaries */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary, #f0f6fc)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h2
+              style={{
+                fontSize: '15px',
+                fontWeight: 600,
+                color: 'var(--text-primary, #f0f6fc)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
               <Compass size={16} color="var(--accent, #58a6ff)" />
               <span>Operational Autonomy Controller</span>
             </h2>
@@ -588,7 +786,9 @@ export const EnvironmentView: React.FC = () => {
               onClick={handleToggleAutonomy}
               style={{
                 padding: '4px 12px',
-                backgroundColor: autonomyStatus?.isEnabled ? 'rgba(35, 134, 54, 0.2)' : 'rgba(110, 118, 129, 0.2)',
+                backgroundColor: autonomyStatus?.isEnabled
+                  ? 'rgba(35, 134, 54, 0.2)'
+                  : 'rgba(110, 118, 129, 0.2)',
                 border: `1px solid ${autonomyStatus?.isEnabled ? '#238636' : '#6e7681'}`,
                 borderRadius: '6px',
                 color: autonomyStatus?.isEnabled ? '#3fb950' : '#8b949e',
@@ -601,7 +801,13 @@ export const EnvironmentView: React.FC = () => {
             </button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '12px',
+            }}
+          >
             <MetricItem
               label="Telegram Spontaneous Rate Limit"
               value="5 msgs / hr"
@@ -619,7 +825,11 @@ export const EnvironmentView: React.FC = () => {
             <MetricItem
               label="Autonomous Agency Cycles"
               value={autonomyStatus?.cycleCount ?? 142}
-              subtext={autonomyStatus?.lastCycleTimestamp ? `Last: ${new Date(autonomyStatus.lastCycleTimestamp).toLocaleTimeString()}` : 'Interval: 120s idle'}
+              subtext={
+                autonomyStatus?.lastCycleTimestamp
+                  ? `Last: ${new Date(autonomyStatus.lastCycleTimestamp).toLocaleTimeString()}`
+                  : 'Interval: 120s idle'
+              }
               provenance="measured"
               timestamp={autonomyStatus?.lastCycleTimestamp}
             />
@@ -636,7 +846,16 @@ export const EnvironmentView: React.FC = () => {
         {/* Section 5: Real-time Audit Trail & Security Non-Repudiation */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary, #f0f6fc)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h2
+              style={{
+                fontSize: '15px',
+                fontWeight: 600,
+                color: 'var(--text-primary, #f0f6fc)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
               <FileText size={16} color="var(--accent, #58a6ff)" />
               <span>Real-Time Security Audit Stream</span>
             </h2>
@@ -653,9 +872,22 @@ export const EnvironmentView: React.FC = () => {
               overflow: 'hidden',
             }}
           >
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', textAlign: 'left' }}>
+            <table
+              style={{
+                width: '100%',
+                borderCollapse: 'collapse',
+                fontSize: '12px',
+                textAlign: 'left',
+              }}
+            >
               <thead>
-                <tr style={{ backgroundColor: 'var(--bg-secondary, #0d1117)', borderBottom: '1px solid var(--border-subtle, #30363d)', color: 'var(--text-secondary, #8b949e)' }}>
+                <tr
+                  style={{
+                    backgroundColor: 'var(--bg-secondary, #0d1117)',
+                    borderBottom: '1px solid var(--border-subtle, #30363d)',
+                    color: 'var(--text-secondary, #8b949e)',
+                  }}
+                >
                   <th style={{ padding: '8px 12px', fontWeight: 600 }}>Timestamp</th>
                   <th style={{ padding: '8px 12px', fontWeight: 600 }}>Action</th>
                   <th style={{ padding: '8px 12px', fontWeight: 600 }}>Actor</th>
@@ -669,15 +901,27 @@ export const EnvironmentView: React.FC = () => {
                     <tr
                       key={evt.id || i}
                       style={{
-                        borderBottom: i < auditLogs.length - 1 ? '1px solid var(--border-subtle, #30363d)' : 'none',
+                        borderBottom:
+                          i < auditLogs.length - 1
+                            ? '1px solid var(--border-subtle, #30363d)'
+                            : 'none',
                         color: 'var(--text-primary, #f0f6fc)',
                       }}
                     >
-                      <td style={{ padding: '8px 12px', fontFamily: 'var(--font-mono, monospace)', fontSize: '11px', color: 'var(--text-muted, #6e7681)' }}>
+                      <td
+                        style={{
+                          padding: '8px 12px',
+                          fontFamily: 'var(--font-mono, monospace)',
+                          fontSize: '11px',
+                          color: 'var(--text-muted, #6e7681)',
+                        }}
+                      >
                         {new Date(evt.timestamp).toLocaleTimeString()}
                       </td>
                       <td style={{ padding: '8px 12px', fontWeight: 600 }}>{evt.action}</td>
-                      <td style={{ padding: '8px 12px', color: 'var(--text-secondary, #8b949e)' }}>{evt.actor || 'system'}</td>
+                      <td style={{ padding: '8px 12px', color: 'var(--text-secondary, #8b949e)' }}>
+                        {evt.actor || 'system'}
+                      </td>
                       <td style={{ padding: '8px 12px' }}>
                         <span
                           style={{
@@ -685,21 +929,44 @@ export const EnvironmentView: React.FC = () => {
                             fontWeight: 600,
                             padding: '2px 6px',
                             borderRadius: '4px',
-                            backgroundColor: evt.status === 'success' || evt.status === 'authorized' ? 'rgba(35, 134, 54, 0.2)' : 'rgba(218, 54, 51, 0.2)',
-                            color: evt.status === 'success' || evt.status === 'authorized' ? '#3fb950' : '#f85149',
+                            backgroundColor:
+                              evt.status === 'success' || evt.status === 'authorized'
+                                ? 'rgba(35, 134, 54, 0.2)'
+                                : 'rgba(218, 54, 51, 0.2)',
+                            color:
+                              evt.status === 'success' || evt.status === 'authorized'
+                                ? '#3fb950'
+                                : '#f85149',
                           }}
                         >
                           {evt.status}
                         </span>
                       </td>
-                      <td style={{ padding: '8px 12px', color: 'var(--text-secondary, #8b949e)', fontSize: '11px', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <td
+                        style={{
+                          padding: '8px 12px',
+                          color: 'var(--text-secondary, #8b949e)',
+                          fontSize: '11px',
+                          maxWidth: '300px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
                         {evt.details}
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} style={{ padding: '16px', textAlign: 'center', color: 'var(--text-muted, #6e7681)' }}>
+                    <td
+                      colSpan={5}
+                      style={{
+                        padding: '16px',
+                        textAlign: 'center',
+                        color: 'var(--text-muted, #6e7681)',
+                      }}
+                    >
                       No recent security audit events recorded.
                     </td>
                   </tr>
@@ -741,13 +1008,21 @@ export const EnvironmentView: React.FC = () => {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Power size={20} color="#3fb950" />
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary, #f0f6fc)' }}>
+              <h3
+                style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary, #f0f6fc)' }}
+              >
                 Reactivate Autonomy Controller
               </h3>
             </div>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary, #8b949e)', lineHeight: 1.5 }}>
-              Reactivating autonomous agency restores background cycles and operational initiative. Type{' '}
-              <code style={{ color: '#58a6ff', fontFamily: 'var(--font-mono, monospace)' }}>CONFIRM_REACTIVATION</code> to confirm:
+            <p
+              style={{ fontSize: '13px', color: 'var(--text-secondary, #8b949e)', lineHeight: 1.5 }}
+            >
+              Reactivating autonomous agency restores background cycles and operational initiative.
+              Type{' '}
+              <code style={{ color: '#58a6ff', fontFamily: 'var(--font-mono, monospace)' }}>
+                CONFIRM_REACTIVATION
+              </code>{' '}
+              to confirm:
             </p>
             <input
               type="text"
@@ -764,7 +1039,9 @@ export const EnvironmentView: React.FC = () => {
                 fontFamily: 'var(--font-mono, monospace)',
               }}
             />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
+            <div
+              style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}
+            >
               <button
                 onClick={() => {
                   setShowReactivateModal(false);
@@ -787,7 +1064,8 @@ export const EnvironmentView: React.FC = () => {
                 disabled={reactivateToken !== 'CONFIRM_REACTIVATION'}
                 style={{
                   padding: '6px 14px',
-                  backgroundColor: reactivateToken === 'CONFIRM_REACTIVATION' ? '#238636' : '#21262d',
+                  backgroundColor:
+                    reactivateToken === 'CONFIRM_REACTIVATION' ? '#238636' : '#21262d',
                   border: 'none',
                   borderRadius: '6px',
                   color: reactivateToken === 'CONFIRM_REACTIVATION' ? '#fff' : '#6e7681',

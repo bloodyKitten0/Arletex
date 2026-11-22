@@ -38,7 +38,10 @@ export class SqliteTheoryOfMindRepository implements ITheoryOfMindRepository {
           model.lastInteractionAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save agent mental model ${model.agentId}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save agent mental model ${model.agentId}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -117,7 +120,9 @@ export class SqliteTheoryOfMindRepository implements ITheoryOfMindRepository {
   public getBelief(agentId: string, topic: string): InferredBelief | null {
     try {
       const row = this.db
-        .prepare(`SELECT * FROM tom_inferred_beliefs WHERE agent_id = ? AND topic = ? ORDER BY inferred_at DESC LIMIT 1`)
+        .prepare(
+          `SELECT * FROM tom_inferred_beliefs WHERE agent_id = ? AND topic = ? ORDER BY inferred_at DESC LIMIT 1`,
+        )
         .get(agentId, topic) as any;
       if (!row) return null;
       return {
@@ -192,7 +197,10 @@ export class SqliteTheoryOfMindRepository implements ITheoryOfMindRepository {
           intention.inferredAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save inferred intention ${intention.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save inferred intention ${intention.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -251,7 +259,10 @@ export class SqliteTheoryOfMindRepository implements ITheoryOfMindRepository {
           prediction.createdAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save social prediction ${prediction.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save social prediction ${prediction.id}: ${err.message}`,
+        err,
+      );
     }
   }
 

@@ -45,20 +45,23 @@ export class SqliteDeliberationRepository implements IDeliberationRepository {
           conflict.chosenAlternativeId ?? null,
           conflict.decisionJustification ?? null,
           conflict.tradeOffAnalysis ? JSON.stringify(conflict.tradeOffAnalysis) : null,
-          conflict.postDecisionReassessment ? JSON.stringify(conflict.postDecisionReassessment) : null,
+          conflict.postDecisionReassessment
+            ? JSON.stringify(conflict.postDecisionReassessment)
+            : null,
           conflict.createdAt,
           conflict.resolvedAt ?? null,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save internal conflict ${conflict.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save internal conflict ${conflict.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
   public getConflictById(id: string): InternalConflictRecord | null {
     try {
-      const row = this.db
-        .prepare(`SELECT * FROM internal_conflicts WHERE id = ?`)
-        .get(id) as any;
+      const row = this.db.prepare(`SELECT * FROM internal_conflicts WHERE id = ?`).get(id) as any;
       if (!row) return null;
       return this.mapConflictRow(row);
     } catch (err: any) {
@@ -107,7 +110,9 @@ export class SqliteDeliberationRepository implements IDeliberationRepository {
       indecisionStrategy: row.indecision_strategy || undefined,
       chosenAlternativeId: row.chosen_alternative_id || undefined,
       decisionJustification: row.decision_justification || undefined,
-      tradeOffAnalysis: row.trade_off_analysis_json ? JSON.parse(row.trade_off_analysis_json) : undefined,
+      tradeOffAnalysis: row.trade_off_analysis_json
+        ? JSON.parse(row.trade_off_analysis_json)
+        : undefined,
       postDecisionReassessment: row.post_decision_reassessment_json
         ? JSON.parse(row.post_decision_reassessment_json)
         : undefined,

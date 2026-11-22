@@ -40,9 +40,7 @@ export class SqliteCausalRepository implements ICausalRepository {
 
   public getGraphById(id: string): CausalGraphModel | null {
     try {
-      const row = this.db
-        .prepare('SELECT * FROM causal_graph_models WHERE id = ?')
-        .get(id) as any;
+      const row = this.db.prepare('SELECT * FROM causal_graph_models WHERE id = ?').get(id) as any;
       if (!row) return null;
       return this.mapRowToGraph(row);
     } catch (err: any) {
@@ -53,12 +51,17 @@ export class SqliteCausalRepository implements ICausalRepository {
   public getGraphByDomain(domain: string): CausalGraphModel | null {
     try {
       const row = this.db
-        .prepare('SELECT * FROM causal_graph_models WHERE domain = ? ORDER BY updated_at DESC LIMIT 1')
+        .prepare(
+          'SELECT * FROM causal_graph_models WHERE domain = ? ORDER BY updated_at DESC LIMIT 1',
+        )
         .get(domain) as any;
       if (!row) return null;
       return this.mapRowToGraph(row);
     } catch (err: any) {
-      throw new DatabaseError(`Failed to get causal graph by domain ${domain}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to get causal graph by domain ${domain}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -117,7 +120,10 @@ export class SqliteCausalRepository implements ICausalRepository {
           intervention.timestamp,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to record causal intervention ${intervention.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to record causal intervention ${intervention.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -156,9 +162,15 @@ export class SqliteCausalRepository implements ICausalRepository {
       id: row.id,
       graphId: row.graph_id,
       targetNodeId: row.target_node_id,
-      interventionValue: typeof row.intervention_value === 'string' ? JSON.parse(row.intervention_value) : row.intervention_value,
+      interventionValue:
+        typeof row.intervention_value === 'string'
+          ? JSON.parse(row.intervention_value)
+          : row.intervention_value,
       observedEffectNodeId: row.observed_effect_node_id,
-      observedEffectValue: typeof row.observed_effect_value === 'string' ? JSON.parse(row.observed_effect_value) : row.observed_effect_value,
+      observedEffectValue:
+        typeof row.observed_effect_value === 'string'
+          ? JSON.parse(row.observed_effect_value)
+          : row.observed_effect_value,
       didEffectChange: row.did_effect_change === 1 || row.did_effect_change === true,
       inferredCausalLink: row.inferred_causal_link === 1 || row.inferred_causal_link === true,
       notes: row.notes ?? '',

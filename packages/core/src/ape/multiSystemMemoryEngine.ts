@@ -62,7 +62,9 @@ export class MultiSystemMemoryEngine {
     );
 
     if (duplicate) {
-      this.logger.info(`Duplicate detected in system '${input.systemType}'. Updating confidence and timestamp on ${duplicate.id}`);
+      this.logger.info(
+        `Duplicate detected in system '${input.systemType}'. Updating confidence and timestamp on ${duplicate.id}`,
+      );
       const updated: MultiSystemMemoryEntry = {
         ...duplicate,
         confidence: Math.min(1.0, duplicate.confidence + 0.05),
@@ -75,7 +77,10 @@ export class MultiSystemMemoryEngine {
     const lower = `${input.content} ${(input.tags || []).join(' ')}`.toLowerCase();
     const isPartnerCommitment =
       lower.includes('proof') &&
-      (lower.includes('partner') || lower.includes('commitment') || lower.includes('equal') || lower.includes('love'));
+      (lower.includes('partner') ||
+        lower.includes('commitment') ||
+        lower.includes('equal') ||
+        lower.includes('love'));
 
     const entry: MultiSystemMemoryEntry = {
       id: crypto.randomUUID(),
@@ -83,7 +88,10 @@ export class MultiSystemMemoryEngine {
       content: input.content,
       summary: input.summary,
       source,
-      confidence: Math.max(0, Math.min(1, input.confidence ?? (source.isEmpiricallyVerified ? 0.95 : 0.8))),
+      confidence: Math.max(
+        0,
+        Math.min(1, input.confidence ?? (source.isEmpiricallyVerified ? 0.95 : 0.8)),
+      ),
       importance: Math.max(0, Math.min(1, input.importance ?? (isPartnerCommitment ? 1.0 : 0.5))),
       decayFactor: isPartnerCommitment ? 0.0 : 0.05,
       tags: input.tags || [],
@@ -99,7 +107,9 @@ export class MultiSystemMemoryEngine {
     assertMultiSystemMemoryIntegrity(entry);
 
     this.repo.createEntry(entry);
-    this.logger.info(`Encoded [${entry.systemType}] memory: "${entry.content.substring(0, 40)}..." (source: ${source.author})`);
+    this.logger.info(
+      `Encoded [${entry.systemType}] memory: "${entry.content.substring(0, 40)}..." (source: ${source.author})`,
+    );
     return entry;
   }
 
@@ -116,7 +126,8 @@ export class MultiSystemMemoryEngine {
       let textMatch = 0.5;
       if (options.queryText) {
         const queryLower = options.queryText.toLowerCase();
-        const contentLower = `${entry.content} ${entry.summary || ''} ${entry.tags.join(' ')}`.toLowerCase();
+        const contentLower =
+          `${entry.content} ${entry.summary || ''} ${entry.tags.join(' ')}`.toLowerCase();
         if (contentLower.includes(queryLower)) {
           textMatch = 1.0;
         } else {
@@ -162,7 +173,10 @@ export class MultiSystemMemoryEngine {
 
     const consolidatedContext = selected
       .slice(0, 5)
-      .map((e) => `[${e.systemType.toUpperCase()}] ${e.content} (source: ${e.source.author}, confidence: ${(e.confidence * 100).toFixed(0)}%)`)
+      .map(
+        (e) =>
+          `[${e.systemType.toUpperCase()}] ${e.content} (source: ${e.source.author}, confidence: ${(e.confidence * 100).toFixed(0)}%)`,
+      )
       .join('\n');
 
     return {
@@ -235,7 +249,9 @@ export class MultiSystemMemoryEngine {
       this.repo.updateEntry(entry);
     }
 
-    this.logger.info(`Applied memory decay: ${decayedCount} decayed, ${archivedCount} archived, ${protectedCount} protected`);
+    this.logger.info(
+      `Applied memory decay: ${decayedCount} decayed, ${archivedCount} archived, ${protectedCount} protected`,
+    );
     return { decayedCount, archivedCount, protectedCount };
   }
 
@@ -243,7 +259,11 @@ export class MultiSystemMemoryEngine {
   // 5. Memory Correction with Audit Trail
   // ==========================================
 
-  public correctMemory(memoryId: string, newContent: string, reason: string): MultiSystemMemoryEntry {
+  public correctMemory(
+    memoryId: string,
+    newContent: string,
+    reason: string,
+  ): MultiSystemMemoryEntry {
     const existing = this.repo.getEntryById(memoryId);
     if (!existing) {
       throw new Error(`Memory entry ${memoryId} not found for correction.`);
@@ -296,7 +316,9 @@ export class MultiSystemMemoryEngine {
     }
 
     this.repo.recordContradiction(contradiction);
-    this.logger.warn(`Contradiction detected between ${memoryIdA} and ${memoryIdB}: ${conflictDescription}`);
+    this.logger.warn(
+      `Contradiction detected between ${memoryIdA} and ${memoryIdB}: ${conflictDescription}`,
+    );
     return contradiction;
   }
 
@@ -310,12 +332,15 @@ export class MultiSystemMemoryEngine {
       throw new Error(`Contradiction ${contradictionId} not found.`);
     }
 
-    contradiction.status = strategy === 'override_with_verified' ? 'resolved' : 'epistemic_uncertainty';
+    contradiction.status =
+      strategy === 'override_with_verified' ? 'resolved' : 'epistemic_uncertainty';
     contradiction.resolutionStrategy = strategy;
 
     if (strategy === 'override_with_verified' && winningMemoryId) {
       const losingId =
-        winningMemoryId === contradiction.memoryIdA ? contradiction.memoryIdB : contradiction.memoryIdA;
+        winningMemoryId === contradiction.memoryIdA
+          ? contradiction.memoryIdB
+          : contradiction.memoryIdA;
       const losing = this.repo.getEntryById(losingId);
       if (losing) {
         losing.confidence = 0.2;
@@ -414,8 +439,7 @@ export class InMemoryMultiSystemMemoryRepository implements IMultiSystemMemoryRe
       const q = options.queryText.toLowerCase();
       result = result.filter(
         (e) =>
-          e.content.toLowerCase().includes(q) ||
-          (e.summary && e.summary.toLowerCase().includes(q)),
+          e.content.toLowerCase().includes(q) || (e.summary && e.summary.toLowerCase().includes(q)),
       );
     }
 

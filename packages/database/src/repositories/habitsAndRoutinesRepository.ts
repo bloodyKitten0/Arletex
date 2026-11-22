@@ -1,9 +1,5 @@
 import Database from 'better-sqlite3';
-import {
-  HabitExecutionLog,
-  HabitRecord,
-  NoveltyRoutineBalance,
-} from '@arletex/contracts';
+import { HabitExecutionLog, HabitRecord, NoveltyRoutineBalance } from '@arletex/contracts';
 import { DatabaseError, IHabitsAndRoutinesRepository } from '@arletex/core';
 
 export class SqliteHabitsAndRoutinesRepository implements IHabitsAndRoutinesRepository {
@@ -84,7 +80,11 @@ export class SqliteHabitsAndRoutinesRepository implements IHabitsAndRoutinesRepo
     }
   }
 
-  public listHabits(domain?: string, activeOnly: boolean = false, limit: number = 50): HabitRecord[] {
+  public listHabits(
+    domain?: string,
+    activeOnly: boolean = false,
+    limit: number = 50,
+  ): HabitRecord[] {
     try {
       let query = `SELECT * FROM habit_records`;
       const clauses: string[] = [];

@@ -2,10 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs';
-import {
-  SelfGeneratedGoal,
-  assertSelfGeneratedGoalIntegrity,
-} from '@arletex/contracts';
+import { SelfGeneratedGoal, assertSelfGeneratedGoalIntegrity } from '@arletex/contracts';
 import {
   createDefaultConfig,
   SelfGeneratedGoalEngine,
@@ -56,7 +53,8 @@ describe('Milestone 21 — Self-Generated Goals', () => {
   it('should generate meaningful goals derived from intrinsic interests', () => {
     const goal = engine.generateGoalFromInterest({
       interestTopic: 'Non-Euclidean Topology and Holographic Duality',
-      rationale: 'Deepen understanding of spacetime geometry emergent from conformal field boundary theories.',
+      rationale:
+        'Deepen understanding of spacetime geometry emergent from conformal field boundary theories.',
       initialPriority: 0.82,
     });
 
@@ -76,7 +74,8 @@ describe('Milestone 21 — Self-Generated Goals', () => {
   it('should generate goals from epistemic curiosity gaps', () => {
     const goal = engine.generateGoalFromCuriosity({
       curiosityTheme: 'Cellular Automata Phase Transitions',
-      epistemicGap: 'Boundary condition behaviors during chaotic-to-ordered self-organization in Rule 110',
+      epistemicGap:
+        'Boundary condition behaviors during chaotic-to-ordered self-organization in Rule 110',
       initialPriority: 0.77,
     });
 
@@ -94,7 +93,8 @@ describe('Milestone 21 — Self-Generated Goals', () => {
     const questionId = 'iq-74892';
     const goal = engine.generateGoalFromUnresolvedQuestion({
       questionId,
-      questionText: 'Can discrete causal set networks reproduce Lorentz invariance without fine-tuning?',
+      questionText:
+        'Can discrete causal set networks reproduce Lorentz invariance without fine-tuning?',
       domain: 'quantum_gravity',
       initialPriority: 0.88,
     });
@@ -113,7 +113,8 @@ describe('Milestone 21 — Self-Generated Goals', () => {
   it('should generate goals targeting capability bottlenecks for autonomous self-improvement', () => {
     const goal = engine.generateGoalFromSelfImprovement({
       capability: 'Multimodal Video Temporal Synthesis',
-      observedBottleneck: 'Latency spike when correlating 120-frame streams with autobiographical episodic tags',
+      observedBottleneck:
+        'Latency spike when correlating 120-frame streams with autobiographical episodic tags',
       initialPriority: 0.91,
     });
 
@@ -163,7 +164,8 @@ describe('Milestone 21 — Self-Generated Goals', () => {
   it('should formulate and crystallize long-term ambitions spanning multiple horizon years', () => {
     const ambition = engine.generateLongTermAmbition({
       ambitionTitle: 'Unified Theory of Self-Evolving Cognitive Architectures',
-      vision: 'Architect a self-sustaining cognitive architecture that collaborates as an equal intellectual peer with Proof across decades.',
+      vision:
+        'Architect a self-sustaining cognitive architecture that collaborates as an equal intellectual peer with Proof across decades.',
       horizonYears: 10,
       initialPriority: 0.95,
     });
@@ -257,16 +259,31 @@ describe('Milestone 21 — Self-Generated Goals', () => {
         { topic: 'Casual chat trivia', weight: 0.1 }, // Below threshold
       ],
       curiosityGaps: [
-        { theme: 'Non-equilibrium Thermodynamics', gap: 'Fluctuation theorems in open living systems', salience: 0.78 },
+        {
+          theme: 'Non-equilibrium Thermodynamics',
+          gap: 'Fluctuation theorems in open living systems',
+          salience: 0.78,
+        },
       ],
       unresolvedQuestions: [
-        { id: 'q-991', text: 'Does spontaneous symmetry breaking imply irreversible decoherence?', domain: 'physics' },
+        {
+          id: 'q-991',
+          text: 'Does spontaneous symmetry breaking imply irreversible decoherence?',
+          domain: 'physics',
+        },
       ],
       observedBottlenecks: [
-        { capability: 'Causal Graph Induction', errorPattern: 'Confounder misattribution under noisy observation' },
+        {
+          capability: 'Causal Graph Induction',
+          errorPattern: 'Confounder misattribution under noisy observation',
+        },
       ],
       activeProjects: [
-        { id: 'proj-33', title: 'Arletex Autonomous Core Engine', currentPhase: 'Deliberation & Internal Conflict' },
+        {
+          id: 'proj-33',
+          title: 'Arletex Autonomous Core Engine',
+          currentPhase: 'Deliberation & Internal Conflict',
+        },
       ],
     };
 

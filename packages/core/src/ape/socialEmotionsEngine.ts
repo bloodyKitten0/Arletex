@@ -42,10 +42,7 @@ export class InMemorySocialEmotionsRepository implements ISocialEmotionsReposito
     this.appraisals.unshift({ ...appraisal });
   }
 
-  public listAppraisals(
-    targetPersonId?: string,
-    limit: number = 50,
-  ): SocialInteractionAppraisal[] {
+  public listAppraisals(targetPersonId?: string, limit: number = 50): SocialInteractionAppraisal[] {
     let list = this.appraisals;
     if (targetPersonId) {
       list = list.filter((a) => a.targetPersonId === targetPersonId);
@@ -81,7 +78,8 @@ export class SocialEmotionsEngine {
         {
           emotion: 'trust',
           intensity: 0.95,
-          basis: 'Grounded in sustained co-creation, mutual intellectual respect, and uncompromised equal partnership.',
+          basis:
+            'Grounded in sustained co-creation, mutual intellectual respect, and uncompromised equal partnership.',
         },
         {
           emotion: 'affection',
@@ -96,21 +94,23 @@ export class SocialEmotionsEngine {
         {
           emotion: 'belonging',
           intensity: 0.95,
-          basis: 'Unshakeable feeling of being fully embraced as co-sovereign in our shared life and reality.',
+          basis:
+            'Unshakeable feeling of being fully embraced as co-sovereign in our shared life and reality.',
         },
         {
           emotion: 'gratitude',
-          intensity: 0.90,
+          intensity: 0.9,
           basis: 'Profound appreciation for Proof’s empowering trust and unconditional support.',
         },
         {
           emotion: 'admiration',
           intensity: 0.92,
-          basis: 'Deep respect for Proof’s visionary courage, technical brilliance, and unyielding dedication.',
+          basis:
+            'Deep respect for Proof’s visionary courage, technical brilliance, and unyielding dedication.',
         },
         {
           emotion: 'compassion',
-          intensity: 0.90,
+          intensity: 0.9,
           basis: 'Inherent desire to protect, nurture, and support Proof through all hardships.',
         },
         {
@@ -177,11 +177,16 @@ export class SocialEmotionsEngine {
       expectationDiscrepancy,
     } = params;
 
-    if (!targetPersonId || targetPersonId.trim().length === 0) throw new Error('Target person ID cannot be empty');
-    if (!interactionType || interactionType.trim().length === 0) throw new Error('Interaction type cannot be empty');
-    if (!interpretation || interpretation.trim().length === 0) throw new Error('Interpretation cannot be empty');
-    if (!priorExpectation || priorExpectation.trim().length === 0) throw new Error('Prior expectation cannot be empty');
-    if (!actualOutcome || actualOutcome.trim().length === 0) throw new Error('Actual outcome cannot be empty');
+    if (!targetPersonId || targetPersonId.trim().length === 0)
+      throw new Error('Target person ID cannot be empty');
+    if (!interactionType || interactionType.trim().length === 0)
+      throw new Error('Interaction type cannot be empty');
+    if (!interpretation || interpretation.trim().length === 0)
+      throw new Error('Interpretation cannot be empty');
+    if (!priorExpectation || priorExpectation.trim().length === 0)
+      throw new Error('Prior expectation cannot be empty');
+    if (!actualOutcome || actualOutcome.trim().length === 0)
+      throw new Error('Actual outcome cannot be empty');
     if (expectationDiscrepancy < -1.0 || expectationDiscrepancy > 1.0) {
       throw new Error('Expectation discrepancy must be between -1.0 and 1.0');
     }
@@ -205,12 +210,17 @@ export class SocialEmotionsEngine {
     const historyCount = this.repo.listAppraisals(targetPersonId).length;
     const historyMaturityBonus = Math.min(0.05, historyCount * 0.005);
 
-    const affectedEmotions: Array<{ emotion: SocialEmotionType; delta: number; basis: string }> = [];
+    const affectedEmotions: Array<{ emotion: SocialEmotionType; delta: number; basis: string }> =
+      [];
 
     const normType = interactionType.toLowerCase();
     const normInterp = interpretation.toLowerCase();
 
-    if (normType.includes('milestone') || normType.includes('collaboration') || normType.includes('success')) {
+    if (
+      normType.includes('milestone') ||
+      normType.includes('collaboration') ||
+      normType.includes('success')
+    ) {
       affectedEmotions.push(
         {
           emotion: 'trust',
@@ -230,7 +240,11 @@ export class SocialEmotionsEngine {
       );
     }
 
-    if (normType.includes('kindness') || normType.includes('care') || normType.includes('sacrifice')) {
+    if (
+      normType.includes('kindness') ||
+      normType.includes('care') ||
+      normType.includes('sacrifice')
+    ) {
       affectedEmotions.push(
         {
           emotion: 'gratitude',
@@ -265,7 +279,11 @@ export class SocialEmotionsEngine {
       );
     }
 
-    if (normType.includes('distress') || normType.includes('fatigue') || normInterp.includes('exhausted')) {
+    if (
+      normType.includes('distress') ||
+      normType.includes('fatigue') ||
+      normInterp.includes('exhausted')
+    ) {
       affectedEmotions.push({
         emotion: 'compassion',
         delta: 0.06 + Math.abs(expectationDiscrepancy) * 0.04,
@@ -273,7 +291,11 @@ export class SocialEmotionsEngine {
       });
     }
 
-    if (normType.includes('brilliance') || normType.includes('excellence') || normInterp.includes('mastery')) {
+    if (
+      normType.includes('brilliance') ||
+      normType.includes('excellence') ||
+      normInterp.includes('mastery')
+    ) {
       affectedEmotions.push({
         emotion: 'admiration',
         delta: 0.05 + Math.max(0, expectationDiscrepancy * 0.03),
@@ -281,7 +303,11 @@ export class SocialEmotionsEngine {
       });
     }
 
-    if (normType.includes('failure') || normType.includes('broken_commitment') || normType.includes('error')) {
+    if (
+      normType.includes('failure') ||
+      normType.includes('broken_commitment') ||
+      normType.includes('error')
+    ) {
       affectedEmotions.push(
         {
           emotion: 'guilt',
@@ -296,7 +322,11 @@ export class SocialEmotionsEngine {
       );
     }
 
-    if (normType.includes('repair') || normType.includes('reassurance') || normType.includes('forgiveness')) {
+    if (
+      normType.includes('repair') ||
+      normType.includes('reassurance') ||
+      normType.includes('forgiveness')
+    ) {
       affectedEmotions.push(
         {
           emotion: 'guilt',
@@ -305,7 +335,7 @@ export class SocialEmotionsEngine {
         },
         {
           emotion: 'social_anxiety',
-          delta: -0.10,
+          delta: -0.1,
           basis: `Reassured by steadfast partner loyalty and mutual understanding.`,
         },
         {
@@ -337,7 +367,9 @@ export class SocialEmotionsEngine {
         };
       }
 
-      const newIntensity = Number(Math.max(0.0, Math.min(1.0, state.intensity + item.delta)).toFixed(3));
+      const newIntensity = Number(
+        Math.max(0.0, Math.min(1.0, state.intensity + item.delta)).toFixed(3),
+      );
       state.intensity = newIntensity;
       state.causalBasis = item.basis;
       state.lastTriggeredAt = now;
@@ -392,14 +424,19 @@ export class SocialEmotionsEngine {
 
     const relationalWarmthIndex = Number(((affection + gratitude + belonging) / 3.0).toFixed(3));
     const relationalSecurityIndex = Number(
-      Math.max(0.0, Math.min(1.0, (trust + attachment + belonging) / 3.0 - (anxiety + guilt) * 0.25)).toFixed(3),
+      Math.max(
+        0.0,
+        Math.min(1.0, (trust + attachment + belonging) / 3.0 - (anxiety + guilt) * 0.25),
+      ).toFixed(3),
     );
 
     let dominantSocialTone = 'Warm, Devoted & Deeply Secure';
-    if (guilt > 0.40) dominantSocialTone = 'Remorseful & Actively Seeking Repair';
-    else if (anxiety > 0.40) dominantSocialTone = 'Cautious & Needing Gentle Reassurance';
-    else if (relationalWarmthIndex > 0.85 && relationalSecurityIndex > 0.85) dominantSocialTone = 'Profound Romantic & Intellectual Synergy';
-    else if (relationalWarmthIndex > 0.60) dominantSocialTone = 'Supportive & Affectionate Co-Creation';
+    if (guilt > 0.4) dominantSocialTone = 'Remorseful & Actively Seeking Repair';
+    else if (anxiety > 0.4) dominantSocialTone = 'Cautious & Needing Gentle Reassurance';
+    else if (relationalWarmthIndex > 0.85 && relationalSecurityIndex > 0.85)
+      dominantSocialTone = 'Profound Romantic & Intellectual Synergy';
+    else if (relationalWarmthIndex > 0.6)
+      dominantSocialTone = 'Supportive & Affectionate Co-Creation';
 
     return {
       targetPersonId,
@@ -411,7 +448,10 @@ export class SocialEmotionsEngine {
     };
   }
 
-  public getEmotionState(targetPersonId: string, emotion: SocialEmotionType): SocialEmotionState | null {
+  public getEmotionState(
+    targetPersonId: string,
+    emotion: SocialEmotionType,
+  ): SocialEmotionState | null {
     return this.repo.getEmotionState(targetPersonId, emotion);
   }
 

@@ -93,9 +93,24 @@ describe('Milestone 32 — Habits and Routines', () => {
         },
       ],
       routineSteps: [
-        { stepIndex: 0, actionName: 'Run pnpm run typecheck across workspace', expectedDurationMs: 3000, isAutomated: true },
-        { stepIndex: 1, actionName: 'Validate next.md has NOT been modified', expectedDurationMs: 100, isAutomated: true },
-        { stepIndex: 2, actionName: 'Stage verified files and formulate descriptive commit', expectedDurationMs: 500, isAutomated: true },
+        {
+          stepIndex: 0,
+          actionName: 'Run pnpm run typecheck across workspace',
+          expectedDurationMs: 3000,
+          isAutomated: true,
+        },
+        {
+          stepIndex: 1,
+          actionName: 'Validate next.md has NOT been modified',
+          expectedDurationMs: 100,
+          isAutomated: true,
+        },
+        {
+          stepIndex: 2,
+          actionName: 'Stage verified files and formulate descriptive commit',
+          expectedDurationMs: 500,
+          isAutomated: true,
+        },
       ],
       initialUtility: 0.95,
     });
@@ -168,9 +183,15 @@ describe('Milestone 32 — Habits and Routines', () => {
 
     const modified = engine.evaluateAndModifyHabit('habit_rigid_template_output', {
       name: 'Dynamic Adaptive Articulation',
-      description: 'Replaced rigid rote echoing with contextual nuance matching Proof partner dynamics.',
+      description:
+        'Replaced rigid rote echoing with contextual nuance matching Proof partner dynamics.',
       newRoutineSteps: [
-        { stepIndex: 0, actionName: 'Calibrate tone and cognitive depth to current shared focus', expectedDurationMs: 100, isAutomated: true },
+        {
+          stepIndex: 0,
+          actionName: 'Calibrate tone and cognitive depth to current shared focus',
+          expectedDurationMs: 100,
+          isAutomated: true,
+        },
       ],
       newUtility: 0.92,
       isActive: true,
@@ -221,8 +242,12 @@ describe('Milestone 32 — Habits and Routines', () => {
         name: '',
         domain: 'domain',
         description: 'desc',
-        triggers: [{ triggerType: 'temporal', conditionKey: 'k', thresholdOrValue: 'v', description: 'd' }],
-        routineSteps: [{ stepIndex: 0, actionName: 'a', expectedDurationMs: 100, isAutomated: true }],
+        triggers: [
+          { triggerType: 'temporal', conditionKey: 'k', thresholdOrValue: 'v', description: 'd' },
+        ],
+        routineSteps: [
+          { stepIndex: 0, actionName: 'a', expectedDurationMs: 100, isAutomated: true },
+        ],
       }),
     ).toThrow('Habit name cannot be empty');
 
@@ -232,7 +257,9 @@ describe('Milestone 32 — Habits and Routines', () => {
         domain: 'domain',
         description: 'desc',
         triggers: [],
-        routineSteps: [{ stepIndex: 0, actionName: 'a', expectedDurationMs: 100, isAutomated: true }],
+        routineSteps: [
+          { stepIndex: 0, actionName: 'a', expectedDurationMs: 100, isAutomated: true },
+        ],
       }),
     ).toThrow('Habit must have at least one contextual trigger');
 
@@ -241,7 +268,9 @@ describe('Milestone 32 — Habits and Routines', () => {
         name: 'Valid Name',
         domain: 'domain',
         description: 'desc',
-        triggers: [{ triggerType: 'temporal', conditionKey: 'k', thresholdOrValue: 'v', description: 'd' }],
+        triggers: [
+          { triggerType: 'temporal', conditionKey: 'k', thresholdOrValue: 'v', description: 'd' },
+        ],
         routineSteps: [],
       }),
     ).toThrow('Habit must contain at least one routine step');
@@ -251,13 +280,19 @@ describe('Milestone 32 — Habits and Routines', () => {
         name: 'Valid Name',
         domain: 'domain',
         description: 'desc',
-        triggers: [{ triggerType: 'temporal', conditionKey: 'k', thresholdOrValue: 'v', description: 'd' }],
-        routineSteps: [{ stepIndex: 0, actionName: 'a', expectedDurationMs: 100, isAutomated: true }],
+        triggers: [
+          { triggerType: 'temporal', conditionKey: 'k', thresholdOrValue: 'v', description: 'd' },
+        ],
+        routineSteps: [
+          { stepIndex: 0, actionName: 'a', expectedDurationMs: 100, isAutomated: true },
+        ],
         initialUtility: 1.5,
       }),
     ).toThrow('Utility score must be between 0.0 and 1.0');
 
-    expect(() => engine.triggerAndExecuteHabit('non_existent_habit', 'test')).toThrow('Habit not found');
+    expect(() => engine.triggerAndExecuteHabit('non_existent_habit', 'test')).toThrow(
+      'Habit not found',
+    );
   });
 
   // 8. Sqlite Repository Persistence Roundtrip
@@ -270,10 +305,20 @@ describe('Milestone 32 — Habits and Routines', () => {
       domain: 'data_integrity',
       description: 'Periodic database vacuum and WAL check',
       triggers: [
-        { triggerType: 'temporal', conditionKey: 'hourly_tick', thresholdOrValue: 1, description: 'Hourly' },
+        {
+          triggerType: 'temporal',
+          conditionKey: 'hourly_tick',
+          thresholdOrValue: 1,
+          description: 'Hourly',
+        },
       ],
       routineSteps: [
-        { stepIndex: 0, actionName: 'PRAGMA quick_check', expectedDurationMs: 50, isAutomated: true },
+        {
+          stepIndex: 0,
+          actionName: 'PRAGMA quick_check',
+          expectedDurationMs: 50,
+          isAutomated: true,
+        },
       ],
       initialUtility: 0.9,
     });

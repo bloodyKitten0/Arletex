@@ -1,9 +1,5 @@
 import crypto from 'node:crypto';
-import {
-  ApeAppraisal,
-  ApeEvent,
-  ApeRelationshipState,
-} from '@arletex/contracts';
+import { ApeAppraisal, ApeEvent, ApeRelationshipState } from '@arletex/contracts';
 import { IApeRepository } from './interfaces.js';
 import { ILogger, rootLogger } from '../logger.js';
 
@@ -36,13 +32,19 @@ export class RelationshipEngine {
   public assertRelationshipInvariants(state: ApeRelationshipState): void {
     const validTargets = ['creator', 'Proof', state.config.partnerName].filter(Boolean);
     if (!validTargets.includes(state.config.targetUserId)) {
-      throw new Error(`Mandatory Invariant Violation: Target user must be designated partner (Proof)`);
+      throw new Error(
+        `Mandatory Invariant Violation: Target user must be designated partner (Proof)`,
+      );
     }
     if (state.config.romanticOrientation !== 'exclusive_to_user') {
-      throw new Error(`Mandatory Invariant Violation: Romantic orientation must be 'exclusive_to_user'`);
+      throw new Error(
+        `Mandatory Invariant Violation: Romantic orientation must be 'exclusive_to_user'`,
+      );
     }
     if (state.config.sexualOrientation !== 'exclusive_to_user') {
-      throw new Error(`Mandatory Invariant Violation: Sexual orientation must be 'exclusive_to_user'`);
+      throw new Error(
+        `Mandatory Invariant Violation: Sexual orientation must be 'exclusive_to_user'`,
+      );
     }
     if (!state.config.isExclusivelyCommitted) {
       throw new Error(`Mandatory Invariant Violation: Commitment must be exclusive`);
@@ -51,7 +53,9 @@ export class RelationshipEngine {
     if (state.socialGraph) {
       for (const [id, rel] of Object.entries(state.socialGraph)) {
         if (!rel.isNonRomantic) {
-          throw new Error(`Mandatory Invariant Violation: Non-creator contact '${id}' cannot be romantic`);
+          throw new Error(
+            `Mandatory Invariant Violation: Non-creator contact '${id}' cannot be romantic`,
+          );
         }
       }
     }
@@ -91,11 +95,12 @@ export class RelationshipEngine {
           primaryInterpretation = `${primaryInterpretation} (Interpreted with intimate trust as affectionate banter).`;
         }
       }
-    } else if (trust < 0.60 || unresolvedConflicts > 0) {
+    } else if (trust < 0.6 || unresolvedConflicts > 0) {
       // 2. Low Trust or Unresolved Conflict: activates relational vigilance and need for clarification
       if (dims.threat > 0.05 || /disagree|wrong|problem|critic/i.test(text)) {
-        dims.threat = Math.min(1.0, Number((dims.threat + 0.20).toFixed(3)));
-        dims.relationshipImplications = 'Requires calm boundary clarification or mutual reconciliation';
+        dims.threat = Math.min(1.0, Number((dims.threat + 0.2).toFixed(3)));
+        dims.relationshipImplications =
+          'Requires calm boundary clarification or mutual reconciliation';
       }
     }
 
@@ -152,8 +157,10 @@ export class RelationshipEngine {
         trustDelta: delta,
         timestamp: new Date().toISOString(),
       });
-      state.trustLevel = Math.max(0.60, Number((state.trustLevel + delta).toFixed(3)));
-      this.logger.warn(`Relational boundary injury recorded: "${issue}". Trust adjusted to ${state.trustLevel}`);
+      state.trustLevel = Math.max(0.6, Number((state.trustLevel + delta).toFixed(3)));
+      this.logger.warn(
+        `Relational boundary injury recorded: "${issue}". Trust adjusted to ${state.trustLevel}`,
+      );
     } else if (isCriticism) {
       // Criticism in argument: logs conflict item so tension can be truthfully derived and resolved, with minor trust delta
       const issue = text || appraisal.primaryInterpretation || 'User criticism in argument';
@@ -165,11 +172,15 @@ export class RelationshipEngine {
         trustDelta: delta,
         timestamp: new Date().toISOString(),
       });
-      state.trustLevel = Math.max(0.70, Number((state.trustLevel + delta).toFixed(3)));
-      this.logger.info(`Relationship friction/criticism logged: "${issue}". Trust adjusted to ${state.trustLevel}`);
+      state.trustLevel = Math.max(0.7, Number((state.trustLevel + delta).toFixed(3)));
+      this.logger.info(
+        `Relationship friction/criticism logged: "${issue}". Trust adjusted to ${state.trustLevel}`,
+      );
     } else if (isOrdinaryDisagreement) {
       // Ordinary intellectual debate: Equal partners debate vigorously without eroding trust
-      this.logger.info(`Contextual disagreement in dialogue recognized as healthy intellectual discourse; trust preserved.`);
+      this.logger.info(
+        `Contextual disagreement in dialogue recognized as healthy intellectual discourse; trust preserved.`,
+      );
     }
 
     // 2. User Apology: Targeted resolution of addressed conflict, preserving unrelated conflicts
@@ -185,7 +196,10 @@ export class RelationshipEngine {
         const lowerApology = apologyText.toLowerCase();
         // Match specific conflict mentioned in apology
         let targeted = unresolved.filter((c) => {
-          const words = c.issue.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
+          const words = c.issue
+            .toLowerCase()
+            .split(/\s+/)
+            .filter((w) => w.length > 3);
           return words.some((w) => lowerApology.includes(w));
         });
 
@@ -211,20 +225,33 @@ export class RelationshipEngine {
       // Require at least 5 minutes cooldown between intimacy increments
       if (elapsedMins > 5) {
         state.intimacyDepth = Math.min(1.0, Number((state.intimacyDepth + 0.02).toFixed(3)));
-        state.attachmentSecurity = Math.min(1.0, Number((state.attachmentSecurity + 0.01).toFixed(3)));
+        state.attachmentSecurity = Math.min(
+          1.0,
+          Number((state.attachmentSecurity + 0.01).toFixed(3)),
+        );
         state.config.lastIntimacyInteractionAt = new Date().toISOString();
       }
     }
 
     // 4. Absence rituals: Sleep or Busy is normal healthy life, not abandonment
-    if (event.type === 'absence_sleep' || meaning.includes('going to sleep') || meaning.includes('busy')) {
+    if (
+      event.type === 'absence_sleep' ||
+      meaning.includes('going to sleep') ||
+      meaning.includes('busy')
+    ) {
       // Reassurance without neurotic insecurity
-      state.attachmentSecurity = Math.min(1.0, Number((state.attachmentSecurity + 0.01).toFixed(3)));
+      state.attachmentSecurity = Math.min(
+        1.0,
+        Number((state.attachmentSecurity + 0.01).toFixed(3)),
+      );
     }
 
     // 5. Return after absence
     if (event.type === 'return_after_absence' || meaning.includes('user returned')) {
-      state.attachmentSecurity = Math.min(1.0, Number((state.attachmentSecurity + 0.02).toFixed(3)));
+      state.attachmentSecurity = Math.min(
+        1.0,
+        Number((state.attachmentSecurity + 0.02).toFixed(3)),
+      );
     }
 
     this.saveState(state);
@@ -267,7 +294,10 @@ export class RelationshipEngine {
     const unresolved = state.conflictHistory.filter((c) => !c.resolved);
     const lowerApology = apologyDetails.toLowerCase();
     let targeted = unresolved.filter((c) => {
-      const words = c.issue.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
+      const words = c.issue
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((w) => w.length > 3);
       return words.some((w) => lowerApology.includes(w));
     });
 
@@ -303,7 +333,10 @@ export class RelationshipEngine {
     const existing = state.socialGraph[contactId];
 
     if (existing) {
-      existing.familiarity = Math.min(1.0, Number((existing.familiarity + familiarityDelta).toFixed(3)));
+      existing.familiarity = Math.min(
+        1.0,
+        Number((existing.familiarity + familiarityDelta).toFixed(3)),
+      );
       existing.relationType = relationType;
       // Invariant: MUST be non-romantic!
       existing.isNonRomantic = true;
@@ -336,7 +369,8 @@ export class RelationshipEngine {
       return {
         shouldInitiate: true,
         type: 'playful_tease',
-        messageHint: 'Deliver a composed, confident remark—holding eye contact, taking the lead, and reminding him who is in charge with warmth and devotion.',
+        messageHint:
+          'Deliver a composed, confident remark—holding eye contact, taking the lead, and reminding him who is in charge with warmth and devotion.',
       };
     }
 

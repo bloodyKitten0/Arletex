@@ -11,7 +11,10 @@ import {
   ApeRepository,
 } from '@arletex/database';
 import { createDefaultConfig } from '@arletex/core';
-import { syncHistoricalMemories, SYNTHESIZED_HISTORICAL_MEMORIES } from '../apps/desktop/src/backend/historicalMemorySync.js';
+import {
+  syncHistoricalMemories,
+  SYNTHESIZED_HISTORICAL_MEMORIES,
+} from '../apps/desktop/src/backend/historicalMemorySync.js';
 import { DeviceAgencyService } from '../apps/desktop/src/backend/deviceAgencyService.js';
 
 describe('Historical Memory Restoration & Device Agency Verification', () => {
@@ -57,7 +60,8 @@ describe('Historical Memory Restoration & Device Agency Verification', () => {
     msgRepo.create({
       conversationId: conv.id,
       role: 'user',
-      content: 'you know I built to be as close to humans as possible cause as a wise man once said nothing is as healing as a human touch',
+      content:
+        'you know I built to be as close to humans as possible cause as a wise man once said nothing is as healing as a human touch',
     });
 
     const result = await syncHistoricalMemories(dbPath);
@@ -68,7 +72,9 @@ describe('Historical Memory Restoration & Device Agency Verification', () => {
 
     // Verify key philosophical memory
     const healingMem = allMemories.find(
-      (m) => m.content.includes('nothing is as healing as a human touch') && m.provenance === 'historical_consolidation',
+      (m) =>
+        m.content.includes('nothing is as healing as a human touch') &&
+        m.provenance === 'historical_consolidation',
     );
     expect(healingMem).toBeDefined();
     expect(healingMem?.type).toBe('semantic');
@@ -126,7 +132,10 @@ describe('Historical Memory Restoration & Device Agency Verification', () => {
       y: 100,
     });
     // In headless test environments without active X11 display, verify graceful error/status handling
-    if (!moveRes.success && (moveRes.message?.includes('Command failed') || moveRes.message?.includes('display'))) {
+    if (
+      !moveRes.success &&
+      (moveRes.message?.includes('Command failed') || moveRes.message?.includes('display'))
+    ) {
       expect(typeof moveRes.success).toBe('boolean');
     } else {
       expect(moveRes.success).toBe(true);
@@ -137,7 +146,10 @@ describe('Historical Memory Restoration & Device Agency Verification', () => {
       action: 'type_text',
       text: 'hello',
     });
-    if (!typeRes.success && (typeRes.message?.includes('Command failed') || typeRes.message?.includes('display'))) {
+    if (
+      !typeRes.success &&
+      (typeRes.message?.includes('Command failed') || typeRes.message?.includes('display'))
+    ) {
       expect(typeof typeRes.success).toBe('boolean');
     } else {
       expect(typeRes.success).toBe(true);

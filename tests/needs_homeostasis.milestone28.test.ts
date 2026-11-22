@@ -2,9 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs';
-import {
-  ResourceAvailabilityMetrics,
-} from '@arletex/contracts';
+import { ResourceAvailabilityMetrics } from '@arletex/contracts';
 import {
   createDefaultConfig,
   HomeostasisEngine,
@@ -87,7 +85,7 @@ describe('Milestone 28 — Needs, Drives and Homeostasis', () => {
     const highLoadMetrics: ResourceAvailabilityMetrics = {
       ramAvailableBytes: 1024 * 1024 * 512,
       ramUsagePercent: 92.0, // High RAM pressure
-      cpuLoadAverage: 4.8,  // High CPU load
+      cpuLoadAverage: 4.8, // High CPU load
       diskFreeBytes: 1024 * 1024 * 1024 * 20,
       contextWindowRemainingTokens: 800,
       activeProcessCount: 14,
@@ -190,11 +188,7 @@ describe('Milestone 28 — Needs, Drives and Homeostasis', () => {
     }).toThrow(/fabricated biological sensation/);
 
     expect(() => {
-      engine.satisfyNeed(
-        'operational_integrity',
-        'Drank water to quench thirst and sweating',
-        0.3,
-      );
+      engine.satisfyNeed('operational_integrity', 'Drank water to quench thirst and sweating', 0.3);
     }).toThrow(/fabricated biological sensation/);
 
     // Negative invariant: invalid relief bounds
@@ -219,7 +213,11 @@ describe('Milestone 28 — Needs, Drives and Homeostasis', () => {
     sqliteRepo.saveNeed(knNeed);
 
     sqlEngine.generateDrives();
-    sqlEngine.satisfyNeed('knowledge_coherence', 'Reconciled conflicting epistemic propositions', 0.4);
+    sqlEngine.satisfyNeed(
+      'knowledge_coherence',
+      'Reconciled conflicting epistemic propositions',
+      0.4,
+    );
 
     // Reload fresh engine on same SQLite database
     const freshEngine = new HomeostasisEngine(sqliteRepo);
@@ -230,7 +228,9 @@ describe('Milestone 28 — Needs, Drives and Homeostasis', () => {
     expect(drives.some((d) => d.needCategory === 'knowledge_coherence')).toBe(true);
 
     const resolutions = freshEngine.listResolutions();
-    expect(resolutions.some((r) => r.actionTaken.includes('Reconciled conflicting epistemic'))).toBe(true);
+    expect(
+      resolutions.some((r) => r.actionTaken.includes('Reconciled conflicting epistemic')),
+    ).toBe(true);
   });
 
   // 9. Desktop REST API Integration
@@ -299,7 +299,8 @@ describe('Milestone 28 — Needs, Drives and Homeostasis', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         category: 'memory_consolidation',
-        actionTaken: 'Executed vector embedding index compaction and removed unpinned temporary nodes',
+        actionTaken:
+          'Executed vector embedding index compaction and removed unpinned temporary nodes',
         reliefAmount: 0.3,
         freedBytes: 1024 * 1024 * 12,
       }),

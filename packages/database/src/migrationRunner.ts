@@ -25,9 +25,7 @@ export class MigrationRunner {
       const appliedRows = appliedStmt.all() as Array<{ name: string }>;
       const appliedSet = new Set(appliedRows.map((r) => r.name));
 
-      const pending = MIGRATIONS.filter((m) => !appliedSet.has(m.name)).sort(
-        (a, b) => a.id - b.id,
-      );
+      const pending = MIGRATIONS.filter((m) => !appliedSet.has(m.name)).sort((a, b) => a.id - b.id);
 
       if (pending.length === 0) {
         this.logger.debug('Database is up to date. No pending migrations.');

@@ -169,7 +169,10 @@ export class GlobalCognitiveIntegrationEngine {
       subsystem: 'attention',
       changeType: 'updated',
       summary: `Salience biased toward stimulus "${input.eventType}" due to affective arousal and active goal relevance.`,
-      payload: { boostedSalience: activeFocus?.allocatedFocusPercent ?? 0.85, focusSubsystem: input.originSubsystem },
+      payload: {
+        boostedSalience: activeFocus?.allocatedFocusPercent ?? 0.85,
+        focusSubsystem: input.originSubsystem,
+      },
     };
     phaseExecutions.push({
       phase: 'attentional_modulation',
@@ -228,7 +231,8 @@ export class GlobalCognitiveIntegrationEngine {
 
     // Phase 5: Metacognitive Reflection & Calibration
     subsystemsInvolved.add('metacognition');
-    const contradictions = this.metacognitionEngine?.listContradictions({ status: 'detected' }) || [];
+    const contradictions =
+      this.metacognitionEngine?.listContradictions({ status: 'detected' }) || [];
     const activeAssessments = this.metacognitionEngine?.listAssessments({ limit: 1 }) || [];
     const calibratedConfidence = activeAssessments[0]?.calibratedConfidence ?? 0.92;
     const phase5Time = new Date(startTime + 10).toISOString();
@@ -251,9 +255,13 @@ export class GlobalCognitiveIntegrationEngine {
     const totalLatencyMs = Math.max(12, endTime - startTime);
 
     const currentAffect = this.apeStateAccessor ? this.apeStateAccessor() : undefined;
-    const activeEmotionName = currentAffect?.activeEmotions?.[0]?.name || currentAffect?.currentMood || 'focused';
-    const activeGoalCount = motState?.goals?.filter((g: any) => g.status === 'active' || g.status === 'committed')?.length || 1;
-    const epistemicUncertainty = contradictions.length > 0 ? Math.min(1.0, 0.15 + contradictions.length * 0.1) : 0.10;
+    const activeEmotionName =
+      currentAffect?.activeEmotions?.[0]?.name || currentAffect?.currentMood || 'focused';
+    const activeGoalCount =
+      motState?.goals?.filter((g: any) => g.status === 'active' || g.status === 'committed')
+        ?.length || 1;
+    const epistemicUncertainty =
+      contradictions.length > 0 ? Math.min(1.0, 0.15 + contradictions.length * 0.1) : 0.1;
 
     const cycle: GlobalCognitiveCycleEvent = {
       id: cycleId,
@@ -294,11 +302,14 @@ export class GlobalCognitiveIntegrationEngine {
     const trustScore = relState?.trustLevel ?? 0.98;
     const intimacyScore = relState?.intimacyDepth ?? 0.95;
 
-    const contradictions = this.metacognitionEngine?.listContradictions({ status: 'detected' }) || [];
+    const contradictions =
+      this.metacognitionEngine?.listContradictions({ status: 'detected' }) || [];
     const activeContradictionCount = contradictions.length;
 
     const currentFocus = this.attentionEngine?.getActiveFocus();
-    const focusTopic = currentFocus?.title || (this.attentionEngine ? 'Focal Task Execution' : 'Master Autonomous Roadmap Execution');
+    const focusTopic =
+      currentFocus?.title ||
+      (this.attentionEngine ? 'Focal Task Execution' : 'Master Autonomous Roadmap Execution');
     const salienceScore = currentFocus?.allocatedFocusPercent ?? 0.95;
 
     const motState = this.motivationalEngine?.getState();
@@ -320,16 +331,19 @@ export class GlobalCognitiveIntegrationEngine {
     const calibratedConfidence = activeAssessments[0]?.calibratedConfidence ?? 0.94;
 
     const workingMemoryActiveCount = this.memoryRepo
-      ? (typeof this.memoryRepo.count === 'function'
-          ? this.memoryRepo.count()
-          : typeof this.memoryRepo.list === 'function'
+      ? typeof this.memoryRepo.count === 'function'
+        ? this.memoryRepo.count()
+        : typeof this.memoryRepo.list === 'function'
           ? this.memoryRepo.list().length
-          : 0)
-      : (motState ? 0 : 7);
+          : 0
+      : motState
+        ? 0
+        : 7;
 
     const currentAffect = this.apeStateAccessor ? this.apeStateAccessor() : undefined;
     const pad = currentAffect?.pad || { pleasure: 0.7, arousal: 0.4, dominance: 0.6 };
-    const dominantEmotion = currentAffect?.activeEmotions?.[0]?.name || currentAffect?.currentMood || 'focused';
+    const dominantEmotion =
+      currentAffect?.activeEmotions?.[0]?.name || currentAffect?.currentMood || 'focused';
 
     const snapshot: GlobalCognitiveSnapshot = {
       snapshotId: crypto.randomUUID(),
@@ -356,7 +370,9 @@ export class GlobalCognitiveIntegrationEngine {
     };
 
     if (selfModel) {
-      this.logger.debug(`Snapshot unified with self-model: ${selfModel.identityNarrative || 'active'}`);
+      this.logger.debug(
+        `Snapshot unified with self-model: ${selfModel.identityNarrative || 'active'}`,
+      );
     }
 
     this.repo.saveSnapshot(snapshot);

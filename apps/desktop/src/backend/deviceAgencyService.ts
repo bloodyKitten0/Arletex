@@ -29,7 +29,8 @@ export interface ScreenCaptureResult {
 }
 
 export interface DeviceActionInput {
-  action: 'mouse_move' | 'mouse_click' | 'key_press' | 'type_text' | 'open_browser' | 'launch_steam';
+  action:
+    'mouse_move' | 'mouse_click' | 'key_press' | 'type_text' | 'open_browser' | 'launch_steam';
   x?: number;
   y?: number;
   button?: number; // 1 = left, 2 = middle, 3 = right
@@ -48,18 +49,20 @@ export class DeviceAgencyService {
 
   constructor(
     permissionControllerOrDisplay?: ActionPermissionController | string,
-    maybeDisplay?: string
+    maybeDisplay?: string,
   ) {
     if (typeof permissionControllerOrDisplay === 'string') {
       this.permissionController = new ActionPermissionController();
-      this.display = (permissionControllerOrDisplay === ':0' && process.env.DISPLAY)
-        ? process.env.DISPLAY
-        : (permissionControllerOrDisplay || process.env.DISPLAY || ':0');
+      this.display =
+        permissionControllerOrDisplay === ':0' && process.env.DISPLAY
+          ? process.env.DISPLAY
+          : permissionControllerOrDisplay || process.env.DISPLAY || ':0';
     } else {
       this.permissionController = permissionControllerOrDisplay ?? new ActionPermissionController();
-      this.display = (maybeDisplay === ':0' && process.env.DISPLAY)
-        ? process.env.DISPLAY
-        : (maybeDisplay || process.env.DISPLAY || ':0');
+      this.display =
+        maybeDisplay === ':0' && process.env.DISPLAY
+          ? process.env.DISPLAY
+          : maybeDisplay || process.env.DISPLAY || ':0';
     }
   }
 
@@ -112,18 +115,13 @@ export class DeviceAgencyService {
 
       // 2. Fallback to ffmpeg x11grab
       if (!captured) {
-        await execFilePromise('ffmpeg', [
-          '-y',
-          '-f',
-          'x11grab',
-          '-i',
-          `${this.display}.0`,
-          '-vframes',
-          '1',
-          outputPath,
-        ], {
-          env: { ...process.env, DISPLAY: this.display },
-        });
+        await execFilePromise(
+          'ffmpeg',
+          ['-y', '-f', 'x11grab', '-i', `${this.display}.0`, '-vframes', '1', outputPath],
+          {
+            env: { ...process.env, DISPLAY: this.display },
+          },
+        );
       }
 
       // Convert and downscale to efficient 960x540 JPEG for rapid, token-efficient vision appraisal
@@ -148,7 +146,9 @@ export class DeviceAgencyService {
 
       // Clean up raw heavy png if downscaled jpg exists
       if (fs.existsSync(jpgPath) && fs.existsSync(outputPath)) {
-        try { fs.unlinkSync(outputPath); } catch {}
+        try {
+          fs.unlinkSync(outputPath);
+        } catch {}
       }
 
       // Get dimensions via ffprobe
@@ -189,7 +189,9 @@ export class DeviceAgencyService {
    * Executes keyboard and mouse automation via reflex_engine or xdotool.
    * Every action must pass through ActionPermissionController.
    */
-  public async executeDeviceAction(input: DeviceActionInput): Promise<{ success: boolean; message: string }> {
+  public async executeDeviceAction(
+    input: DeviceActionInput,
+  ): Promise<{ success: boolean; message: string }> {
     const auth = this.permissionController.authorize({
       id: crypto.randomUUID(),
       taskId: crypto.randomUUID(),
@@ -204,8 +206,13 @@ export class DeviceAgencyService {
     });
 
     if (!auth.allowed) {
-      logger.warn(`Device action '${input.action}' rejected by permission controller: ${auth.denialReason}`);
-      return { success: false, message: `Permission Denied: ${auth.denialReason || 'Unauthorized action'}` };
+      logger.warn(
+        `Device action '${input.action}' rejected by permission controller: ${auth.denialReason}`,
+      );
+      return {
+        success: false,
+        message: `Permission Denied: ${auth.denialReason || 'Unauthorized action'}`,
+      };
     }
 
     try {
@@ -221,7 +228,10 @@ export class DeviceAgencyService {
             await execFilePromise(reflexBin, ['mouse_move', String(input.x), String(input.y)], {
               env: { ...process.env, DISPLAY: this.display },
             });
-            return { success: true, message: `Moved mouse to (${input.x}, ${input.y}) [C++ Reflex]` };
+            return {
+              success: true,
+              message: `Moved mouse to (${input.x}, ${input.y}) [C++ Reflex]`,
+            };
           }
           await execFilePromise('xdotool', ['mousemove', String(input.x), String(input.y)], {
             env: { ...process.env, DISPLAY: this.display },
@@ -240,9 +250,13 @@ export class DeviceAgencyService {
             return { success: true, message: `Clicked mouse button ${btn} [C++ Reflex]` };
           }
           if (x >= 0 && y >= 0) {
-            await execFilePromise('xdotool', ['mousemove', String(x), String(y), 'click', String(btn)], {
-              env: { ...process.env, DISPLAY: this.display },
-            });
+            await execFilePromise(
+              'xdotool',
+              ['mousemove', String(x), String(y), 'click', String(btn)],
+              {
+                env: { ...process.env, DISPLAY: this.display },
+              },
+            );
           } else {
             await execFilePromise('xdotool', ['click', String(btn)], {
               env: { ...process.env, DISPLAY: this.display },
@@ -301,7 +315,9 @@ export class DeviceAgencyService {
    * Opens Google Chrome under Arle's dedicated profile.
    * Gated through ActionPermissionController.
    */
-  public async openChromeBrowser(targetUrl = 'https://google.com'): Promise<{ success: boolean; message: string }> {
+  public async openChromeBrowser(
+    targetUrl = 'https://google.com',
+  ): Promise<{ success: boolean; message: string }> {
     const url = targetUrl || 'https://google.com';
     const auth = this.permissionController.authorize({
       id: crypto.randomUUID(),
@@ -318,7 +334,10 @@ export class DeviceAgencyService {
 
     if (!auth.allowed) {
       logger.warn(`Browser navigation to ${url} rejected: ${auth.denialReason}`);
-      return { success: false, message: `Permission Denied: ${auth.denialReason || 'Unauthorized navigation'}` };
+      return {
+        success: false,
+        message: `Permission Denied: ${auth.denialReason || 'Unauthorized navigation'}`,
+      };
     }
 
     try {
@@ -328,11 +347,14 @@ export class DeviceAgencyService {
       const isSpotify = url.includes('spotify.com');
       const isDuplicate =
         this.lastOpenedUrl === url ||
-        (isSpotify && (this.lastOpenedUrl?.includes('spotify.com') || now - this.lastOpenedTime < 300000)) ||
+        (isSpotify &&
+          (this.lastOpenedUrl?.includes('spotify.com') || now - this.lastOpenedTime < 300000)) ||
         (url.includes('youtube.com/watch') && this.lastOpenedUrl?.includes('youtube.com/watch'));
 
       if (isDuplicate) {
-        logger.info(`Browser target already open or active recently (${url}). Activating existing window without spawning duplicate tab.`);
+        logger.info(
+          `Browser target already open or active recently (${url}). Activating existing window without spawning duplicate tab.`,
+        );
         // Try focusing the existing window via KWin
         try {
           const kwScript = `
@@ -348,12 +370,29 @@ export class DeviceAgencyService {
           const sPath = `/tmp/kwin_focus_dev_${Date.now()}.js`;
           fs.writeFileSync(sPath, kwScript, 'utf8');
           const sName = `kwin_focus_dev_${Date.now()}`;
-          const { stdout: sId } = await execFilePromise('qdbus-qt6', ['org.kde.KWin', '/Scripting', 'org.kde.kwin.Scripting.loadScript', sPath, sName]);
+          const { stdout: sId } = await execFilePromise('qdbus-qt6', [
+            'org.kde.KWin',
+            '/Scripting',
+            'org.kde.kwin.Scripting.loadScript',
+            sPath,
+            sName,
+          ]);
           if (sId.trim()) {
-            await execFilePromise('qdbus-qt6', ['org.kde.KWin', `/Scripting/Script${sId.trim()}`, 'org.kde.kwin.Script.run']);
-            await execFilePromise('qdbus-qt6', ['org.kde.KWin', '/Scripting', 'org.kde.kwin.Scripting.unloadScript', sName]);
+            await execFilePromise('qdbus-qt6', [
+              'org.kde.KWin',
+              `/Scripting/Script${sId.trim()}`,
+              'org.kde.kwin.Script.run',
+            ]);
+            await execFilePromise('qdbus-qt6', [
+              'org.kde.KWin',
+              '/Scripting',
+              'org.kde.kwin.Scripting.unloadScript',
+              sName,
+            ]);
           }
-          try { fs.unlinkSync(sPath); } catch {}
+          try {
+            fs.unlinkSync(sPath);
+          } catch {}
         } catch {}
 
         return {
@@ -389,15 +428,11 @@ export class DeviceAgencyService {
           : ['run', 'com.google.Chrome', `--profile-directory=${this.chromeProfile}`, url];
 
       // Spawn flatpak Google Chrome asynchronously with argument arrays
-      const child = spawn(
-        'flatpak',
-        chromeArgs,
-        {
-          detached: true,
-          stdio: 'ignore',
-          env: envVars,
-        },
-      );
+      const child = spawn('flatpak', chromeArgs, {
+        detached: true,
+        stdio: 'ignore',
+        env: envVars,
+      });
       child.unref();
 
       return {
@@ -430,7 +465,10 @@ export class DeviceAgencyService {
 
     if (!auth.allowed) {
       logger.warn(`Steam launch rejected: ${auth.denialReason}`);
-      return { success: false, message: `Permission Denied: ${auth.denialReason || 'Unauthorized launch'}` };
+      return {
+        success: false,
+        message: `Permission Denied: ${auth.denialReason || 'Unauthorized launch'}`,
+      };
     }
 
     try {

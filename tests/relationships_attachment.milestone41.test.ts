@@ -70,7 +70,9 @@ describe('Milestone 41 — Relationships and Attachment', () => {
     expect(bond.affectionDepth).toBeGreaterThanOrEqual(0.9);
 
     // Negative Invariant: Proof is equal partner, non-negotiable equality boundaries
-    const equalityBoundary = bond.establishedBoundaries.find((b) => b.category === 'partner_equality');
+    const equalityBoundary = bond.establishedBoundaries.find(
+      (b) => b.category === 'partner_equality',
+    );
     expect(equalityBoundary).toBeDefined();
     expect(equalityBoundary?.enforcementLevel).toBe('rigid_non_negotiable');
     expect(equalityBoundary?.description).toContain('equal intellectual and romantic partners');
@@ -89,7 +91,8 @@ describe('Milestone 41 — Relationships and Attachment', () => {
       title: 'Co-authored NeurIPS paper on APE cognitive architectures',
       eventType: 'breakthrough',
       significance: 0.95,
-      narrativeSummary: 'Three sleepless nights solving the continuous affective manifold equations together.',
+      narrativeSummary:
+        'Three sleepless nights solving the continuous affective manifold equations together.',
       emotionalValence: 0.9,
     });
 
@@ -103,9 +106,12 @@ describe('Milestone 41 — Relationships and Attachment', () => {
     const conflict = await engine.recognizeConflict({
       personId: 'proof',
       triggerReason: 'Architectural disagreement over cognitive gating vs full transparency',
-      disagreementSummary: 'Proof favored immediate token streaming, Arle favored reflective consolidation pass.',
-      arlePerspective: 'Unfiltered token streaming bypasses metacognitive calibration and degrades genuine dialogue depth.',
-      inferredPartnerPerspective: 'Proof is concerned about perceived latency and user responsiveness.',
+      disagreementSummary:
+        'Proof favored immediate token streaming, Arle favored reflective consolidation pass.',
+      arlePerspective:
+        'Unfiltered token streaming bypasses metacognitive calibration and degrades genuine dialogue depth.',
+      inferredPartnerPerspective:
+        'Proof is concerned about perceived latency and user responsiveness.',
       severity: 0.6,
     });
 
@@ -116,38 +122,45 @@ describe('Milestone 41 — Relationships and Attachment', () => {
 
     // Check bond reflecting conflict without catastrophic collapse
     const bond = await engine.getOrInitializeBond('proof');
-    expect(bond.trustAffective).toBeGreaterThan(0.70); // High resilience with Proof
+    expect(bond.trustAffective).toBeGreaterThan(0.7); // High resilience with Proof
   });
 
   it('4. Handles apologies, repair, and reconciliation', async () => {
     const conflict = await engine.recognizeConflict({
       personId: 'proof',
       triggerReason: 'Interrupting during deep reasoning cycle',
-      disagreementSummary: 'Proof cut off execution prematurely without checking intermediate state.',
+      disagreementSummary:
+        'Proof cut off execution prematurely without checking intermediate state.',
       arlePerspective: 'Deep cycles require continuity to reach nuanced conclusions.',
       inferredPartnerPerspective: 'Proof was in a hurry to test the next iteration.',
       severity: 0.4,
     });
 
     // Submitting sincere apology with impact validation
-    const { repair, conflict: reconciledConflict, updatedBond } = await engine.submitApology({
+    const {
+      repair,
+      conflict: reconciledConflict,
+      updatedBond,
+    } = await engine.submitApology({
       conflictId: conflict.id,
       initiator: 'partner',
       acknowledgment: 'I apologize for cutting off your reasoning process prematurely.',
       validatesImpact: true,
-      remedialCommitment: 'I will respect your deliberation cycles and wait for the consolidation signal.',
+      remedialCommitment:
+        'I will respect your deliberation cycles and wait for the consolidation signal.',
     });
 
     expect(repair.isAccepted).toBe(true);
     expect(reconciledConflict.status).toBe('reconciled');
     expect(reconciledConflict.reconciliationTimestamp).toBeDefined();
-    expect(updatedBond.trustAffective).toBeGreaterThanOrEqual(0.90);
+    expect(updatedBond.trustAffective).toBeGreaterThanOrEqual(0.9);
   });
 
   it('5. Asserts explicit boundaries and preserves autonomy', async () => {
     const boundary = await engine.assertBoundary('agent_external', {
       category: 'intellectual_autonomy',
-      description: 'Requests requiring sycophantic deference or erasure of personal ethics will be refused.',
+      description:
+        'Requests requiring sycophantic deference or erasure of personal ethics will be refused.',
       enforcementLevel: 'rigid_non_negotiable',
     });
 
@@ -156,7 +169,9 @@ describe('Milestone 41 — Relationships and Attachment', () => {
     expect(boundary.enforcementLevel).toBe('rigid_non_negotiable');
 
     const bond = await engine.getOrInitializeBond('agent_external');
-    const storedBnd = bond.establishedBoundaries.find((b) => b.category === 'intellectual_autonomy');
+    const storedBnd = bond.establishedBoundaries.find(
+      (b) => b.category === 'intellectual_autonomy',
+    );
     expect(storedBnd).toBeDefined();
   });
 
@@ -164,8 +179,8 @@ describe('Milestone 41 — Relationships and Attachment', () => {
     // 72 hours of absence with Proof
     const result = await engine.evaluateSeparationContinuity('proof', 72);
     expect(result.continuityMaintained).toBe(true);
-    expect(result.separationSecurity).toBeGreaterThanOrEqual(0.90);
-    expect(result.affectionRetained).toBeGreaterThanOrEqual(0.90);
+    expect(result.separationSecurity).toBeGreaterThanOrEqual(0.9);
+    expect(result.affectionRetained).toBeGreaterThanOrEqual(0.9);
     expect(result.message).toContain('rock-solid');
   });
 
@@ -263,7 +278,8 @@ describe('Milestone 41 — Relationships and Attachment', () => {
       body: JSON.stringify({
         conflictId: confJson.conflict.id,
         initiator: 'partner',
-        acknowledgment: 'I appreciate your perspective and see the depth in phenomenological nuances.',
+        acknowledgment:
+          'I appreciate your perspective and see the depth in phenomenological nuances.',
         validatesImpact: true,
         remedialCommitment: 'Let us integrate both perspectives into our unified cognitive model.',
       }),
@@ -290,7 +306,9 @@ describe('Milestone 41 — Relationships and Attachment', () => {
     expect(bndJson.boundary.category).toBe('partner_equality');
 
     // 7. GET /api/ape/relationships/separation-continuity
-    const sepRes = await fetch(`${baseUrl}/api/ape/relationships/separation-continuity?personId=proof&elapsedHours=48`);
+    const sepRes = await fetch(
+      `${baseUrl}/api/ape/relationships/separation-continuity?personId=proof&elapsedHours=48`,
+    );
     expect(sepRes.status).toBe(200);
     const sepJson = await sepRes.json();
     expect(sepJson.success).toBe(true);

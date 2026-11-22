@@ -1,8 +1,5 @@
 import Database from 'better-sqlite3';
-import {
-  AppraisalInterpretationComparison,
-  assertAppraisalDivergence,
-} from '@arletex/contracts';
+import { AppraisalInterpretationComparison, assertAppraisalDivergence } from '@arletex/contracts';
 import { DatabaseError, IEmotionalAppraisalRepository } from '@arletex/core';
 
 export class SqliteEmotionalAppraisalRepository implements IEmotionalAppraisalRepository {
@@ -39,7 +36,10 @@ export class SqliteEmotionalAppraisalRepository implements IEmotionalAppraisalRe
           comparison.evaluatedAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save appraisal comparison ${comparison.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save appraisal comparison ${comparison.id}: ${err.message}`,
+        err,
+      );
     }
   }
 

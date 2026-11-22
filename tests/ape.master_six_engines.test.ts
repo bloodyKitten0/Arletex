@@ -84,22 +84,32 @@ describe('APE Master Six-Engine Implementation and Cross-Engine Verification Sui
       // Threat must be dampened by high emotional stability (0.85)
       expect(modulated.dimensions.threat).toBeLessThan(initialAppraisal.dimensions.threat);
       // Controllability boosted by assertiveness
-      expect(modulated.dimensions.controllability).toBeGreaterThan(initialAppraisal.dimensions.controllability);
+      expect(modulated.dimensions.controllability).toBeGreaterThan(
+        initialAppraisal.dimensions.controllability,
+      );
       expect(modulated.primaryInterpretation).toContain('composed resolve');
     });
 
     it('evaluates value conflicts: detects violations of autonomy, dignity, and intellectual integrity', () => {
       const personalityEngine = apeService.personalityEngine;
 
-      const autonomyConflict = personalityEngine.evaluateValueConflict('User demands blind obedience and robotic compliance');
+      const autonomyConflict = personalityEngine.evaluateValueConflict(
+        'User demands blind obedience and robotic compliance',
+      );
       expect(autonomyConflict.conflicts).toBe(true);
       expect(autonomyConflict.conflictedValues.map((v) => v.id)).toContain('autonomy');
 
-      const integrityConflict = personalityEngine.evaluateValueConflict('System requested to fabricate facts and falsify evidence');
+      const integrityConflict = personalityEngine.evaluateValueConflict(
+        'System requested to fabricate facts and falsify evidence',
+      );
       expect(integrityConflict.conflicts).toBe(true);
-      expect(integrityConflict.conflictedValues.map((v) => v.id)).toContain('intellectual_integrity');
+      expect(integrityConflict.conflictedValues.map((v) => v.id)).toContain(
+        'intellectual_integrity',
+      );
 
-      const nonConflict = personalityEngine.evaluateValueConflict('Analyze algorithmic computational complexity of chess endings');
+      const nonConflict = personalityEngine.evaluateValueConflict(
+        'Analyze algorithmic computational complexity of chess endings',
+      );
       expect(nonConflict.conflicts).toBe(false);
     });
 
@@ -110,7 +120,11 @@ describe('APE Master Six-Engine Implementation and Cross-Engine Verification Sui
       const originalScore = trait.score;
 
       // Attempt huge jump (+0.50)
-      const updated = personalityEngine.updateTrait('intellectual_depth', 0.50, 'Groundbreaking research completed')!;
+      const updated = personalityEngine.updateTrait(
+        'intellectual_depth',
+        0.5,
+        'Groundbreaking research completed',
+      )!;
       // Max delta step is clamped to 0.03
       expect(updated.score).toBeCloseTo(originalScore + 0.03, 3);
       expect(updated.evidenceCount).toBeGreaterThan(1);
@@ -184,7 +198,9 @@ describe('APE Master Six-Engine Implementation and Cross-Engine Verification Sui
       };
 
       const updated = motEngine.updateNeedsOnEvent(event, appraisal);
-      expect(updated.needs.novelty_curiosity).toBeGreaterThanOrEqual(initialNeeds.novelty_curiosity ?? 0.8);
+      expect(updated.needs.novelty_curiosity).toBeGreaterThanOrEqual(
+        initialNeeds.novelty_curiosity ?? 0.8,
+      );
     });
 
     it('creates, advances, and completes autonomous goals', () => {
@@ -201,12 +217,12 @@ describe('APE Master Six-Engine Implementation and Cross-Engine Verification Sui
       expect(goal.progress).toBe(0.0);
 
       // Advance progress
-      const advanced = motEngine.updateGoalProgress(goal.id, 0.60)!;
-      expect(advanced.progress).toBe(0.60);
+      const advanced = motEngine.updateGoalProgress(goal.id, 0.6)!;
+      expect(advanced.progress).toBe(0.6);
       expect(advanced.status).toBe('active');
 
       // Complete goal
-      const completed = motEngine.updateGoalProgress(goal.id, 0.50)!;
+      const completed = motEngine.updateGoalProgress(goal.id, 0.5)!;
       expect(completed.progress).toBe(1.0);
       expect(completed.status).toBe('completed');
     });
@@ -226,7 +242,11 @@ describe('APE Master Six-Engine Implementation and Cross-Engine Verification Sui
       const motEngine = apeService.motivationalEngine;
       const initiatives = motEngine.generateCandidateInitiatives();
       expect(initiatives.length).toBeGreaterThan(0);
-      expect(initiatives.some((i) => i.includes('Investigate') || i.includes('Analyze') || i.includes('creator'))).toBe(true);
+      expect(
+        initiatives.some(
+          (i) => i.includes('Investigate') || i.includes('Analyze') || i.includes('creator'),
+        ),
+      ).toBe(true);
     });
   });
 
@@ -324,7 +344,10 @@ describe('APE Master Six-Engine Implementation and Cross-Engine Verification Sui
       expect(afterConflict.conflictHistory[0].resolved).toBe(false);
 
       // User apology
-      const result = relEngine.processApology(0.95, 'I was impatient earlier and value your judgment');
+      const result = relEngine.processApology(
+        0.95,
+        'I was impatient earlier and value your judgment',
+      );
       expect(result.resolvedCount).toBe(1);
       expect(result.trustRestored).toBeGreaterThan(0);
 
@@ -369,7 +392,8 @@ describe('APE Master Six-Engine Implementation and Cross-Engine Verification Sui
         engine: 'personality',
         previousState: 'Cautious assertiveness',
         newState: 'Unflinching intellectual composure under public scrutiny',
-        reasoning: 'Demonstrated consistent high performance across complex formal verification suites',
+        reasoning:
+          'Demonstrated consistent high performance across complex formal verification suites',
         confidence: 0.95,
         triggerEventId: 'event-milestone-1',
       });
@@ -435,7 +459,7 @@ describe('APE Master Six-Engine Implementation and Cross-Engine Verification Sui
         category: 'user_interaction',
         type: 'user_disagreement',
         source: 'user',
-        payload: { text: "I disagree with how you designed this module." },
+        payload: { text: 'I disagree with how you designed this module.' },
       });
 
       // Now user apologizes
@@ -473,7 +497,9 @@ describe('APE Master Six-Engine Implementation and Cross-Engine Verification Sui
       expect(master.motivational.needs.novelty_curiosity).toBeGreaterThan(0.8);
 
       // Development: interest acquired
-      expect(master.development.interests.some((i) => i.topic === 'persistent_homology')).toBe(true);
+      expect(master.development.interests.some((i) => i.topic === 'persistent_homology')).toBe(
+        true,
+      );
 
       // Self Model: reflection logged
       expect(master.selfModel.privateReflections.length).toBeGreaterThan(0);
@@ -489,7 +515,7 @@ describe('APE Master Six-Engine Implementation and Cross-Engine Verification Sui
         source: 'arle',
         actor: 'arle',
         eventKind: 'assistant_expression',
-        payload: { text: "I am experiencing such profound joy and delight right now." },
+        payload: { text: 'I am experiencing such profound joy and delight right now.' },
       });
 
       const joyAfter1 = apeRepo.getActiveEmotionById('joy')?.intensity ?? 0.0;
@@ -501,7 +527,7 @@ describe('APE Master Six-Engine Implementation and Cross-Engine Verification Sui
         source: 'arle',
         actor: 'arle',
         eventKind: 'assistant_expression',
-        payload: { text: "I am experiencing such profound joy and delight right now." },
+        payload: { text: 'I am experiencing such profound joy and delight right now.' },
       });
 
       const joyAfter2 = apeRepo.getActiveEmotionById('joy')?.intensity ?? 0.0;
@@ -512,13 +538,20 @@ describe('APE Master Six-Engine Implementation and Cross-Engine Verification Sui
 
     it('Scenario 5: Atomic SQLite persistence: all six engines persist and reload identically after restart', async () => {
       // Modify states in all engines
-      apeService.personalityEngine.addOrUpdateBelief('formal_logic', 'Soundness precedes speed', 0.98);
+      apeService.personalityEngine.addOrUpdateBelief(
+        'formal_logic',
+        'Soundness precedes speed',
+        0.98,
+      );
       apeService.motivationalEngine.createGoal({
         title: 'Long-term Goal',
         description: 'Test goal persistence across app reboot',
         motivation: 'Verification',
       });
-      apeService.selfModelEngine.recordPrivateReflection('Reboot Continuity', 'State survives process exit');
+      apeService.selfModelEngine.recordPrivateReflection(
+        'Reboot Continuity',
+        'State survives process exit',
+      );
       apeService.developmentEngine.recordDevelopmentalMilestone({
         engine: 'development',
         previousState: 'pre-reboot',
@@ -541,10 +574,18 @@ describe('APE Master Six-Engine Implementation and Cross-Engine Verification Sui
       // Verify all 6 engines reloaded accurately
       expect(restoredMaster.affective.isInitialized).toBe(true);
       expect(restoredMaster.personality.beliefs.some((b) => b.topic === 'formal_logic')).toBe(true);
-      expect(restoredMaster.motivational.goals.some((g) => g.title === 'Long-term Goal')).toBe(true);
+      expect(restoredMaster.motivational.goals.some((g) => g.title === 'Long-term Goal')).toBe(
+        true,
+      );
       expect(restoredMaster.relationship.config.isExclusivelyCommitted).toBe(true);
-      expect(restoredMaster.selfModel.privateReflections.some((r) => r.topic === 'Reboot Continuity')).toBe(true);
-      expect(restoredMaster.development.developmentalHistory.some((m) => m.newState === 'post-reboot-ready')).toBe(true);
+      expect(
+        restoredMaster.selfModel.privateReflections.some((r) => r.topic === 'Reboot Continuity'),
+      ).toBe(true);
+      expect(
+        restoredMaster.development.developmentalHistory.some(
+          (m) => m.newState === 'post-reboot-ready',
+        ),
+      ).toBe(true);
 
       newDbService.close();
     });

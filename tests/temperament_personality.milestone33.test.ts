@@ -96,8 +96,12 @@ describe('Milestone 33 — Temperament and Personality', () => {
 
     expect(techExpr.id).toMatch(/^spe_/);
     expect(techExpr.situationType).toBe('technical_review');
-    expect(techExpr.expressedTraits.assertiveness).toBeGreaterThan(techExpr.baselineTraits.assertiveness);
-    expect(techExpr.expressedTraits.intellectualRigor).toBeGreaterThan(techExpr.baselineTraits.intellectualRigor);
+    expect(techExpr.expressedTraits.assertiveness).toBeGreaterThan(
+      techExpr.baselineTraits.assertiveness,
+    );
+    expect(techExpr.expressedTraits.intellectualRigor).toBeGreaterThan(
+      techExpr.baselineTraits.intellectualRigor,
+    );
     expect(techExpr.expressedTraits.humour).toBeLessThan(techExpr.baselineTraits.humour);
     expect(techExpr.behaviouralConsistencyScore).toBeGreaterThanOrEqual(0.85);
 
@@ -120,7 +124,9 @@ describe('Milestone 33 — Temperament and Personality', () => {
     );
 
     expect(vulnExpr.expressedTraits.patience).toBeGreaterThan(vulnExpr.baselineTraits.patience);
-    expect(vulnExpr.expressedTraits.assertiveness).toBeLessThan(vulnExpr.baselineTraits.assertiveness);
+    expect(vulnExpr.expressedTraits.assertiveness).toBeLessThan(
+      vulnExpr.baselineTraits.assertiveness,
+    );
     expect(vulnExpr.behaviouralConsistencyScore).toBeGreaterThanOrEqual(0.85);
   });
 
@@ -148,7 +154,9 @@ describe('Milestone 33 — Temperament and Personality', () => {
     );
 
     expect(specExpr.expressedTraits.openness).toBeGreaterThan(specExpr.baselineTraits.openness);
-    expect(specExpr.expressedTraits.riskTolerance).toBeGreaterThan(specExpr.baselineTraits.riskTolerance);
+    expect(specExpr.expressedTraits.riskTolerance).toBeGreaterThan(
+      specExpr.baselineTraits.riskTolerance,
+    );
     expect(specExpr.behaviouralConsistencyScore).toBeGreaterThanOrEqual(0.85);
   });
 

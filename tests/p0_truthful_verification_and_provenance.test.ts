@@ -342,7 +342,9 @@ describe('Priority 0 — Truthful Verification Contracts & Provenance (P0.1 & P0
 
       // Verify the committed episodic memory provenance in database
       const memories = memoryRepo.list(5);
-      const reflectionMem = memories.find((m) => m.content.includes('Contemplating past chess strategies'));
+      const reflectionMem = memories.find((m) =>
+        m.content.includes('Contemplating past chess strategies'),
+      );
       expect(reflectionMem).toBeDefined();
       expect(reflectionMem?.provenance).toBe('internal_reflection');
       expect(reflectionMem?.provenance).not.toBe('verified_fact');
@@ -400,7 +402,9 @@ describe('Priority 0 — Truthful Verification Contracts & Provenance (P0.1 & P0
         const researchMem = memories.find((m) => m.content.includes('Quantum Computing'));
         expect(researchMem).toBeDefined();
         expect(researchMem?.provenance).toBe('retrieved_source');
-        expect(researchMem?.metadata?.sourceUrl).toBe('https://en.wikipedia.org/wiki/Quantum_computing');
+        expect(researchMem?.metadata?.sourceUrl).toBe(
+          'https://en.wikipedia.org/wiki/Quantum_computing',
+        );
         expect(researchMem?.metadata?.contentHash).toBeDefined();
         expect(typeof researchMem?.metadata?.contentHash).toBe('string');
         expect((researchMem?.metadata?.contentHash as string).length).toBe(64); // SHA-256

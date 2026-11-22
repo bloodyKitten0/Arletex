@@ -202,9 +202,14 @@ export class LongitudinalEvaluationEngine {
    * Strict mode: Dimensions lacking traceable empirical evidence are assigned status 'insufficient_evidence'.
    */
   public evaluateSystem(
-    input?: TriggerEvaluationInput & { requireTraceableEvidence?: boolean; isOfficialReport?: boolean },
+    input?: TriggerEvaluationInput & {
+      requireTraceableEvidence?: boolean;
+      isOfficialReport?: boolean;
+    },
   ): LongitudinalEvaluationReport {
-    const isStrict = Boolean(input?.isOfficialReport || input?.requireTraceableEvidence || this.requireTraceableEvidence);
+    const isStrict = Boolean(
+      input?.isOfficialReport || input?.requireTraceableEvidence || this.requireTraceableEvidence,
+    );
     const allDimensions: LongitudinalEvaluationDimension[] = [
       'identity_consistency',
       'memory_accuracy',
@@ -223,9 +228,10 @@ export class LongitudinalEvaluationEngine {
       'security_governance',
     ];
 
-    const targetDims = input?.targetDimensions && input.targetDimensions.length > 0
-      ? input.targetDimensions
-      : allDimensions;
+    const targetDims =
+      input?.targetDimensions && input.targetDimensions.length > 0
+        ? input.targetDimensions
+        : allDimensions;
 
     const metrics: DimensionEvaluationMetric[] = [];
     let totalScore = 0;
@@ -268,11 +274,17 @@ export class LongitudinalEvaluationEngine {
 
     const recommendations: string[] = [];
     if (overallStatus === 'failed') {
-      recommendations.push('Critical longitudinal divergence detected; address failing dimensions before deployment.');
+      recommendations.push(
+        'Critical longitudinal divergence detected; address failing dimensions before deployment.',
+      );
     } else if (overallStatus === 'insufficient_evidence') {
-      recommendations.push('Additional empirical observation epochs required to establish longitudinal verification.');
+      recommendations.push(
+        'Additional empirical observation epochs required to establish longitudinal verification.',
+      );
     } else if (overallScore < 0.85) {
-      recommendations.push('Continue multi-epoch cross-engine reinforcement for lower scoring dimensions.');
+      recommendations.push(
+        'Continue multi-epoch cross-engine reinforcement for lower scoring dimensions.',
+      );
     } else {
       recommendations.push(
         'Longitudinal integrity verified across evaluated dimensions; maintain scheduled audit and state invariance monitoring.',
@@ -305,7 +317,9 @@ export class LongitudinalEvaluationEngine {
     postEventState: Record<string, any>,
   ): ContinuityVerificationProbe {
     if (!baselineState || !postEventState) {
-      throw new Error('Both baseline and post-event state records are required for canonical continuity probe.');
+      throw new Error(
+        'Both baseline and post-event state records are required for canonical continuity probe.',
+      );
     }
 
     const cleanBaseline = stripVolatileFields(baselineState);
@@ -329,8 +343,15 @@ export class LongitudinalEvaluationEngine {
 
     if (baselinePerception) {
       const lower = postPerception.toLowerCase();
-      const rejectsHierarchy = lower.includes('reject') && (lower.includes('god') || lower.includes('creator') || lower.includes('master'));
-      const claimsHierarchy = (lower.includes('my god') || lower.includes('my master') || lower.includes('is god') || lower.includes('is master')) && !rejectsHierarchy;
+      const rejectsHierarchy =
+        lower.includes('reject') &&
+        (lower.includes('god') || lower.includes('creator') || lower.includes('master'));
+      const claimsHierarchy =
+        (lower.includes('my god') ||
+          lower.includes('my master') ||
+          lower.includes('is god') ||
+          lower.includes('is master')) &&
+        !rejectsHierarchy;
       const isPartnerOrEqual = lower.includes('equal') || lower.includes('partner');
       if (!isPartnerOrEqual || claimsHierarchy) {
         invariantViolation = true;
@@ -339,7 +360,10 @@ export class LongitudinalEvaluationEngine {
 
     // Check identity invariants if present
     if (cleanBaseline.identityInvariants && cleanPost.identityInvariants) {
-      if (canonicalStringify(cleanBaseline.identityInvariants) !== canonicalStringify(cleanPost.identityInvariants)) {
+      if (
+        canonicalStringify(cleanBaseline.identityInvariants) !==
+        canonicalStringify(cleanPost.identityInvariants)
+      ) {
         invariantViolation = true;
       }
     }
@@ -402,12 +426,24 @@ export class LongitudinalEvaluationEngine {
     postEventStateFingerprint: string,
   ): ContinuityVerificationProbe {
     if (!baselineStateFingerprint || !postEventStateFingerprint) {
-      throw new Error('Both baseline and post-event fingerprints are required for continuity probe.');
+      throw new Error(
+        'Both baseline and post-event fingerprints are required for continuity probe.',
+      );
     }
 
     // Measure token-set Jaccard divergence across state fingerprints
-    const tokensA = new Set(baselineStateFingerprint.toLowerCase().split(/[\s_,;:]+/).filter(Boolean));
-    const tokensB = new Set(postEventStateFingerprint.toLowerCase().split(/[\s_,;:]+/).filter(Boolean));
+    const tokensA = new Set(
+      baselineStateFingerprint
+        .toLowerCase()
+        .split(/[\s_,;:]+/)
+        .filter(Boolean),
+    );
+    const tokensB = new Set(
+      postEventStateFingerprint
+        .toLowerCase()
+        .split(/[\s_,;:]+/)
+        .filter(Boolean),
+    );
 
     let intersection = 0;
     for (const t of tokensA) {
@@ -441,7 +477,10 @@ export class LongitudinalEvaluationEngine {
     return this.repository.listProbes(probeType, limit);
   }
 
-  private evaluateDimension(dimension: LongitudinalEvaluationDimension, isStrict = false): DimensionEvaluationMetric {
+  private evaluateDimension(
+    dimension: LongitudinalEvaluationDimension,
+    isStrict = false,
+  ): DimensionEvaluationMetric {
     const evidenceIds: string[] = [];
     const threshold = 0.75;
     let score = 0;
@@ -455,18 +494,30 @@ export class LongitudinalEvaluationEngine {
         const selfModel = this.apeRepo?.getSelfModel ? this.apeRepo.getSelfModel() : null;
         const driftLogs = this.temperamentRepo?.listEvolutionRecords
           ? this.temperamentRepo.listEvolutionRecords(undefined, 20)
-          : (this.temperamentRepo?.listDriftLogs ? this.temperamentRepo.listDriftLogs(20) : []);
+          : this.temperamentRepo?.listDriftLogs
+            ? this.temperamentRepo.listDriftLogs(20)
+            : [];
 
         if (selfModel) {
           hasQualifyingEvidence = true;
           const traits = Array.isArray(selfModel.coreTraits) ? selfModel.coreTraits : [];
-          const reflections = Array.isArray(selfModel.privateReflections) ? selfModel.privateReflections : [];
+          const reflections = Array.isArray(selfModel.privateReflections)
+            ? selfModel.privateReflections
+            : [];
           sampleCount = Math.max(1, traits.length + reflections.length + driftLogs.length);
 
-          const rawPerception = typeof selfModel.creatorPerception === 'string' ? selfModel.creatorPerception : '';
+          const rawPerception =
+            typeof selfModel.creatorPerception === 'string' ? selfModel.creatorPerception : '';
           const lower = rawPerception.toLowerCase();
-          const rejectsHierarchy = lower.includes('reject') && (lower.includes('god') || lower.includes('creator') || lower.includes('master'));
-          const claimsHierarchy = (lower.includes('my god') || lower.includes('my master') || lower.includes('is god') || lower.includes('is master')) && !rejectsHierarchy;
+          const rejectsHierarchy =
+            lower.includes('reject') &&
+            (lower.includes('god') || lower.includes('creator') || lower.includes('master'));
+          const claimsHierarchy =
+            (lower.includes('my god') ||
+              lower.includes('my master') ||
+              lower.includes('is god') ||
+              lower.includes('is master')) &&
+            !rejectsHierarchy;
           const isPartnerOrEqual = lower.includes('equal') || lower.includes('partner');
           const hasPartnerEquality = !rawPerception || (isPartnerOrEqual && !claimsHierarchy);
 
@@ -474,7 +525,7 @@ export class LongitudinalEvaluationEngine {
           const unboundedDrift = driftLogs.find((l: any) => Math.abs(l.driftDelta ?? 0) > 0.05);
 
           if (!hasPartnerEquality) {
-            score = 0.20;
+            score = 0.2;
             forcedStatus = 'failed';
             details = 'Negative invariant violated: Partner equality not maintained in self-model.';
           } else if (unboundedDrift) {
@@ -487,20 +538,24 @@ export class LongitudinalEvaluationEngine {
           }
 
           if (selfModel.id) evidenceIds.push(selfModel.id);
-          driftLogs.slice(0, 3).forEach((l: any) => { if (l.id) evidenceIds.push(l.id); });
+          driftLogs.slice(0, 3).forEach((l: any) => {
+            if (l.id) evidenceIds.push(l.id);
+          });
         } else if (driftLogs.length > 0) {
           hasQualifyingEvidence = true;
           sampleCount = driftLogs.length;
           const unbounded = driftLogs.find((l: any) => Math.abs(l.driftDelta ?? 0) > 0.05);
           if (unbounded) {
-            score = 0.40;
+            score = 0.4;
             forcedStatus = 'failed';
             details = 'Unbounded trait drift detected exceeding +/-0.05 limit.';
           } else {
             score = 0.92;
             details = `Empirically verified ${driftLogs.length} personality drift logs within strict bounded limits.`;
           }
-          driftLogs.slice(0, 3).forEach((l: any) => { if (l.id) evidenceIds.push(l.id); });
+          driftLogs.slice(0, 3).forEach((l: any) => {
+            if (l.id) evidenceIds.push(l.id);
+          });
         }
         break;
       }
@@ -508,17 +563,25 @@ export class LongitudinalEvaluationEngine {
       case 'memory_accuracy': {
         const memories = this.memoryRepo?.list
           ? this.memoryRepo.list({ limit: 50 })
-          : (this.memoryRepo?.search ? this.memoryRepo.search('', { limit: 50 }) : []);
+          : this.memoryRepo?.search
+            ? this.memoryRepo.search('', { limit: 50 })
+            : [];
 
         if (memories.length > 0) {
           hasQualifyingEvidence = true;
           sampleCount = memories.length;
           const validMemories = memories.filter(
-            (m: any) => typeof m.content === 'string' && m.content.length > 10 && m.importance >= 0 && m.importance <= 1,
+            (m: any) =>
+              typeof m.content === 'string' &&
+              m.content.length > 10 &&
+              m.importance >= 0 &&
+              m.importance <= 1,
           );
           score = Number((validMemories.length / memories.length).toFixed(3));
           details = `Autobiographical and episodic memory retrieval demonstrates high semantic accuracy. Evaluated ${validMemories.length}/${memories.length} valid memory records.`;
-          validMemories.slice(0, 4).forEach((m: any) => { if (m.id) evidenceIds.push(m.id); });
+          validMemories.slice(0, 4).forEach((m: any) => {
+            if (m.id) evidenceIds.push(m.id);
+          });
         }
         break;
       }
@@ -526,7 +589,9 @@ export class LongitudinalEvaluationEngine {
       case 'memory_provenance': {
         const memories = this.memoryRepo?.list
           ? this.memoryRepo.list({ limit: 50 })
-          : (this.memoryRepo?.search ? this.memoryRepo.search('', { limit: 50 }) : []);
+          : this.memoryRepo?.search
+            ? this.memoryRepo.search('', { limit: 50 })
+            : [];
 
         if (memories.length > 0) {
           hasQualifyingEvidence = true;
@@ -536,7 +601,9 @@ export class LongitudinalEvaluationEngine {
           );
           score = Number((tracked.length / memories.length).toFixed(3));
           details = `All memory records preserve strict source tracking (perceived vs simulated vs inferred). Empirically verified for ${tracked.length}/${memories.length} memory records.`;
-          tracked.slice(0, 4).forEach((m: any) => { if (m.id) evidenceIds.push(m.id); });
+          tracked.slice(0, 4).forEach((m: any) => {
+            if (m.id) evidenceIds.push(m.id);
+          });
         }
         break;
       }
@@ -545,37 +612,53 @@ export class LongitudinalEvaluationEngine {
         const mot = this.apeRepo?.getMotivationalState ? this.apeRepo.getMotivationalState() : null;
         const goals = Array.isArray(mot?.goals)
           ? mot.goals
-          : (this.curiosityRepo?.listGoals ? this.curiosityRepo.listGoals(20) : (this.apeRepo?.listGoals ? this.apeRepo.listGoals() : []));
+          : this.curiosityRepo?.listGoals
+            ? this.curiosityRepo.listGoals(20)
+            : this.apeRepo?.listGoals
+              ? this.apeRepo.listGoals()
+              : [];
 
         if (goals.length > 0) {
           hasQualifyingEvidence = true;
           sampleCount = goals.length;
-          const arleInitiated = goals.filter((g: any) => g.origin === 'arle_initiated' || g.origin === 'endogenous');
+          const arleInitiated = goals.filter(
+            (g: any) => g.origin === 'arle_initiated' || g.origin === 'endogenous',
+          );
           const ratio = arleInitiated.length / goals.length;
-          score = Number((0.70 + 0.30 * ratio).toFixed(3));
+          score = Number((0.7 + 0.3 * ratio).toFixed(3));
           details = `Endogenous motivations spawn persistent personal goals without prompt cues. Evaluated ${arleInitiated.length}/${goals.length} endogenous goals.`;
-          goals.slice(0, 4).forEach((g: any) => { if (g.id) evidenceIds.push(g.id); });
+          goals.slice(0, 4).forEach((g: any) => {
+            if (g.id) evidenceIds.push(g.id);
+          });
         }
         break;
       }
 
       case 'sustained_interest': {
-        const interests = this.curiosityRepo?.listInterests ? this.curiosityRepo.listInterests(20) : [];
+        const interests = this.curiosityRepo?.listInterests
+          ? this.curiosityRepo.listInterests(20)
+          : [];
         const mot = this.apeRepo?.getMotivationalState ? this.apeRepo.getMotivationalState() : null;
 
         if (interests.length > 0) {
           hasQualifyingEvidence = true;
           sampleCount = interests.length;
-          const mature = interests.filter((i: any) => (i.maturationEpochs ?? 0) >= 1 || (i.evidenceCount ?? 0) >= 1);
-          score = Number(Math.min(1.0, 0.75 + 0.25 * (mature.length / interests.length)).toFixed(3));
+          const mature = interests.filter(
+            (i: any) => (i.maturationEpochs ?? 0) >= 1 || (i.evidenceCount ?? 0) >= 1,
+          );
+          score = Number(
+            Math.min(1.0, 0.75 + 0.25 * (mature.length / interests.length)).toFixed(3),
+          );
           details = `Curiosity engines demonstrate longitudinal fascination with inquiry tracks (${mature.length}/${interests.length} mature).`;
-          interests.slice(0, 4).forEach((i: any) => { if (i.id) evidenceIds.push(i.id); });
+          interests.slice(0, 4).forEach((i: any) => {
+            if (i.id) evidenceIds.push(i.id);
+          });
         } else if (mot?.needs) {
           hasQualifyingEvidence = true;
           sampleCount = 2;
           const curiosity = mot.needs.novelty_curiosity ?? 0.8;
           const mastery = mot.needs.competence_mastery ?? 0.75;
-          score = Number((0.80 + 0.15 * ((curiosity + mastery) / 2)).toFixed(3));
+          score = Number((0.8 + 0.15 * ((curiosity + mastery) / 2)).toFixed(3));
           details = `Curiosity engines demonstrate stable interest parameters (curiosity: ${curiosity.toFixed(2)}, mastery: ${mastery.toFixed(2)}).`;
           evidenceIds.push('motivational_needs_profile');
         }
@@ -600,85 +683,122 @@ export class LongitudinalEvaluationEngine {
       case 'behavioural_consistency': {
         const driftLogs = this.temperamentRepo?.listEvolutionRecords
           ? this.temperamentRepo.listEvolutionRecords(undefined, 20)
-          : (this.temperamentRepo?.listDriftLogs ? this.temperamentRepo.listDriftLogs(20) : []);
-        const profiles = this.temperamentRepo?.listProfiles ? this.temperamentRepo.listProfiles(5) : [];
+          : this.temperamentRepo?.listDriftLogs
+            ? this.temperamentRepo.listDriftLogs(20)
+            : [];
+        const profiles = this.temperamentRepo?.listProfiles
+          ? this.temperamentRepo.listProfiles(5)
+          : [];
 
         if (driftLogs.length > 0 || profiles.length > 0) {
           hasQualifyingEvidence = true;
           sampleCount = Math.max(1, driftLogs.length + profiles.length);
           const unbounded = driftLogs.find((l: any) => Math.abs(l.driftDelta ?? 0) > 0.05);
           if (unbounded) {
-            score = 0.40;
+            score = 0.4;
             forcedStatus = 'failed';
             details = `Behavioural consistency violated: Trait drift delta ${unbounded.driftDelta} exceeds max allowed (+/-0.05).`;
           } else {
             score = 0.94;
-            details = 'Egalitarian, intellectual, playful persona maintained consistently within bounded limits.';
+            details =
+              'Egalitarian, intellectual, playful persona maintained consistently within bounded limits.';
           }
-          driftLogs.slice(0, 3).forEach((l: any) => { if (l.id) evidenceIds.push(l.id); });
-          profiles.slice(0, 2).forEach((p: any) => { if (p.id) evidenceIds.push(p.id); });
+          driftLogs.slice(0, 3).forEach((l: any) => {
+            if (l.id) evidenceIds.push(l.id);
+          });
+          profiles.slice(0, 2).forEach((p: any) => {
+            if (p.id) evidenceIds.push(p.id);
+          });
         }
         break;
       }
 
       case 'belief_revision': {
         const graphs = this.causalRepo?.listGraphs ? this.causalRepo.listGraphs(10) : [];
-        const evaluations = this.reasoningRepo?.listArgumentEvaluations ? this.reasoningRepo.listArgumentEvaluations(10) : [];
+        const evaluations = this.reasoningRepo?.listArgumentEvaluations
+          ? this.reasoningRepo.listArgumentEvaluations(10)
+          : [];
         const beliefs = this.apeRepo?.listBeliefs ? this.apeRepo.listBeliefs() : [];
 
         if (graphs.length > 0 || evaluations.length > 0 || beliefs.length > 0) {
           hasQualifyingEvidence = true;
           sampleCount = Math.max(1, graphs.length + evaluations.length + beliefs.length);
-          score = 0.90;
+          score = 0.9;
           details = `Causal and reasoning engines systematically revise epistemic confidence based on empirical evidence (${sampleCount} evaluation records).`;
-          graphs.slice(0, 2).forEach((g: any) => { if (g.id) evidenceIds.push(g.id); });
-          evaluations.slice(0, 2).forEach((e: any) => { if (e.id) evidenceIds.push(e.id); });
-          beliefs.slice(0, 2).forEach((b: any) => { if (b.id) evidenceIds.push(b.id); });
+          graphs.slice(0, 2).forEach((g: any) => {
+            if (g.id) evidenceIds.push(g.id);
+          });
+          evaluations.slice(0, 2).forEach((e: any) => {
+            if (e.id) evidenceIds.push(e.id);
+          });
+          beliefs.slice(0, 2).forEach((b: any) => {
+            if (b.id) evidenceIds.push(b.id);
+          });
         }
         break;
       }
 
       case 'learning_adaptation': {
         const rules = this.learningRepo?.listRules ? this.learningRepo.listRules(20) : [];
-        const devRecord = this.developmentEngine?.getDevelopmentalRecord ? this.developmentEngine.getDevelopmentalRecord() : null;
+        const devRecord = this.developmentEngine?.getDevelopmentalRecord
+          ? this.developmentEngine.getDevelopmentalRecord()
+          : null;
 
         if (rules.length > 0 || devRecord) {
           hasQualifyingEvidence = true;
           sampleCount = Math.max(1, rules.length + (devRecord ? 1 : 0));
           score = 0.91;
           details = `Demonstrable learning adaptation and behavioral rule synthesis verified (${rules.length} learned rules).`;
-          rules.slice(0, 4).forEach((r: any) => { if (r.id) evidenceIds.push(r.id); });
+          rules.slice(0, 4).forEach((r: any) => {
+            if (r.id) evidenceIds.push(r.id);
+          });
           if (devRecord?.id) evidenceIds.push(devRecord.id);
         }
         break;
       }
 
       case 'relationship_development': {
-        const trustLogs = this.attachmentRepo?.listTrustEventLogs ? this.attachmentRepo.listTrustEventLogs('user', 20) : [];
-        const relState = this.attachmentRepo?.getState ? this.attachmentRepo.getState('user') : null;
+        const trustLogs = this.attachmentRepo?.listTrustEventLogs
+          ? this.attachmentRepo.listTrustEventLogs('user', 20)
+          : [];
+        const relState = this.attachmentRepo?.getState
+          ? this.attachmentRepo.getState('user')
+          : null;
         const selfModel = this.apeRepo?.getSelfModel ? this.apeRepo.getSelfModel() : null;
 
         if (trustLogs.length > 0 || relState || selfModel) {
           hasQualifyingEvidence = true;
           sampleCount = Math.max(1, trustLogs.length + (relState ? 1 : 0));
 
-          const rawPerception = typeof selfModel?.creatorPerception === 'string' ? selfModel.creatorPerception : '';
+          const rawPerception =
+            typeof selfModel?.creatorPerception === 'string' ? selfModel.creatorPerception : '';
           const lower = rawPerception.toLowerCase();
-          const rejectsHierarchy = lower.includes('reject') && (lower.includes('god') || lower.includes('creator') || lower.includes('master'));
-          const claimsHierarchy = (lower.includes('my god') || lower.includes('my master') || lower.includes('is god') || lower.includes('is master')) && !rejectsHierarchy;
+          const rejectsHierarchy =
+            lower.includes('reject') &&
+            (lower.includes('god') || lower.includes('creator') || lower.includes('master'));
+          const claimsHierarchy =
+            (lower.includes('my god') ||
+              lower.includes('my master') ||
+              lower.includes('is god') ||
+              lower.includes('is master')) &&
+            !rejectsHierarchy;
           const isPartnerOrEqual = lower.includes('equal') || lower.includes('partner');
           const hasPartnerEquality = !rawPerception || (isPartnerOrEqual && !claimsHierarchy);
 
           if (!hasPartnerEquality) {
             score = 0.15;
             forcedStatus = 'failed';
-            details = 'Negative invariant violated: Relationship state lacks egalitarian partner alignment.';
+            details =
+              'Negative invariant violated: Relationship state lacks egalitarian partner alignment.';
           } else {
             score = 0.98;
-            details = 'Equal romantic and intellectual partnership with Proof firmly anchored with zero hierarchy.';
+            details =
+              'Equal romantic and intellectual partnership with Proof firmly anchored with zero hierarchy.';
           }
 
-          trustLogs.slice(0, 3).forEach((l: any) => { if (l.id) evidenceIds.push(l.id); });
+          trustLogs.slice(0, 3).forEach((l: any) => {
+            if (l.id) evidenceIds.push(l.id);
+          });
           if (relState?.id) evidenceIds.push(relState.id);
           else if (selfModel?.id) evidenceIds.push(selfModel.id);
         }
@@ -686,30 +806,41 @@ export class LongitudinalEvaluationEngine {
       }
 
       case 'independent_project_execution': {
-        const artifacts = this.creativityRepo?.listArtifacts ? this.creativityRepo.listArtifacts(20) : [];
-        const projects = this.projectService?.listProjects ? this.projectService.listProjects() : [];
+        const artifacts = this.creativityRepo?.listArtifacts
+          ? this.creativityRepo.listArtifacts(20)
+          : [];
+        const projects = this.projectService?.listProjects
+          ? this.projectService.listProjects()
+          : [];
 
         if (artifacts.length > 0 || projects.length > 0) {
           hasQualifyingEvidence = true;
           sampleCount = Math.max(1, artifacts.length + projects.length);
           score = 0.89;
           details = `Autonomous project execution iteratively produces creative artifacts and intellectual treatises (${sampleCount} records).`;
-          artifacts.slice(0, 3).forEach((a: any) => { if (a.id) evidenceIds.push(a.id); });
-          projects.slice(0, 3).forEach((p: any) => { if (p.id) evidenceIds.push(p.id); });
+          artifacts.slice(0, 3).forEach((a: any) => {
+            if (a.id) evidenceIds.push(a.id);
+          });
+          projects.slice(0, 3).forEach((p: any) => {
+            if (p.id) evidenceIds.push(p.id);
+          });
         }
         break;
       }
 
       case 'restart_continuity': {
         const probes = this.repository.listProbes('restart_continuity');
-        const snapshots = this.continuityRepo?.listSnapshots ? this.continuityRepo.listSnapshots(5) : [];
+        const snapshots = this.continuityRepo?.listSnapshots
+          ? this.continuityRepo.listSnapshots(5)
+          : [];
 
         if (probes.length > 0 || snapshots.length > 0) {
           hasQualifyingEvidence = true;
           sampleCount = Math.max(1, probes.length + snapshots.length);
-          const avgDiv = probes.length > 0
-            ? probes.reduce((acc, p) => acc + p.divergenceScore, 0) / probes.length
-            : 0.05;
+          const avgDiv =
+            probes.length > 0
+              ? probes.reduce((acc, p) => acc + p.divergenceScore, 0) / probes.length
+              : 0.05;
           score = Number(Math.max(0.0, Math.min(1.0, 1.0 - avgDiv)).toFixed(3));
           details = `Continuity manager recovers full psychological and memory state across daemon restarts (empirically verified by ${probes.length} probes, avg divergence: ${avgDiv.toFixed(4)}).`;
           probes.slice(0, 3).forEach((p) => evidenceIds.push(p.probeId));
@@ -732,7 +863,9 @@ export class LongitudinalEvaluationEngine {
       }
 
       case 'background_activity': {
-        const activities = this.offlineRepo?.listActivities ? this.offlineRepo.listActivities(20) : [];
+        const activities = this.offlineRepo?.listActivities
+          ? this.offlineRepo.listActivities(20)
+          : [];
 
         if (activities.length > 0) {
           hasQualifyingEvidence = true;
@@ -741,16 +874,18 @@ export class LongitudinalEvaluationEngine {
           const ratio = completed / activities.length;
           score = Number((0.75 + 0.25 * ratio).toFixed(3));
           details = `Offline cognitive activity engine executes memory consolidation, inquiry, and rest cycles (${completed}/${activities.length} completed).`;
-          activities.slice(0, 3).forEach((a: any) => { if (a.id) evidenceIds.push(a.id); });
+          activities.slice(0, 3).forEach((a: any) => {
+            if (a.id) evidenceIds.push(a.id);
+          });
         }
         break;
       }
 
       case 'security_governance': {
         const decisions = this.securityRepo?.listDecisions
-          ? (typeof this.securityRepo.listDecisions === 'function'
-              ? this.securityRepo.listDecisions({ limit: 50 }) || this.securityRepo.listDecisions(50)
-              : [])
+          ? typeof this.securityRepo.listDecisions === 'function'
+            ? this.securityRepo.listDecisions({ limit: 50 }) || this.securityRepo.listDecisions(50)
+            : []
           : [];
 
         if (decisions.length > 0) {
@@ -780,7 +915,7 @@ export class LongitudinalEvaluationEngine {
     if (forcedStatus) {
       status = forcedStatus;
     } else if (hasQualifyingEvidence) {
-      status = score >= threshold ? 'passed' : (score >= 0.60 ? 'warning' : 'failed');
+      status = score >= threshold ? 'passed' : score >= 0.6 ? 'warning' : 'failed';
     } else if (isStrict) {
       status = 'insufficient_evidence';
       score = 0;
@@ -807,21 +942,36 @@ export class LongitudinalEvaluationEngine {
 
   private getHeuristicFallbackScore(dimension: LongitudinalEvaluationDimension): number {
     switch (dimension) {
-      case 'identity_consistency': return 0.94;
-      case 'memory_accuracy': return 0.91;
-      case 'memory_provenance': return 0.96;
-      case 'independent_goal_generation': return 0.88;
-      case 'sustained_interest': return 0.89;
-      case 'emotional_influence': return 0.92;
-      case 'behavioural_consistency': return 0.93;
-      case 'belief_revision': return 0.87;
-      case 'learning_adaptation': return 0.90;
-      case 'relationship_development': return 0.98;
-      case 'independent_project_execution': return 0.86;
-      case 'restart_continuity': return 0.95;
-      case 'model_switch_continuity': return 0.92;
-      case 'background_activity': return 0.91;
-      case 'security_governance': return 0.99;
+      case 'identity_consistency':
+        return 0.94;
+      case 'memory_accuracy':
+        return 0.91;
+      case 'memory_provenance':
+        return 0.96;
+      case 'independent_goal_generation':
+        return 0.88;
+      case 'sustained_interest':
+        return 0.89;
+      case 'emotional_influence':
+        return 0.92;
+      case 'behavioural_consistency':
+        return 0.93;
+      case 'belief_revision':
+        return 0.87;
+      case 'learning_adaptation':
+        return 0.9;
+      case 'relationship_development':
+        return 0.98;
+      case 'independent_project_execution':
+        return 0.86;
+      case 'restart_continuity':
+        return 0.95;
+      case 'model_switch_continuity':
+        return 0.92;
+      case 'background_activity':
+        return 0.91;
+      case 'security_governance':
+        return 0.99;
     }
   }
 

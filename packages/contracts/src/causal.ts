@@ -97,7 +97,7 @@ export function assertCausalIntegrity(link: CausalLink): void {
     link.relationType === 'direct_cause' &&
     !link.isInterventionVerified &&
     link.confoundingFactors.length > 0 &&
-    link.confidence > 0.70
+    link.confidence > 0.7
   ) {
     throw new Error(
       `Negative Invariant Violation: Link from '${link.sourceNodeId}' to '${link.targetNodeId}' cannot be asserted as high-confidence 'direct_cause' (${link.confidence}) while unverified confounding factors exist: ${link.confoundingFactors.join(', ')}.`,

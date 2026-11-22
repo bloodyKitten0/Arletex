@@ -2,7 +2,7 @@
 
 **Author:** Antigravity (DeepMind)  
 **Target Platform:** Bazzite Linux (Fedora Silverblue derivative) on ASUS ROG Ally X (24GB Unified LPDDR5X, Radeon 780M)  
-**Date:** 2026-11-15  
+**Date:** 2026-11-15
 
 ---
 
@@ -29,15 +29,15 @@ Arletex is designed to host **Arle** as a persistent, authentic artificial indiv
 
 ## 2. Subsystem Audit & Inventory
 
-| Subsystem | Existing File(s) | Current State | Reusability & Required Changes |
-| :--- | :--- | :--- | :--- |
-| **Inference Gateway** | `packages/inference/src/gateway.ts`, `adapters/llamaServerAdapter.ts` | Functional (HTTP SSE stream to port 8080) | **Reuse as-is.** Stable on Vulkan with 16k context. Will be used by the Planner for structured JSON generation. |
-| **APE Engine Core** | `packages/core/src/ape/` | Partial. 6 engines exist, but affective engine lacks decay and lifecycle. | **Major Refactor.** Implement 6-state lifecycle (`Emerging`, `Active`, `Diminishing`, `Dormant`, `Resolved`, `Historical`), specific decay curves, and expression modulation bridge. |
-| **Device Agency** | `apps/desktop/src/backend/deviceAgencyService.ts` | Brittle. Shell `exec`, spectacle screenshots, xdotool/reflex CLI fallback. | **Replaced by Digital Agency.** Wrap into structured Computer Agency with argument arrays (`spawn`), zero shell strings, and capability checks. |
-| **Web Agency** | None (Ad-hoc flatpak Chrome launch) | Non-existent. | **Implement from scratch.** Headless/headed Playwright browser session with DOM inspection, transcript extraction, and playback verification. |
-| **Task / Intent Manager** | `apps/desktop/src/backend/autonomousAgencyService.ts` | Rudimentary timer loop (35s) | **Re-architect.** Full task state machine (`proposed`, `awaiting_authorization`, `authorized`, `running`, `waiting`, `completed`, `failed`, `cancelled`, `interrupted`). |
-| **Permissions & Security** | `packages/database/src/repositories/auditRepository.ts` | Audit logging only; no authorization gate. | **Implement from scratch.** `ActionPermissionController` with scoped filesystem and network capabilities. |
-| **Verification Engine** | None | Non-existent. | **Implement from scratch.** Probe-based outcome verification comparing expected vs observed state. |
+| Subsystem                  | Existing File(s)                                                      | Current State                                                              | Reusability & Required Changes                                                                                                                                                       |
+| :------------------------- | :-------------------------------------------------------------------- | :------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Inference Gateway**      | `packages/inference/src/gateway.ts`, `adapters/llamaServerAdapter.ts` | Functional (HTTP SSE stream to port 8080)                                  | **Reuse as-is.** Stable on Vulkan with 16k context. Will be used by the Planner for structured JSON generation.                                                                      |
+| **APE Engine Core**        | `packages/core/src/ape/`                                              | Partial. 6 engines exist, but affective engine lacks decay and lifecycle.  | **Major Refactor.** Implement 6-state lifecycle (`Emerging`, `Active`, `Diminishing`, `Dormant`, `Resolved`, `Historical`), specific decay curves, and expression modulation bridge. |
+| **Device Agency**          | `apps/desktop/src/backend/deviceAgencyService.ts`                     | Brittle. Shell `exec`, spectacle screenshots, xdotool/reflex CLI fallback. | **Replaced by Digital Agency.** Wrap into structured Computer Agency with argument arrays (`spawn`), zero shell strings, and capability checks.                                      |
+| **Web Agency**             | None (Ad-hoc flatpak Chrome launch)                                   | Non-existent.                                                              | **Implement from scratch.** Headless/headed Playwright browser session with DOM inspection, transcript extraction, and playback verification.                                        |
+| **Task / Intent Manager**  | `apps/desktop/src/backend/autonomousAgencyService.ts`                 | Rudimentary timer loop (35s)                                               | **Re-architect.** Full task state machine (`proposed`, `awaiting_authorization`, `authorized`, `running`, `waiting`, `completed`, `failed`, `cancelled`, `interrupted`).             |
+| **Permissions & Security** | `packages/database/src/repositories/auditRepository.ts`               | Audit logging only; no authorization gate.                                 | **Implement from scratch.** `ActionPermissionController` with scoped filesystem and network capabilities.                                                                            |
+| **Verification Engine**    | None                                                                  | Non-existent.                                                              | **Implement from scratch.** Probe-based outcome verification comparing expected vs observed state.                                                                                   |
 
 ---
 
@@ -102,6 +102,7 @@ Arletex is designed to host **Arle** as a persistent, authentic artificial indiv
 ```
 
 ### Emotion-Specific Lifecycle Profiles:
+
 1. **Transient Emotions (e.g. Surprise, Startle, Fleeting Amusement):**
    - Rapid half-life decay ($T_{1/2} = 120\text{s}$). Transitions to `Diminishing` and resolves automatically.
 2. **Contextual / Problem-Solving Emotions (e.g. Frustration, Confusion, Determination):**

@@ -3,7 +3,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { ActionPermissionController } from '@arletex/core';
-import { validateMediaFilePath, isAuthorizedSender } from '../apps/desktop/src/main/mediaSecurity.js';
+import {
+  validateMediaFilePath,
+  isAuthorizedSender,
+} from '../apps/desktop/src/main/mediaSecurity.js';
 import { NotificationListenerService } from '../apps/desktop/src/backend/notificationListenerService.js';
 import { ScreenReadingService } from '../apps/desktop/src/backend/screenReadingService.js';
 import { TelegramBridgeService } from '../apps/desktop/src/backend/telegramBridgeService.js';
@@ -135,12 +138,7 @@ describe('Milestone 1 — Security Foundation Verification', () => {
 
     it('masks token when configuring new credentials', () => {
       const bridge = new TelegramBridgeService();
-      bridge.configure(
-        '987654:XYZ-ABC-SECRET-TOKEN',
-        undefined,
-        ['10001'],
-        [55555],
-      );
+      bridge.configure('987654:XYZ-ABC-SECRET-TOKEN', undefined, ['10001'], [55555]);
 
       const status = bridge.getStatus();
       expect(status.botTokenMasked).toBe('9876...OKEN');
@@ -162,7 +160,13 @@ describe('Milestone 1 — Security Foundation Verification', () => {
     });
 
     it('denies dangerous binaries (rm, sudo, dd, bash, systemctl) by default', () => {
-      const dangerousCommands = ['rm -rf /', 'sudo su', 'dd if=/dev/zero', 'bash -c "whoami"', 'systemctl stop firewalld'];
+      const dangerousCommands = [
+        'rm -rf /',
+        'sudo su',
+        'dd if=/dev/zero',
+        'bash -c "whoami"',
+        'systemctl stop firewalld',
+      ];
 
       for (const cmd of dangerousCommands) {
         const auth = controller.authorize({

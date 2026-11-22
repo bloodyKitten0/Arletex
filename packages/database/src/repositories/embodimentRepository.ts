@@ -52,7 +52,10 @@ export class EmbodimentRepository implements IEmbodimentRepository {
           new Date().toISOString(),
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save interoceptive snapshot ${snapshot.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save interoceptive snapshot ${snapshot.id}: ${err.message}`,
+        err,
+      );
     }
   }
 

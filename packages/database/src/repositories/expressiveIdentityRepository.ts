@@ -16,9 +16,7 @@ export class SqliteExpressiveIdentityRepository implements IExpressiveIdentityRe
 
   public getVoiceProfile(): ExpressiveVoiceProfile | null {
     try {
-      const row = this.db
-        .prepare(`SELECT * FROM expressive_voice_profiles LIMIT 1`)
-        .get() as any;
+      const row = this.db.prepare(`SELECT * FROM expressive_voice_profiles LIMIT 1`).get() as any;
       if (!row) return null;
       return {
         id: row.id,
@@ -74,7 +72,9 @@ export class SqliteExpressiveIdentityRepository implements IExpressiveIdentityRe
     }
   }
 
-  public getAdaptation(modelFamily: string): (ModelLinguisticAdaptation & { updatedAt: string }) | null {
+  public getAdaptation(
+    modelFamily: string,
+  ): (ModelLinguisticAdaptation & { updatedAt: string }) | null {
     try {
       const row = this.db
         .prepare(`SELECT * FROM model_linguistic_adaptations WHERE model_family = ?`)
@@ -155,9 +155,7 @@ export class SqliteExpressiveIdentityRepository implements IExpressiveIdentityRe
   public listUtteranceEvaluations(limit: number = 50): ExpressiveUtteranceEvaluation[] {
     try {
       const rows = this.db
-        .prepare(
-          `SELECT * FROM expressive_utterance_evaluations ORDER BY timestamp DESC LIMIT ?`,
-        )
+        .prepare(`SELECT * FROM expressive_utterance_evaluations ORDER BY timestamp DESC LIMIT ?`)
         .all(limit) as any[];
       return rows.map((r) => ({
         id: r.id,

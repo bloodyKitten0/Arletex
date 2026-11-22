@@ -34,7 +34,10 @@ export class TemporalRepository implements ITemporalRepository {
     }
   }
 
-  public listIntentions(filter?: { status?: FutureIntentionStatus; limit?: number }): FutureIntention[] {
+  public listIntentions(filter?: {
+    status?: FutureIntentionStatus;
+    limit?: number;
+  }): FutureIntention[] {
     try {
       const conditions: string[] = [];
       const params: any[] = [];
@@ -48,7 +51,9 @@ export class TemporalRepository implements ITemporalRepository {
       const limitClause = filter?.limit ? `LIMIT ${Number(filter.limit)}` : '';
 
       const rows = this.db
-        .prepare(`SELECT * FROM future_intentions ${whereClause} ORDER BY intended_for ASC ${limitClause}`)
+        .prepare(
+          `SELECT * FROM future_intentions ${whereClause} ORDER BY intended_for ASC ${limitClause}`,
+        )
         .all(...params) as any[];
 
       return rows.map((r) => this.mapIntentionRow(r));
@@ -93,7 +98,10 @@ export class TemporalRepository implements ITemporalRepository {
         intention.updatedAt,
       );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save future intention ${intention.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save future intention ${intention.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -112,7 +120,9 @@ export class TemporalRepository implements ITemporalRepository {
 
   public getCommitmentById(id: string): UnfinishedCommitment | null {
     try {
-      const row = this.db.prepare('SELECT * FROM unfinished_commitments WHERE id = ?').get(id) as any;
+      const row = this.db
+        .prepare('SELECT * FROM unfinished_commitments WHERE id = ?')
+        .get(id) as any;
       if (!row) return null;
       return this.mapCommitmentRow(row);
     } catch (err: any) {
@@ -120,7 +130,10 @@ export class TemporalRepository implements ITemporalRepository {
     }
   }
 
-  public listCommitments(filter?: { status?: CommitmentStatus; partnerName?: string }): UnfinishedCommitment[] {
+  public listCommitments(filter?: {
+    status?: CommitmentStatus;
+    partnerName?: string;
+  }): UnfinishedCommitment[] {
     try {
       const conditions: string[] = [];
       const params: any[] = [];
@@ -283,17 +296,24 @@ export class TemporalRepository implements ITemporalRepository {
 
   public getDurationProfile(operationKey: string): DurationProfile | null {
     try {
-      const row = this.db.prepare('SELECT * FROM duration_profiles WHERE operation_key = ?').get(operationKey) as any;
+      const row = this.db
+        .prepare('SELECT * FROM duration_profiles WHERE operation_key = ?')
+        .get(operationKey) as any;
       if (!row) return null;
       return this.mapDurationRow(row);
     } catch (err: any) {
-      throw new DatabaseError(`Failed to get duration profile ${operationKey}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to get duration profile ${operationKey}: ${err.message}`,
+        err,
+      );
     }
   }
 
   public listDurationProfiles(): DurationProfile[] {
     try {
-      const rows = this.db.prepare('SELECT * FROM duration_profiles ORDER BY operation_key ASC').all() as any[];
+      const rows = this.db
+        .prepare('SELECT * FROM duration_profiles ORDER BY operation_key ASC')
+        .all() as any[];
       return rows.map((r) => this.mapDurationRow(r));
     } catch (err: any) {
       throw new DatabaseError(`Failed to list duration profiles: ${err.message}`, err);
@@ -328,7 +348,10 @@ export class TemporalRepository implements ITemporalRepository {
         profile.lastCalibratedAt,
       );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save duration profile ${profile.operationKey}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save duration profile ${profile.operationKey}: ${err.message}`,
+        err,
+      );
     }
   }
 

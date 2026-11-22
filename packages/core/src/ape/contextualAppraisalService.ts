@@ -88,7 +88,9 @@ export class ContextualAppraisalService {
 
     const transitions: ProposedEmotionTransition[] = [];
     const trustFactor = relationship.partnerName === 'Proof' ? 0.9 : 0.7;
-    const moodShift = currentState.currentMood ? ` (contextual mood: ${currentState.currentMood})` : '';
+    const moodShift = currentState.currentMood
+      ? ` (contextual mood: ${currentState.currentMood})`
+      : '';
 
     // Synthesize emotions based on the multidimensional appraisal calculus:
     // 1. Goal congruence & relevance
@@ -269,7 +271,9 @@ export class ContextualAppraisalService {
 
     assertAppraisalDivergence(comparison);
     this.repo.saveComparison(comparison);
-    this.logger.info(`Appraisal comparison evaluated: divergence score=${emotionalDivergenceScore}`);
+    this.logger.info(
+      `Appraisal comparison evaluated: divergence score=${emotionalDivergenceScore}`,
+    );
     return comparison;
   }
 

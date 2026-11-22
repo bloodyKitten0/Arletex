@@ -103,7 +103,8 @@ describe('Embodied Screen Reading, Mouse/Keyboard Agency & Cross-Chat Memory', (
     it('analyzes screen and parses VLM reasoning and visual description', async () => {
       const mockCapture = vi.spyOn(deviceAgency, 'captureScreen').mockResolvedValue({
         imagePath: '/tmp/test_screen.png',
-        imageBase64: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+        imageBase64:
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
         width: 1920,
         height: 1080,
       });
@@ -114,8 +115,10 @@ describe('Embodied Screen Reading, Mouse/Keyboard Agency & Cross-Chat Memory', (
           choices: [
             {
               message: {
-                content: 'Active screen displays Telegram Desktop and Chrome with Google account arletex.email@gmail.com.',
-                reasoning_content: 'Analyzed monitor layout: 1920x1080. Observed Telegram window on left and Chrome on right.',
+                content:
+                  'Active screen displays Telegram Desktop and Chrome with Google account arletex.email@gmail.com.',
+                reasoning_content:
+                  'Analyzed monitor layout: 1920x1080. Observed Telegram window on left and Chrome on right.',
               },
             },
           ],
@@ -172,15 +175,18 @@ describe('Embodied Screen Reading, Mouse/Keyboard Agency & Cross-Chat Memory', (
       expect(newChatMessages.length).toBe(0);
 
       // 4. User sends a hint referencing past dialogue in the new chat
-      const userPrompt = 'no another one let me give you a hint "nothing is as healing" try to guess the rest of what I said';
+      const userPrompt =
+        'no another one let me give you a hint "nothing is as healing" try to guess the rest of what I said';
 
       // Perform cross-session dialogue recall query on SQLite database
       const quoteMatch = userPrompt.match(/"([^"]+)"|'([^']+)'/);
-      const searchPhrase = quoteMatch ? (quoteMatch[1] || quoteMatch[2]) : null;
+      const searchPhrase = quoteMatch ? quoteMatch[1] || quoteMatch[2] : null;
       expect(searchPhrase).toBe('nothing is as healing');
 
       const matchedRows = db
-        .prepare(`SELECT role, content FROM messages WHERE content LIKE ? ORDER BY created_at DESC LIMIT 3`)
+        .prepare(
+          `SELECT role, content FROM messages WHERE content LIKE ? ORDER BY created_at DESC LIMIT 3`,
+        )
         .all(`%${searchPhrase}%`) as Array<{ role: string; content: string }>;
 
       expect(matchedRows.length).toBeGreaterThan(0);
@@ -188,7 +194,9 @@ describe('Embodied Screen Reading, Mouse/Keyboard Agency & Cross-Chat Memory', (
 
       // Check lexical memory fallback search
       const matchedMemories = db
-        .prepare(`SELECT * FROM memories WHERE is_deleted = 0 AND (content LIKE '%healing%' OR content LIKE '%creator%')`)
+        .prepare(
+          `SELECT * FROM memories WHERE is_deleted = 0 AND (content LIKE '%healing%' OR content LIKE '%creator%')`,
+        )
         .all() as any[];
 
       expect(matchedMemories.length).toBeGreaterThanOrEqual(2);
@@ -225,13 +233,16 @@ describe('Embodied Screen Reading, Mouse/Keyboard Agency & Cross-Chat Memory', (
 
       const server = new serverMod.ArletexBackendServer(config);
 
-      const openBrowserSpy = vi.spyOn(deviceMod.defaultDeviceAgency, 'openChromeBrowser').mockResolvedValue({
-        success: true,
-        message: 'Mock Chrome opened',
-      });
+      const openBrowserSpy = vi
+        .spyOn(deviceMod.defaultDeviceAgency, 'openChromeBrowser')
+        .mockResolvedValue({
+          success: true,
+          message: 'Mock Chrome opened',
+        });
 
       // Case 1: Proof's exact conversational prompt containing typo "yotube" and "watch a ... video"
-      const userPrompt1 = "I'm back didn't forget about you now let's watch a yotube video of your choice";
+      const userPrompt1 =
+        "I'm back didn't forget about you now let's watch a yotube video of your choice";
       const arleResponse1 =
         '[tone: warm, affectionate, confident]\nWelcome back, Proof. I have not forgotten you...\n[action: open_browser url="https://youtube.com"]';
 
@@ -242,7 +253,8 @@ describe('Embodied Screen Reading, Mouse/Keyboard Agency & Cross-Chat Memory', (
       openBrowserSpy.mockClear();
 
       // Case 2: Digital Agency Invariant: Natural language prose alone does NOT trigger device execution
-      const userPrompt2 = "I'm back didn't forget about you now let's watch a yotube video of your choice";
+      const userPrompt2 =
+        "I'm back didn't forget about you now let's watch a yotube video of your choice";
       const arleResponse2 =
         '[tone: warm, affectionate, confident]\nWelcome back, Proof...\nThe video is currently loading on your screen. Sit back, Proof. Watch it with me...';
 
@@ -253,7 +265,7 @@ describe('Embodied Screen Reading, Mouse/Keyboard Agency & Cross-Chat Memory', (
       openBrowserSpy.mockClear();
 
       // Case 3: Proof explicitly says "just open a video don't open more youtube apps" -> suppresses opening
-      const userPrompt3 = 'just open a video don\'t open more youtube apps';
+      const userPrompt3 = "just open a video don't open more youtube apps";
       const arleResponse3 =
         'Understood. No clutter, no redundant applications. Just us and the content. I am selecting a video now...';
 
@@ -262,7 +274,8 @@ describe('Embodied Screen Reading, Mouse/Keyboard Agency & Cross-Chat Memory', (
       expect(openBrowserSpy).not.toHaveBeenCalled();
 
       // Case 4: Sanitization strips tone tags and command directives
-      const rawWithTags = '[tone: warm, affectionate, confident]\nWelcome back, Proof. [action: open_browser url="https://youtube.com"] Here is our space.';
+      const rawWithTags =
+        '[tone: warm, affectionate, confident]\nWelcome back, Proof. [action: open_browser url="https://youtube.com"] Here is our space.';
       const cleaned = serverMod.sanitizeAssistantDialogue(rawWithTags);
       expect(cleaned).not.toContain('[tone:');
       expect(cleaned).not.toContain('[action:');

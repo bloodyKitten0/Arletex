@@ -176,9 +176,7 @@ export const App: React.FC = () => {
         const decodeSeconds = prev.firstTokenTime
           ? Math.max(0.1, (now - prev.firstTokenTime) / 1000)
           : null;
-        const tps = decodeSeconds && prev.tokenCount > 0
-          ? prev.tokenCount / decodeSeconds
-          : 0;
+        const tps = decodeSeconds && prev.tokenCount > 0 ? prev.tokenCount / decodeSeconds : 0;
         return {
           ...prev,
           elapsedSeconds: parseFloat(elapsed.toFixed(1)),
@@ -283,7 +281,15 @@ export const App: React.FC = () => {
       const res = await api.updateConversation(id, title, isPinned);
       if (res.success) {
         setConversations((prev) =>
-          prev.map((c) => (c.id === id ? { ...c, ...(title ? { title } : {}), ...(isPinned !== undefined ? { isPinned } : {}) } : c)),
+          prev.map((c) =>
+            c.id === id
+              ? {
+                  ...c,
+                  ...(title ? { title } : {}),
+                  ...(isPinned !== undefined ? { isPinned } : {}),
+                }
+              : c,
+          ),
         );
       } else {
         setError(res.error);
@@ -323,7 +329,8 @@ export const App: React.FC = () => {
 
     // Optimistic UI update with rich media metadata
     const userMetadata: Record<string, any> = {};
-    const effectiveImgBase64 = imageBase64 || (mediaPayload?.type === 'image' ? mediaPayload.base64 : undefined);
+    const effectiveImgBase64 =
+      imageBase64 || (mediaPayload?.type === 'image' ? mediaPayload.base64 : undefined);
 
     if (effectiveImgBase64) {
       userMetadata.imageBase64 = effectiveImgBase64;
@@ -364,22 +371,25 @@ export const App: React.FC = () => {
     const requestId = crypto.randomUUID();
     activeRequestIdRef.current = requestId;
 
-    api.startInferenceStream({
-      conversationId: targetConvId,
-      userMessageContent: content,
-      imageBase64: effectiveImgBase64,
-      videoBase64: mediaPayload?.type === 'video' ? mediaPayload.base64 : undefined,
-      videoPath: mediaPayload?.type === 'video' ? mediaPayload.videoPath : undefined,
-      videoMimeType: mediaPayload?.type === 'video' ? mediaPayload.mimeType : undefined,
-    }).then((res) => {
-      if (!res.success) {
-        setError(res.error);
+    api
+      .startInferenceStream({
+        conversationId: targetConvId,
+        userMessageContent: content,
+        imageBase64: effectiveImgBase64,
+        videoBase64: mediaPayload?.type === 'video' ? mediaPayload.base64 : undefined,
+        videoPath: mediaPayload?.type === 'video' ? mediaPayload.videoPath : undefined,
+        videoMimeType: mediaPayload?.type === 'video' ? mediaPayload.mimeType : undefined,
+      })
+      .then((res) => {
+        if (!res.success) {
+          setError(res.error);
+          setIsGenerating(false);
+        }
+      })
+      .catch((err: any) => {
+        setError(err.message);
         setIsGenerating(false);
-      }
-    }).catch((err: any) => {
-      setError(err.message);
-      setIsGenerating(false);
-    });
+      });
   };
 
   // Cancel generation & immediately stop audio playback
@@ -410,7 +420,15 @@ export const App: React.FC = () => {
   const activeConversation = conversations.find((c) => c.id === activeConversationId) || null;
 
   return (
-    <div style={{ display: 'flex', width: '100vw', height: '100vh', overflow: 'hidden', backgroundColor: 'var(--bg-primary)' }}>
+    <div
+      style={{
+        display: 'flex',
+        width: '100vw',
+        height: '100vh',
+        overflow: 'hidden',
+        backgroundColor: 'var(--bg-primary)',
+      }}
+    >
       {/* Primary Left Navigation (Hidden in Full Screen Mode) */}
       {!fullScreen && (
         <NavSidebar
@@ -423,7 +441,16 @@ export const App: React.FC = () => {
       )}
 
       {/* Central Active View Workspace */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0, position: 'relative' }}>
+      <main
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          minWidth: 0,
+          position: 'relative',
+        }}
+      >
         {activeSection === 'main' && (
           <MainView
             conversation={activeConversation}

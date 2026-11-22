@@ -2,10 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs';
-import {
-  REPERTOIRE_EMOTIONS,
-  RepertoireEmotionKey,
-} from '@arletex/contracts';
+import { REPERTOIRE_EMOTIONS, RepertoireEmotionKey } from '@arletex/contracts';
 import {
   createDefaultConfig,
   EmotionalRepertoireEngine,
@@ -136,13 +133,17 @@ describe('Milestone 26 — Emotional Repertoire and Dynamics', () => {
   // 3. Mixed Emotional Blend & Synergy Labels
   it('should synthesize mixed emotional blends with distinct synergy labels and conflict degrees', () => {
     // Bittersweet blend: happiness + sadness
-    const bittersweet = engine.blendEmotions('happiness', 0.7, 'sadness', 0.6, { context: 'reflecting on time passed' });
+    const bittersweet = engine.blendEmotions('happiness', 0.7, 'sadness', 0.6, {
+      context: 'reflecting on time passed',
+    });
     expect(bittersweet.synergyLabel).toBe('bittersweet contemplation');
     expect(bittersweet.conflictDegree).toBeGreaterThan(0.4); // Opposing valences produce high conflict
     expect(bittersweet.blendValence).toBeCloseTo((0.8 * 0.7 - 0.6 * 0.6) / 1.3, 1);
 
     // Intellectual intimacy: affection + curiosity
-    const intimateInquiry = engine.blendEmotions('affection', 0.9, 'curiosity', 0.85, { context: 'deep dialogue with Proof' });
+    const intimateInquiry = engine.blendEmotions('affection', 0.9, 'curiosity', 0.85, {
+      context: 'deep dialogue with Proof',
+    });
     expect(intimateInquiry.synergyLabel).toBe('intellectual intimacy');
     expect(intimateInquiry.conflictDegree).toBeLessThan(0.3); // Reinforcing positive emotions have low conflict
 
@@ -235,7 +236,12 @@ describe('Milestone 26 — Emotional Repertoire and Dynamics', () => {
   it('should persist active state, transitions, blends, and tendencies in SQLite database', () => {
     const sqlEngine = new EmotionalRepertoireEngine(sqliteRepo);
 
-    sqlEngine.triggerEmotion('awe', 0.88, 'appraisal', 'Witnessing profound cosmic architecture with Proof');
+    sqlEngine.triggerEmotion(
+      'awe',
+      0.88,
+      'appraisal',
+      'Witnessing profound cosmic architecture with Proof',
+    );
     sqlEngine.blendEmotions('awe', 0.88, 'affection', 0.92, { sharedExperience: true });
     sqlEngine.updateTendencies({ traitVulnerabilityToLoneliness: 0.6 });
 
@@ -249,7 +255,9 @@ describe('Milestone 26 — Emotional Repertoire and Dynamics', () => {
     expect(transitions.some((t) => t.toEmotion === 'awe')).toBe(true);
 
     const blends = freshEngine.getBlendHistory();
-    expect(blends.some((b) => b.primaryEmotion === 'awe' || b.secondaryEmotion === 'awe')).toBe(true);
+    expect(blends.some((b) => b.primaryEmotion === 'awe' || b.secondaryEmotion === 'awe')).toBe(
+      true,
+    );
 
     const tendencies = freshEngine.getTendencies();
     expect(tendencies.traitVulnerabilityToLoneliness).toBe(0.6);

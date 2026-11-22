@@ -84,13 +84,22 @@ export class CrossEngineCognitiveCycle {
     const modulatedByPersonality = this.personalityEngine.modulateAppraisal(rawAppraisal, event);
 
     // B: Motivational Engine modulates (Curiosity drive, Competence need, Rest balance, Intimacy)
-    const modulatedByMotivation = this.motivationalEngine.modulateAppraisal(modulatedByPersonality, event);
+    const modulatedByMotivation = this.motivationalEngine.modulateAppraisal(
+      modulatedByPersonality,
+      event,
+    );
 
     // C: Relationship Engine modulates (Partner trust, attachment security, conflict history)
-    const modulatedByRelationship = this.relationshipEngine.modulateAppraisal(modulatedByMotivation, event);
+    const modulatedByRelationship = this.relationshipEngine.modulateAppraisal(
+      modulatedByMotivation,
+      event,
+    );
 
     // D: Self Model Engine modulates (Known capabilities, empirical limitations, existential salience)
-    const modulatedBySelfModel = this.selfModelEngine.modulateAppraisal(modulatedByRelationship, event);
+    const modulatedBySelfModel = this.selfModelEngine.modulateAppraisal(
+      modulatedByRelationship,
+      event,
+    );
 
     // E: Development Engine modulates (Active interests depth/mastery)
     const appraisal = this.developmentEngine.modulateAppraisal(modulatedBySelfModel, event);
@@ -119,9 +128,18 @@ export class CrossEngineCognitiveCycle {
         event.payload?.verifiedOutcome !== undefined
       ) {
         const domain = (event.payload?.domain as string) || event.type || 'operational_task';
-        const operation = (event.payload?.operation as string) || (event.payload?.taskTitle as string) || event.type;
-        const success = event.category === 'failure' ? false : Boolean(event.payload?.success ?? (event.category === 'success'));
-        const evidence = (event.payload?.evidence as string) || appraisal.supportingEvidence?.[0] || 'Execution recorded';
+        const operation =
+          (event.payload?.operation as string) ||
+          (event.payload?.taskTitle as string) ||
+          event.type;
+        const success =
+          event.category === 'failure'
+            ? false
+            : Boolean(event.payload?.success ?? event.category === 'success');
+        const evidence =
+          (event.payload?.evidence as string) ||
+          appraisal.supportingEvidence?.[0] ||
+          'Execution recorded';
         const provenance = (event.payload?.provenance as string) || 'cycle_event';
         this.selfModelEngine.applyVerifiedExperience({
           domain,

@@ -125,7 +125,9 @@ export class ProcessSupervisor {
     const terminatedPids: number[] = [];
     const unmanagedPids: number[] = [];
 
-    this.logger.warn(`Emergency termination of all ${active.length} supervised process(es) initiated`);
+    this.logger.warn(
+      `Emergency termination of all ${active.length} supervised process(es) initiated`,
+    );
 
     for (const proc of active) {
       try {

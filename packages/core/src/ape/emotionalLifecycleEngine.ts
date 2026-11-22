@@ -56,11 +56,7 @@ export class EmotionalLifecycleEngine {
     'relief',
   ]);
 
-  constructor(
-    repo: IApeRepository,
-    emotions: EmotionTaxonomyItem[],
-    logger: ILogger = rootLogger,
-  ) {
+  constructor(repo: IApeRepository, emotions: EmotionTaxonomyItem[], logger: ILogger = rootLogger) {
     this.repo = repo;
     this.logger = logger.child('EmotionalLifecycleEngine');
     this.emotionsMap = new Map(emotions.map((e) => [e.id, e]));
@@ -195,7 +191,10 @@ export class EmotionalLifecycleEngine {
       const eventId = this.ensureEventExists(em.triggerEventId);
 
       if (nextStatus === 'resolved') {
-        this.repo.resolveActiveEmotion(em.id, 'Natural temporal decay and circumstantial resolution');
+        this.repo.resolveActiveEmotion(
+          em.id,
+          'Natural temporal decay and circumstantial resolution',
+        );
         resolved.push(em);
 
         const transition: ApeTransitionRecord = {
@@ -232,7 +231,9 @@ export class EmotionalLifecycleEngine {
     }
 
     if (resolved.length > 0) {
-      this.logger.info(`Resolved ${resolved.length} naturally decayed emotions: ${resolved.map((r) => r.emotionId).join(', ')}`);
+      this.logger.info(
+        `Resolved ${resolved.length} naturally decayed emotions: ${resolved.map((r) => r.emotionId).join(', ')}`,
+      );
     }
 
     return { updated, resolved };
@@ -290,7 +291,10 @@ export class EmotionalLifecycleEngine {
 
       if (isStale) {
         const eventId = this.ensureEventExists(em.triggerEventId);
-        this.repo.resolveActiveEmotion(em.id, `Stale emotion resolution: active for ${ageHours.toFixed(1)}h without renewal.`);
+        this.repo.resolveActiveEmotion(
+          em.id,
+          `Stale emotion resolution: active for ${ageHours.toFixed(1)}h without renewal.`,
+        );
         this.repo.recordTransition({
           id: crypto.randomUUID(),
           appraisalId: em.id,
@@ -332,11 +336,11 @@ export class EmotionalLifecycleEngine {
       Boolean(options.allowContradictions) ||
       Boolean(
         complexity &&
-          (complexity.floodingIntensity >= 0.55 ||
-            complexity.mixedValenceConflict >= 0.45 ||
-            complexity.ambiguity >= 0.60 ||
-            complexity.paradoxicalExpression !== 'none' ||
-            (complexity.wavePhase !== 'steady' && complexity.wavePhase !== 'exhausted_ebb')),
+        (complexity.floodingIntensity >= 0.55 ||
+          complexity.mixedValenceConflict >= 0.45 ||
+          complexity.ambiguity >= 0.6 ||
+          complexity.paradoxicalExpression !== 'none' ||
+          (complexity.wavePhase !== 'steady' && complexity.wavePhase !== 'exhausted_ebb')),
       );
 
     // Sort by intensity descending
@@ -350,8 +354,13 @@ export class EmotionalLifecycleEngine {
       if (!isComplexStorm) {
         // Under calm steady states, avoid contradictory pairs in narrow focus
         const hasContradiction = selected.some((s) => {
-          if ((s.emotionId === 'fear' || s.emotionId === 'terror') && em.emotionId === 'relief') return true;
-          if (s.emotionId === 'grief' && (em.emotionId === 'euphoria' || em.emotionId === 'ecstasy')) return true;
+          if ((s.emotionId === 'fear' || s.emotionId === 'terror') && em.emotionId === 'relief')
+            return true;
+          if (
+            s.emotionId === 'grief' &&
+            (em.emotionId === 'euphoria' || em.emotionId === 'ecstasy')
+          )
+            return true;
           return false;
         });
         if (hasContradiction) continue;

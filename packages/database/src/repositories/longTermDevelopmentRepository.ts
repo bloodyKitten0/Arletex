@@ -42,7 +42,10 @@ export class SqliteLongTermDevelopmentRepository implements ILongTermDevelopment
           entry.timestamp,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save development history entry ${entry.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save development history entry ${entry.id}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -110,7 +113,10 @@ export class SqliteLongTermDevelopmentRepository implements ILongTermDevelopment
           anchor.lastVerifiedAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save identity anchor ${anchor.anchorKey}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save identity anchor ${anchor.anchorKey}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -183,7 +189,9 @@ export class SqliteLongTermDevelopmentRepository implements ILongTermDevelopment
     try {
       // Find open epoch (ended_at is null) or latest started
       const row = this.db
-        .prepare(`SELECT * FROM development_epochs WHERE ended_at IS NULL ORDER BY started_at DESC LIMIT 1`)
+        .prepare(
+          `SELECT * FROM development_epochs WHERE ended_at IS NULL ORDER BY started_at DESC LIMIT 1`,
+        )
         .get() as any;
       if (row) {
         return {

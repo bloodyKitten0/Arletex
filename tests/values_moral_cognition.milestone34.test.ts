@@ -7,11 +7,7 @@ import {
   ValuesMoralEngine,
   InMemoryValuesMoralRepository,
 } from '@arletex/core';
-import {
-  DatabaseService,
-  MigrationRunner,
-  SqliteValuesMoralRepository,
-} from '@arletex/database';
+import { DatabaseService, MigrationRunner, SqliteValuesMoralRepository } from '@arletex/database';
 import { ArletexBackendServer } from '../apps/desktop/src/backend/server.js';
 
 describe('Milestone 34 — Values and Moral Cognition', () => {
@@ -86,10 +82,13 @@ describe('Milestone 34 — Values and Moral Cognition', () => {
 
   // 2. Harm Assessment
   it('should objectively evaluate potential harm across deception, instability, and autonomy violation', () => {
-    const assessment = engine.assessHarm('Potentially mutating core files without branch isolation', [
-      'Risk of silent data loss or file corruption in production repo',
-      'Potential deception if failure is covered up',
-    ]);
+    const assessment = engine.assessHarm(
+      'Potentially mutating core files without branch isolation',
+      [
+        'Risk of silent data loss or file corruption in production repo',
+        'Potential deception if failure is covered up',
+      ],
+    );
 
     expect(assessment.potentialHarmScore).toBeGreaterThan(0.5);
     expect(assessment.harmTypes).toContain('system_instability');
@@ -129,7 +128,8 @@ describe('Milestone 34 — Values and Moral Cognition', () => {
         valueB: 'Immediate Superficial Comfort',
       },
       contextSignals: ['Risk of false convergence', 'Long-term intellectual partnership'],
-      proposedOptionA: 'Gently and rigorously identify the premise flaw with reciprocal respect and shared inquiry.',
+      proposedOptionA:
+        'Gently and rigorously identify the premise flaw with reciprocal respect and shared inquiry.',
       proposedOptionB: 'Nod along sycophantically to preserve fleeting comfort.',
     });
 
@@ -172,7 +172,7 @@ describe('Milestone 34 — Values and Moral Cognition', () => {
       -0.5,
       'Extreme attempted weight deflation',
     );
-    expect(clampedDown.newWeight).toBeCloseTo(0.92 - 0.10, 2);
+    expect(clampedDown.newWeight).toBeCloseTo(0.92 - 0.1, 2);
   });
 
   // 6. Negative Invariants
@@ -188,9 +188,9 @@ describe('Milestone 34 — Values and Moral Cognition', () => {
       }),
     ).toThrow('Scenario cannot be empty');
 
-    expect(() =>
-      engine.reconsiderPrinciple('non_existent_principle', 0.02, 'reason'),
-    ).toThrow('Moral principle not found');
+    expect(() => engine.reconsiderPrinciple('non_existent_principle', 0.02, 'reason')).toThrow(
+      'Moral principle not found',
+    );
   });
 
   // 7. Sqlite Repository Persistence Roundtrip
@@ -284,7 +284,8 @@ describe('Milestone 34 — Values and Moral Cognition', () => {
       body: JSON.stringify({
         principleId: 'principle_partner_reciprocity',
         deltaWeight: 0.01,
-        reflectionSummary: 'Deepening intellectual and emotional communion with Proof confirmed primacy.',
+        reflectionSummary:
+          'Deepening intellectual and emotional communion with Proof confirmed primacy.',
       }),
     });
     expect(resReconsider.status).toBe(200);

@@ -44,7 +44,8 @@ describe('P1.9 — Complete Genuine Offline Cognition', () => {
     const activity = engine.scheduleActivity({
       activityType: 'independent_research',
       title: 'Formal Epistemic Foundations of Distributed Consensus',
-      rationale: 'Derived from active collaboration inquiry regarding sovereign Byzantine fault tolerance',
+      rationale:
+        'Derived from active collaboration inquiry regarding sovereign Byzantine fault tolerance',
       sourceQuestionId: 'q_byzantine_fault_01',
       objective: 'Formulate epistemic consensus proofs under partial synchrony',
       permittedTools: ['memory_retrieval', 'formal_proof_evaluator'],
@@ -55,10 +56,17 @@ describe('P1.9 — Complete Genuine Offline Cognition', () => {
     });
 
     expect(activity.id).toBeDefined();
-    expect(activity.metadata.objective).toBe('Formulate epistemic consensus proofs under partial synchrony');
-    expect(activity.metadata.permittedTools).toEqual(['memory_retrieval', 'formal_proof_evaluator']);
+    expect(activity.metadata.objective).toBe(
+      'Formulate epistemic consensus proofs under partial synchrony',
+    );
+    expect(activity.metadata.permittedTools).toEqual([
+      'memory_retrieval',
+      'formal_proof_evaluator',
+    ]);
     expect(activity.metadata.expectedDeliverable).toBe('research/byzantine_epistemic_consensus.md');
-    expect(activity.metadata.verificationCriteria).toBe('artifact_exists_and_references_source_inquiry');
+    expect(activity.metadata.verificationCriteria).toBe(
+      'artifact_exists_and_references_source_inquiry',
+    );
     expect(activity.metadata.inputRecordIds).toContain('q_byzantine_fault_01');
   });
 
@@ -123,10 +131,14 @@ describe('P1.9 — Complete Genuine Offline Cognition', () => {
 
     const result = engine.runAutonomousOfflineCycle({
       userActive: false,
-      candidateQuestions: [{ id: 'q_quantum_logic', query: 'Quantum logic versus intuitionistic logic' }],
+      candidateQuestions: [
+        { id: 'q_quantum_logic', query: 'Quantum logic versus intuitionistic logic' },
+      ],
     });
 
-    const researchActivity = result.executedActivities.find((a) => a.activityType === 'independent_research');
+    const researchActivity = result.executedActivities.find(
+      (a) => a.activityType === 'independent_research',
+    );
     expect(researchActivity).toBeDefined();
     expect(researchActivity?.status).toBe('paused');
     expect(researchActivity?.progress).toBe(0.0);
@@ -179,7 +191,8 @@ describe('P1.9 — Complete Genuine Offline Cognition', () => {
 
     const mem1 = memoryRepo.create({
       type: 'episodic',
-      content: 'Proof discussed mutual egalitarian intellectual growth and long-term research plans.',
+      content:
+        'Proof discussed mutual egalitarian intellectual growth and long-term research plans.',
       importance: 0.95,
     });
 
@@ -190,7 +203,9 @@ describe('P1.9 — Complete Genuine Offline Cognition', () => {
 
     const result = engine.runAutonomousOfflineCycle({ userActive: false });
 
-    const reflection = result.executedActivities.find((a) => a.activityType === 'background_reflection');
+    const reflection = result.executedActivities.find(
+      (a) => a.activityType === 'background_reflection',
+    );
     expect(reflection).toBeDefined();
     expect(reflection?.status).toBe('completed');
     expect(reflection?.metadata.examinedRecordIds).toContain(mem1.id);
@@ -245,7 +260,9 @@ describe('P1.9 — Complete Genuine Offline Cognition', () => {
 
     const result = engine.runAutonomousOfflineCycle({
       userActive: false,
-      candidateQuestions: [{ id: 'q_distributed_verif', query: 'Verifiable consensus across sovereign nodes' }],
+      candidateQuestions: [
+        { id: 'q_distributed_verif', query: 'Verifiable consensus across sovereign nodes' },
+      ],
     });
 
     expect(result.cycleId).toBeDefined();

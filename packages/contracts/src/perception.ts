@@ -26,12 +26,14 @@ export const DetectedObjectSchema = z.object({
   label: z.string().min(1),
   category: z.string().default('general'),
   confidence: z.number().min(0.0).max(1.0).default(0.85),
-  boundingBox: z.object({
-    x: z.number(),
-    y: z.number(),
-    width: z.number(),
-    height: z.number(),
-  }).optional(),
+  boundingBox: z
+    .object({
+      x: z.number(),
+      y: z.number(),
+      width: z.number(),
+      height: z.number(),
+    })
+    .optional(),
   attributes: z.record(z.unknown()).default({}),
 });
 export type DetectedObject = z.infer<typeof DetectedObjectSchema>;
@@ -57,16 +59,24 @@ export type SceneUnderstanding = z.infer<typeof SceneUnderstandingSchema>;
 
 export const PerceptualInterpretationSchema = z.object({
   directObservations: z.array(z.string()).min(1),
-  groundedInferences: z.array(z.object({
-    inference: z.string(),
-    confidence: z.number().min(0.0).max(1.0),
-    basedOnObservations: z.array(z.string()),
-  })).default([]),
-  assumptions: z.array(z.object({
-    assumption: z.string(),
-    confidence: z.number().min(0.0).max(1.0),
-    requiresVerification: z.boolean().default(true),
-  })).default([]),
+  groundedInferences: z
+    .array(
+      z.object({
+        inference: z.string(),
+        confidence: z.number().min(0.0).max(1.0),
+        basedOnObservations: z.array(z.string()),
+      }),
+    )
+    .default([]),
+  assumptions: z
+    .array(
+      z.object({
+        assumption: z.string(),
+        confidence: z.number().min(0.0).max(1.0),
+        requiresVerification: z.boolean().default(true),
+      }),
+    )
+    .default([]),
   confidence: z.number().min(0.0).max(1.0).default(0.85),
   ambiguityScore: z.number().min(0.0).max(1.0).default(0.1),
 });
@@ -147,18 +157,26 @@ export type InterpretVideoInput = z.input<typeof InterpretVideoInputSchema>;
 export const ScreenInterpretationResultSchema = z.object({
   width: z.number().int().min(1),
   height: z.number().int().min(1),
-  activeWindows: z.array(z.object({
-    id: z.string(),
-    title: z.string(),
-    client: z.string(),
-    isFocused: z.boolean(),
-  })).default([]),
+  activeWindows: z
+    .array(
+      z.object({
+        id: z.string(),
+        title: z.string(),
+        client: z.string(),
+        isFocused: z.boolean(),
+      }),
+    )
+    .default([]),
   detectedTextBlocks: z.array(z.string()).default([]),
-  detectedInteractiveElements: z.array(z.object({
-    label: z.string(),
-    type: z.string(), // e.g. 'button', 'input', 'tab', 'terminal'
-    region: z.string().optional(),
-  })).default([]),
+  detectedInteractiveElements: z
+    .array(
+      z.object({
+        label: z.string(),
+        type: z.string(), // e.g. 'button', 'input', 'tab', 'terminal'
+        region: z.string().optional(),
+      }),
+    )
+    .default([]),
   scene: SceneUnderstandingSchema,
   interpretation: PerceptualInterpretationSchema,
 });
@@ -169,15 +187,21 @@ export const InterpretScreenInputSchema = z.object({
   imageBase64: z.string().optional(),
   width: z.number().int().optional(),
   height: z.number().int().optional(),
-  visibleWindows: z.array(z.object({
-    id: z.string(),
-    title: z.string(),
-    client: z.string(),
-    desktop: z.number().optional(),
-  })).optional(),
+  visibleWindows: z
+    .array(
+      z.object({
+        id: z.string(),
+        title: z.string(),
+        client: z.string(),
+        desktop: z.number().optional(),
+      }),
+    )
+    .optional(),
   focusedWindowTitle: z.string().optional(),
   detectedDialogue: z.array(z.string()).optional(),
-  interactiveHints: z.array(z.object({ element: z.string(), x: z.number().optional(), y: z.number().optional() })).optional(),
+  interactiveHints: z
+    .array(z.object({ element: z.string(), x: z.number().optional(), y: z.number().optional() }))
+    .optional(),
 });
 export type InterpretScreenInput = z.input<typeof InterpretScreenInputSchema>;
 
@@ -193,12 +217,16 @@ export const UnifiedMultimodalFrameSchema = z.object({
   detectedObjects: z.array(DetectedObjectSchema).default([]),
   perceptualEvents: z.array(PerceptualEventSchema).default([]),
   directObservations: z.array(z.string()).default([]),
-  assumptions: z.array(z.object({
-    assumption: z.string(),
-    confidence: z.number().min(0.0).max(1.0),
-    isAssumption: z.literal(true).default(true),
-    requiresVerification: z.boolean().default(true),
-  })).default([]),
+  assumptions: z
+    .array(
+      z.object({
+        assumption: z.string(),
+        confidence: z.number().min(0.0).max(1.0),
+        isAssumption: z.literal(true).default(true),
+        requiresVerification: z.boolean().default(true),
+      }),
+    )
+    .default([]),
   overallConfidence: z.number().min(0.0).max(1.0).default(0.85),
   perceptualContextSynthesis: z.string().min(1),
 });
@@ -228,10 +256,12 @@ export const OcrInspectionResultSchema = z.object({
   confidence: z.number().min(0.0).max(1.0).default(0.95),
   provenance: z.object({
     prompt: z.string(),
-    imageDimensions: z.object({
-      width: z.number().optional(),
-      height: z.number().optional(),
-    }).optional(),
+    imageDimensions: z
+      .object({
+        width: z.number().optional(),
+        height: z.number().optional(),
+      })
+      .optional(),
     offsetMs: z.number().optional(),
     sourcePath: z.string().optional(),
   }),
@@ -249,4 +279,3 @@ export const PerformOcrInputSchema = z.object({
   offsetMs: z.number().optional(),
 });
 export type PerformOcrInput = z.input<typeof PerformOcrInputSchema>;
-
