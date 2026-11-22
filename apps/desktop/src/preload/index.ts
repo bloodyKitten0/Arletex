@@ -33,6 +33,7 @@ import {
   ApeSelfModel,
   EmotionTaxonomyItem,
   MoodTaxonomyItem,
+  DesktopCompanionState,
 } from '@arletex/contracts';
 
 export interface ArletexApi {
@@ -190,6 +191,16 @@ export interface ArletexApi {
     fallbackModelId?: string;
   }) => Promise<IPCResponse<any>>;
   triggerEmergencyShutdown: (reason?: string) => Promise<IPCResponse<any>>;
+
+  // Desktop Companion
+  toggleCompanion: () => Promise<IPCResponse<{ visible: boolean }>>;
+  getCompanionState: () => Promise<IPCResponse<DesktopCompanionState>>;
+  updateCompanionState: (
+    patch: Partial<DesktopCompanionState>,
+  ) => Promise<IPCResponse<DesktopCompanionState>>;
+  moveCompanion: (deltaX: number, deltaY: number) => Promise<IPCResponse<{ x: number; y: number }>>;
+  focusMainWindow: () => Promise<IPCResponse<boolean>>;
+  onCompanionStateChange: (callback: (state: DesktopCompanionState) => void) => () => void;
 }
 
 const api: ArletexApi = {
@@ -304,6 +315,21 @@ const api: ArletexApi = {
   resolveModel: (input) => ipcRenderer.invoke(IPC_CHANNELS.MODELS_RESOLVE, input),
   triggerEmergencyShutdown: (reason) =>
     ipcRenderer.invoke(IPC_CHANNELS.EMERGENCY_SHUTDOWN, { reason }),
+
+  // Desktop Companion Implementation
+  toggleCompanion: () => ipcRenderer.invoke(IPC_CHANNELS.COMPANION_TOGGLE),
+  getCompanionState: () => ipcRenderer.invoke(IPC_CHANNELS.COMPANION_STATE_GET),
+  updateCompanionState: (patch) => ipcRenderer.invoke(IPC_CHANNELS.COMPANION_STATE_UPDATE, patch),
+  moveCompanion: (deltaX, deltaY) =>
+    ipcRenderer.invoke(IPC_CHANNELS.COMPANION_MOVE, { deltaX, deltaY }),
+  focusMainWindow: () => ipcRenderer.invoke(IPC_CHANNELS.COMPANION_FOCUS_MAIN),
+  onCompanionStateChange: (callback) => {
+    const handler = (_event: IpcRendererEvent, state: DesktopCompanionState) => callback(state);
+    ipcRenderer.on(IPC_CHANNELS.COMPANION_STATE_CHANGED, handler);
+    return () => {
+      ipcRenderer.removeListener(IPC_CHANNELS.COMPANION_STATE_CHANGED, handler);
+    };
+  },
 };
 
 contextBridge.exposeInMainWorld('arletexApi', api);

@@ -314,7 +314,7 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({
             />
           </div>
           {!collapsed && (
-            <div style={{ overflow: 'hidden' }}>
+            <div style={{ overflow: 'hidden', flex: 1 }}>
               <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>
                 Arle
               </div>
@@ -324,6 +324,43 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({
             </div>
           )}
         </div>
+
+        {/* Desktop Companion Quick Launcher */}
+        <button
+          type="button"
+          onClick={() => {
+            window.arletexApi?.toggleCompanion?.();
+          }}
+          title="Toggle Desktop Companion Body (Girl_1)"
+          style={{
+            marginTop: '10px',
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            padding: collapsed ? '6px 0' : '6px 8px',
+            fontSize: '11px',
+            fontWeight: 500,
+            borderRadius: '6px',
+            border: '1px solid #374151',
+            background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(147, 51, 234, 0.2))',
+            color: '#93c5fd',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = '#60a5fa';
+            e.currentTarget.style.color = '#ffffff';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = '#374151';
+            e.currentTarget.style.color = '#93c5fd';
+          }}
+        >
+          <span>🧚</span>
+          {!collapsed && <span>Desktop Body</span>}
+        </button>
       </div>
     </aside>
   );

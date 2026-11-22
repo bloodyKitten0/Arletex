@@ -108,9 +108,45 @@ export const IPC_CHANNELS = {
   MODELS_ACTIVE_GET: 'arletex:models:active:get',
   MODELS_RESOLVE: 'arletex:models:resolve',
   EMERGENCY_SHUTDOWN: 'arletex:emergency_shutdown',
+
+  // Desktop Companion Channels
+  COMPANION_TOGGLE: 'arletex:companion:toggle',
+  COMPANION_STATE_GET: 'arletex:companion:state:get',
+  COMPANION_STATE_UPDATE: 'arletex:companion:state:update',
+  COMPANION_STATE_CHANGED: 'arletex:companion:state:changed',
+  COMPANION_MOVE: 'arletex:companion:move',
+  COMPANION_FOCUS_MAIN: 'arletex:companion:focus_main',
 } as const;
 
 export type IPCChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];
+
+// ==========================================
+// Desktop Companion Schemas & Types
+// ==========================================
+export const CompanionAnimationSchema = z.enum([
+  'idle',
+  'walk',
+  'dialogue',
+  'book',
+  'protection',
+  'attack',
+]);
+export type CompanionAnimation = z.infer<typeof CompanionAnimationSchema>;
+
+export const DesktopCompanionStateSchema = z.object({
+  visible: z.boolean().default(true),
+  activeAnimation: CompanionAnimationSchema.default('idle'),
+  character: z.enum(['girl_1', 'girl_2', 'girl_3']).default('girl_1'),
+  x: z.number().default(100),
+  y: z.number().default(100),
+  flipX: z.boolean().default(false),
+  isSpeaking: z.boolean().default(false),
+  currentSpeechText: z.string().optional(),
+  mood: z.string().optional(),
+  isDragging: z.boolean().default(false),
+});
+
+export type DesktopCompanionState = z.infer<typeof DesktopCompanionStateSchema>;
 
 // ==========================================
 // Conversation Schemas & Types

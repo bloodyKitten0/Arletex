@@ -119,11 +119,19 @@ export interface MinimalWindow {
  */
 export function isAuthorizedSender(
   event?: { sender?: { id: number }; senderFrame?: { url: string } } | null,
-  targetWindow?: MinimalWindow | null,
+  targetWindows?: MinimalWindow | (MinimalWindow | null)[] | null,
 ): boolean {
   if (!event || !event.sender) return false;
-  if (!targetWindow || targetWindow.isDestroyed()) return false;
-  if (event.sender.id !== targetWindow.webContents.id) return false;
+  const windows = Array.isArray(targetWindows)
+    ? targetWindows
+    : targetWindows
+      ? [targetWindows]
+      : [];
+  const senderId = event.sender.id;
+  const matched = windows.some(
+    (win) => win && !win.isDestroyed() && win.webContents.id === senderId,
+  );
+  if (!matched) return false;
   if (event.senderFrame && event.senderFrame.url) {
     const url = event.senderFrame.url;
     const isLocalOrigin =
