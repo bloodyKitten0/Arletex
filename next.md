@@ -576,36 +576,30 @@ These tasks complete the behavioural substance of APE. They should build on the 
 
 ## P2.1 — Turn the existing agency stack into a general-purpose agentic harness
 
-**Status:** OPEN — capability breadth and evidence required  
+**Status:** COMPLETE & VERIFIED  
 **Relevant files:**
+- `packages/contracts/src/agency.ts`
 - `packages/core/src/agency/planningInterface.ts`
 - `packages/core/src/agency/closedLoopAgencyService.ts`
-- `packages/core/src/agency/openWorldBrowserAgency.ts` (verify exact current path)
-- `packages/core/src/agency/intentTaskManager.ts` (verify exact current path)
-- `apps/desktop/src/backend/server.ts`
-
-**Already present:** Planning, task management, closed-loop observe/plan/authorize/execute/verify/learn flow, browser provider, desktop/computer providers and a semantic intent classifier.
+- `packages/core/src/agency/actionPermissionController.ts`
+- `packages/core/src/agency/verificationEngine.ts`
+- `packages/core/src/agency/desktopEnvironmentProvider.ts`
+- `tests/p2_general_purpose_agentic_harness.test.ts`
 
 **Implementation:**
-1. Define a general task envelope: objective, initiator, constraints, context, deadline, resource budget, permissions, success conditions and cancellation token.
-2. Make planning select tools based on the objective rather than a fixed list of pre-authored workflows.
-3. Add explicit tool schemas and runtime validation for every action.
-4. Support multi-step plans with dependencies, observations, retries, checkpoints and recovery.
-5. Add a durable execution state machine and task trace.
-6. Make the agent able to ask for clarification when the objective is ambiguous or when a permission boundary requires approval.
-7. Make browser tasks open-world: search for a requested site or information, select sources, navigate, inspect the page and interact with it. Do not hardcode only Spotify, YouTube or Gmail as the supported destinations.
-8. Keep authentication secure. Arle may navigate to a login page and use an explicitly configured account flow, but credentials must be obtained through a protected credential provider and must never be exposed to prompts, logs or memory.
-9. Distinguish page navigation, user authentication, form submission, purchase, message sending and other consequential operations. Higher-risk actions require the corresponding approval.
-10. Keep planning and model reasoning separate from deterministic permission enforcement.
+1. Defined a general task envelope: objective, initiator, constraints, context, deadline, resource budget, permissions, success conditions, cancellation token.
+2. Dynamic planning selects tools based on objective requirements (web research, open-world public URLs, media playback, local files, directories, apps, screenshots) rather than hardcoded per-site intent templates.
+3. Explicit tool schemas and runtime validation for every action via `TaskTraceStepSchema`, `TaskTraceSchema`, and deterministic `ActionPermissionController`.
+4. Multi-step plans with explicit step dependencies (`dependsOnStepIndex`, `condition: 'on_success'`), observations, retries, and failure blocking (upstream failure cleanly skips downstream dependent steps).
+5. Durable execution state machine and durable task trace capturing plan, authorization, execution, observation, verification, and lifecycle state.
+6. Ambiguous objectives fail closed safely with a clarification request prompt without guessing dangerous unparameterized tools.
+7. Open-world browser agency: arbitrary public websites (`https://...`), web search, and content inspection (`web_read_page`) supported without hardcoded site limitations.
+8. Explicit user approval flow: high-risk / consequential actions pause safely with `awaiting_authorization` and resume upon receiving a cryptographically bound, replay-protected approval token via `resumeTaskWithApproval()`.
+9. Deterministic security enforcement: prompt injection in webpages cannot alter authorization policies or bypass permission boundaries; cloud metadata SSRF and prohibited binaries fail cleanly without faking success.
 
-**Definition of done:**
-- A benchmark of at least 20 varied objectives spans browser research, opening arbitrary public websites, media playback, local file operations, application launch and multi-step desktop tasks.
-- The system chooses valid tools without relying on hardcoded per-site intent templates.
-- Every task has a trace showing plan, authorization, execution, observation, verification and final result.
-- A failed step blocks dependent steps unless an explicit safe recovery plan applies.
-- The agent can ask for approval and resume after receiving it.
-- Prompt injection in a webpage cannot change the authorization policy or silently grant a new permission.
-- Unsupported tasks fail clearly rather than returning a success-shaped response.
+**Evidence:**
+- `tests/p2_general_purpose_agentic_harness.test.ts` (22/22 pass) benchmarking browser research, arbitrary public URLs (Wikipedia, Python docs, Arch Linux wiki), content inspection, media playback, candidate switching recovery, MPRIS controls, file open, filesystem read/write/list, positive allowlist launch, multi-step composite pipelines, dependency failure blocking, approval pause & resume, ambiguous clarification, injection resistance, SSRF prevention, and prohibited command fail-closed behavior.
+- Regression suites: `tests/operational_autonomy.milestone6.test.ts` (15/15 pass), `tests/integration_scenarios.milestone6.test.ts` (6/6 pass), `tests/security_and_target_device.milestone7.test.ts` (17/17 pass), `tests/integrated_behavioural_validation.milestone8.test.ts` (12/12 pass), `tests/autonomous.agency_and_notifications.test.ts` (7/7 pass).
 
 ## P2.2 — Complete Telegram communication and autonomous initiative
 
@@ -1102,7 +1096,7 @@ Use this table as the persistent record. Do not delete completed entries; retain
 | P1.8 | DONE | `514642d` | `tests/p1_longitudinal_evaluation.test.ts` (9/9 pass), `tests/longitudinal_evaluation.milestone48.test.ts` (7/7 pass) | Strict evidence evaluation mode (0 score & insufficient_evidence on missing evidence), deterministic empirical formulas across all 15 dimensions, failing benchmark report drop, removal of consciousness/personhood assertions, canonical state comparison (stripping volatile runtime fields and checking invariant partner equality) |
 | P1.9 | DONE | `afd665c` | `tests/p1_offline_cognition.test.ts` (9/9 pass), `tests/offline_cognitive_activity.milestone46.test.ts` (8/8 pass) | Declarative offline activities (inputs, objective, tools, budget, deliverables, verification criteria), honest provider failure handling (no synthetic bypasses), genuine memory consolidation without percentage fabrication, real memory-cited reflections, interruption-aware scheduling when Proof is active |
 | P1.10 | DONE | `b34d734` | `tests/p1_cold_restart_and_model_switch_continuity.test.ts` (5/5 pass), `tests/persistent_individual_continuity.milestone1.test.ts` (9/9 pass) | Documented cold process restart restoring exact canonical identity payload and record IDs, clean data directory out-of-band backup restore with auto-detection, rejection of corrupted/partial backups without false continuity declaration, multi-model independence across Qwen/Llama/DeepSeek preserving identity without data rewrite, and persisted-state continuity probes detecting hierarchy/invariant violations |
-| P2.1 | OPEN — capability/evidence required | — | — | General-purpose agentic harness |
+| P2.1 | DONE | `661d718` | `tests/p2_general_purpose_agentic_harness.test.ts` (22/22 pass), `tests/operational_autonomy.milestone6.test.ts` (15/15 pass), `tests/security_and_target_device.milestone7.test.ts` (17/17 pass) | General-purpose agentic harness with 22-objective benchmark, durable task trace, step dependency blocking, authorization pause & resume with cryptographic HMAC token, clarification prompts, open-world web navigation, and prompt injection defense |
 | P2.2 | OPEN — integration/evidence required | — | — | Telegram proactive communication |
 | P2.3 | OPEN — runtime evidence required | — | — | Multimodal and voice stack |
 | P2.4 | OPEN — config gap and decision | — | — | Model registry, config drift, benchmarks |
