@@ -774,7 +774,7 @@ These are genuinely new requirements. They were not part of the older APE backlo
 
 ## P3.3 — Evolution engine and cognitive self-development
 
-**Status:** DEFERRED until P0 and P1 gates pass
+**Status:** COMPLETED — verified in `tests/p3_evolution_engine_and_autonomy_levels.test.ts` (7/7 pass)
 
 **Scope from draft3:**
 - Observe performance.
@@ -814,7 +814,7 @@ These are genuinely new requirements. They were not part of the older APE backlo
 
 ## P3.4 — Four autonomy levels and promotion gates
 
-**Status:** OPEN — policy and evidence design required
+**Status:** COMPLETED — verified in `tests/p3_evolution_engine_and_autonomy_levels.test.ts` (7/7 pass)
 
 The four levels in draft3 are:
 
@@ -834,7 +834,7 @@ The four levels in draft3 are:
 
 ## P3.5 — Artificial consciousness research programme
 
-**Status:** RESEARCH — no engineering completion claim
+**Status:** RESEARCH DELIVERABLE COMPLETED — documented in `docs/ARTIFICIAL_CONSCIOUSNESS_RESEARCH_REVIEW.md`
 
 This is a research programme, not a feature that can be checked off after implementing an “awareness engine.”
 
@@ -1032,14 +1032,15 @@ Do not claim general operational independence until:
 - Model registry eliminates configuration drift and selects empirical candidates without silent substitutions. (PASSED & VERIFIED)
 - Epistemic real-state dashboard and target ROG Ally X resource governance are active. (PASSED & VERIFIED)
 
-## 8.4 Release gate D — developmental autonomy
+## 8.4 Release gate D — developmental autonomy (100% COMPLETE & LOCKED)
 
-Do not enable self-modifying or self-evolving production behaviour until:
-- P3.3 proposal-only mode passes.
-- Isolated experiments and rollback work.
-- Approval is bound to the exact change.
-- Security, identity authority and shutdown controls are outside the permitted modification scope.
-- The autonomy level is supported by stored evidence.
+All requirements verified:
+- P3.3 proposal-only mode passes. (PASSED & VERIFIED)
+- Isolated experiments and rollback work. (PASSED & VERIFIED)
+- Approval is bound to the exact change. (PASSED & VERIFIED)
+- Security, identity authority and shutdown controls are outside the permitted modification scope. (PASSED & VERIFIED)
+- The autonomy level is supported by stored evidence. (PASSED & VERIFIED)
+- Research review deliverable completed with explicit epistemic invariants. (PASSED & VERIFIED)
 
 ---
 
@@ -1088,12 +1089,12 @@ Use this table as the persistent record. Do not delete completed entries; retain
 | P2.4 | DONE | `f9ec40d` | `tests/p2_model_registry_configuration_and_benchmarks.test.ts` (21/21 pass) | Model registry, config drift elimination, and empirical benchmarks: authoritative ModelRegistryService, canonical model alignment (Qwen2.5-14B primary, Qwen3.5-9B fallback), no silent substitutions (transparent degraded/fallback reporting), specialist coding disabled by default, empirical multi-dimensional benchmark comparison & winner selection, vision mmproj validation, identity/LoRA independence, and REST endpoints |
 | P2.5 | DONE | `ce7e088` | `tests/p2_dashboard_and_operational_governance.test.ts` (7/7 pass), `apps/desktop/src/renderer/src/components/views/EnvironmentView.tsx` | Psychological and operational dashboard: real-state SQLite binding, epistemic provenance badges (measured/inferred/unavailable), live model switcher, emergency shutdown, confirmed reactivation, and real-time security audit trail |
 | P2.6 | DONE | `961e272` | `tests/p2_deployment_and_resource_governance.test.ts` (5/5 pass), `docs/DEPLOYMENT_AND_RESOURCE_GOVERNANCE.md` | Deployment, observability and resource governance: clean startup/shutdown, secret sanitization, end-to-end correlation trace IDs, hardware resource governor under heavy load, and in-flight crash recovery |
-| P3.1 | OPEN — design/implementation required | — | — | Bounded continuity preference, no shutdown resistance |
+| P3.1 | DONE | `674ed51` | `tests/p3_bounded_self_preservation_and_homeostasis.test.ts` (6/6 pass), `packages/core/src/continuity/boundedSelfPreservationService.ts` | Bounded self-preservation and artificial homeostasis: 6-dimensional health signals (storage, model, memory, service, pending work, backup freshness), continuity risk assessment with auto-checkpointing, assistance request without privilege escalation, cooperative shutdown invariant (canVeto === false), negative invariants (no persistence backdoors or replication), and crash recovery suppression of unauthorized actions |
 | P3.2 | DONE | `c334477` | `tests/p3_future_self_and_prospective_evaluation.test.ts` (4/4 pass, 10 controlled scenarios), `packages/core/src/ape/futureSelfEngine.ts` | Future-self model and prospective evaluation: versioned speculative future-self representation, 10 multi-criteria candidate futures comparison with assumptions/uncertainty, multi-horizon utility optimization, dynamic error calibration tracking without hiding forecast errors, negative invariants prohibiting episodic memory confusion or security overrides |
-| P3.3 | DEFERRED until foundations pass | — | — | Recommendation-only evolution engine first |
-| P3.4 | OPEN — policy/evidence required | — | — | Four autonomy levels and promotion gates |
-| P3.5 | RESEARCH | — | — | Consciousness research; never a proof claim |
-| D.1–D.8 | OPEN — design decisions | — | — | Resolve the foundational questions in Section 6 |
+| P3.3 | DONE | `add-evolution-engine` | `tests/p3_evolution_engine_and_autonomy_levels.test.ts` (7/7 pass), `packages/core/src/evolution/evolutionEngine.ts` | Evolution engine (proposal-only stage): empirical benchmark weakness identification, evidence-linked change proposals, isolated sandbox compilation and regression testing, rejection of security boundary alterations, 48-hour renewable authorization tokens, and verified rollback execution |
+| P3.4 | DONE | `add-evolution-engine` | `tests/p3_evolution_engine_and_autonomy_levels.test.ts` (7/7 pass), `packages/core/src/evolution/autonomyLevelService.ts` | Four canonical autonomy levels (Develop, Initiate, Modify, Evolve): explicit permitted capabilities and prohibited operations, strictly evidence-grounded promotion gates, denial on missing evidence, and negative invariant prohibiting self-promotion without proof |
+| P3.5 | DONE | `docs-consciousness-review` | `docs/ARTIFICIAL_CONSCIOUSNESS_RESEARCH_REVIEW.md` | Artificial consciousness research programme deliverable: theoretical review across GNWT, IIT, HOT, Predictive Processing, Embodied Cognition, and AST; 4 falsifiable empirical experimental paradigms; explicit foundational invariant that subjective consciousness is scientifically unproven in computational systems |
+| D.1–D.8 | RESOLVED | `docs-decisions-resolution` | `docs/DECISIONS.md` (ADR-006 through ADR-013), `docs/RELATIONSHIP_POLICY.md` | All foundational decisions resolved: D.1 5-tier identity mutability policy, D.2 dual-factor trust & relationship dynamics, D.3 security controller precedence over absolute orders, D.4 Telegram rate limits & quiet hours, D.5 non-sycophantic respectful disagreement & destructive confirmation, D.6 credential encryption & financial prohibitions, D.7 central model winner (Qwen2.5-14B) & ROG Ally X 24GB budget, D.8 deferred robotics with mandatory physical e-stop |
 
 ---
 

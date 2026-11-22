@@ -39,6 +39,7 @@ import {
   AdapterLifecycleManager,
   ApeService,
   AutobiographicalMemoryService,
+  AutonomyLevelService,
   BoundedSelfPreservationService,
   ClosedLoopAgencyService,
   CognitiveControlBus,
@@ -46,6 +47,7 @@ import {
   DEFAULT_ARLE_SYSTEM_PROMPT,
   DesktopEnvironmentProvider,
   EmailProvider,
+  EvolutionEngine,
   IBrowserProvider,
   ILogger,
   IntentTaskManager,
@@ -378,6 +380,8 @@ export class ArletexBackendServer {
   public readonly ocrService: OcrService;
   public readonly modelRegistry: ModelRegistryService;
   public readonly boundedPreservation: BoundedSelfPreservationService;
+  public readonly evolutionEngine: EvolutionEngine;
+  public readonly autonomyLevelService: AutonomyLevelService;
 
   constructor(config: AppConfig, logger: ILogger = rootLogger) {
     this.config = config;
@@ -591,6 +595,8 @@ export class ArletexBackendServer {
       taskManager: this.intentTaskManager,
       logger,
     });
+    this.evolutionEngine = new EvolutionEngine(logger);
+    this.autonomyLevelService = new AutonomyLevelService('1_develop', logger);
   }
 
   public getIntentTaskManager(): IntentTaskManager {
@@ -2998,6 +3004,35 @@ Rules:
       if (url.pathname === '/api/future-self/calibration' && method === 'GET') {
         const metrics = this.apeService.futureSelfEngine.getCalibrationMetrics();
         this.sendJson(res, 200, metrics);
+        return;
+      }
+
+      // Autonomy Levels & Promotion Gates (P3.4)
+      if (url.pathname === '/api/autonomy/level' && method === 'GET') {
+        const level = this.autonomyLevelService.getCurrentLevel();
+        const definition = this.autonomyLevelService.getLevelDefinition(level);
+        this.sendJson(res, 200, { level, definition });
+        return;
+      }
+
+      if (url.pathname === '/api/autonomy/promote' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const targetLevel = body.targetLevel;
+        const evidence = body.evidence || {};
+        const assessment = this.autonomyLevelService.evaluatePromotion(targetLevel, evidence);
+        if (assessment.isPromotable && body.applyPromotion === true) {
+          const promo = this.autonomyLevelService.promoteLevel(targetLevel, evidence);
+          this.sendJson(res, 200, { assessment, promotion: promo });
+          return;
+        }
+        this.sendJson(res, 200, { assessment });
+        return;
+      }
+
+      // Evolution Engine (P3.3)
+      if (url.pathname === '/api/evolution/proposals' && method === 'GET') {
+        const proposals = this.evolutionEngine.listProposals();
+        this.sendJson(res, 200, { proposals });
         return;
       }
 
