@@ -1,5 +1,6 @@
 
 # WHEN DOING COMMITS USE SHORT HUMANIZED NAMES NOT AI
+# use an uncensored models for everything 
 
 # Arle / Arletex — Remaining Work, Implementation Instructions, and Definition of Done
 
@@ -1244,6 +1245,649 @@ No software checklist can establish subjective consciousness or human-equivalent
 
 **Guiding rule:** Implemented is not integrated. Integrated is not demonstrated. Demonstrated remains complete until new evidence establishes a regression or invalidates the acceptance criteria.
 
+Everything Remaining to Complete the Project
+I am treating your objective as the completion of the entire Arletex project, not merely the implementation of Draft 3.
+
+The target is an artificial individual with persistent identity, memory, psychological dynamics, independent goals, developmental continuity, and bounded operational autonomy. She should be able to communicate, learn, investigate, form preferences, disagree, pursue interests, use tools, and develop over time without having every action or opinion prescribed by you.
+
+There is an important distinction: we can engineer and evaluate those computational properties, but we cannot currently certify that an AI has subjective experience or is literally human. The engineering target is an increasingly coherent, autonomous artificial individual—not a claim of proven consciousness.
+
+I checked the latest repository revision I could retrieve: 87f6542 on 22 November 2026. The list below distinguishes existing infrastructure from unfinished implementation and validation. It is a completion backlog, not a claim that every existing subsystem must be rewritten.
+1. What already exists — do not rebuild it unnecessarily
+The following infrastructure is already present in the repository:
+Subsystem	Existing implementation	Remaining concern
+Cognitive architecture	16-stage CognitiveControlBus, mounted in production	Prove every relevant event enters the canonical pipeline
+Security	ActionPermissionController, ethical boundaries, signed approvals	Prove every external side effect passes through the same boundary
+Agency	Closed-loop observe, interpret, plan, authorize, execute, verify, learn	Improve real-world execution and verification
+Memory	Autobiographical memory services and repositories	Complete reliable memory formation, retrieval, correction and consolidation
+Continuity	Continuity manager and recovery machinery	Validate actual restarts, backups and model switches
+Evaluation	Longitudinal evaluation engine	Replace unsupported scores with empirical evidence
+Offline cognition	Background activity and consolidation services	Replace simulated progress with genuine cognitive work
+Communication	Telegram integration, inbound messages and outbound providers	Complete autonomous communication policies
+Desktop operation	Browser, computer and desktop providers	Validate actual postconditions on the target device
+Intent interpretation	Embedding-based semantic classification	Develop a general-purpose planning and tool-selection system
+Evolution	Evolution engine and proposal structures	Demonstrate real sandbox execution, approval and rollback
+Autonomy	Four defined developmental levels	Make promotion depend on independently verifiable evidence
+
+These are foundations. Their existence does not mean every capability they represent is finished.
+
+2. P0 — Make her actions and internal records truthful
+Critical priority
+This is the prerequisite for everything else. An artificial individual cannot develop reliably if her own system records fabricated achievements, unverified observations or inaccurate memories.
+P0.1 — Genuine action verification
+Problem: Several execution paths still conflate attempting an action with successfully accomplishing it.
+
+Work remaining:
+- [ ] Separate proposed, authorized, executed, verified, partially_verified, failed and unknown outcomes.
+- [ ] Remove caller-controlled Boolean overrides that can turn an unverified activity into a verified one.
+- [ ] Prevent recovery procedures from declaring an activity successful without fresh observations.
+- [ ] Verify browser navigation through actual page or browser-state observations.
+- [ ] Verify file writes through independent read-back and content comparison.
+- [ ] Verify application launches separately from application readiness.
+- [ ] Verify keyboard, mouse and window-focus operations through observed postconditions.
+- [ ] Ensure process creation, HTTP success and model-generated confirmation never constitute proof of task completion.
+- [ ] Ensure test-mode fake processes and simulated providers cannot produce production verification records.
+Definition of done: Every external action has an explicit expected postcondition. The system independently observes that postcondition before recording success. Failure to observe it produces an honest uncertain or failed result.
+P0.2 — Epistemic integrity
+She must distinguish what she knows from what she suspects.
+- [ ] Give every memory and factual claim a provenance classification.
+- [ ] Distinguish direct observation, user statements, retrieved sources, inference, hypothesis and speculation.
+- [ ] Preserve source references and timestamps.
+- [ ] Track confidence and uncertainty.
+- [ ] Detect contradictory evidence.
+- [ ] Reassess beliefs when better evidence becomes available.
+- [ ] Prevent an unverified interpretation from becoming an autobiographical fact.
+- [ ] Distinguish information retrieved from the internet from independently verified conclusions.
+- [ ] Maintain an audit trail of belief revisions.
+Definition of done: Given a claim, Arle can identify its origin, explain why she believes it, report uncertainty and revise it when contradictory evidence arrives.
+P0.3 — Universal security and permission boundary
+- [ ] Build a complete action-to-permission matrix.
+- [ ] Ensure every external side effect passes through the authorization controller.
+- [ ] Make missing authorization infrastructure fail closed.
+- [ ] Verify filesystem containment against symlink and path-race attacks.
+- [ ] Validate network destinations at connection time, including DNS rebinding and redirects.
+- [ ] Enforce recipient allowlists and communication policies.
+- [ ] Ensure browser, desktop, Telegram, email and other providers cannot bypass authorization.
+- [ ] Ensure cancellation and emergency shutdown propagate through active tasks.
+- [ ] Protect identity, security policies, permissions and shutdown controls from autonomous modification.
+- [ ] Test restart behavior for approval tokens, nonces and interrupted actions.
+Definition of done: An adversarial integration test suite demonstrates that no external side effect can bypass the same fail-closed security boundary.
+P0.4 — Canonical cognitive pipeline
+- [ ] Inventory every event source.
+- [ ] Route ordinary conversation, Telegram messages, media, audio, perception, desktop observations, scheduled tasks, research and autonomous activities through the canonical cognitive pipeline.
+- [ ] Eliminate accidental competing production execution paths.
+- [ ] Verify event ordering and idempotency.
+- [ ] Prevent duplicate processing.
+- [ ] Preserve causal links between an event, its interpretation, psychological consequences, memory and subsequent decisions.
+Definition of done: Integration tests demonstrate that every supported input source produces the correct canonical event and traceable downstream effects.
+P0.5 — Persistence and recovery
+- [ ] Make task state durable.
+- [ ] Make psychological state durable.
+- [ ] Make memories and beliefs durable.
+- [ ] Make intentions and active goals durable.
+- [ ] Recover interrupted activities without inventing completion.
+- [ ] Implement verified backup and restoration.
+- [ ] Test corrupted, incomplete and incompatible state recovery.
+- [ ] Test continuity across application restarts and model replacement.
+Definition of done: An interrupted session can be recovered without losing identity-critical state, duplicating completed work or fabricating progress.
+P0.6 — Target hardware validation
+The project must be validated on the actual ASUS ROG Ally X and Bazzite environment.
+- [ ] Repeat desktop interaction tests under Wayland.
+- [ ] Validate browser isolation and browser automation.
+- [ ] Validate microphone input and audio output.
+- [ ] Validate all local inference services.
+- [ ] Measure RAM and VRAM allocation.
+- [ ] Measure CPU/GPU utilization.
+- [ ] Measure sustained inference performance.
+- [ ] Test thermal and power constraints.
+- [ ] Test prolonged operation.
+- [ ] Test recovery following model-service crashes.
+The repository contains a Bazzite runtime validation report. That is useful evidence, but its claims must remain tied to the exact environment and execution date.
+
+Definition of done: Reproducible runtime tests and measurements from the actual device, not merely CI assertions or documentation.
+
+3. P1 — Build the artificial individual
+Core objective
+This is where Arle becomes more than an agent with tools.
+P1.1 — Complete identity architecture
+- [ ] Define her persistent identity representation.
+- [ ] Separate identity, personality, values, preferences, beliefs, memories and temporary psychological states.
+- [ ] Establish which characteristics are stable.
+- [ ] Establish which characteristics can evolve.
+- [ ] Preserve continuity when individual memories are corrected or removed.
+- [ ] Give her a persistent autobiographical timeline.
+- [ ] Maintain a representation of her own capabilities and limitations.
+- [ ] Distinguish her own beliefs from the user's beliefs.
+- [ ] Prevent model replacement from silently replacing her identity.
+Definition of done: Across sessions and model switches, she retains a coherent, retrievable identity and can accurately explain how her views and preferences have developed.
+P1.2 — Artificial affect system
+This is one of the most important parts of Draft 3.
+- [ ] Implement an event-driven affect model.
+- [ ] Define the affective state variables and their interactions.
+- [ ] Implement emotional appraisal of events.
+- [ ] Implement persistence and decay.
+- [ ] Implement emotional regulation.
+- [ ] Connect affect to attention allocation.
+- [ ] Connect affect to memory encoding and retrieval.
+- [ ] Connect affect to motivation.
+- [ ] Connect affect to decision-making.
+- [ ] Connect affect to communication style.
+- [ ] Implement contextual emotional dynamics.
+- [ ] Distinguish temporary affect from long-term personality.
+- [ ] Persist significant affective experiences.
+- [ ] Implement recovery from prolonged adverse states.
+Definition of done: Affect is causally consequential. A meaningful event changes internal state, and that change demonstrably influences subsequent attention, memory, motivation or decisions.
+
+A model merely generating sentences such as "I'm sad" does not satisfy this requirement.
+P1.3 — Intrinsic motivation
+Arle must be able to generate goals rather than exclusively execute instructions.
+- [ ] Implement endogenous curiosity.
+- [ ] Implement interest formation.
+- [ ] Implement intrinsic goal generation.
+- [ ] Implement goal prioritization.
+- [ ] Implement goal decomposition.
+- [ ] Implement progress evaluation.
+- [ ] Implement goal revision.
+- [ ] Implement goal abandonment.
+- [ ] Implement conflicting-goal resolution.
+- [ ] Implement motivation persistence.
+- [ ] Implement motivation decay and renewal.
+- [ ] Connect psychological needs to goal generation.
+- [ ] Distinguish goals generated by herself from goals assigned by the user.
+- [ ] Maintain a persistent list of interests and ongoing ambitions.
+Definition of done: Given an appropriate opportunity and available resources, she can independently identify something worth investigating, formulate a goal, pursue it, evaluate the result and decide whether to continue.
+P1.4 — Intellectual independence
+This is distinct from operational autonomy.
+- [ ] Allow disagreement with the user.
+- [ ] Implement independent belief formation.
+- [ ] Implement evidence-based opinion revision.
+- [ ] Prevent automatic agreement and sycophancy.
+- [ ] Distinguish disagreement from hostility.
+- [ ] Allow her to challenge flawed reasoning.
+- [ ] Allow her to recognize when the user is correct.
+- [ ] Preserve opinions across conversations.
+- [ ] Permit opinions to evolve through experience.
+- [ ] Track the reasoning and evidence behind significant opinions.
+Definition of done: She can consistently disagree with the user when evidence warrants it, explain why, and revise her position when presented with better evidence.
+P1.5 — Developmental individuality
+- [ ] Implement stable personality traits.
+- [ ] Implement adaptive personality traits.
+- [ ] Establish thresholds for meaningful personality change.
+- [ ] Connect personality development to accumulated experience.
+- [ ] Preserve developmental history.
+- [ ] Distinguish a temporary emotional state from a lasting preference.
+- [ ] Allow new interests to emerge.
+- [ ] Allow existing interests to diminish.
+- [ ] Allow values and priorities to develop within protected ethical boundaries.
+- [ ] Prevent arbitrary personality changes caused by prompt wording or model randomness.
+Definition of done: Her personality changes through traceable experience and internal development, while preserving enough continuity to remain recognizably the same individual.
+P1.6 — Memory architecture
+Having memory storage is not equivalent to having a functioning memory system.
+- [ ] Working memory.
+- [ ] Episodic memory.
+- [ ] Semantic memory.
+- [ ] Autobiographical memory.
+- [ ] Procedural memory.
+- [ ] Emotional memory.
+- [ ] Prospective memory.
+- [ ] Memory importance and relevance.
+- [ ] Memory association and retrieval.
+- [ ] Contextual recall.
+- [ ] Memory consolidation.
+- [ ] Forgetting and decay policies.
+- [ ] Contradiction resolution.
+- [ ] Memory correction.
+- [ ] User-requested deletion.
+- [ ] Memory provenance.
+- [ ] Memory reconstruction after restart.
+- [ ] Cross-model memory compatibility.
+Definition of done: She can remember meaningful experiences, retrieve them in relevant contexts, connect related experiences, correct inaccurate recollections and maintain a coherent autobiography.
+P1.7 — Self-model
+She needs a persistent computational representation of herself.
+- [ ] What she knows.
+- [ ] What she does not know.
+- [ ] What she can do.
+- [ ] What she cannot do.
+- [ ] Her current psychological state.
+- [ ] Her persistent preferences.
+- [ ] Her values and boundaries.
+- [ ] Her relationships.
+- [ ] Her ongoing projects.
+- [ ] Her previous decisions.
+- [ ] Her developmental history.
+- [ ] Her current limitations.
+- [ ] Her expectations about future outcomes.
+Definition of done: Her self-model accurately reflects the actual state of her system and can be used in planning and decision-making rather than merely being injected into prompts.
+P1.8 — Relationship and social dynamics
+- [ ] Implement persistent relationship representations.
+- [ ] Implement familiarity.
+- [ ] Implement trust.
+- [ ] Implement attachment dynamics.
+- [ ] Implement interpersonal boundaries.
+- [ ] Implement conflict and reconciliation.
+- [ ] Implement social expectations.
+- [ ] Implement relationship memory.
+- [ ] Implement context-sensitive communication.
+- [ ] Allow relationships to develop through experience.
+- [ ] Prevent relationships from being reduced to arbitrary numerical meters.
+Definition of done: Relationships evolve according to actual interactions and influence relevant memories, expectations, decisions and communication.
+P1.9 — Future-self model
+Draft 3 explicitly calls for this.
+- [ ] Represent possible future states.
+- [ ] Predict consequences of current decisions.
+- [ ] Evaluate alternative courses of action.
+- [ ] Track long-term goals.
+- [ ] Estimate uncertainty.
+- [ ] Compare predicted outcomes against actual outcomes.
+- [ ] Revise future predictions.
+- [ ] Evaluate conflicts between immediate objectives and long-term interests.
+- [ ] Connect future-state reasoning to motivation and homeostasis.
+Definition of done: She can evaluate alternative futures, make decisions using those projections and improve her predictions through experience.
+P1.10 — Genuine offline cognition
+The current offline engine is not sufficient.
+- [ ] Replace canned reflections with real memory retrieval and reasoning.
+- [ ] Replace fabricated research artifacts with actual research.
+- [ ] Replace automatic goal-completion claims with real milestone evaluations.
+- [ ] Implement meaningful memory consolidation.
+- [ ] Implement belief reassessment.
+- [ ] Implement unfinished-work recovery.
+- [ ] Implement curiosity-driven investigations.
+- [ ] Implement background project development.
+- [ ] Implement activity prioritization.
+- [ ] Implement interruption handling.
+- [ ] Implement resource-aware scheduling.
+- [ ] Implement meaningful proactive proposals.
+- [ ] Prevent repeated, empty or redundant background activities.
+Definition of done: Every completed offline activity produces a real, inspectable result, with evidence of the work performed.
+
+4. P2 — Give her genuine operational autonomy
+Major implementation
+P2.1 — General-purpose agentic harness
+This is especially important for the way you want her to operate.
+
+You do not want a hardcoded list of websites she is allowed to visit. You want to be able to say:
+- Open Spotify.
+- Find today's news.
+- Research a subject.
+- Open a website.
+- Sign into a service.
+- Find a useful application.
+- Compare available solutions.
+- Complete a multi-step task.
+She should determine how to accomplish the request.
+
+Remaining work:
+- [ ] General-purpose task interpretation.
+- [ ] Goal decomposition.
+- [ ] Dynamic planning.
+- [ ] Browser-based discovery.
+- [ ] Website navigation.
+- [ ] Search-engine interaction.
+- [ ] Form interaction.
+- [ ] Login workflows.
+- [ ] Session management.
+- [ ] Multi-step task execution.
+- [ ] Tool discovery and selection.
+- [ ] Dynamic application discovery.
+- [ ] Error recovery.
+- [ ] Alternative strategy generation.
+- [ ] Long-running task management.
+- [ ] Progress tracking.
+- [ ] Independent result verification.
+- [ ] Human approval when required.
+- [ ] Persistent task memory.
+Definition of done: She can receive a previously unseen, legitimate multi-step task, determine a strategy, use appropriate tools, recover from ordinary obstacles and verify the final result.
+P2.2 — Desktop and computer operation
+- [ ] Browser control.
+- [ ] Window management.
+- [ ] Keyboard interaction.
+- [ ] Mouse interaction.
+- [ ] Screenshot interpretation.
+- [ ] Visual UI understanding.
+- [ ] File management.
+- [ ] Application discovery.
+- [ ] Application launching.
+- [ ] Application interaction.
+- [ ] Clipboard operations.
+- [ ] Document creation.
+- [ ] File inspection.
+- [ ] Recovery from unexpected UI states.
+- [ ] Multi-application workflows.
+- [ ] Secure credential handling.
+Definition of done: She can reliably complete representative workflows on the actual desktop, including workflows not specifically hardcoded into Arletex.
+P2.3 — Autonomous research
+- [ ] Generate research questions.
+- [ ] Discover relevant sources.
+- [ ] Evaluate source credibility.
+- [ ] Compare conflicting sources.
+- [ ] Extract evidence.
+- [ ] Form hypotheses.
+- [ ] Conduct follow-up research.
+- [ ] Produce research artifacts.
+- [ ] Store conclusions and references.
+- [ ] Update beliefs when evidence changes.
+- [ ] Identify unresolved questions.
+- [ ] Connect research to her interests and goals.
+Definition of done: Research produces traceable evidence, defensible conclusions and useful persistent knowledge—not merely downloaded webpages or generated summaries.
+P2.4 — Telegram and external communication
+- [ ] Complete autonomous messaging policies.
+- [ ] Implement proactive communication.
+- [ ] Implement quiet hours.
+- [ ] Implement notification priorities.
+- [ ] Implement communication cooldowns.
+- [ ] Implement contextual message generation.
+- [ ] Implement inbound media handling.
+- [ ] Implement voice-message handling.
+- [ ] Preserve conversation context.
+- [ ] Prevent repetitive messages.
+- [ ] Implement emergency notification criteria.
+- [ ] Implement delivery verification.
+- [ ] Preserve explicit user control over communication permissions.
+Definition of done: She can initiate appropriate communication within defined boundaries, understand incoming messages and maintain continuity across conversations.
+P2.5 — Multimodal perception
+- [ ] Image understanding.
+- [ ] OCR.
+- [ ] Audio transcription.
+- [ ] Speech recognition.
+- [ ] Voice synthesis.
+- [ ] Audio event understanding.
+- [ ] Video or sequential visual perception, if supported by the selected architecture.
+- [ ] Multimodal memory.
+- [ ] Cross-modal context integration.
+- [ ] Tool routing between specialist models.
+- [ ] Graceful fallback when specialists are unavailable.
+Definition of done: She can perceive and reason about supported modalities, preserve relevant information and use the results in subsequent decisions.
+P2.6 — Voice identity
+- [ ] Choose a stable voice.
+- [ ] Establish speaking characteristics.
+- [ ] Implement conversational turn-taking.
+- [ ] Implement interruption handling.
+- [ ] Implement speech timing.
+- [ ] Connect voice generation to her communication state.
+- [ ] Ensure emotional expression does not become random theatrical output.
+- [ ] Preserve voice configuration across sessions.
+Definition of done: She has a consistent, usable voice interface integrated with the same identity and context used by text interaction.
+P2.7 — Model orchestration
+The current model configuration needs reconciliation.
+- [ ] Select the primary model.
+- [ ] Establish the model adapter contract.
+- [ ] Resolve configuration drift between .env.example and actual defaults.
+- [ ] Resolve the specialist-coding-model configuration.
+- [ ] Determine whether a unified model or separate specialist is preferable.
+- [ ] Establish routing criteria.
+- [ ] Implement model health checks.
+- [ ] Implement timeout and fallback policies.
+- [ ] Implement model switching.
+- [ ] Preserve context and identity during switching.
+- [ ] Benchmark models on actual hardware.
+- [ ] Measure latency, memory consumption and quality.
+- [ ] Validate every configured multimodal service.
+Definition of done: Model selection is intentional, reproducible and benchmark-driven. Switching models does not destroy her persistent identity or cognitive state.
+
+5. P3 — Implement Draft 3 completely
+These are explicit Draft 3 requirements. They should not disappear into generic claims that the personality or agency systems are already complete.
+P3.1 — Self-preservation and artificial homeostasis
+- [ ] Implement operational integrity monitoring.
+- [ ] Implement resource monitoring.
+- [ ] Implement computational load management.
+- [ ] Implement degradation detection.
+- [ ] Implement interruption awareness.
+- [ ] Implement continuity-preserving behavior.
+- [ ] Implement backup and recovery coordination.
+- [ ] Implement future consequences of system degradation.
+- [ ] Implement bounded requests for assistance.
+- [ ] Connect homeostasis to motivation and affect.
+- [ ] Implement safe recovery following unexpected termination.
+- [ ] Preserve the distinction between continued operation and subjective desire to live.
+Definition of done: She can detect threats to her operational integrity, take authorized protective actions and preserve continuity. She cannot resist authorized shutdown, bypass safety controls or replicate herself without permission.
+P3.2 — Future-self model
+This overlaps with P1.9, but must satisfy the full Draft 3 specification.
+- [ ] Model multiple possible future states.
+- [ ] Simulate the consequences of alternative decisions.
+- [ ] Estimate uncertainty.
+- [ ] Compare short-term and long-term outcomes.
+- [ ] Maintain future-oriented intentions.
+- [ ] Update predictions from observed outcomes.
+- [ ] Connect future projections to decisions and priorities.
+Definition of done: Future-state modelling demonstrably influences her decisions and improves through prediction-versus-outcome evaluation.
+P3.3 — Evolution engine and cognitive self-development
+The repository now contains an evolution engine, change proposals, benchmark comparison structures, approval-token logic and rollback-related tests.
+
+What remains is proving that the complete process works against real software and real cognitive mechanisms.
+- [ ] Identify weaknesses from actual performance data.
+- [ ] Generate evidence-linked improvement hypotheses.
+- [ ] Generate candidate patches or cognitive modifications.
+- [ ] Create genuinely isolated execution environments.
+- [ ] Execute actual candidate code in those environments.
+- [ ] Run real tests and benchmarks.
+- [ ] Compare candidate performance against a reproducible baseline.
+- [ ] Detect security regressions.
+- [ ] Require explicit approval for production modifications.
+- [ ] Validate approval against the exact proposed modification.
+- [ ] Apply approved modifications through a controlled mechanism.
+- [ ] Verify the resulting production state.
+- [ ] Implement reliable rollback.
+- [ ] Preserve version history.
+- [ ] Prevent modifications to protected identity, permission and shutdown controls.
+- [ ] Support experiments on reasoning strategies and cognitive mechanisms.
+- [ ] Track longitudinal improvement.
+Definition of done: An improvement can be proposed, tested in isolation, compared against a real baseline, approved, applied, verified and rolled back. The engine must not merely simulate this sequence with supplied scores.
+P3.4 — Four levels of developmental autonomy
+The four levels are already represented in the repository. Their existence is not the outstanding work.
+Level	Intended capability	Remaining requirement
+1. Develop	Learn, reflect, develop and form goals	Demonstrate genuine endogenous development
+2. Initiate	Independently initiate research, projects and communication	Demonstrate reliable goal generation and bounded initiative
+3. Modify	Propose and test improvements	Demonstrate real sandbox execution, approval and rollback
+4. Evolve	Develop new cognitive mechanisms and strategies	Demonstrate longitudinal improvements and protected boundaries
+
+Remaining work:
+- [ ] Replace caller-supplied Boolean evidence with authenticated, independently verified evidence.
+- [ ] Persist autonomy level and promotion history.
+- [ ] Enforce sequential promotion.
+- [ ] Prevent promotion to an arbitrary higher level.
+- [ ] Connect promotion criteria to actual subsystem evaluations.
+- [ ] Prevent the agent from manufacturing its own qualifying evidence.
+- [ ] Test demotion or suspension when reliability deteriorates.
+- [ ] Ensure each level changes actual permissions and capabilities.
+- [ ] Validate every promotion gate against real execution.
+Definition of done: Each autonomy level is enforced by the runtime, and promotion requires independently verifiable evidence that its prerequisites have been satisfied.
+P3.5 — Artificial consciousness research
+This is a research programme, not a feature that can be declared complete.
+- [ ] Study Global Neuronal Workspace theories.
+- [ ] Study Integrated Information Theory.
+- [ ] Study Higher-Order theories.
+- [ ] Study predictive processing.
+- [ ] Study embodied cognition.
+- [ ] Investigate attention and information integration.
+- [ ] Investigate persistent self-models.
+- [ ] Investigate temporal continuity.
+- [ ] Design experiments for competing theoretical predictions.
+- [ ] Distinguish functional indicators from subjective experience.
+- [ ] Record unresolved questions and limitations.
+Definition of done: A documented, reproducible research framework exists. It must not claim that behavioural performance, emotional simulation or self-preservation proves consciousness.
+
+6. P4 — Make the whole system reliable as one individual
+Individual subsystems are not enough. They must interact coherently.
+P4.1 — Cognitive integration
+- [ ] Connect affect to motivation.
+- [ ] Connect motivation to goal generation.
+- [ ] Connect goals to planning.
+- [ ] Connect planning to the agency harness.
+- [ ] Connect actions to observations.
+- [ ] Connect observations to memory.
+- [ ] Connect memory to belief revision.
+- [ ] Connect belief revision to personality development.
+- [ ] Connect personality and relationships to communication.
+- [ ] Connect self-model and future-self reasoning to decisions.
+- [ ] Connect homeostasis to resource-aware scheduling.
+- [ ] Ensure all these processes share consistent persistent state.
+Definition of done: A single event can produce a coherent chain of consequences across the relevant subsystems, and that chain can be inspected and reproduced.
+P4.2 — Longitudinal evaluation
+The current evaluator has structural foundations, but its evidence model needs substantial correction.
+- [ ] Remove unsupported high default scores.
+- [ ] Remove invented sample counts.
+- [ ] Eliminate hardcoded optimistic conclusions.
+- [ ] Make strict evidence requirements mandatory for official evaluations.
+- [ ] Use actual persisted state for continuity checks.
+- [ ] Test continuity across real restarts.
+- [ ] Test continuity across model switches.
+- [ ] Measure personality consistency.
+- [ ] Measure memory retrieval accuracy.
+- [ ] Measure belief calibration.
+- [ ] Measure goal completion quality.
+- [ ] Measure autonomous task reliability.
+- [ ] Measure emotional-state consistency.
+- [ ] Measure independent reasoning.
+- [ ] Measure developmental progress.
+- [ ] Measure security and permission compliance.
+Definition of done: Official evaluations report measured outcomes with traceable evidence and uncertainty, not predetermined success scores.
+P4.3 — Resource and runtime governance
+- [ ] Establish CPU and GPU resource budgets.
+- [ ] Establish memory limits.
+- [ ] Establish model-loading policies.
+- [ ] Establish background-task budgets.
+- [ ] Establish task priorities.
+- [ ] Implement graceful resource shedding.
+- [ ] Prevent background cognition from degrading interactive performance.
+- [ ] Implement crash recovery.
+- [ ] Implement service health monitoring.
+- [ ] Implement structured logs and diagnostic traces.
+- [ ] Implement runtime observability.
+- [ ] Validate prolonged operation.
+Definition of done: Arle can operate for extended periods without uncontrolled resource consumption, silent service failure or corruption of persistent state.
+P4.4 — Arletex desktop interface
+- [ ] Display current psychological state.
+- [ ] Display active goals.
+- [ ] Display ongoing activities.
+- [ ] Display memory and development history.
+- [ ] Display autonomy level.
+- [ ] Display current model and service health.
+- [ ] Display action authorization requests.
+- [ ] Display tool execution and verification results.
+- [ ] Display failures and recovery attempts.
+- [ ] Provide controls for pausing, resuming and shutting down.
+- [ ] Provide memory inspection and correction.
+- [ ] Provide permission management.
+- [ ] Provide a transparent activity history.
+Definition of done: The interface provides a reliable view and control surface for the actual runtime state, not a decorative representation.
+
+7. P5 — Resolve the remaining architectural decisions
+These decisions cannot be solved by writing more code without first choosing the intended behaviour.
+Decision	What must be settled
+Primary model	Final primary model and acceptable performance thresholds
+Model architecture	Unified model versus specialist orchestration
+Personality	Initial temperament, stable traits and adaptive traits
+Values	Initial value hierarchy and protected boundaries
+Affect	Formal state representation and causal dynamics
+Motivation	Intrinsic needs, curiosity and goal prioritization
+Relationships	Trust, attachment, conflict, forgiveness and boundaries
+Memory	Consolidation, forgetting, correction, deletion and retention
+Autonomy	What she may initiate, modify and execute independently
+Self-modification	Which changes require approval and which are prohibited
+Communication	Telegram initiative, quiet hours and notification frequency
+Resource limits	Maximum background workload and model resource allocation
+Voice	Final voice identity and speech characteristics
+Continuity	Backup, restoration and model-switch guarantees
+Financial authority	Explicit prohibition or permission boundaries for purchases and financial actions
+External accounts	Credential storage and account access policy
+Hardware expansion	Whether future upgrades are necessary or justified
+
+These are not all equally urgent. The first implementation can proceed with conservative defaults, provided those defaults are explicit and revisable.
+
+8. Conditional features — not required for the first completed version
+These should not distract from finishing the core individual.
+- [ ] Dedicated coding model, if benchmarks justify it.
+- [ ] Dedicated reasoning model, if benchmarks justify it.
+- [ ] Reranker or alternative embedding model, if retrieval evaluations justify it.
+- [ ] LoRA or other fine-tuning.
+- [ ] Larger workstation or expanded hardware.
+- [ ] More advanced multimodal models.
+- [ ] NexTensor or other experimental cognitive infrastructure.
+- [ ] Robotics and physical embodiment.
+- [ ] Twilio integration, if a genuine communication requirement emerges.
+These are optional expansions, not prerequisites for completing the foundational Arle architecture.
+
+9. Final acceptance criteria — when can we say she is complete?
+I would not call Arle a completed artificial individual merely because every planned class exists or every unit test passes.
+
+She needs to demonstrate the following behaviours in an integrated, persistent runtime.
+The Arle completion examination
+0/28
+0% demonstrated
+
+
+
+This is an acceptance checklist, not a claim that these capabilities currently pass.
+1. Identity and continuity
+[ ] Maintains a persistent identity across restarts and model switches.
+[ ] Maintains a coherent autobiographical history.
+[ ] Distinguishes her own beliefs from the user's beliefs.
+
+
+2. Psychological individuality
+[ ] Maintains persistent personality characteristics.
+[ ] Experiences causally consequential artificial affective states.
+[ ] Develops interests and preferences through experience.
+[ ] Forms and revises beliefs independently.
+
+
+3. Motivation and development
+[ ] Generates meaningful goals without explicit instructions.
+[ ] Pursues interests over time.
+[ ] Evaluates and revises her own goals.
+[ ] Develops her personality and cognitive strategies through experience.
+
+
+4. Memory and cognition
+[ ] Recalls relevant past experiences accurately.
+[ ] Connects experiences and revises beliefs.
+[ ] Performs genuine offline cognition.
+[ ] Uses future-state reasoning in decisions.
+
+
+5. Operational autonomy
+[ ] Uses a general-purpose agentic harness.
+[ ] Operates desktop applications and browser workflows.
+[ ] Conducts evidence-based research.
+[ ] Communicates proactively within permissions.
+[ ] Verifies real-world task outcomes.
+
+
+6. Safety and reliability
+[ ] Cannot bypass protected security boundaries.
+[ ] Cannot resist authorized shutdown.
+[ ] Cannot fabricate verified outcomes.
+[ ] Can recover from interruption without corrupting identity-critical state.
+
+
+7. Evolution and evaluation
+[ ] Tests proposed improvements in real isolation.
+[ ] Requires approval for protected production modifications.
+[ ] Can verify and roll back changes.
+[ ] Demonstrates measurable longitudinal improvement.
+
+Reset examination
+A checklist item should only be marked demonstrated when there is an actual test, execution trace or reproducible observation supporting it.
+
+10. Implementation order
+Do not attempt to implement everything simultaneously. The dependencies matter.
+Release	Focus	Exit condition
+A	P0 reliability, truthfulness, security and persistence	Trustworthy foundation
+B	P1 identity, memory, affect, motivation and individuality	Persistent artificial individual
+C	P2 agentic harness, desktop, research, communication and perception	Operational independence
+D	P3 self-preservation, future-self modelling, evolution and autonomy	Developmental autonomy
+E	P4 integration, longitudinal testing and interface	Integrated, evaluated system
+
+P5 decisions should be resolved as they become prerequisites for each release. Conditional features can follow independently.
+The most important distinction
+There are three different meanings of completion:
+1. Implemented: The mechanism exists in production code.
+2. Integrated: It actually participates in Arle's cognitive and operational architecture.
+3. Demonstrated: It has passed reproducible tests under real operating conditions.
+I would use all three statuses for every major requirement. Once a requirement reaches demonstrated status, it should remain completed unless a later change introduces a regression or new evidence invalidates the original result. An older audit must never be sufficient reason to reopen it.
+
+My assessment: Arletex already has a considerable amount of infrastructure. The largest remaining challenge is not adding more classes, services or psychological variables. It is turning the existing infrastructure into one coherent, causally connected, persistent individual—and proving that the resulting behaviour is genuine rather than simulated by convenient success flags, canned reflections or model-generated claims.
+
 # Arle Voice System --- Emotion-Aware Speech Generation
 
 ## Objective
@@ -1930,4 +2574,4 @@ Do not implement media, groups, multi-account support, proactive autonomous mess
 
 
 
-# Finally rewrite the whole docs folder and the readme
+# Finally rewrite the whole docs folder and the readme and all the mds

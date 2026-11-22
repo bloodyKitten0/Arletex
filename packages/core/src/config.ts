@@ -78,12 +78,14 @@ export interface AppConfigOverrides {
   inference?: Partial<InferenceConfig>;
 }
 
-export function createDefaultConfig(overrides?: AppConfigOverrides): AppConfig {
-  const dataDir = overrides?.dataDirectory ?? getDefaultDataDirectory();
-  const dbPath = overrides?.databasePath ?? path.join(dataDir, 'arletex.sqlite');
+export function createDefaultConfig(overrides?: AppConfigOverrides | string): AppConfig {
+  const normalizedOverrides: AppConfigOverrides =
+    typeof overrides === 'string' ? { dataDirectory: overrides } : (overrides ?? {});
+  const dataDir = normalizedOverrides.dataDirectory ?? getDefaultDataDirectory();
+  const dbPath = normalizedOverrides.databasePath ?? path.join(dataDir, 'arletex.sqlite');
 
   const activeProvider =
-    overrides?.inference?.provider ??
+    normalizedOverrides.inference?.provider ??
     (process.env['ARLETEX_INFERENCE_PROVIDER'] as any) ??
     'llama.cpp';
 
@@ -99,7 +101,7 @@ export function createDefaultConfig(overrides?: AppConfigOverrides): AppConfig {
       : (process.env['COLIBRI_MODEL_ID'] ?? 'qwen3.6-colibri');
 
   const fallbackEnabled =
-    overrides?.inference?.fallbackEnabled ??
+    normalizedOverrides.inference?.fallbackEnabled ??
     (process.env['ARLETEX_INFERENCE_FALLBACK']
       ? process.env['ARLETEX_INFERENCE_FALLBACK'] !== 'false'
       : true);
@@ -107,24 +109,24 @@ export function createDefaultConfig(overrides?: AppConfigOverrides): AppConfig {
   const rawConfig = {
     dataDirectory: dataDir,
     databasePath: dbPath,
-    logLevel: overrides?.logLevel ?? (process.env['ARLETEX_LOG_LEVEL'] as any) ?? 'info',
+    logLevel: normalizedOverrides.logLevel ?? (process.env['ARLETEX_LOG_LEVEL'] as any) ?? 'info',
     inference: {
       provider: activeProvider,
-      serverUrl: overrides?.inference?.serverUrl ?? defaultServerUrl,
-      defaultModelId: overrides?.inference?.defaultModelId ?? defaultModelId,
-      temperature: overrides?.inference?.temperature ?? 0.7,
-      topP: overrides?.inference?.topP ?? 0.9,
-      maxTokens: overrides?.inference?.maxTokens ?? 2048,
-      contextSize: overrides?.inference?.contextSize ?? 8192,
-      stopSequences: overrides?.inference?.stopSequences ?? [],
+      serverUrl: normalizedOverrides.inference?.serverUrl ?? defaultServerUrl,
+      defaultModelId: normalizedOverrides.inference?.defaultModelId ?? defaultModelId,
+      temperature: normalizedOverrides.inference?.temperature ?? 0.7,
+      topP: normalizedOverrides.inference?.topP ?? 0.9,
+      maxTokens: normalizedOverrides.inference?.maxTokens ?? 2048,
+      contextSize: normalizedOverrides.inference?.contextSize ?? 8192,
+      stopSequences: normalizedOverrides.inference?.stopSequences ?? [],
       fallbackEnabled,
-      fallbackProvider: overrides?.inference?.fallbackProvider ?? 'llama.cpp',
+      fallbackProvider: normalizedOverrides.inference?.fallbackProvider ?? 'llama.cpp',
       fallbackServerUrl:
-        overrides?.inference?.fallbackServerUrl ??
+        normalizedOverrides.inference?.fallbackServerUrl ??
         process.env['LLAMA_SERVER_URL'] ??
         'http://127.0.0.1:8080',
       fallbackModelId:
-        overrides?.inference?.fallbackModelId ??
+        normalizedOverrides.inference?.fallbackModelId ??
         process.env['LLAMA_FALLBACK_MODEL_ID'] ??
         'Qwen3.5-9B-Heretic-Q4_K_M',
       specialistCoding: {
