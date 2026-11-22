@@ -115,6 +115,8 @@ export class CognitiveControlBus {
   ): Promise<CognitiveCycleResult> {
     const timestamp = input.timestamp || new Date().toISOString();
     const eventId = input.id || crypto.randomUUID();
+    const traceId = (input as any).traceId || (input as any).correlationId || (input.payload?.traceId as string) || (input.payload?.correlationId as string) || `trace_${crypto.randomUUID()}`;
+    const correlationId = traceId;
     const idempotencyKey =
       input.idempotencyKey ||
       `${input.type}:${input.source}:${input.timestamp || timestamp}:${JSON.stringify(input.payload || {})}`;
@@ -126,6 +128,8 @@ export class CognitiveControlBus {
       const cached = this.idempotencyCache.get(idempotencyKey)!;
       return {
         ...cached,
+        traceId,
+        correlationId,
         wasDeduplicated: true,
       };
     }
@@ -141,6 +145,8 @@ export class CognitiveControlBus {
         this.idempotencyCache.set(idempotencyKey, persisted);
         return {
           ...persisted,
+          traceId,
+          correlationId,
           wasDeduplicated: true,
         };
       }
@@ -164,6 +170,8 @@ export class CognitiveControlBus {
           ...(existing || {}),
           eventId,
           idempotencyKey,
+          traceId,
+          correlationId,
           wasDeduplicated: true,
           pipelineCompleted: claim.existingRecord.state === 'completed',
           success: claim.existingRecord.state === 'completed',
@@ -179,6 +187,8 @@ export class CognitiveControlBus {
       return {
         eventId,
         idempotencyKey,
+        traceId,
+        correlationId,
         wasDeduplicated: false,
         stagesCompleted: [],
         pipelineCompleted: false,
@@ -203,10 +213,12 @@ export class CognitiveControlBus {
       actor: input.actor || (input.source === 'user' || input.source === 'telegram' ? 'user' : 'arle'),
       causalParentEventId: input.causalParentEventId,
       causalDepth,
-      payload: input.payload || {},
+      payload: { ...(input.payload || {}), traceId, correlationId },
       idempotencyKey,
       status: 'processing',
       processedStages: stagesCompleted,
+      traceId,
+      correlationId,
     });
 
     if (!parseResult.success) {
@@ -215,6 +227,8 @@ export class CognitiveControlBus {
       return {
         eventId,
         idempotencyKey,
+        traceId,
+        correlationId,
         wasDeduplicated: false,
         stagesCompleted,
         pipelineCompleted: false,
@@ -363,6 +377,8 @@ export class CognitiveControlBus {
         const loopRes = await this.closedLoopAgency.executeClosedLoop(agencyObjective, 'arle', {
           eventId: event.id,
           decisionId: decision.id,
+          traceId: event.traceId,
+          correlationId: event.correlationId,
         });
         actionOutcomeSuccess = loopRes.success;
         outcomeObserved = loopRes.observations.length > 0;
@@ -434,6 +450,8 @@ export class CognitiveControlBus {
           metadata: {
             eventId: event.id,
             decisionId: decision.id,
+            traceId: event.traceId,
+            correlationId: event.correlationId,
             actionOutcomeSuccess,
             permissionReason,
             pipelineCompleted: true,
@@ -549,6 +567,8 @@ export class CognitiveControlBus {
         outcomeVerified,
         taskSucceeded,
         success: true,
+        traceId: event.traceId,
+        correlationId: event.correlationId,
       };
 
       // Store in bounded LRU cache
@@ -698,6 +718,17 @@ export class CognitiveControlBus {
     }
   }
 
+  private parseDecision(
+    data: any,
+    event: CognitiveEvent,
+  ): CognitiveDecision {
+    return CognitiveDecisionSchema.parse({
+      ...data,
+      traceId: data.traceId || event.traceId || (event.payload?.traceId as string),
+      correlationId: data.correlationId || event.correlationId || (event.payload?.correlationId as string),
+    });
+  }
+
   private formulateDecision(
     event: CognitiveEvent,
     appraisal: ApeAppraisal,
@@ -721,7 +752,7 @@ export class CognitiveControlBus {
       const prop = event.payload.actionProposal as ActionProposal;
       if (isFatigued && prop.riskLevel !== 'low') {
         rejectedAlternatives.push({ actionType: 'execute_agency_task', reason: `High fatigue (${psychEnergy.toFixed(2)}) and elevated rest need (${restNeed.toFixed(2)}) require pausing heavy execution` });
-        return CognitiveDecisionSchema.parse({
+        return this.parseDecision({
           id,
           eventId: event.id,
           actionType: 'rest',
@@ -733,11 +764,11 @@ export class CognitiveControlBus {
           permissionRequired: false,
           resourceEstimate: { cpu: 'low', gpu: false, timeoutMs: 3000 },
           timestamp,
-        });
+        }, event);
       }
       rejectedAlternatives.push({ actionType: 'speak', reason: 'Explicit agency action requested; prioritization over plain conversational response' });
       rejectedAlternatives.push({ actionType: 'rest', reason: 'Active agency task must be processed and authorized' });
-      return CognitiveDecisionSchema.parse({
+      return this.parseDecision({
         id,
         eventId: event.id,
         actionType: 'execute_agency_task',
@@ -749,7 +780,7 @@ export class CognitiveControlBus {
         permissionRequired: true,
         resourceEstimate: { cpu: 'medium', gpu: false, timeoutMs: 15000 },
         timestamp,
-      });
+      }, event);
     }
 
     // Conversational stimulus requires speech
@@ -762,7 +793,7 @@ export class CognitiveControlBus {
         ? `Respectfully communicate intellectual divergence backed by verified evidence for ${claimEval.contradictoryBelief.topic}`
         : 'Respond directly and authentically to user communication';
 
-      return CognitiveDecisionSchema.parse({
+      return this.parseDecision({
         id,
         eventId: event.id,
         actionType: 'speak',
@@ -774,7 +805,7 @@ export class CognitiveControlBus {
         permissionRequired: false,
         resourceEstimate: { cpu: 'low', gpu: true, timeoutMs: 8000 },
         timestamp,
-      });
+      }, event);
     }
 
     // High curiosity or intellectual discovery triggers research
@@ -782,7 +813,7 @@ export class CognitiveControlBus {
       rejectedAlternatives.push({ actionType: 'rest', reason: 'High novelty and curiosity justify active investigation' });
       rejectedAlternatives.push({ actionType: 'decline', reason: 'Intellectual drive urges exploration of unknown topic' });
       const targetTopic = (event.payload.topic as string) || (candidateInitiatives[0] || 'intellectual_inquiry');
-      return CognitiveDecisionSchema.parse({
+      return this.parseDecision({
         id,
         eventId: event.id,
         actionType: 'research',
@@ -794,13 +825,13 @@ export class CognitiveControlBus {
         permissionRequired: true,
         resourceEstimate: { cpu: 'medium', gpu: false, timeoutMs: 15000 },
         timestamp,
-      });
+      }, event);
     }
 
     // Goal failure triggers reflection or strategy reconsideration
     if (event.type === 'goal_failed' || appraisal.dimensions.goalCongruence < -0.3) {
       rejectedAlternatives.push({ actionType: 'execute_agency_task', reason: 'Immediate re-execution without causal reflection risks repeating failure' });
-      return CognitiveDecisionSchema.parse({
+      return this.parseDecision({
         id,
         eventId: event.id,
         actionType: 'reflect',
@@ -812,7 +843,7 @@ export class CognitiveControlBus {
         permissionRequired: false,
         resourceEstimate: { cpu: 'low', gpu: false, timeoutMs: 4000 },
         timestamp,
-      });
+      }, event);
     }
 
     // Separation / Loneliness / User Departure: causal emotional reflection
@@ -823,7 +854,7 @@ export class CognitiveControlBus {
     ) {
       rejectedAlternatives.push({ actionType: 'execute_agency_task', reason: 'Emotional appraisal of relational state prioritizes internal consolidation' });
       rejectedAlternatives.push({ actionType: 'rest', reason: 'Relational state requires active emotional processing' });
-      return CognitiveDecisionSchema.parse({
+      return this.parseDecision({
         id,
         eventId: event.id,
         actionType: 'reflect',
@@ -835,7 +866,7 @@ export class CognitiveControlBus {
         permissionRequired: false,
         resourceEstimate: { cpu: 'low', gpu: false, timeoutMs: 4000 },
         timestamp,
-      });
+      }, event);
     }
 
     // Endogenous initiative pursuit triggered by self-generated thoughts or autonomous agency
@@ -847,7 +878,7 @@ export class CognitiveControlBus {
       const topInitiative = candidateInitiatives[0]!;
       rejectedAlternatives.push({ actionType: 'rest', reason: 'Curiosity drive and healthy energy reserves prioritize endogenous initiative over idle rest' });
       rejectedAlternatives.push({ actionType: 'decline', reason: 'Self-generated goal aligns with active developmental interests' });
-      return CognitiveDecisionSchema.parse({
+      return this.parseDecision({
         id,
         eventId: event.id,
         actionType: 'research',
@@ -859,14 +890,14 @@ export class CognitiveControlBus {
         permissionRequired: true,
         resourceEstimate: { cpu: 'medium', gpu: false, timeoutMs: 15000 },
         timestamp,
-      });
+      }, event);
     }
 
     // Default / idle tick
     rejectedAlternatives.push({ actionType: 'speak', reason: 'No user present; unsolicited chatter avoided' });
     rejectedAlternatives.push({ actionType: 'execute_agency_task', reason: 'No urgent high-priority candidate goals active' });
 
-    return CognitiveDecisionSchema.parse({
+    return this.parseDecision({
       id,
       eventId: event.id,
       actionType: 'rest',
@@ -878,7 +909,7 @@ export class CognitiveControlBus {
       permissionRequired: false,
       resourceEstimate: { cpu: 'low', gpu: false, timeoutMs: 1000 },
       timestamp,
-    });
+    }, event);
   }
 
   private buildActionProposal(decision: CognitiveDecision, event?: CognitiveEvent): ActionProposal | null {
@@ -892,17 +923,21 @@ export class CognitiveControlBus {
       execute_agency_task: 'app_launch',
       research: 'web_search',
     };
+    const traceId = event?.traceId || (event?.payload?.traceId as string) || decision.traceId;
+    const correlationId = event?.correlationId || (event?.payload?.correlationId as string) || decision.correlationId;
     return {
       id: crypto.randomUUID(),
       taskId: this.intentTaskManager ? this.intentTaskManager.listTasks()[0]?.id || crypto.randomUUID() : crypto.randomUUID(),
       stepIndex: 0,
       type: typeMap[decision.actionType] || 'web_search',
-      payload: { target: decision.target },
+      payload: { target: decision.target, traceId, correlationId },
       rationale: decision.chosenAlternativeReason,
       expectedOutcome: `Successfully execute ${decision.actionType}`,
       riskLevel: (decision.riskAssessment as RiskLevel) || 'low',
       requiresExplicitApproval: decision.permissionRequired,
       createdAt: decision.timestamp,
+      traceId,
+      correlationId,
     };
   }
 

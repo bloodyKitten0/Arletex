@@ -142,6 +142,8 @@ export const ActionProposalSchema = z.object({
   riskLevel: RiskLevelSchema.default('low'),
   requiresExplicitApproval: z.boolean().default(false),
   createdAt: z.string(),
+  traceId: z.string().optional(),
+  correlationId: z.string().optional(),
 });
 export type ActionProposal = z.infer<typeof ActionProposalSchema>;
 
@@ -324,6 +326,8 @@ export const AgencyObservationSchema = z.object({
   provenance: z.string(),
   data: z.record(z.string(), z.any()),
   error: z.string().nullable().default(null),
+  traceId: z.string().optional(),
+  correlationId: z.string().optional(),
 });
 export type AgencyObservation = z.infer<typeof AgencyObservationSchema>;
 
@@ -353,6 +357,8 @@ export const VerificationResultSchema = z.object({
   recommendedStrategy: RecoveryStrategySchema.optional(),
   evidence: z.record(z.string(), z.any()).optional().default({}),
   timestamp: z.string(),
+  traceId: z.string().optional(),
+  correlationId: z.string().optional(),
 });
 export type VerificationResult = z.infer<typeof VerificationResultSchema>;
 export type ActionVerificationResult = VerificationResult;

@@ -73,6 +73,8 @@ export const CognitiveEventSchema = z.object({
   status: z.enum(['pending', 'processing', 'processed', 'failed', 'ignored']).default('pending'),
   processedStages: z.array(CognitivePipelineStageSchema).default([]),
   error: z.string().optional(),
+  traceId: z.string().optional(),
+  correlationId: z.string().optional(),
 });
 
 export type CognitiveEvent = z.infer<typeof CognitiveEventSchema>;
@@ -106,6 +108,8 @@ export const CognitiveDecisionSchema = z.object({
     timeoutMs: z.number().int().positive().default(5000),
   }).default({ cpu: 'low', gpu: false, timeoutMs: 5000 }),
   timestamp: z.string().datetime(),
+  traceId: z.string().optional(),
+  correlationId: z.string().optional(),
 });
 
 export type CognitiveDecision = z.infer<typeof CognitiveDecisionSchema>;
@@ -131,6 +135,8 @@ export const CognitiveCycleResultSchema = z.object({
   taskSucceeded: z.boolean().default(false),
   success: z.boolean().default(true),
   error: z.string().optional(),
+  traceId: z.string().optional(),
+  correlationId: z.string().optional(),
 });
 
 export type CognitiveCycleResult = z.infer<typeof CognitiveCycleResultSchema>;

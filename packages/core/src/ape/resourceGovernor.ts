@@ -18,11 +18,20 @@ export interface ResourceFeasibilityResult {
   reason: string;
 }
 
+export interface SystemLoadMetrics {
+  cpuUsagePercent: number;
+  ramUsedMb: number;
+  ramTotalMb: number;
+  batteryPercent: number | null;
+  isCharging: boolean | null;
+}
+
 export class ResourceGovernor {
   private profile: ResourceExecutionProfile;
   private readonly logger: ILogger;
   private lastUserInteractionTimestamp: number = 0;
   private consecutiveIdleCycles: number = 0;
+  private systemMetrics: SystemLoadMetrics;
 
   constructor(
     customProfile?: Partial<ResourceExecutionProfile>,
@@ -38,6 +47,13 @@ export class ResourceGovernor {
       isUserInteracting: customProfile?.isUserInteracting ?? false,
       throttleFactor: customProfile?.throttleFactor ?? 1.0,
     };
+    this.systemMetrics = {
+      cpuUsagePercent: 0,
+      ramUsedMb: 0,
+      ramTotalMb: 24576, // 24GB unified memory on ROG Ally X
+      batteryPercent: null,
+      isCharging: null,
+    };
   }
 
   public getProfile(): ResourceExecutionProfile {
@@ -47,6 +63,52 @@ export class ResourceGovernor {
   public updateProfile(updates: Partial<ResourceExecutionProfile>): void {
     this.profile = { ...this.profile, ...updates };
     this.logger.info(`ResourceGovernor profile updated: CPU budget=${this.profile.cpuBudget}, GPU=${this.profile.gpuAllowed}`);
+  }
+
+  public updateSystemMetrics(metrics: Partial<SystemLoadMetrics>): void {
+    this.systemMetrics = {
+      ...this.systemMetrics,
+      ...metrics,
+    };
+  }
+
+  public getSystemMetrics(): SystemLoadMetrics {
+    return { ...this.systemMetrics };
+  }
+
+  public isSystemOverloaded(): { overloaded: boolean; reason?: string } {
+    // 1. High CPU pressure (> 80%)
+    if (this.systemMetrics.cpuUsagePercent > 80) {
+      return {
+        overloaded: true,
+        reason: `High CPU utilization (${this.systemMetrics.cpuUsagePercent.toFixed(1)}% > 80%)`,
+      };
+    }
+
+    // 2. High memory pressure (> 88% of total unified memory)
+    if (this.systemMetrics.ramTotalMb > 0) {
+      const memFraction = this.systemMetrics.ramUsedMb / this.systemMetrics.ramTotalMb;
+      if (memFraction > 0.88) {
+        return {
+          overloaded: true,
+          reason: `High RAM utilization (${(memFraction * 100).toFixed(1)}% > 88% ceiling)`,
+        };
+      }
+    }
+
+    // 3. Handheld battery preservation (battery < 15% and discharging)
+    if (
+      this.systemMetrics.batteryPercent !== null &&
+      this.systemMetrics.batteryPercent < 15 &&
+      this.systemMetrics.isCharging === false
+    ) {
+      return {
+        overloaded: true,
+        reason: `Low battery reservation (${this.systemMetrics.batteryPercent}% discharging)`,
+      };
+    }
+
+    return { overloaded: false };
   }
 
   /**
@@ -88,7 +150,18 @@ export class ResourceGovernor {
       };
     }
 
-    // 2. High CPU requirement while profile budget is low
+    // 2. System overload check (CPU/RAM/Battery governor)
+    const overload = this.isSystemOverloaded();
+    if (overload.overloaded) {
+      return {
+        feasible: false,
+        throttleRecommended: true,
+        backoffMs: 60000,
+        reason: `Target hardware resource pressure: ${overload.reason}; pausing optional autonomy to preserve responsiveness.`,
+      };
+    }
+
+    // 3. High CPU requirement while profile budget is low
     if (req.cpu === 'high' && this.profile.cpuBudget === 'low') {
       return {
         feasible: false,
@@ -98,7 +171,7 @@ export class ResourceGovernor {
       };
     }
 
-    // 3. GPU requirement when GPU compute is restricted (e.g. handheld on battery throttle)
+    // 4. GPU requirement when GPU compute is restricted (e.g. handheld on battery throttle)
     if (req.gpu && !this.profile.gpuAllowed) {
       return {
         feasible: false,
@@ -108,7 +181,7 @@ export class ResourceGovernor {
       };
     }
 
-    // 4. Memory ceiling check
+    // 5. Memory ceiling check
     const requestedMem = req.estimatedMemoryMb ?? 512;
     if (requestedMem > this.profile.maxMemoryMb) {
       return {
