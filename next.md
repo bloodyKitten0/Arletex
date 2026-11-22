@@ -444,7 +444,7 @@ These tasks complete the behavioural substance of APE. They should build on the 
 
 ## P1.6 — Complete relationship and social development
 
-**Status:** OPEN — design decisions and behavioural evidence required  
+**Status:** DONE — verified in commit `3dd9cff`  
 **Relevant subsystems:** Relationship/attachment, social emotions, empathy, theory of mind, social communication and shared-history memory.
 
 **Implementation:**
@@ -455,7 +455,7 @@ These tasks complete the behavioural substance of APE. They should build on the 
 5. Permit disagreement and boundaries without coercion, guilt-tripping, threats or possessive control.
 6. Ensure the relationship does not become the whole identity; independent interests and projects remain possible.
 7. Define relationship memory retention, correction and deletion controls.
-8. Resolve the open relationship questions in Section 7 before treating the design as final.
+8. Resolve the open relationship questions in Section 7 (D.2) before treating the design as final.
 
 **Definition of done:**
 - A controlled interaction sequence demonstrates conflict, retained memory, revised interpretation and reconciliation without scripted state jumps.
@@ -903,6 +903,8 @@ Decide:
 
 ## D.2 Relationship and trust policy
 
+**Status:** COMPLETED — resolved in `docs/RELATIONSHIP_POLICY.md` and commit `3dd9cff`  
+
 Decide:
 - Whether the older draft's reference to “Truth” meant trust.
 - How loss of trust affects skepticism, verification and relational behaviour.
@@ -1094,7 +1096,7 @@ Use this table as the persistent record. Do not delete completed entries; retain
 | P1.3 | DONE | `7de7047` | `tests/p1_motivation_curiosity_and_autonomous_goals.test.ts` (16/16 pass), `tests/curiosity_exploration.milestone30.test.ts` (9/9 pass), `tests/autonomous.agency_and_notifications.test.ts` (7/7 pass) | 7-stage traceable curiosity-to-goal pipeline, durable interest maturation across separated sessions vs temporary novelty bursts, 4 endogenous goal scenarios without canned lists, multi-criteria goal ranking, full auditable goal lifecycle (pause/resume/reject/decompose/abandon), and strict 15-second user-activity pause |
 | P1.4 | DONE | `ad64865` | `tests/p1_intellectual_independence_and_belief_revision.test.ts` (21/21 pass), `tests/intellectual_independence_and_reflection.milestone5.test.ts` (12/12 pass) | Structured belief records with proposition/scope/source quality/evidence/revision history, endogenous question formulation across 5 origins without user prompt, traceable empirical research pipeline with source quality evaluation, fixed 7-case disagreement & epistemic judgment benchmark (anti-sycophancy and anti-contrarianism) |
 | P1.5 | DONE | `0fe2e1e` | `tests/p1_personality_and_developmental_continuity.test.ts` (14/14 pass), `tests/temperament_personality.milestone33.test.ts` (8/8 pass) | 5 identity tiers (identity_invariant, stable_trait, adaptable_trait, temporary_affect, learned_preference), invariant mutation denial, epistemic threshold (>=2 verified experiences) for trait drift, max +/-0.05 drift bounding, single-prompt injection resistance, mood isolation, versioned developmental explanation, and empirical capability grounding |
-| P1.6 | OPEN — design/evidence required | — | — | Relationship policy and longitudinal scenarios |
+| P1.6 | DONE | `3dd9cff` | `tests/p1_relationship_and_social_development.test.ts` (10/10 pass), `docs/RELATIONSHIP_POLICY.md` | Relationship state model (attachment, dual-factor trust, affection, boundaries, expectations), separation of observed behavior from inferred intent, bounded gradual trust updates and reversals, non-coercive boundary assertions, emotional state distinction, relational independence, and memory governance |
 | P1.7 | OPEN — evidence required | — | — | Evidence-backed self-model |
 | P1.8 | OPEN — code gap confirmed | — | — | Remove optimistic scores and synthetic continuity evidence |
 | P1.9 | OPEN — code gap confirmed | — | — | Replace canned offline outputs with real work |
