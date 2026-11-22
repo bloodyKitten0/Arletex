@@ -122,6 +122,13 @@ export interface ArletexApi {
   cancelAgencyTask: (taskId: string) => Promise<IPCResponse<any>>;
   getAgencyPolicy: () => Promise<IPCResponse<any>>;
   updateAgencyPolicy: (policy: any) => Promise<IPCResponse<any>>;
+  getAgencyStatus: () => Promise<IPCResponse<any>>;
+  reactivateAutonomy: (confirmation: string) => Promise<IPCResponse<any>>;
+  listAuditLogs: () => Promise<IPCResponse<{ events: any[] }>>;
+  listModels: (installedOnly?: boolean) => Promise<IPCResponse<{ models: any[] }>>;
+  getActiveModel: () => Promise<IPCResponse<any>>;
+  resolveModel: (input: { modelId?: string; fallbackModelId?: string }) => Promise<IPCResponse<any>>;
+  triggerEmergencyShutdown: (reason?: string) => Promise<IPCResponse<any>>;
 }
 
 const api: ArletexApi = {
@@ -213,6 +220,13 @@ const api: ArletexApi = {
   cancelAgencyTask: (taskId) => ipcRenderer.invoke(IPC_CHANNELS.AGENCY_TASK_CANCEL, taskId),
   getAgencyPolicy: () => ipcRenderer.invoke(IPC_CHANNELS.AGENCY_POLICY_GET),
   updateAgencyPolicy: (policy) => ipcRenderer.invoke(IPC_CHANNELS.AGENCY_POLICY_UPDATE, policy),
+  getAgencyStatus: () => ipcRenderer.invoke(IPC_CHANNELS.AGENCY_STATUS_GET),
+  reactivateAutonomy: (confirmation) => ipcRenderer.invoke(IPC_CHANNELS.AGENCY_REACTIVATE, confirmation),
+  listAuditLogs: () => ipcRenderer.invoke(IPC_CHANNELS.AUDIT_LOG_LIST),
+  listModels: (installedOnly) => ipcRenderer.invoke(IPC_CHANNELS.MODELS_LIST, installedOnly),
+  getActiveModel: () => ipcRenderer.invoke(IPC_CHANNELS.MODELS_ACTIVE_GET),
+  resolveModel: (input) => ipcRenderer.invoke(IPC_CHANNELS.MODELS_RESOLVE, input),
+  triggerEmergencyShutdown: (reason) => ipcRenderer.invoke(IPC_CHANNELS.EMERGENCY_SHUTDOWN, { reason }),
 };
 
 contextBridge.exposeInMainWorld('arletexApi', api);

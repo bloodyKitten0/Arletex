@@ -7518,6 +7518,13 @@ Rules:
         return;
       }
 
+      if (url.pathname === '/api/audit' && method === 'GET') {
+        const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : 50;
+        const events = this.auditRepo.list(limit);
+        this.sendJson(res, 200, { events });
+        return;
+      }
+
       if (url.pathname === '/api/agency/policy' && method === 'GET') {
         this.sendJson(res, 200, this.permissionController.getPolicy());
         return;

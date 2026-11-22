@@ -102,6 +102,12 @@ export const IPC_CHANNELS = {
   AGENCY_POLICY_GET: 'arletex:agency:policy:get',
   AGENCY_POLICY_UPDATE: 'arletex:agency:policy:update',
   AGENCY_TASK_EXECUTE: 'arletex:agency:task:execute',
+  AGENCY_STATUS_GET: 'arletex:agency:status:get',
+  AGENCY_REACTIVATE: 'arletex:agency:reactivate',
+  MODELS_LIST: 'arletex:models:list',
+  MODELS_ACTIVE_GET: 'arletex:models:active:get',
+  MODELS_RESOLVE: 'arletex:models:resolve',
+  EMERGENCY_SHUTDOWN: 'arletex:emergency_shutdown',
 } as const;
 
 export type IPCChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

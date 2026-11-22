@@ -741,6 +741,34 @@ function registerIpcHandlers() {
   handleSecure(IPC_CHANNELS.AGENCY_POLICY_UPDATE, async (_, policy) => {
     return callBackend('/api/agency/policy', 'POST', policy);
   });
+
+  handleSecure(IPC_CHANNELS.AGENCY_STATUS_GET, async () => {
+    return callBackend('/api/agency/status');
+  });
+
+  handleSecure(IPC_CHANNELS.AGENCY_REACTIVATE, async (_, confirmation: string) => {
+    return callBackend('/api/agency/reactivate-autonomy', 'POST', { confirmation });
+  });
+
+  handleSecure(IPC_CHANNELS.AUDIT_LOG_LIST, async () => {
+    return callBackend('/api/audit');
+  });
+
+  handleSecure(IPC_CHANNELS.MODELS_LIST, async (_, installedOnly?: boolean) => {
+    return callBackend(`/api/models${installedOnly ? '?installed=true' : ''}`);
+  });
+
+  handleSecure(IPC_CHANNELS.MODELS_ACTIVE_GET, async () => {
+    return callBackend('/api/models/active');
+  });
+
+  handleSecure(IPC_CHANNELS.MODELS_RESOLVE, async (_, input) => {
+    return callBackend('/api/models/resolve', 'POST', input);
+  });
+
+  handleSecure(IPC_CHANNELS.EMERGENCY_SHUTDOWN, async (_, input) => {
+    return callBackend('/api/agency/emergency-shutdown', 'POST', input || {});
+  });
 }
 
 app.whenReady().then(async () => {
