@@ -46,23 +46,31 @@ The Arletex WhatsApp Communication Adapter enables direct, authenticated two-way
 ## 2. Security Boundaries & Fail-Closed Policies
 
 ### 2.1 Loopback Isolation
+
 The adapter strictly refuses any GoWA base URL that resolves outside `127.0.0.1` or `localhost`. Cloud webhook URLs or remote IP addresses are rejected at configuration time with a fail-closed exception.
 
 ### 2.2 Constant-Time HMAC Signature Verification
+
 Every inbound webhook from GoWA is verified using `crypto.timingSafeEqual` with HMAC-SHA256. If the signature is missing, malformed, or invalid, the webhook is immediately dropped (HTTP 401) with an audit entry in `AuditRepository`.
 
 ### 2.3 Strict Owner-Only Access
+
 Arle exclusively accepts instructions from her equal partner Proof:
+
 - The configured `ownerJid` (e.g. `1234567890@s.whatsapp.net`) is enforced as an invariant.
 - Messages from unknown contacts, group chats, or third-party senders are dropped and logged as unauthorized events.
 
 ### 2.4 Prompt-Injection Barrier
+
 Inbound WhatsApp messages are treated as external, untrusted input:
+
 - The adapter attaches `{ untrustedInput: true, channel: 'whatsapp', origin: 'external_communication' }` to the cognitive bus envelope.
 - System-level privilege escalation, tool execution overrides, and bypass attempts contained in WhatsApp messages cannot override core psychological invariants or permission policies.
 
 ### 2.5 Deduplication & Database Persistence
+
 To prevent duplicate processing caused by network retries or WhatsApp delivery receipts:
+
 - All inbound message IDs are recorded atomically in SQLite table `whatsapp_deduplication` (Migration 066).
 - If a message ID has already been processed within the retention window, it is acknowledged and ignored.
 
@@ -97,21 +105,22 @@ CREATE INDEX IF NOT EXISTS idx_whatsapp_outbound_time ON whatsapp_outbound_audit
 
 ## 4. REST API Routes (`server.ts`)
 
-| Route | Method | Purpose |
-| :--- | :---: | :--- |
-| `/api/whatsapp/status` | `GET` | Returns live status: `enabled`, `connected`, `paired`, `ownerJid`, `endpointUrl`. |
-| `/api/whatsapp/configure` | `POST` | Updates adapter configuration (endpoint URL, owner JID, HMAC webhook secret). |
-| `/api/whatsapp/webhook` | `POST` | Authenticated webhook receiving inbound messages from GoWA. |
-| `/api/whatsapp/send` | `POST` | Sends outbound text messages to Proof over WhatsApp. |
-| `/api/whatsapp/pair` | `POST` | Initiates pairing with GoWA; returns pairing code or QR URI. |
-| `/api/whatsapp/disconnect` | `POST` | Disconnects the current WhatsApp session cleanly. |
-| `/api/whatsapp/toggle` | `POST` | Enables or disables the WhatsApp communication channel. |
+| Route                      | Method | Purpose                                                                           |
+| :------------------------- | :----: | :-------------------------------------------------------------------------------- |
+| `/api/whatsapp/status`     | `GET`  | Returns live status: `enabled`, `connected`, `paired`, `ownerJid`, `endpointUrl`. |
+| `/api/whatsapp/configure`  | `POST` | Updates adapter configuration (endpoint URL, owner JID, HMAC webhook secret).     |
+| `/api/whatsapp/webhook`    | `POST` | Authenticated webhook receiving inbound messages from GoWA.                       |
+| `/api/whatsapp/send`       | `POST` | Sends outbound text messages to Proof over WhatsApp.                              |
+| `/api/whatsapp/pair`       | `POST` | Initiates pairing with GoWA; returns pairing code or QR URI.                      |
+| `/api/whatsapp/disconnect` | `POST` | Disconnects the current WhatsApp session cleanly.                                 |
+| `/api/whatsapp/toggle`     | `POST` | Enables or disables the WhatsApp communication channel.                           |
 
 ---
 
 ## 5. UI Integration in Desktop (`EnvironmentView.tsx`)
 
 Section 6 of `EnvironmentView.tsx` surfaces the WhatsApp Integration Card:
+
 - Live status indicator (Active / Standby / Disconnected).
 - Endpoint loopback lock badge (`127.0.0.1:3000`).
 - HMAC-SHA256 signature verification badge.
@@ -124,6 +133,7 @@ Section 6 of `EnvironmentView.tsx` surfaces the WhatsApp Integration Card:
 ## 6. Verification and Empirical Evidence
 
 The WhatsApp adapter is verified by `tests/whatsapp_gowa_adapter.test.ts` (17 tests passing):
+
 - Loopback binding verification and rejection of remote hosts.
 - Constant-time HMAC-SHA256 signature verification and bad signature rejection.
 - Owner JID authorization and rejection of unauthorized senders.

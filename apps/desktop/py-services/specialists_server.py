@@ -22,6 +22,7 @@ BASE_MODELS_DIR = os.getenv("ARLETEX_SPECIALISTS_DIR", os.path.expanduser("~/mod
 EMBEDDING_MODEL_DIR = os.path.join(BASE_MODELS_DIR, "embeddinggemma-300m")
 WHISPER_MODEL_DIR = os.path.join(BASE_MODELS_DIR, "whisper-small")
 KOKORO_MODEL_DIR = os.path.join(BASE_MODELS_DIR, "kokoro-82m")
+QWEN3_TTS_DIR = os.getenv("QWEN3_TTS_DIR", os.path.join(BASE_MODELS_DIR, "qwen3-tts-1.7b-voicedesign"))
 GLM_OCR_DIR = os.path.join(BASE_MODELS_DIR, "glm-ocr")
 RVC_MODEL_DIR = os.path.join(BASE_MODELS_DIR, "rvc-arlecchino")
 RVC_MODEL_PATH = os.path.join(RVC_MODEL_DIR, "arlecchino_500e.pth")
@@ -181,6 +182,27 @@ def get_kokoro():
         except Exception as e:
             print(f"[Specialists] Kokoro init note: {e}")
     return kokoro_pipeline
+
+qwen3_tts_model = None
+
+def get_qwen3_tts():
+    global qwen3_tts_model
+    if qwen3_tts_model is None and os.path.exists(QWEN3_TTS_DIR):
+        try:
+            from qwen_tts import Qwen3TTSModel
+            import torch
+            print(f"[Specialists] Initializing Qwen3-TTS 1.7B VoiceDesign from {QWEN3_TTS_DIR}...")
+            device = "cuda:0" if torch.cuda.is_available() else "cpu"
+            dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
+            qwen3_tts_model = Qwen3TTSModel.from_pretrained(
+                QWEN3_TTS_DIR,
+                device_map=device,
+                dtype=dtype,
+            )
+            print("[Specialists] Qwen3-TTS 1.7B VoiceDesign loaded successfully.")
+        except Exception as e:
+            print(f"[Specialists] Qwen3-TTS init note: {e}")
+    return qwen3_tts_model
 
 # Multi-Dimensional Tone Profiles for Dynamic Emotional Adaptation
 # Blends Arlecchino's primary latent tensor with expressive nuances
@@ -668,6 +690,7 @@ class SpecialistRequestHandler(BaseHTTPRequestHandler):
             emb_installed = os.path.exists(EMBEDDING_MODEL_DIR)
             whi_installed = os.path.exists(WHISPER_MODEL_DIR)
             kok_installed = os.path.exists(KOKORO_MODEL_DIR)
+            qwen_installed = os.path.exists(QWEN3_TTS_DIR)
             ocr_installed = os.path.exists(GLM_OCR_DIR)
             rvc_installed = os.path.exists(RVC_MODEL_PATH)
             self.send_json(200, {
@@ -675,21 +698,24 @@ class SpecialistRequestHandler(BaseHTTPRequestHandler):
                 "embeddingGemma": emb_installed,
                 "whisper": whi_installed,
                 "kokoro": kok_installed,
+                "qwen3Tts": qwen_installed,
                 "glmOcr": ocr_installed,
                 "rvc": rvc_installed,
                 "modelsInstalled": {
                     "embeddingGemma": emb_installed,
                     "whisper": whi_installed,
                     "kokoro": kok_installed,
+                    "qwen3Tts": qwen_installed,
                     "glmOcr": ocr_installed,
-                    "rvc": rvc_installed
+                    "rvc": rvc_installed,
                 },
                 "modelsLoaded": {
                     "embeddingGemma": embedding_model is not None,
                     "whisper": whisper_model is not None,
                     "kokoro": kokoro_pipeline is not None,
+                    "qwen3Tts": qwen3_tts_model is not None,
                     "glmOcr": glm_ocr_model is not None,
-                    "rvc": rvc_converter is not None
+                    "rvc": rvc_converter is not None,
                 }
             })
             return
@@ -779,16 +805,47 @@ class SpecialistRequestHandler(BaseHTTPRequestHandler):
             return
 
         # ==========================================
-        # 3. Speech Synthesis Endpoint (Kokoro)
+        # 3. Speech Synthesis Endpoint (Qwen3-TTS / Kokoro)
         # ==========================================
         if self.path == "/synthesize":
             raw_text = body.get("text", "")
             voice = body.get("voice", "arlecchino")
             tone = body.get("tone", "composed")
+            engine = str(body.get("engine", os.getenv("ARLE_VOICE_ENGINE", "kokoro"))).lower()
             lead_padding_ms = int(body.get("leadPaddingMs", 0))
             pad = body.get("pad", None)
             emotion = body.get("emotion", None)
             use_rvc = bool(body.get("useRvc", os.getenv("ARLETEX_ENABLE_RVC", "0") == "1"))
+
+            # Optional Qwen3-TTS 1.7B VoiceDesign generation
+            if engine in ("qwen3-tts", "qwen3", "qwen") and os.path.exists(QWEN3_TTS_DIR):
+                qwen_model = get_qwen3_tts()
+                if qwen_model is not None and raw_text:
+                    try:
+                        base_timbre = "A mature feminine voice, low-to-mid pitch register, rich and slightly husky timbre, measured cadence, crisp aristocratic enunciation, composed authority"
+                        voice_instruct = f"{base_timbre}, delivered in a {tone} tone"
+                        wavs, sr = qwen_model.generate_voice_design(
+                            text=raw_text,
+                            instruct=voice_instruct,
+                            language="English",
+                        )
+                        if wavs and len(wavs) > 0:
+                            import soundfile as sf
+                            out_buf = io.BytesIO()
+                            sf.write(out_buf, wavs[0], sr, format='WAV')
+                            wav_bytes = out_buf.getvalue()
+                            b64_audio = base64.b64encode(wav_bytes).decode('utf-8')
+                            self.send_json(200, {
+                                "audio": b64_audio,
+                                "format": "wav",
+                                "sampleRate": sr,
+                                "engine": "qwen3-tts-1.7b-voicedesign",
+                                "tone": tone,
+                                "text": raw_text,
+                            })
+                            return
+                    except Exception as qerr:
+                        print(f"[Specialists] Qwen3-TTS synthesis error: {qerr}, falling back to Kokoro...", file=sys.stderr)
 
             profile = resolve_tone_profile(tone, pad=pad, emotion=emotion)
             speed = float(body.get("speed", profile["speed"]))

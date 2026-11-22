@@ -31,7 +31,9 @@ describe('Arle Voice System — Emotion-Aware Speech Generation', () => {
       expect(baseline.perceivedGender).toBe('feminine');
       expect(baseline.pitchRegister).toBe('low-to-mid');
       expect(baseline.timbre).toContain('rich, slightly husky');
-      expect(baseline.baselineDelivery).toContain('composed, elegant, intelligent, and authoritative');
+      expect(baseline.baselineDelivery).toContain(
+        'composed, elegant, intelligent, and authoritative',
+      );
       expect(baseline.description).toContain('naturally low-to-mid register');
       expect(baseline.acousticAnchor.baselinePitchHz).toBe(180);
       expect(baseline.acousticAnchor.pitchRangeHz).toEqual([140, 240]);
@@ -98,7 +100,10 @@ describe('Arle Voice System — Emotion-Aware Speech Generation', () => {
   describe('2. Expression Tests Across Canonical Emotions', () => {
     const testPhrase = 'I have evaluated the proposal and completed the necessary calculations.';
 
-    const emotionPads: Record<CanonicalVoiceEmotion, { valence: number; arousal: number; dominance: number }> = {
+    const emotionPads: Record<
+      CanonicalVoiceEmotion,
+      { valence: number; arousal: number; dominance: number }
+    > = {
       neutral: { valence: 0.0, arousal: 0.0, dominance: 0.5 },
       happiness: { valence: 0.7, arousal: 0.3, dominance: 0.6 },
       sadness: { valence: -0.6, arousal: -0.4, dominance: -0.2 },
@@ -116,7 +121,9 @@ describe('Arle Voice System — Emotion-Aware Speech Generation', () => {
     it('should generate differentiated delivery parameters for each of the 12 emotions', () => {
       const deliveries: Partial<Record<CanonicalVoiceEmotion, VocalDeliveryInstructions>> = {};
 
-      for (const [emotion, pad] of Object.entries(emotionPads) as Array<[CanonicalVoiceEmotion, any]>) {
+      for (const [emotion, pad] of Object.entries(emotionPads) as Array<
+        [CanonicalVoiceEmotion, any]
+      >) {
         deliveries[emotion] = controller.express({
           text: testPhrase,
           psychologicalState: {
@@ -133,7 +140,9 @@ describe('Arle Voice System — Emotion-Aware Speech Generation', () => {
 
       // 2. Sadness vs Neutral: Sadness must be softer, lower forcefulness, and longer pauses
       expect(deliveries.sadness!.forcefulness).toBeLessThan(deliveries.neutral!.forcefulness);
-      expect(deliveries.sadness!.pauseCadenceMs).toBeGreaterThan(deliveries.neutral!.pauseCadenceMs);
+      expect(deliveries.sadness!.pauseCadenceMs).toBeGreaterThan(
+        deliveries.neutral!.pauseCadenceMs,
+      );
 
       // 3. Anger vs Neutral: Anger must be firmer, sharper, and more forceful without shouting
       expect(deliveries.anger!.forcefulness).toBeGreaterThan(deliveries.neutral!.forcefulness);
@@ -149,11 +158,17 @@ describe('Arle Voice System — Emotion-Aware Speech Generation', () => {
       expect(deliveries.contempt!.pitchMod).toBeLessThan(deliveries.neutral!.pitchMod);
 
       // 6. Irritation vs Neutral: Irritation has tighter clipped delivery (faster tempo, shorter pauses)
-      expect(deliveries.irritation!.speedMultiplier).toBeGreaterThan(deliveries.neutral!.speedMultiplier);
-      expect(deliveries.irritation!.pauseCadenceMs).toBeLessThan(deliveries.neutral!.pauseCadenceMs);
+      expect(deliveries.irritation!.speedMultiplier).toBeGreaterThan(
+        deliveries.neutral!.speedMultiplier,
+      );
+      expect(deliveries.irritation!.pauseCadenceMs).toBeLessThan(
+        deliveries.neutral!.pauseCadenceMs,
+      );
 
       // 7. Tiredness vs Neutral: Slower pacing and reduced forcefulness
-      expect(deliveries.tiredness!.speedMultiplier).toBeLessThan(deliveries.neutral!.speedMultiplier);
+      expect(deliveries.tiredness!.speedMultiplier).toBeLessThan(
+        deliveries.neutral!.speedMultiplier,
+      );
       expect(deliveries.tiredness!.forcefulness).toBeLessThan(deliveries.neutral!.forcefulness);
 
       // 8. Curiosity: inquisitive intonation and analytical register
@@ -299,7 +314,8 @@ describe('Arle Voice System — Emotion-Aware Speech Generation', () => {
     });
 
     it('should synthesize audio within target device RTF and latency budget', async () => {
-      const text = 'The AMD Z1 Extreme APU provides 24 gigabytes of unified memory for local inference.';
+      const text =
+        'The AMD Z1 Extreme APU provides 24 gigabytes of unified memory for local inference.';
       const delivery = controller.express({
         text,
         psychologicalState: {
@@ -329,7 +345,11 @@ describe('Arle Voice System — Emotion-Aware Speech Generation', () => {
 
       const delivery = controller.express({ text: 'Testing cancellation.' });
       // Should fall back gracefully or return fallback audio without crashing
-      const result = await backend.synthesize('Testing cancellation.', delivery, abortController.signal);
+      const result = await backend.synthesize(
+        'Testing cancellation.',
+        delivery,
+        abortController.signal,
+      );
       expect(result.format).toBe('wav');
       expect(result.audioBase64).toBeDefined();
     });

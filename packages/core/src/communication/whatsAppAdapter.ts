@@ -41,7 +41,11 @@ export interface IWhatsAppAdapter {
   processInboundWebhook(
     rawBody: string,
     signatureHeader?: string,
-  ): Promise<{ status: 'accepted' | 'ignored' | 'rejected' | 'duplicate'; envelope?: WhatsAppMessageEnvelope; reason?: string }>;
+  ): Promise<{
+    status: 'accepted' | 'ignored' | 'rejected' | 'duplicate';
+    envelope?: WhatsAppMessageEnvelope;
+    reason?: string;
+  }>;
   sendMessage(input: WhatsAppSendInput): Promise<WhatsAppSendResult>;
   getPairingQr(): Promise<{ qrCodeBase64?: string; status: string }>;
   getPairingCode(phoneNumber: string): Promise<{ pairingCode?: string; status: string }>;
@@ -207,7 +211,9 @@ export class WhatsAppAdapter implements IWhatsAppAdapter {
 
     const cleanSender = msg.from.toLowerCase().trim();
     const cleanOwner = (this.config.ownerJid || '').toLowerCase().trim();
-    const isOwner = Boolean(cleanOwner && (cleanSender === cleanOwner || cleanSender.startsWith(cleanOwner)));
+    const isOwner = Boolean(
+      cleanOwner && (cleanSender === cleanOwner || cleanSender.startsWith(cleanOwner)),
+    );
 
     if (!isOwner) {
       this.logger.warn(`Unauthorized WhatsApp sender: ${msg.from}. Ignored safely without action.`);
@@ -288,7 +294,9 @@ export class WhatsAppAdapter implements IWhatsAppAdapter {
       'X-Device-Id': this.config.deviceId || 'default',
     };
     if (this.config.username && this.config.password) {
-      const creds = Buffer.from(`${this.config.username}:${this.config.password}`).toString('base64');
+      const creds = Buffer.from(`${this.config.username}:${this.config.password}`).toString(
+        'base64',
+      );
       headers['Authorization'] = `Basic ${creds}`;
     }
 
@@ -389,7 +397,9 @@ export class WhatsAppAdapter implements IWhatsAppAdapter {
     try {
       const headers: Record<string, string> = {};
       if (this.config.username && this.config.password) {
-        const creds = Buffer.from(`${this.config.username}:${this.config.password}`).toString('base64');
+        const creds = Buffer.from(`${this.config.username}:${this.config.password}`).toString(
+          'base64',
+        );
         headers['Authorization'] = `Basic ${creds}`;
       }
 
@@ -457,7 +467,9 @@ export class WhatsAppAdapter implements IWhatsAppAdapter {
     return { status: 'unavailable' };
   }
 
-  public async getPairingCode(phoneNumber: string): Promise<{ pairingCode?: string; status: string }> {
+  public async getPairingCode(
+    phoneNumber: string,
+  ): Promise<{ pairingCode?: string; status: string }> {
     try {
       const cleanPhone = phoneNumber.replace(/\D/g, '');
       const res = await fetch(`${this.config.baseUrl}/app/login/phone`, {

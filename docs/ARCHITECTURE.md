@@ -100,17 +100,20 @@ desktop (Depends on contracts, core, database, inference)
 ## 4. Subsystem Architectures
 
 ### 4.1 Artificial Psychology Engine (APE)
+
 - **48 Interlocking Engines:** Granular psychological architecture comprising appraisal, transition, personality, motivation, relationships, self-model, development, deliberation, executive functions, ethics, and consciousness.
 - **143-Emotion Palette & Continuous PAD:** Emotional state dynamically updates within continuous Pleasure-Arousal-Dominance space.
 - **Explainable Deliberation Engine:** Causally arbitrates trade-offs (fatigue, curiosity, partner affection, threat alerts, ethics) with comprehensive justification strings.
 
 ### 4.2 Emotion-Aware Voice System
+
 - **Arlecchino Timbre Persona:** Mature feminine voice, low-to-mid register ($0.92$ pitch modifier, $0.94$ formant shift), rich/husky timbre, measured cadence ($0.95$ rate), composed authority.
 - **SpeechExpressionController:** Deterministically maps discrete emotions and continuous PAD coordinates into acoustic parameters (rate, pitch, energy, breathiness, pauses).
 - **Exponential Smoothing:** Multi-turn smoothing ($\alpha = 0.65$) prevents abrupt acoustic shifts across conversational turns.
 - **Dual TTS Backend:** Connects to local `SpecialistTTSBackend` (Qwen3-TTS 1.7B VoiceDesign / Kokoro-82M ONNX) with abort signal cancellation and deterministic test fallbacks.
 
 ### 4.3 WhatsApp GoWA Communication Adapter
+
 - **Hardened Loopback Integration:** Connects strictly to local `127.0.0.1:3000` GoWA daemon.
 - **Constant-Time HMAC-SHA256 Verification:** Authenticates inbound webhooks with `crypto.timingSafeEqual`.
 - **Strict Owner-Only Enforcement:** Only accepts messages from configured `ownerJid` (Proof); all others dropped fail-closed.
@@ -118,6 +121,7 @@ desktop (Depends on contracts, core, database, inference)
 - **Durable Deduplication:** Migration 066 table `whatsapp_deduplication` prevents duplicate processing.
 
 ### 4.4 Canonical Cognitive Control Bus & Soak Endurance
+
 - **16-Stage Event Pipeline:** Serialized event routing with provenance validation, cognitive appraisal, memory commitment, and reflection.
 - **Crash Recovery & Idempotency:** In-flight claim locks and SQLite cache guarantee safe restart recovery.
 - **Soak Endurance:** Verified over 50 continuous cycles with bounded heap growth ($< 45\text{MB}$), zero listener leaks, and clean shutdown ($< 2000\text{ms}$).
@@ -127,6 +131,7 @@ desktop (Depends on contracts, core, database, inference)
 ## 5. Verification & Operational Testing
 
 The architecture is verified against 114+ automated test suites:
+
 - **Release Gate A:** `tests/p0_*.test.ts` (77/77 passing)
 - **Release Gate B:** `tests/p1_*.test.ts` (132/132 passing)
 - **Release Gate C:** `tests/p2_*.test.ts` (95/95 passing)

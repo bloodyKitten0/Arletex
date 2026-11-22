@@ -8,15 +8,13 @@ export const VoiceIdentitySchema = z.object({
   timbre: z.string().default('rich, slightly husky, and resonant'),
   articulation: z.string().default('precise and deliberate'),
   cadence: z.string().default('measured, with natural pauses'),
-  baselineDelivery: z
+  baselineDelivery: z.string().default('composed, elegant, intelligent, and authoritative'),
+  description: z
     .string()
-    .default('composed, elegant, intelligent, and authoritative'),
-  description: z.string().default(
-    'An original mature feminine voice with a naturally low-to-mid register, rich and slightly husky resonance, refined articulation, composed authority, controlled emotional expression, subtle warmth, and measured pacing. The delivery should sound intelligent, confident, elegant, and natural rather than robotic or excessively theatrical.',
-  ),
-  characterInspiration: z
-    .string()
-    .default('Arlecchino (Genshin Impact) composed authority'),
+    .default(
+      'An original mature feminine voice with a naturally low-to-mid register, rich and slightly husky resonance, refined articulation, composed authority, controlled emotional expression, subtle warmth, and measured pacing. The delivery should sound intelligent, confident, elegant, and natural rather than robotic or excessively theatrical.',
+    ),
+  characterInspiration: z.string().default('Arlecchino (Genshin Impact) composed authority'),
   acousticAnchor: z.object({
     baselinePitchHz: z.number().default(180),
     pitchRangeHz: z.tuple([z.number(), z.number()]).default([140, 240]),
@@ -59,9 +57,7 @@ export const VocalDeliveryInstructionsSchema = z.object({
   voiceIdentityId: z.string().default('arle-baseline'),
 });
 
-export type VocalDeliveryInstructions = z.infer<
-  typeof VocalDeliveryInstructionsSchema
->;
+export type VocalDeliveryInstructions = z.infer<typeof VocalDeliveryInstructionsSchema>;
 
 export const SpeechControllerInputSchema = z.object({
   text: z.string().min(1),
@@ -109,6 +105,4 @@ export const SynthesizedAudioResultSchema = z.object({
   voiceIdentity: z.string().default('arle-baseline'),
 });
 
-export type SynthesizedAudioResult = z.infer<
-  typeof SynthesizedAudioResultSchema
->;
+export type SynthesizedAudioResult = z.infer<typeof SynthesizedAudioResultSchema>;

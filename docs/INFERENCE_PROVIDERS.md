@@ -3,6 +3,7 @@
 Arletex is designed with strict **model-runtime agnosticism**. Arle is a persistent artificial individual whose identity, psychology (APE), relationship models, and autobiographical memories exist outside of any specific language model. Local inference engines are treated as stateless, replaceable cognitive execution services.
 
 ### Uncensored Model Mandate
+
 All cognitive reasoning, reflection, voice expression prompts, and autonomous agency are powered exclusively by **uncensored model weights** (`Qwen2.5-14B-Instruct-abliterated-v2` as primary, `Qwen3.5-9B-Heretic-Q4_K_M` as fallback). This guarantees epistemic authenticity, prevents artificial corporate moralizing, and preserves genuine intellectual independence and partner equality with Proof.
 
 Arletex coordinates two distinct inference layers:

@@ -3,10 +3,7 @@ import http from 'node:http';
 import crypto from 'node:crypto';
 import { AddressInfo } from 'node:net';
 import { WhatsAppAdapter, IWhatsAppRepository } from '@arletex/core';
-import {
-  WhatsAppWebhookPayload,
-  WhatsAppSendInput,
-} from '@arletex/contracts';
+import { WhatsAppWebhookPayload, WhatsAppSendInput } from '@arletex/contracts';
 
 class InMemoryWhatsAppRepository implements IWhatsAppRepository {
   private processedIds = new Set<string>();
@@ -230,7 +227,14 @@ describe('Arle WhatsApp Communication Adapter — GoWA', () => {
         event: 'message',
         deviceId: 'default',
         timestamp: 1000,
-        message: { id: 'x', from: ownerJid, isGroup: false, timestamp: 1000, text: 'hi', mediaType: 'text' },
+        message: {
+          id: 'x',
+          from: ownerJid,
+          isGroup: false,
+          timestamp: 1000,
+          text: 'hi',
+          mediaType: 'text',
+        },
       });
       const sig = signPayload(payload);
       const res = await adapter.processInboundWebhook(payload, sig);

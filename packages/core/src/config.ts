@@ -145,10 +145,8 @@ export function createDefaultConfig(overrides?: AppConfigOverrides | string): Ap
           normalizedOverrides.inference?.specialistCoding?.modelId ??
           process.env['SPECIALIST_CODING_MODEL'] ??
           'Qwen3.5-9B-Heretic-Q4_K_M',
-        temperature:
-          normalizedOverrides.inference?.specialistCoding?.temperature ?? 0.2,
-        maxTokens:
-          normalizedOverrides.inference?.specialistCoding?.maxTokens ?? 4096,
+        temperature: normalizedOverrides.inference?.specialistCoding?.temperature ?? 0.2,
+        maxTokens: normalizedOverrides.inference?.specialistCoding?.maxTokens ?? 4096,
       },
     },
   };

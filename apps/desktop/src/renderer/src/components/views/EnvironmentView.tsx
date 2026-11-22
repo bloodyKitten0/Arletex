@@ -1011,8 +1011,7 @@ export const EnvironmentView: React.FC = () => {
                   whatsAppStatus?.state === 'connected'
                     ? 'rgba(35, 134, 54, 0.2)'
                     : 'rgba(218, 54, 51, 0.2)',
-                color:
-                  whatsAppStatus?.state === 'connected' ? '#3fb950' : '#f85149',
+                color: whatsAppStatus?.state === 'connected' ? '#3fb950' : '#f85149',
                 border: `1px solid ${whatsAppStatus?.state === 'connected' ? '#238636' : '#da3633'}`,
                 fontWeight: 600,
                 textTransform: 'uppercase',

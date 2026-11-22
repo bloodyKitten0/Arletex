@@ -663,13 +663,9 @@ export class ArletexBackendServer {
       this.preferenceRepo.get('whatsapp_base_url') ||
       'http://127.0.0.1:3000';
     const waUsername =
-      process.env['ARLE_WHATSAPP_USERNAME'] ||
-      this.preferenceRepo.get('whatsapp_username') ||
-      '';
+      process.env['ARLE_WHATSAPP_USERNAME'] || this.preferenceRepo.get('whatsapp_username') || '';
     const waPassword =
-      process.env['ARLE_WHATSAPP_PASSWORD'] ||
-      this.preferenceRepo.get('whatsapp_password') ||
-      '';
+      process.env['ARLE_WHATSAPP_PASSWORD'] || this.preferenceRepo.get('whatsapp_password') || '';
     const waDeviceId =
       process.env['ARLE_WHATSAPP_DEVICE_ID'] ||
       this.preferenceRepo.get('whatsapp_device_id') ||
@@ -679,9 +675,7 @@ export class ArletexBackendServer {
       this.preferenceRepo.get('whatsapp_webhook_secret') ||
       '';
     const waOwnerJid =
-      process.env['ARLE_WHATSAPP_OWNER_JID'] ||
-      this.preferenceRepo.get('whatsapp_owner_jid') ||
-      '';
+      process.env['ARLE_WHATSAPP_OWNER_JID'] || this.preferenceRepo.get('whatsapp_owner_jid') || '';
     const waAutoReply =
       process.env['ARLE_WHATSAPP_AUTO_REPLY'] === 'true' ||
       this.preferenceRepo.get('whatsapp_auto_reply') === 'true';
@@ -4148,7 +4142,11 @@ Rules:
 
         this.whatsAppAdapter.updateConfig(validated);
         const status = await this.whatsAppAdapter.getStatus();
-        this.sendJson(res, 200, { success: true, status, config: this.whatsAppAdapter.getConfig() });
+        this.sendJson(res, 200, {
+          success: true,
+          status,
+          config: this.whatsAppAdapter.getConfig(),
+        });
         return;
       }
 

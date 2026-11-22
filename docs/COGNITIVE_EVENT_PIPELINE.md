@@ -36,8 +36,8 @@ Every external stimulus, internal autonomous cycle, and sensory perception is mo
 | `social_interaction`           | `user` / `telegram`      | Social Communication Engine       | Conversational exchange assessing mutual understanding and rapport.           |
 | `failure_recovery`             | `internal`               | Error Recovery Subsystem          | Attempted mitigation and postcondition check following an action failure.     |
 | `incoming_email`               | `external_communication` | Gmail API integration             | Inbound message to `arletex.email@gmail.com`.                                 |
-| `whatsapp_message`             | `whatsapp`               | `WhatsAppAdapter` (GoWA Loopback) | Owner-only authenticated WhatsApp text message with HMAC verification.         |
-| `whatsapp_media`               | `whatsapp`               | `WhatsAppAdapter` (GoWA Loopback) | Inbound media document, voice audio, or image received via WhatsApp GoWA.      |
+| `whatsapp_message`             | `whatsapp`               | `WhatsAppAdapter` (GoWA Loopback) | Owner-only authenticated WhatsApp text message with HMAC verification.        |
+| `whatsapp_media`               | `whatsapp`               | `WhatsAppAdapter` (GoWA Loopback) | Inbound media document, voice audio, or image received via WhatsApp GoWA.     |
 
 ---
 

@@ -60,10 +60,7 @@ export class SpecialistTTSBackend implements ITTSBackend {
   private config: TTSBackendConfig;
   private logger: ILogger;
 
-  constructor(
-    config: Partial<TTSBackendConfig> = {},
-    logger: ILogger = rootLogger,
-  ) {
+  constructor(config: Partial<TTSBackendConfig> = {}, logger: ILogger = rootLogger) {
     this.config = TTSBackendConfigSchema.parse(config);
     this.logger = logger.child('SpecialistTTSBackend');
   }
@@ -143,8 +140,7 @@ export class SpecialistTTSBackend implements ITTSBackend {
         };
 
         const duration =
-          data.durationSeconds ||
-          Math.max(0.5, (cleanText.split(/\s+/).length / 135) * 60);
+          data.durationSeconds || Math.max(0.5, (cleanText.split(/\s+/).length / 135) * 60);
         const latencyMs = Date.now() - startTime;
         const rtf = Number((latencyMs / (duration * 1000)).toFixed(3));
 

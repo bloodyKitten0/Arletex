@@ -43,9 +43,9 @@ const CANONICAL_EMOTION_DELIVERIES: Record<CanonicalVoiceEmotion, DeliveryProfil
   neutral: {
     pitchMod: 0.0,
     speedMultiplier: 0.93,
-    forcefulness: 0.50,
+    forcefulness: 0.5,
     breathiness: 0.25,
-    warmth: 0.40,
+    warmth: 0.4,
     pauseCadenceMs: 350,
     vocalRegister: 'composed',
     styleInstructions:
@@ -56,7 +56,7 @@ const CANONICAL_EMOTION_DELIVERIES: Record<CanonicalVoiceEmotion, DeliveryProfil
     speedMultiplier: 0.96,
     forcefulness: 0.52,
     breathiness: 0.35,
-    warmth: 0.70,
+    warmth: 0.7,
     pauseCadenceMs: 300,
     vocalRegister: 'gentle',
     styleInstructions:
@@ -67,7 +67,7 @@ const CANONICAL_EMOTION_DELIVERIES: Record<CanonicalVoiceEmotion, DeliveryProfil
     speedMultiplier: 0.88,
     forcefulness: 0.38,
     breathiness: 0.45,
-    warmth: 0.30,
+    warmth: 0.3,
     pauseCadenceMs: 450,
     vocalRegister: 'hollow',
     styleInstructions:
@@ -78,7 +78,7 @@ const CANONICAL_EMOTION_DELIVERIES: Record<CanonicalVoiceEmotion, DeliveryProfil
     speedMultiplier: 0.97,
     forcefulness: 0.82,
     breathiness: 0.15,
-    warmth: 0.20,
+    warmth: 0.2,
     pauseCadenceMs: 280,
     vocalRegister: 'commanding',
     styleInstructions:
@@ -98,7 +98,7 @@ const CANONICAL_EMOTION_DELIVERIES: Record<CanonicalVoiceEmotion, DeliveryProfil
   amusement: {
     pitchMod: 0.3,
     speedMultiplier: 0.98,
-    forcefulness: 0.50,
+    forcefulness: 0.5,
     breathiness: 0.38,
     warmth: 0.55,
     pauseCadenceMs: 310,
@@ -108,8 +108,8 @@ const CANONICAL_EMOTION_DELIVERIES: Record<CanonicalVoiceEmotion, DeliveryProfil
   },
   contempt: {
     pitchMod: -1.0,
-    speedMultiplier: 0.90,
-    forcefulness: 0.60,
+    speedMultiplier: 0.9,
+    forcefulness: 0.6,
     breathiness: 0.18,
     warmth: 0.15,
     pauseCadenceMs: 420,
@@ -144,7 +144,7 @@ const CANONICAL_EMOTION_DELIVERIES: Record<CanonicalVoiceEmotion, DeliveryProfil
     speedMultiplier: 0.93,
     forcefulness: 0.65,
     breathiness: 0.22,
-    warmth: 0.50,
+    warmth: 0.5,
     pauseCadenceMs: 340,
     vocalRegister: 'composed',
     styleInstructions:
@@ -165,7 +165,7 @@ const CANONICAL_EMOTION_DELIVERIES: Record<CanonicalVoiceEmotion, DeliveryProfil
     pitchMod: -0.7,
     speedMultiplier: 0.84,
     forcefulness: 0.36,
-    breathiness: 0.40,
+    breathiness: 0.4,
     warmth: 0.35,
     pauseCadenceMs: 500,
     vocalRegister: 'quiet',
@@ -187,9 +187,11 @@ function mapApeEmotionToCanonical(emotionId: string): CanonicalVoiceEmotion {
 
   // Keyword clustering across APE taxonomy
   if (/happ|joy|pleas|glad|delight|elated|euphor|content|warmth/.test(norm)) return 'happiness';
-  if (/sad|grief|mourn|sorrow|depress|melanchol|hollow|despair|heartbreak/.test(norm)) return 'sadness';
+  if (/sad|grief|mourn|sorrow|depress|melanchol|hollow|despair|heartbreak/.test(norm))
+    return 'sadness';
   if (/ang|rage|fury|wrath|indign|hostil|fierce|spite/.test(norm)) return 'anger';
-  if (/curio|inquir|wonder|fascinat|intrig|speculat|investig|interest/.test(norm)) return 'curiosity';
+  if (/curio|inquir|wonder|fascinat|intrig|speculat|investig|interest/.test(norm))
+    return 'curiosity';
   if (/amus|play|humor|laugh|joke|teas|wry|ironic|mischie/.test(norm)) return 'amusement';
   if (/contempt|scorn|disdain|condescen|disgust|deris/.test(norm)) return 'contempt';
   if (/fear|terror|horror|dread|panic|anxiet|apprehen|trepid/.test(norm)) return 'fear';
@@ -236,7 +238,9 @@ export class SpeechExpressionController implements ISpeechExpressionController {
 
     // 1. Neutral fallback if psychological state is missing or uncertain
     if (!input.psychologicalState) {
-      this.logger.debug('No psychological state provided; applying Arle baseline neutral delivery.');
+      this.logger.debug(
+        'No psychological state provided; applying Arle baseline neutral delivery.',
+      );
       return VocalDeliveryInstructionsSchema.parse({
         ...CANONICAL_EMOTION_DELIVERIES.neutral,
         emotionLabel: 'neutral',
@@ -250,7 +254,8 @@ export class SpeechExpressionController implements ISpeechExpressionController {
 
     // 2. Select canonical base delivery profile
     const canonicalEmotion = mapApeEmotionToCanonical(primaryEmotion);
-    const baseDelivery = CANONICAL_EMOTION_DELIVERIES[canonicalEmotion] || CANONICAL_EMOTION_DELIVERIES.neutral;
+    const baseDelivery =
+      CANONICAL_EMOTION_DELIVERIES[canonicalEmotion] || CANONICAL_EMOTION_DELIVERIES.neutral;
 
     // 3. Compute continuous PAD modulation
     // Valence [-1, 1]: modulates warmth (+/- 0.15) and pitchMod (+/- 0.20)
@@ -275,13 +280,13 @@ export class SpeechExpressionController implements ISpeechExpressionController {
         intentPitchMod += 0.15;
       } else if (/firm|boundary|reprimand/.test(intentNorm)) {
         intentSpeedMod += 0.02;
-        intentPitchMod -= 0.20;
+        intentPitchMod -= 0.2;
       }
     }
 
     // Trust modulation (higher partner trust reinforces genuine warmth and reduces defensive coldness)
     const trust = input.relationshipTrust ?? 0.85;
-    const trustWarmthMod = (trust - 0.5) * 0.10;
+    const trustWarmthMod = (trust - 0.5) * 0.1;
 
     // Clamp computed acoustic parameters within stable identity bounds
     const rawPitchMod = Number(
@@ -294,24 +299,18 @@ export class SpeechExpressionController implements ISpeechExpressionController {
     );
     const speedMultiplier = Math.max(0.75, Math.min(1.25, rawSpeed));
 
-    const rawForce = Number(
-      (baseDelivery.forcefulness + aForceOffset + dForceOffset).toFixed(3),
-    );
-    const forcefulness = Math.max(0.20, Math.min(0.95, rawForce));
+    const rawForce = Number((baseDelivery.forcefulness + aForceOffset + dForceOffset).toFixed(3));
+    const forcefulness = Math.max(0.2, Math.min(0.95, rawForce));
 
-    const rawBreath = Number(
-      (baseDelivery.breathiness + dBreathOffset).toFixed(3),
-    );
-    const breathiness = Math.max(0.10, Math.min(0.70, rawBreath));
+    const rawBreath = Number((baseDelivery.breathiness + dBreathOffset).toFixed(3));
+    const breathiness = Math.max(0.1, Math.min(0.7, rawBreath));
 
     const rawWarmth = Number(
       (baseDelivery.warmth + vOffset + intentWarmthMod + trustWarmthMod).toFixed(3),
     );
-    const warmth = Math.max(0.10, Math.min(1.0, rawWarmth));
+    const warmth = Math.max(0.1, Math.min(1.0, rawWarmth));
 
-    const rawPause = Math.round(
-      baseDelivery.pauseCadenceMs * (1.0 - pad.arousal * 0.15),
-    );
+    const rawPause = Math.round(baseDelivery.pauseCadenceMs * (1.0 - pad.arousal * 0.15));
     const pauseCadenceMs = Math.max(200, Math.min(800, rawPause));
 
     // Construct enriched delivery instructions
@@ -366,9 +365,7 @@ export class SpeechExpressionController implements ISpeechExpressionController {
     const smoothedBreath = Number(
       (current.breathiness * alpha + previous.breathiness * invAlpha).toFixed(3),
     );
-    const smoothedWarmth = Number(
-      (current.warmth * alpha + previous.warmth * invAlpha).toFixed(3),
-    );
+    const smoothedWarmth = Number((current.warmth * alpha + previous.warmth * invAlpha).toFixed(3));
     const smoothedPause = Math.round(
       current.pauseCadenceMs * alpha + previous.pauseCadenceMs * invAlpha,
     );

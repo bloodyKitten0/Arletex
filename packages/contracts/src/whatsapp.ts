@@ -96,9 +96,7 @@ export const WhatsAppCommunicationStatusSchema = z.object({
   error: z.string().nullable().optional(),
 });
 
-export type WhatsAppCommunicationStatus = z.infer<
-  typeof WhatsAppCommunicationStatusSchema
->;
+export type WhatsAppCommunicationStatus = z.infer<typeof WhatsAppCommunicationStatusSchema>;
 
 export const WhatsAppMessageEnvelopeSchema = z.object({
   id: z.string(),
@@ -112,6 +110,4 @@ export const WhatsAppMessageEnvelopeSchema = z.object({
   rawPayload: z.record(z.any()).optional(),
 });
 
-export type WhatsAppMessageEnvelope = z.infer<
-  typeof WhatsAppMessageEnvelopeSchema
->;
+export type WhatsAppMessageEnvelope = z.infer<typeof WhatsAppMessageEnvelopeSchema>;

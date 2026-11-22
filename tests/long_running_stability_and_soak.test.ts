@@ -77,16 +77,50 @@ describe('I.3 — Long-Running Stability and Soak Testing', () => {
     closedLoopAgency = new ClosedLoopAgencyService({
       agencyRepo: new (class {
         saveExecutionRecord() {}
-        getExecutionHistory() { return []; }
+        getExecutionHistory() {
+          return [];
+        }
       })() as any,
       taskManager,
       planningInterface: new (class {
-        formulatePlan() { return Promise.resolve({ id: 'p1', taskId: 't1', objective: 'o', steps: [], assumptions: [], uncertainties: [], alternativeApproaches: [], status: 'formulating', version: 1, createdAt: '', updatedAt: '' }); }
-        replanOnFailure() { return Promise.resolve({ id: 'p2', taskId: 't1', objective: 'o', steps: [], assumptions: [], uncertainties: [], alternativeApproaches: [], status: 'formulating', version: 2, createdAt: '', updatedAt: '' }); }
+        formulatePlan() {
+          return Promise.resolve({
+            id: 'p1',
+            taskId: 't1',
+            objective: 'o',
+            steps: [],
+            assumptions: [],
+            uncertainties: [],
+            alternativeApproaches: [],
+            status: 'formulating',
+            version: 1,
+            createdAt: '',
+            updatedAt: '',
+          });
+        }
+        replanOnFailure() {
+          return Promise.resolve({
+            id: 'p2',
+            taskId: 't1',
+            objective: 'o',
+            steps: [],
+            assumptions: [],
+            uncertainties: [],
+            alternativeApproaches: [],
+            status: 'formulating',
+            version: 2,
+            createdAt: '',
+            updatedAt: '',
+          });
+        }
       })() as any,
       permissionController,
       verificationEngine,
-      memorySync: new (class { syncExperience() { return Promise.resolve(); } })() as any,
+      memorySync: new (class {
+        syncExperience() {
+          return Promise.resolve();
+        }
+      })() as any,
       apeService,
       autobiographicalMemoryService: autobiographicalMemory,
       logger: rootLogger,
@@ -127,7 +161,11 @@ describe('I.3 — Long-Running Stability and Soak Testing', () => {
 
     for (let i = 0; i < 50; i++) {
       const isUser = i % 3 === 0;
-      const eventType = isUser ? 'user_message' : i % 2 === 0 ? 'internal_tick' : 'reflection_cycle';
+      const eventType = isUser
+        ? 'user_message'
+        : i % 2 === 0
+          ? 'internal_tick'
+          : 'reflection_cycle';
       const source = isUser ? 'user' : 'internal';
 
       const result = await cognitiveBus.dispatch({
@@ -231,7 +269,7 @@ describe('I.3 — Long-Running Stability and Soak Testing', () => {
     const recoveredApe = new ApeService(
       recoveredApeRepo,
       { generateResponse: async () => ({ content: 'Rehydrated response' }) } as any,
-      rootLogger
+      rootLogger,
     );
 
     const recoveredBus = new CognitiveControlBus({

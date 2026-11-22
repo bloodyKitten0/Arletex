@@ -23,10 +23,7 @@ import {
   DeliberationEngine,
   rootLogger,
 } from '@arletex/core';
-import {
-  ConflictingDesire,
-  DeliberationAlternative,
-} from '@arletex/contracts';
+import { ConflictingDesire, DeliberationAlternative } from '@arletex/contracts';
 
 describe('I.1 & I.2 — Causal Integration of Psychology and Agency', () => {
   let tempDir: string;
@@ -81,16 +78,50 @@ describe('I.1 & I.2 — Causal Integration of Psychology and Agency', () => {
     closedLoopAgency = new ClosedLoopAgencyService({
       agencyRepo: new (class {
         saveExecutionRecord() {}
-        getExecutionHistory() { return []; }
+        getExecutionHistory() {
+          return [];
+        }
       })() as any,
       taskManager,
       planningInterface: new (class {
-        formulatePlan() { return Promise.resolve({ id: 'p1', taskId: 't1', objective: 'o', steps: [], assumptions: [], uncertainties: [], alternativeApproaches: [], status: 'formulating', version: 1, createdAt: '', updatedAt: '' }); }
-        replanOnFailure() { return Promise.resolve({ id: 'p2', taskId: 't1', objective: 'o', steps: [], assumptions: [], uncertainties: [], alternativeApproaches: [], status: 'formulating', version: 2, createdAt: '', updatedAt: '' }); }
+        formulatePlan() {
+          return Promise.resolve({
+            id: 'p1',
+            taskId: 't1',
+            objective: 'o',
+            steps: [],
+            assumptions: [],
+            uncertainties: [],
+            alternativeApproaches: [],
+            status: 'formulating',
+            version: 1,
+            createdAt: '',
+            updatedAt: '',
+          });
+        }
+        replanOnFailure() {
+          return Promise.resolve({
+            id: 'p2',
+            taskId: 't1',
+            objective: 'o',
+            steps: [],
+            assumptions: [],
+            uncertainties: [],
+            alternativeApproaches: [],
+            status: 'formulating',
+            version: 2,
+            createdAt: '',
+            updatedAt: '',
+          });
+        }
       })() as any,
       permissionController,
       verificationEngine,
-      memorySync: new (class { syncExperience() { return Promise.resolve(); } })() as any,
+      memorySync: new (class {
+        syncExperience() {
+          return Promise.resolve();
+        }
+      })() as any,
       apeService,
       autobiographicalMemoryService: autobiographicalMemory,
       logger: rootLogger,
@@ -462,7 +493,7 @@ describe('I.1 & I.2 — Causal Integration of Psychology and Agency', () => {
         'The quicksort algorithm always operates in O(n log n) time in all cases.',
         0.85,
         ['introductory_notes'],
-        'research'
+        'research',
       );
       expect(initialBelief.confidence).toBe(0.85);
 
@@ -471,20 +502,22 @@ describe('I.1 & I.2 — Causal Integration of Psychology and Agency', () => {
         'The quicksort algorithm worst-case operating time is O(n^2) when pivot selection is adversarial.',
         0.98,
         ['Cormen et al. Theorem 7.1', 'Empirical adversarial bench'],
-        'empirical_observation'
+        'empirical_observation',
       );
 
       expect(revisedBelief.confidence).toBe(0.98);
       expect(revisedBelief.revisionHistory).toBeDefined();
       expect(revisedBelief.revisionHistory!.length).toBeGreaterThan(0);
-      expect(revisedBelief.revisionHistory![0]!.previousProposition).toContain('always operates in O(n log n)');
+      expect(revisedBelief.revisionHistory![0]!.previousProposition).toContain(
+        'always operates in O(n log n)',
+      );
     });
 
     it('Update 4: Repeated practice evolves interest level gradually from emerging to deep', () => {
       const interest = apeService.curiosityEngine.developInterest(
         'mathematics',
         'Interactive Theorem Proving',
-        'Exploration of formal verification in microkernel design'
+        'Exploration of formal verification in microkernel design',
       );
       expect(interest.maturity).toBe('nascent_spark');
 
@@ -492,24 +525,24 @@ describe('I.1 & I.2 — Causal Integration of Psychology and Agency', () => {
       apeService.curiosityEngine.evolveInterestMaturity(
         interest.id,
         'Formulated initial tactic scripts for inductive structures in Lean 4',
-        { sessionId: 'session-alpha', isSignificantDepth: true }
+        { sessionId: 'session-alpha', isSignificantDepth: true },
       );
       const evolvedStep1 = apeService.curiosityEngine.evolveInterestMaturity(
         interest.id,
         'Verified preservation of invariants under arbitrary step transformations',
-        { sessionId: 'session-beta', isSignificantDepth: true }
+        { sessionId: 'session-beta', isSignificantDepth: true },
       );
       expect(evolvedStep1.maturity).toBe('developed_interest');
 
       apeService.curiosityEngine.evolveInterestMaturity(
         interest.id,
         'Formulated tactics for automated rewrite systems across algebraic hierarchies',
-        { sessionId: 'session-gamma', isSignificantDepth: true }
+        { sessionId: 'session-gamma', isSignificantDepth: true },
       );
       const evolvedStep3 = apeService.curiosityEngine.evolveInterestMaturity(
         interest.id,
         'Constructed complete end-to-end mechanized soundness proof for microkernel scheduler',
-        { sessionId: 'session-delta', isSignificantDepth: true }
+        { sessionId: 'session-delta', isSignificantDepth: true },
       );
       expect(evolvedStep3.maturity).toBe('enduring_passion');
     });
@@ -518,7 +551,8 @@ describe('I.1 & I.2 — Causal Integration of Psychology and Agency', () => {
       const bond = await apeService.relationshipsAttachmentEngine.getOrInitializeBond('proof');
       expect(bond.personId).toBe('proof');
 
-      const continuityEval = await apeService.relationshipsAttachmentEngine.evaluateSeparationContinuity('proof', 72);
+      const continuityEval =
+        await apeService.relationshipsAttachmentEngine.evaluateSeparationContinuity('proof', 72);
       expect(continuityEval.continuityMaintained).toBe(true);
       expect(continuityEval.separationSecurity).toBeGreaterThanOrEqual(0.9);
       expect(continuityEval.affectionRetained).toBeGreaterThanOrEqual(0.9);
