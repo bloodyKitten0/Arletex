@@ -98,11 +98,7 @@ export class WhatsAppAdapter implements IWhatsAppAdapter {
       const parsed = new URL(urlStr);
       const host = parsed.hostname;
       const isLoopback =
-        host === '127.0.0.1' ||
-        host === 'localhost' ||
-        host === '::1' ||
-        host === '[::1]' ||
-        process.env['CI'] === 'true';
+        host === '127.0.0.1' || host === 'localhost' || host === '::1' || host === '[::1]';
 
       if (!isLoopback) {
         throw new Error(
