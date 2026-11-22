@@ -4,6 +4,7 @@ import os from 'node:os';
 import { spawn, execFile } from 'node:child_process';
 import util from 'node:util';
 import { ILogger, rootLogger } from '../logger.js';
+import { getArleChromeProfile, getArleEmail } from '../config.js';
 
 const execFilePromise = util.promisify(execFile);
 
@@ -288,11 +289,24 @@ export class DesktopEnvironmentProvider {
       return { success: true, pid: 99999, message: `Opened in Chrome Profile 7 (test mode): ${targetUrl}` };
     }
 
-    // Tab de-duplication: avoid re-opening the identical URL within 10 seconds
+    // Tab/Window de-duplication: avoid re-opening identical destination or duplicate tabs
     const now = Date.now();
+    const isSpotify = targetUrl.includes('spotify.com');
+    if (isSpotify) {
+      // If Spotify is already open on desktop, bring it to focus instead of spawning duplicate tabs
+      const focused = await this.focusWindowByTitle('spotify');
+      if (focused && (DesktopEnvironmentProvider.lastOpenedBrowserUrl?.includes('spotify.com') || now - DesktopEnvironmentProvider.lastOpenedBrowserTime < 180000)) {
+        this.logger.info(`Spotify window already active on desktop; brought to focus without tab duplication.`);
+        return {
+          success: true,
+          message: `Spotify is already open and brought to front (tab duplication prevented).`,
+        };
+      }
+    }
+
     if (
       DesktopEnvironmentProvider.lastOpenedBrowserUrl === targetUrl &&
-      now - DesktopEnvironmentProvider.lastOpenedBrowserTime < 10000
+      now - DesktopEnvironmentProvider.lastOpenedBrowserTime < 30000
     ) {
       this.logger.info(`URL "${targetUrl}" is already open in Chrome Profile 7; skipping redundant tab spawn.`);
       return {
@@ -311,11 +325,19 @@ export class DesktopEnvironmentProvider {
       XDG_SESSION_TYPE: 'wayland',
     };
 
-    // 1. Primary: Flatpak Google Chrome with Profile 7 (arletex.email@gmail.com)
+    const arleProfile = getArleChromeProfile();
+    const arleEmail = getArleEmail();
+
+    // If target is Spotify Web App, launch in --app mode to avoid creating endless browser tabs
+    const appArgs = isSpotify
+      ? ['run', 'com.google.Chrome', `--app=${targetUrl}`]
+      : ['run', 'com.google.Chrome', `--profile-directory=${arleProfile}`, targetUrl];
+
+    // 1. Primary: Flatpak Google Chrome with Arle profile
     try {
       const child = spawn(
         'flatpak',
-        ['run', 'com.google.Chrome', '--profile-directory=Profile 7', targetUrl],
+        appArgs,
         {
           detached: true,
           stdio: 'ignore',
@@ -326,17 +348,17 @@ export class DesktopEnvironmentProvider {
       return {
         success: true,
         pid: child.pid,
-        message: `Opened in Google Chrome Profile 7 (arletex.email@gmail.com): ${targetUrl}`,
+        message: `Opened in Google Chrome ${arleProfile} (${arleEmail}): ${targetUrl}`,
       };
     } catch (flatpakErr: any) {
       this.logger.warn(`Flatpak Chrome launch failed: ${flatpakErr.message}; falling back to system binaries.`);
     }
 
-    // 2. Secondary: System google-chrome with Profile 7
+    // 2. Secondary: System google-chrome with Arle profile
     try {
       const child = spawn(
         'google-chrome',
-        ['--profile-directory=Profile 7', targetUrl],
+        [`--profile-directory=${arleProfile}`, targetUrl],
         {
           detached: true,
           stdio: 'ignore',
@@ -347,7 +369,7 @@ export class DesktopEnvironmentProvider {
       return {
         success: true,
         pid: child.pid,
-        message: `Opened in google-chrome Profile 7: ${targetUrl}`,
+        message: `Opened in google-chrome ${arleProfile}: ${targetUrl}`,
       };
     } catch {}
 
@@ -638,14 +660,63 @@ export class DesktopEnvironmentProvider {
   }
 
   /**
-   * Queries MPRIS playback status and track metadata for a player (defaults to Spotify).
+   * Identifies the most relevant active MPRIS player on the system.
+   * Universal agency: Supports Spotify, Haruna, VLC, MPV, Chromium, Firefox, Amberol, Celluloid, Audacious, etc.
+   * Prioritizes currently 'Playing' players, then 'Paused' players, then any registered player.
    */
-  public async getMprisMediaStatus(preferredPlayer = 'spotify'): Promise<MprisMediaStatus | null> {
+  public async findActiveMprisPlayer(preferredPlayer?: string): Promise<string | null> {
     const players = await this.listMprisPlayers();
     if (players.length === 0) return null;
 
-    // Pick preferred player or first available
-    const chosen = players.find((p) => p.toLowerCase().includes(preferredPlayer.toLowerCase())) || players[0]!;
+    if (preferredPlayer) {
+      const matched = players.find((p) => p.toLowerCase().includes(preferredPlayer.toLowerCase()));
+      if (matched) return matched;
+    }
+
+    // Check for actively playing player across the desktop
+    for (const p of players) {
+      try {
+        const { stdout } = await execFilePromise('dbus-send', [
+          '--session',
+          `--dest=org.mpris.MediaPlayer2.${p}`,
+          '--type=method_call',
+          '--print-reply',
+          '/org/mpris/MediaPlayer2',
+          'org.freedesktop.DBus.Properties.Get',
+          'string:org.mpris.MediaPlayer2.Player',
+          'string:PlaybackStatus',
+        ]);
+        if (stdout.includes('"Playing"')) return p;
+      } catch {}
+    }
+
+    // Check for paused player
+    for (const p of players) {
+      try {
+        const { stdout } = await execFilePromise('dbus-send', [
+          '--session',
+          `--dest=org.mpris.MediaPlayer2.${p}`,
+          '--type=method_call',
+          '--print-reply',
+          '/org/mpris/MediaPlayer2',
+          'org.freedesktop.DBus.Properties.Get',
+          'string:org.mpris.MediaPlayer2.Player',
+          'string:PlaybackStatus',
+        ]);
+        if (stdout.includes('"Paused"')) return p;
+      } catch {}
+    }
+
+    return players[0] || null;
+  }
+
+  /**
+   * Queries MPRIS playback status and track metadata for any active media player.
+   */
+  public async getMprisMediaStatus(preferredPlayer?: string): Promise<MprisMediaStatus | null> {
+    const chosen = await this.findActiveMprisPlayer(preferredPlayer);
+    if (!chosen) return null;
+
     const busDest = `org.mpris.MediaPlayer2.${chosen}`;
 
     try {
@@ -722,17 +793,88 @@ export class DesktopEnvironmentProvider {
   }
 
   /**
-   * Dispatches an MPRIS control method to the target player.
+   * Checks whether desktop audio is currently streaming (via PipeWire/WirePlumber or MPRIS).
+   */
+  public async isAudioPlaying(): Promise<boolean> {
+    try {
+      const { stdout } = await execFilePromise('wpctl', ['status']);
+      const streamIdx = stdout.indexOf('Streams:');
+      if (streamIdx !== -1) {
+        const streamSection = stdout.slice(streamIdx, streamIdx + 400);
+        if (streamSection.includes('[active]')) return true;
+      }
+    } catch {}
+
+    const status = await this.getMprisMediaStatus();
+    return status?.playbackStatus === 'Playing';
+  }
+
+  /**
+   * Specifically triggers playback on a focused web player (e.g. Spotify, YouTube)
+   * by focusing the target window and dispatching the play gesture.
+   */
+  public async triggerWebPlayerPlay(appSubstring = 'spotify'): Promise<boolean> {
+    if (process.env['NODE_ENV'] === 'test' || process.env['VITEST']) return true;
+    let focused = await this.focusWindowByTitle(appSubstring);
+    if (!focused) {
+      // Try other media players or browsers if specific app is not found
+      for (const fallback of ['youtube', 'chrome', 'vlc', 'mpv', 'haruna', 'firefox']) {
+        if (await this.focusWindowByTitle(fallback)) {
+          focused = true;
+          break;
+        }
+      }
+    }
+    if (!focused) return false;
+    await new Promise((r) => setTimeout(r, 400));
+    try {
+      // 1. Try Space key (57)
+      await execFilePromise('ydotool', ['key', '57:1', '57:0'], {
+        env: { ...process.env, YDOTOOL_SOCKET: '/tmp/ydotool.sock' },
+      });
+      await new Promise((r) => setTimeout(r, 600));
+      if (await this.isAudioPlaying()) return true;
+
+      // 2. Try Enter key (28) in case focus is on a search result or track card
+      await execFilePromise('ydotool', ['key', '28:1', '28:0'], {
+        env: { ...process.env, YDOTOOL_SOCKET: '/tmp/ydotool.sock' },
+      });
+      await new Promise((r) => setTimeout(r, 600));
+      if (await this.isAudioPlaying()) return true;
+
+      // 3. Try hardware Media Play/Pause key (164)
+      await execFilePromise('ydotool', ['key', '164:1', '164:0'], {
+        env: { ...process.env, YDOTOOL_SOCKET: '/tmp/ydotool.sock' },
+      });
+      await new Promise((r) => setTimeout(r, 600));
+      return await this.isAudioPlaying();
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Dispatches an MPRIS control method to the target or active media player.
+   * Truly generalized: Works seamlessly whether Proof is using Spotify, VLC, MPV, Haruna, Chrome, etc.
    */
   public async executeMprisMethod(
     method: 'Play' | 'Pause' | 'PlayPause' | 'Next' | 'Previous' | 'Stop',
-    player = 'spotify',
-  ): Promise<boolean> {
-    const players = await this.listMprisPlayers();
-    const chosen = players.find((p) => p.toLowerCase().includes(player.toLowerCase())) || (players.length > 0 ? players[0] : null);
+    player?: string,
+  ): Promise<{ success: boolean; player?: string; status?: MprisMediaStatus | null }> {
+    const chosen = await this.findActiveMprisPlayer(player);
     if (!chosen) {
-      this.logger.warn(`No MPRIS media player matching "${player}" found.`);
-      return false;
+      // If no MPRIS player is registered yet (e.g. newly loaded web player before first playback),
+      // trigger playback directly on the web player window
+      if (method === 'Play' || method === 'PlayPause') {
+        const triggered = await this.triggerWebPlayerPlay('spotify');
+        if (triggered) {
+          const newPlayer = await this.findActiveMprisPlayer();
+          const status = newPlayer ? await this.getMprisMediaStatus(newPlayer) : null;
+          return { success: true, player: newPlayer || 'spotify', status };
+        }
+      }
+      this.logger.warn(`No active MPRIS media player found on desktop.`);
+      return { success: false };
     }
 
     try {
@@ -744,35 +886,82 @@ export class DesktopEnvironmentProvider {
         `org.mpris.MediaPlayer2.Player.${method}`,
       ]);
       this.logger.info(`Dispatched MPRIS command "${method}" to player "${chosen}"`);
-      return true;
+      const status = await this.getMprisMediaStatus(chosen);
+      return { success: true, player: chosen, status };
     } catch (err: any) {
-      this.logger.warn(`Failed to execute MPRIS command "${method}": ${err.message}`);
-      return false;
+      this.logger.warn(`Failed to execute MPRIS command "${method}" on "${chosen}": ${err.message}`);
+      return { success: false, player: chosen };
     }
   }
 
   public async mprisPlay(player?: string): Promise<boolean> {
-    return this.executeMprisMethod('Play', player);
+    const res = await this.executeMprisMethod('Play', player);
+    return res.success;
   }
 
   public async mprisPause(player?: string): Promise<boolean> {
-    return this.executeMprisMethod('Pause', player);
+    const res = await this.executeMprisMethod('Pause', player);
+    return res.success;
   }
 
   public async mprisPlayPause(player?: string): Promise<boolean> {
-    return this.executeMprisMethod('PlayPause', player);
+    const res = await this.executeMprisMethod('PlayPause', player);
+    return res.success;
   }
 
   public async mprisNext(player?: string): Promise<boolean> {
-    return this.executeMprisMethod('Next', player);
+    const res = await this.executeMprisMethod('Next', player);
+    return res.success;
   }
 
   public async mprisPrevious(player?: string): Promise<boolean> {
-    return this.executeMprisMethod('Previous', player);
+    const res = await this.executeMprisMethod('Previous', player);
+    return res.success;
   }
 
   public async mprisStop(player?: string): Promise<boolean> {
-    return this.executeMprisMethod('Stop', player);
+    const res = await this.executeMprisMethod('Stop', player);
+    return res.success;
+  }
+
+  /**
+   * Interacts with KDE KWin 6 to search and focus an existing desktop window by caption substring.
+   * Avoids duplicate window/tab spawning when an app is already open.
+   */
+  public async focusWindowByTitle(captionSubstring: string): Promise<boolean> {
+    if (process.env['NODE_ENV'] === 'test' || process.env['VITEST']) return true;
+    try {
+      const script = `
+        var target = "${captionSubstring.replace(/"/g, '\\"')}".toLowerCase();
+        for (var i = 0; i < workspace.stackingOrder.length; i++) {
+          var w = workspace.stackingOrder[i];
+          if (w.caption && w.caption.toLowerCase().indexOf(target) !== -1) {
+            workspace.activeWindow = w;
+            break;
+          }
+        }
+      `;
+      const scriptPath = `/tmp/kwin_focus_${Date.now()}.js`;
+      fs.writeFileSync(scriptPath, script, 'utf8');
+      const scriptName = `kwin_focus_${Date.now()}`;
+      const { stdout } = await execFilePromise('qdbus-qt6', [
+        'org.kde.KWin',
+        '/Scripting',
+        'org.kde.kwin.Scripting.loadScript',
+        scriptPath,
+        scriptName,
+      ]);
+      const scriptId = stdout.trim();
+      if (scriptId) {
+        await execFilePromise('qdbus-qt6', ['org.kde.KWin', `/Scripting/Script${scriptId}`, 'org.kde.kwin.Script.run']);
+        await execFilePromise('qdbus-qt6', ['org.kde.KWin', '/Scripting', 'org.kde.kwin.Scripting.unloadScript', scriptName]);
+      }
+      try { fs.unlinkSync(scriptPath); } catch {}
+      return true;
+    } catch (err: any) {
+      this.logger.debug(`KWin focus notice: ${err.message}`);
+      return false;
+    }
   }
 
   private levenshteinDistance(a: string, b: string): number {

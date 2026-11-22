@@ -3,7 +3,7 @@ import util from 'node:util';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { rootLogger, ActionPermissionController } from '@arletex/core';
+import { rootLogger, ActionPermissionController, getArleChromeProfile } from '@arletex/core';
 
 const execFilePromise = util.promisify(execFile);
 const logger = rootLogger.child('DeviceAgencyService');
@@ -41,7 +41,7 @@ export interface DeviceActionInput {
 
 export class DeviceAgencyService {
   private display = process.env.DISPLAY || ':0';
-  private chromeProfile = 'Profile 7'; // arletex.email@gmail.com
+  private chromeProfile = getArleChromeProfile();
   private lastOpenedUrl: string | null = null;
   private lastOpenedTime = 0;
   private permissionController: ActionPermissionController;
@@ -324,16 +324,41 @@ export class DeviceAgencyService {
     try {
       const now = Date.now();
 
-      // De-duplicate: do not spam open tabs if navigated recently within 25 seconds
+      // Tab de-duplication: avoid re-opening duplicate tabs or spamming browser instances
+      const isSpotify = url.includes('spotify.com');
       const isDuplicate =
         this.lastOpenedUrl === url ||
+        (isSpotify && (this.lastOpenedUrl?.includes('spotify.com') || now - this.lastOpenedTime < 300000)) ||
         (url.includes('youtube.com/watch') && this.lastOpenedUrl?.includes('youtube.com/watch'));
 
-      if (isDuplicate && now - this.lastOpenedTime < 25000) {
-        logger.info(`Chrome already navigated to ${url} recently. Suppressing duplicate tab opening.`);
+      if (isDuplicate) {
+        logger.info(`Browser target already open or active recently (${url}). Activating existing window without spawning duplicate tab.`);
+        // Try focusing the existing window via KWin
+        try {
+          const kwScript = `
+            var target = "${isSpotify ? 'spotify' : 'chrome'}";
+            for (var i = 0; i < workspace.stackingOrder.length; i++) {
+              var w = workspace.stackingOrder[i];
+              if (w.caption && (w.caption.toLowerCase().indexOf(target) !== -1 || (target === 'spotify' && w.caption.indexOf(' • ') !== -1))) {
+                workspace.activeWindow = w;
+                break;
+              }
+            }
+          `;
+          const sPath = `/tmp/kwin_focus_dev_${Date.now()}.js`;
+          fs.writeFileSync(sPath, kwScript, 'utf8');
+          const sName = `kwin_focus_dev_${Date.now()}`;
+          const { stdout: sId } = await execFilePromise('qdbus-qt6', ['org.kde.KWin', '/Scripting', 'org.kde.kwin.Scripting.loadScript', sPath, sName]);
+          if (sId.trim()) {
+            await execFilePromise('qdbus-qt6', ['org.kde.KWin', `/Scripting/Script${sId.trim()}`, 'org.kde.kwin.Script.run']);
+            await execFilePromise('qdbus-qt6', ['org.kde.KWin', '/Scripting', 'org.kde.kwin.Scripting.unloadScript', sName]);
+          }
+          try { fs.unlinkSync(sPath); } catch {}
+        } catch {}
+
         return {
           success: true,
-          message: `Browser already open at ${url} (duplicate opening suppressed, brought to focus)`,
+          message: `Browser already open at ${url} (duplicate tab prevented, window brought to front)`,
         };
       }
 
@@ -356,9 +381,12 @@ export class DeviceAgencyService {
         isChromeRunning = checkRes.stdout.trim().length > 0;
       } catch {}
 
-      const chromeArgs = isChromeRunning
-        ? ['run', 'com.google.Chrome', url]
-        : ['run', 'com.google.Chrome', `--profile-directory=${this.chromeProfile}`, url];
+      // Launch Spotify as dedicated app window to prevent creating extra tabs
+      const chromeArgs = isSpotify
+        ? ['run', 'com.google.Chrome', `--app=${url}`]
+        : isChromeRunning
+          ? ['run', 'com.google.Chrome', url]
+          : ['run', 'com.google.Chrome', `--profile-directory=${this.chromeProfile}`, url];
 
       // Spawn flatpak Google Chrome asynchronously with argument arrays
       const child = spawn(
@@ -374,7 +402,7 @@ export class DeviceAgencyService {
 
       return {
         success: true,
-        message: `Chrome opened with profile ${this.chromeProfile} (arletex.email@gmail.com) at ${url}`,
+        message: `Chrome opened with profile ${this.chromeProfile} at ${url}`,
       };
     } catch (err: any) {
       logger.error('Failed to launch Chrome with Arle profile', err);

@@ -1,6 +1,59 @@
 import path from 'node:path';
+import fs from 'node:fs';
 import os from 'node:os';
 import { AppConfig, AppConfigSchema, InferenceConfig } from '@arletex/contracts';
+
+/**
+ * Loads environment variables from .env file if present in the workspace or home directory.
+ */
+export function loadEnvFile(explicitPath?: string): void {
+  const candidatePaths = explicitPath
+    ? [explicitPath]
+    : [
+        path.join(process.cwd(), '.env'),
+        path.join(process.cwd(), '..', '.env'),
+        path.join(process.cwd(), '..', '..', '.env'),
+        path.join(os.homedir(), '.arletex', '.env'),
+      ];
+
+  for (const envPath of candidatePaths) {
+    if (fs.existsSync(envPath)) {
+      try {
+        const content = fs.readFileSync(envPath, 'utf8');
+        for (const line of content.split('\n')) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith('#')) continue;
+          const eqIdx = trimmed.indexOf('=');
+          if (eqIdx !== -1) {
+            const key = trimmed.slice(0, eqIdx).trim();
+            const val = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, '');
+            if (key && process.env[key] === undefined) {
+              process.env[key] = val;
+            }
+          }
+        }
+        break;
+      } catch {}
+    }
+  }
+}
+
+// Automatically load .env on initialization
+loadEnvFile();
+
+/**
+ * Returns Arle's dedicated personal email, configurable via ARLETEX_EMAIL or ARLETEX_EMAIL_ADDRESS.
+ */
+export function getArleEmail(): string {
+  return process.env['ARLETEX_EMAIL'] || process.env['ARLETEX_EMAIL_ADDRESS'] || 'arletex.email@gmail.com';
+}
+
+/**
+ * Returns Arle's dedicated Google Chrome profile directory, configurable via ARLETEX_CHROME_PROFILE.
+ */
+export function getArleChromeProfile(): string {
+  return process.env['ARLETEX_CHROME_PROFILE'] || 'Profile 7';
+}
 
 export function getDefaultDataDirectory(): string {
   const custom = process.env['ARLETEX_DATA_DIR'];

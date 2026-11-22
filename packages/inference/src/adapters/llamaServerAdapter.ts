@@ -129,10 +129,14 @@ export class LlamaServerAdapter implements IInferenceProvider {
       '<|im_end|>',
       '<|endoftext|>',
       '<|im_start|>',
+      '濩',
+      '㈑',
       '\nUser:',
       '\nProof:',
       'User:',
       'Proof:',
+      '\nuser:',
+      '\nassistant:',
       'GetResponse(',
       'getResponse(',
       '.GetResponse',
@@ -146,11 +150,49 @@ export class LlamaServerAdapter implements IInferenceProvider {
       '\nArle:',
       'You:',
       '\nYou:',
+      ':\n- Current Persistent Mood',
+      'Current Persistent Mood:',
+      'Action completed successfully!',
+      'Ambient audio stream captured',
+      'Visual frame or environmental state verified',
+      '[Active Psychology Engine',
+      '[Digital Agency Reality Grounding]',
+      '\n```json',
+      'Track is playing now',
+      'System audio volume:',
+      'Ambient desktop audio stream captured',
+      'Your response must be in this format',
+      'A new message arrived',
+      '\n: ',
+      '\n:\n',
+      '\n- [',
+      ': The Spotify Web Player',
+      'The Spotify Web Player is active',
+      '- Conversation Partner:',
+      'Conversation Partner:',
+      'Identity & Email:',
+      '- Identity & Email:',
+      '[Direct Dialogue Context',
+      '\n*',
+      '\n *',
+      '\n* ',
+      'Do not output',
+      'Do not output any of these:',
+      'NEVER output',
+      'Do not write',
+      '\nDo not output',
+      '\nNEVER output',
+      'Chrome Profile',
+      'within Chrome Profile',
     ];
-    const stopList =
-      effectiveConfig.stopSequences && effectiveConfig.stopSequences.length > 0
-        ? effectiveConfig.stopSequences
-        : defaultStopSequences;
+    const stopList = Array.from(
+      new Set([
+        ...defaultStopSequences,
+        ...(effectiveConfig.stopSequences && effectiveConfig.stopSequences.length > 0
+          ? effectiveConfig.stopSequences
+          : []),
+      ]),
+    );
 
     const payload = {
       model: effectiveConfig.defaultModelId,
@@ -199,7 +241,11 @@ export class LlamaServerAdapter implements IInferenceProvider {
 
     if (!response.ok) {
       const errBody = await response.text().catch(() => 'Unknown error');
-      if (response.status === 400 && errBody.includes('exceed_context_size_error')) {
+      const isContextExceeded =
+        errBody.includes('exceed_context_size_error') ||
+        errBody.toLowerCase().includes('context size has been exceeded') ||
+        errBody.toLowerCase().includes('failed to find free space in the kv cache');
+      if ((response.status === 400 || response.status === 500) && isContextExceeded) {
         this.logger.warn(`[Llama] Request exceeded context size. Attempting automatic context pruning and retry.`);
         const prunedMessages = this.pruneMessagesForContext(messages);
         if (prunedMessages && prunedMessages.length > 0) {
@@ -273,7 +319,7 @@ export class LlamaServerAdapter implements IInferenceProvider {
 
           if (delta) {
             fullContent += delta;
-            const scriptMatch = fullContent.match(/(\.?[_gG]etResponse\s*\(|\n?Proof:|\n?User:|\n?You:)/i);
+            const scriptMatch = fullContent.match(/(\.?[_gG]etResponse\s*\(|\n?Proof:|\n?User:|\n?You:|<\/?user|<\/?assistant|<\|im_start\||<\|im_end\||[㈑濩]|\n\s*(user|assistant)\s*[\n:]|:\s*\n-\s*Current Persistent Mood|Action completed successfully!|Ambient audio stream captured|Visual frame or environmental state verified|\n```json|Track is playing now|System audio volume:|Your response must be in this format|A new message arrived|\n:\s*|\n-\s*\[|The Spotify Web Player|Conversation Partner:|Identity & Email:|\[Direct Dialogue Context|Do not output|NEVER output|Do not write|Chrome Profile|\n\s*\*)/i);
             if (scriptMatch && scriptMatch.index !== undefined) {
               this.logger.warn(
                 `[Llama] Scriptwriter/speaker leak detected at index ${scriptMatch.index}. Truncating turn.`,

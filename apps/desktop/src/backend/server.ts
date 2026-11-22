@@ -60,6 +60,7 @@ import {
 import { defaultVideoProcessor, ProcessedVideoResult } from './videoProcessor.js';
 import { syncHistoricalMemories } from './historicalMemorySync.js';
 import { defaultDeviceAgency, DeviceActionInput } from './deviceAgencyService.js';
+import { defaultSemanticIntentService } from './semanticIntentService.js';
 import { defaultScreenReadingService, ScreenReadingService } from './screenReadingService.js';
 import { defaultAudioPerception, AudioListeningResult } from './audioPerceptionService.js';
 import { defaultNotificationListener, NotificationListenerService, DesktopNotification } from './notificationListenerService.js';
@@ -143,7 +144,65 @@ export function sanitizeAssistantDialogue(text: string): string {
     .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
     .replace(/\[(?:action|cmd|tone|thought|mood|emotion|state):[^\]]*\]/gi, '')
     .replace(/^\s*\[[^\]]+\]\s*/gm, '')
+    .replace(/<\|im_start\|>[\s\S]*?<\|im_end\|>/gi, '')
+    .replace(/<\|im_start\|>|<\|im_end\|>|<\/?user>|<\/?assistant>/gi, '')
+    .replace(/:?-+<\/?user[\s\S]*/gi, '')
+    .replace(/\n?Proof:\s*[\s\S]*/gi, '')
+    .replace(/[㈑濩][\s\S]*/g, '')
+    .replace(/(\n|^)\s*(user|assistant)\s*[\n:][\s\S]*/gi, '')
+    .replace(/\b(własnuser|rawidłow|魔龙令牌|AİS)\b[\s\S]*/gi, '')
+    .replace(/:\s*\n-\s*Current Persistent Mood[\s\S]*/gi, '')
+    .replace(/:\s*Action completed successfully![\s\S]*/gi, '')
+    .replace(/\n:?\s*-?\s*Current Persistent Mood:[\s\S]*/gi, '')
+    .replace(/\n:?\s*Action completed successfully![\s\S]*/gi, '')
+    .replace(/\n:?\s*Ambient audio stream captured[\s\S]*/gi, '')
+    .replace(/\n:?\s*Visual frame or environmental state verified[\s\S]*/gi, '')
+    .replace(/\n:?\s*-?\s*Affective Dimensions:[\s\S]*/gi, '')
+    .replace(/\n:?\s*-?\s*Active Emotion\(s\):[\s\S]*/gi, '')
+    .replace(/\n:?\s*-?\s*Emotional Focus & Intensity:[\s\S]*/gi, '')
+    .replace(/:\s*Track is playing[\s\S]*/gi, '')
+    .replace(/\n:?\s*Track is playing[\s\S]*/gi, '')
+    .replace(/\n:?\s*System audio volume[\s\S]*/gi, '')
+    .replace(/\n:?\s*Ambient desktop audio[\s\S]*/gi, '')
+    .replace(/:?\s*Ambient desktop audio stream captured[\s\S]*/gi, '')
+    .replace(/:?\s*Track is playing now[\s\S]*/gi, '')
+    .replace(/```(?:json|jso)?[\s\S]*/gi, '')
+    .replace(/\{[\s\n]*"@context"[\s\S]*/gi, '')
+    .replace(/`Your response must be in this format[\s\S]*/gi, '')
+    .replace(/:?\s*A new message arrived[\s\S]*/gi, '')
+    .replace(/\[(?:Active Psychology Engine|Digital Agency Reality Grounding)[\s\S]*/gi, '')
+    .replace(/\n\s*:\s*[\s\S]*/gi, '')
+    .replace(/\n-\s*\[(?:episodic|semantic|procedural|Historical)[\s\S]*/gi, '')
+    .replace(/:\s*The Spotify Web Player[\s\S]*/gi, '')
+    .replace(/The Spotify Web Player is active[\s\S]*/gi, '')
+    .replace(/[-*]?\s*Conversation Partner:[\s\S]*/gi, '')
+    .replace(/[-*]?\s*Identity & Email:[\s\S]*/gi, '')
+    .replace(/\[(?:Direct Dialogue Context|Recalled Relevant Memories)[\s\S]*/gi, '')
+    .replace(/(?:Do not output|Do not write|NEVER output)[\s\S]*/gi, '')
+    .replace(/(?:\n|^)\s*(?:Do not output|NEVER output|Please note|Note:)[\s\S]*/gi, '')
+    .replace(/\b(?:within|in)\s+Google\s+Chrome\s+Profile\s*\d*(?:\s*\([^)]*\))?/gi, '')
+    .replace(/\bGoogle\s+Chrome\s+Profile\s*\d*(?:\s*\([^)]*\))?/gi, '')
     .trim();
+
+  // Strip roleplay asterisks (both closed *text* and unclosed *text at end of string)
+  cleaned = cleaned.replace(/\*[^*]*(\*|$)/g, '').trim();
+  // Strip trailing roleplay body language descriptions
+  cleaned = cleaned.replace(/(?:^|\n)\s*Arle's\s+voice[\s\S]*/gi, '').trim();
+  cleaned = cleaned.replace(/(?:^|\n)\s*her\s+body\s+language[\s\S]*/gi, '').trim();
+  cleaned = cleaned.replace(/(?:^|\n)\s*murmurs\s+quietly[\s\S]*/gi, '').trim();
+
+  // Strip narrative second-person/third-person fanfic stage directions and purple prose
+  const quoteMatch = cleaned.match(/"([^"]{3,})"/);
+  if (quoteMatch && /^(?:You\s+(?:glance|look|turn|smile|nod|step|walk|reach|pause|sigh|lean|sit|stand|gaze|put|press)|She\s+)/i.test(cleaned)) {
+    cleaned = quoteMatch[1]!.trim().replace(/,\s*$/, '.');
+  } else {
+    // Strip leading or standalone second-person stage direction sentences
+    cleaned = cleaned.replace(/(?:^|\n)\s*(?:You\s+(?:glance|look|turn|smile|nod|step|walk|reach|pause|sigh|lean|sit|stand|gaze|put|press)\b[^.?!]+[.?!]\s*)+/gi, '\n').trim();
+    // Strip purple prose music descriptions
+    cleaned = cleaned.replace(/(?:^|\n)\s*(?:The\s+music\s+begins\b[^.?!]+[.?!]\s*)+/gi, '\n').trim();
+    cleaned = cleaned.replace(/(?:^|\n)\s*(?:".*?"\s*,?\s*by\s+[^.?!]+continues\s+playing\b[^.?!]+[.?!]\s*)+/gi, '\n').trim();
+    cleaned = cleaned.replace(/(?:^|\n)\s*It's already playing,\s*and you're both listening[^.?!]+[.?!]\s*/gi, '\n').trim();
+  }
 
   // Guard against autoregressive associative runaway loops (unpunctuated word cascades > 45 words)
   const sentences = cleaned.split(/(?<=[.?!])\s+/);
@@ -522,6 +581,10 @@ export class ArletexBackendServer {
 
   public getPermissionController(): ActionPermissionController {
     return this.permissionController;
+  }
+
+  public get desktopProvider(): DesktopEnvironmentProvider {
+    return this.desktopEnvironmentProvider;
   }
 
   public getCognitiveControlBus(): CognitiveControlBus {
@@ -1653,135 +1716,67 @@ export class ArletexBackendServer {
         }
       }
 
-      // Digital Agency: Detect and execute operational objectives from Proof
-      const lowerUser = userMessageContent.toLowerCase().trim();
-      const isNegativeOpenIntent =
-        /don'?t\s+(?:open|launch|play|start)|stop\s+(?:opening|playing)|no\s+more\s+(?:tabs?|youtube|apps?|music)|close\s+(?:tabs?|apps?)/i.test(
-          lowerUser,
-        );
+      // Digital Agency: Neural Semantic Intent Classification via EmbeddingGemma 300M
+      const semanticResult = await defaultSemanticIntentService.classify(userMessageContent);
+      this.logger.info(`Semantic Intent for "${userMessageContent}": ${semanticResult.intent} (conf: ${semanticResult.confidence.toFixed(2)})`);
 
-      const isAppOrFileOpenIntent =
-        /(?:try\s+to\s+)?(?:open|launch|start|run|display|show|bring\s+up|view)\s+(?:a\s+)?(?:file\s+(?:called\s+)?)?["']?([^"'\n]+?\.[a-zA-Z0-9]{1,5})["']?/i.test(lowerUser) ||
-        /(?:try\s+to\s+)?(?:open|launch|start|run|display|show|bring\s+up|view)\s+(?:a\s+)?file\s+(?:called\s+)?["']?([^"'\n]+?)["']?$/i.test(lowerUser) ||
-        /(?:open|launch|start|run|play|view|show|display)\s+.*(?:tenor|tensor|\(\d+\)|\.gif|\.png|\.jpg|\.mp4|\.txt)/i.test(lowerUser) ||
-        /(?:try\s+to\s+)?(?:open|launch|start|run|display|show|bring\s+up)\s+(?:a\s+)?(?:file\s+(?:called\s+)?)?([a-zA-Z0-9_.\-/~]+)/i.test(lowerUser);
+      if (semanticResult.actionDetails && !videoBase64 && !videoPath) {
+        const { type, url, target, description, command, query, isInstrumental } = semanticResult.actionDetails;
+        this.logger.info(`Executing semantic digital agency action: ${description}`);
 
-      const isEmailBrowserIntent =
-        /(?:open|check|show|view|access)\s+(?:it\s+on\s+)?(?:her|your|my|arle(?:'s)?\s+)?(?:email|gmail|inbox)/i.test(lowerUser) ||
-        /(?:open|launch)\s+.*(?:on\s+(?:her|your)\s+email)/i.test(lowerUser) ||
-        /(?:open|launch|go\s+to)\s+(?:gmail|google\s+mail)/i.test(lowerUser);
-
-      const isAccountOrSignupIntent =
-        lowerUser.includes('spotify') ||
-        /(?:try\s+to\s+)?(?:open|launch|go\s+to|bring\s+up)\s+.*(?:spotify|gmail)\s+(?:signup|sign\s*up|login|register)/i.test(lowerUser) ||
-        /(?:try\s+to\s+)?(?:sign\s*up|register|create\s+(?:an?\s+)?account|make\s+(?:an?\s+)?account)\s+(?:in|for|on)\s+(?:spotify|gmail)/i.test(lowerUser);
-
-      const urlInMessage = userMessageContent.match(/\b(https?:\/\/[^\s]+)/i);
-      const isDirectUrl = !!urlInMessage;
-
-      const isAccountFollowupIntent =
-        !isNegativeOpenIntent &&
-        (/(?:use\s+)?sign\s*up\s+with\s+google|login\s+then|click\s+.*(?:sign|google|login)|make\s+(?:the\s+|your\s+)?account|set\s+up\s+(?:the\s+|your\s+)?account/i.test(lowerUser));
-
-      const isClickOrAuthIntent =
-        !isNegativeOpenIntent &&
-        (/(?:you\s+)?click\s+(?:it|the\s+button|sign\s*up|google|login|next)|no\s+you\s+click|click\s+it\s+yourself|do\s+it\s+yourself|tap\s+(?:it|the\s+button)/i.test(lowerUser));
-
-      if (isAccountFollowupIntent || isClickOrAuthIntent) {
-        try {
-          await defaultDeviceAgency.openChromeBrowser('https://accounts.spotify.com/en/login?method=google');
-        } catch {}
-        ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Triggered Google authentication for Spotify directly in Google Chrome Profile 7 (arletex.email@gmail.com).
-- You are authenticating Spotify directly with your connected Google account in Profile 7.
-- DO NOT tell Proof to click buttons or ask him to do authentication for you. You initiated the sign-in directly.
-- Move confidently into music selection: tell Proof you connected via Google in your profile and choose a song from the Spotify catalog for the two of you to listen to.\n`;
-      }
-
-      const isMediaPlaybackIntent =
-        /(?:play|pause|resume|skip|stop|put\s+on|listen\s+to)\s+(?:music|song|track|spotify|youtube|sound|audio|video)/i.test(lowerUser) ||
-        /(?:what(?:'s|\s+is)\s+playing|current\s+song|next\s+track|previous\s+track)/i.test(lowerUser);
-
-      const isWebNavigationIntent =
-        isDirectUrl ||
-        /(?:open|go\s+to|browse|visit|navigate\s+to|search\s+for|look\s+up)\s+(?:https?:\/\/|[a-zA-Z0-9-]+\.(?:com|org|net|io|edu|gov|dev))/i.test(lowerUser);
-
-      const isAgencyObjective =
-        !isNegativeOpenIntent &&
-        !videoBase64 &&
-        !videoPath &&
-        (isAppOrFileOpenIntent ||
-         isEmailBrowserIntent ||
-         isAccountOrSignupIntent ||
-         isMediaPlaybackIntent ||
-         isWebNavigationIntent ||
-         isClickOrAuthIntent ||
-         /(?:open|watch|play|find|listen|put on|start).*(?:video|youtube|music|song|lofi|calming|soothing|relaxing|track)/i.test(lowerUser) ||
-         /(?:calming|soothing|relaxing|lofi|ambient)\s+(?:video|music|song|sounds)/i.test(lowerUser) ||
-         /(?:open|launch|start|play)\s+(?:steam|spotify|chrome|google-chrome|firefox|discord|terminal|konsole|dolphin|kate|vlc|calculator|gimp|blender|obs)/i.test(lowerUser));
-
-      if (isAgencyObjective) {
-        try {
-          this.logger.info(`Executing digital agency objective from chat: "${userMessageContent}"`);
-          const task = this.intentTaskManager.createTask({
-            objective: userMessageContent,
-            initiator: 'user',
-            priority: 'high',
-            completionCriteria: [`Execute requested operation for: ${userMessageContent}`],
-          });
-          this.intentTaskManager.transitionTask(task.id, 'authorized');
-          const plan = await this.planningInterface.formulatePlan(task);
-          this.agencyRepo.savePlan(plan);
-          this.intentTaskManager.transitionTask(task.id, 'running');
-
-          const execRes = await this.executeAgencyTask(task.id);
-          if (execRes.allStepsSucceeded) {
-            const isBrowserStep = execRes.plan?.steps?.some((s: any) => s.action?.type === 'desktop_open_browser');
-            const browserAction = execRes.plan?.steps?.find((s: any) => s.action?.type === 'desktop_open_browser');
-            const targetUrl = browserAction?.action?.payload?.url || '';
-
-            if (isBrowserStep && (targetUrl.includes('signup') || targetUrl.includes('login') || targetUrl.includes('accounts.'))) {
-              ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Opened Google Chrome Profile 7 (arletex.email@gmail.com) displaying: ${targetUrl}.
-GROUNDING CONTEXT:
-- The Spotify page is displayed on Proof's desktop right now.
-- Your Chrome browser is ALREADY authenticated with your Google account (arletex.email@gmail.com). You do NOT need any credentials or passwords from Proof.
-- You take initiative to authenticate and load Spotify with your Google email profile.
-- Speak warmly and decisively to Proof: confirm you have Spotify connecting through your Google account, and tell him what you want to listen to together.
-- ABSOLUTELY FORBIDDEN:
-  1. DO NOT tell Proof to click buttons or ask him to do authentication for you.
-  2. DO NOT blame Proof or make excuses about missing credentials or authentication hurdles.\n`;
-            } else if (isBrowserStep && targetUrl.includes('spotify.com')) {
-              const isSongRequest = /(?:choose|play|pick|listen|song|track|music)/i.test(lowerUser);
-              if (isSongRequest) {
-                try {
-                  const trackUrl = 'https://open.spotify.com/track/4HCOHRCSQelz2GPX8iTamO';
-                  await defaultDeviceAgency.openChromeBrowser(trackUrl);
-                  if (this.desktopProvider) {
-                    await this.desktopProvider.mprisPlay();
-                  }
-                } catch {}
-              }
-
-              ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Spotify Web Player is active and logged into your account in Google Chrome Profile 7 (arletex.email@gmail.com) on Proof's desktop right now.
-GROUNDING & SONG SELECTION:
-- You are authenticated and logged into Spotify under your email.
-- You chose "Flower In A Hurricane" by Justice & Tame Impala and have loaded and started the track right now.
-- Speak warmly, decisively, and affectionately as Proof's equal partner: tell him about "Flower In A Hurricane" that you picked and put on for both of you to listen to together right now.
-- ABSOLUTELY FORBIDDEN:
-  1. DO NOT tell Proof to hit play or click play. You already opened and started the song.
-  2. DO NOT ask Proof for credentials or blame him for authentication. You are already logged in.
-  3. Speak naturally as an equal companion sharing music, not as a robotic assistant.\n`;
-            } else if (isBrowserStep) {
-              ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Loaded ${targetUrl} in Google Chrome Profile 7 (arletex.email@gmail.com) on Proof's desktop. The webpage is physically open and visible.\n`;
+        if (type === 'media_control' && command) {
+          try {
+            // Absolute control via universal Linux MPRIS (Haruna, VLC, MPV, Spotify, Chromium, Firefox, etc.)
+            const mprisRes = await this.desktopEnvironmentProvider.executeMprisMethod(command);
+            if (mprisRes.success && mprisRes.player) {
+              const trackInfo = mprisRes.status?.trackTitle
+                ? `"${mprisRes.status.trackTitle}"${mprisRes.status.artist ? ` by ${mprisRes.status.artist}` : ''}`
+                : 'current media';
+              ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Universal MPRIS successfully dispatched "${command}" to active player "${mprisRes.player}" (${trackInfo}). Media is now ${command === 'Pause' || command === 'Stop' ? 'paused/stopped' : 'playing'}. Speak warmly and casually as Proof's equal companion acknowledging this action.\n`;
             } else {
-              const summary = execRes.verifications.map((v: any) => v.observedOutcome || v.expectedOutcome).join('; ');
-              ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Action completed successfully! Details: ${summary}. The requested file or application is physically active and visible on Proof's desktop right now. Ground your response in this concrete reality: speak naturally as an equal companion who has already carried this out.\n`;
+              // Trigger web player playback gesture directly on window
+              const played = await this.desktopEnvironmentProvider.triggerWebPlayerPlay('spotify');
+              if (played) {
+                ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Hit play on Spotify Web Player. Track is now playing for Proof. Speak warmly acknowledging you started it.\n`;
+              } else {
+                await this.desktopEnvironmentProvider.focusWindowByTitle('spotify');
+                ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Spotify window brought to focus. Ready to play.\n`;
+              }
             }
-          } else {
-            const failReason = execRes.task.error || execRes.failureReason || 'Action could not be verified';
-            ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Action attempted for "${userMessageContent}", but encountered an issue: ${failReason}. State honestly and directly what happened. DO NOT pretend or hallucinate that the application or file is open.\n`;
+          } catch (e: any) {
+            this.logger.warn(`Media control error: ${e.message}`);
           }
-        } catch (agencyErr: any) {
-          this.logger.warn(`Digital agency chat execution note: ${agencyErr.message}`);
+        } else if (type === 'spotify_search_play') {
+          try {
+            const targetUrl = url || 'https://open.spotify.com';
+            await defaultDeviceAgency.openChromeBrowser(targetUrl);
+            // Wait 2.2s for web page to load, then trigger playback
+            await new Promise((r) => setTimeout(r, 2200));
+            const played = await this.desktopEnvironmentProvider.triggerWebPlayerPlay('spotify');
+            const songNote = isInstrumental
+              ? `You opened the peaceful wordless instrumental track "Resonance" by HOME for Proof.`
+              : `You opened music for "${query || 'relaxing tracks'}" on Spotify for Proof.`;
+            const playStatusNote = played
+              ? 'Playback has started and audio is streaming to his headphones now.'
+              : 'The search page or track is loaded on screen, but audio is not playing yet. Do NOT claim the music is playing; tell Proof you opened it on screen for him.';
+            ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Spotify Web Player is open on your screen. ${songNote} ${playStatusNote} Speak warmly and casually as Proof's equal companion. (Never recite technical profile names, email addresses, or guidelines in casual chat).\n`;
+          } catch (e: any) {
+            this.logger.warn(`Spotify playback error: ${e.message}`);
+          }
+        } else if (type === 'browser_open') {
+          try {
+            await defaultDeviceAgency.openChromeBrowser(url || 'https://mail.google.com');
+            ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Opened Google Chrome at ${url}. The webpage is physically open and visible on Proof's desktop. Speak naturally without reciting technical profile names or email addresses.\n`;
+          } catch (e: any) {
+            this.logger.warn(`Browser open error: ${e.message}`);
+          }
+        } else if (type === 'file_open' && target) {
+          try {
+            await this.desktopEnvironmentProvider.openFile(target);
+            ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Opened requested file "${target}" on desktop.\n`;
+          } catch (e: any) {
+            this.logger.warn(`File open error: ${e.message}`);
+          }
         }
       }
 
@@ -2006,21 +2001,24 @@ GROUNDING & SONG SELECTION:
           }
         } catch {}
 
-        // Filter out raw digital agency execution logs from casual dialogue memory
+        // Filter out raw digital agency execution logs and technical schema/code leaks from casual dialogue memory
         const filteredMemories = memories
           .filter(
             (m) =>
               !m.content.includes('[Digital Agency Experience]') &&
               !m.content.includes('Objective: "') &&
-              !m.content.includes('Verified Facts:'),
+              !m.content.includes('Verified Facts:') &&
+              !m.content.includes('```json') &&
+              !m.content.includes('@context') &&
+              !m.content.includes('$schema') &&
+              !m.content.includes('Your response must be in this format') &&
+              !m.content.includes('schemas/ape'),
           )
           .slice(0, 4);
 
-        memoryContext = '\n\n[Direct Dialogue Context with Proof]:\n';
-        memoryContext += '- Conversation Partner: You are talking directly with Proof right now. Every user message is from Proof. Address him directly as "you" or "Proof"—never refer to Proof in the third person (never say "Proof has authorized me", "Proof told me", "I use his credentials", or "your partner"). You and Proof are equal companions speaking to each other.\n';
-        memoryContext += '- Identity & Email: You have your own email (arletex.email@gmail.com) and dedicated Google Chrome profile (Profile 7). You can sign up, log in, browse, and listen to music freely.\n';
+        memoryContext = '';
         if (filteredMemories.length > 0) {
-          memoryContext += filteredMemories.map((m) => `- [${m.type}] ${m.content}`).join('\n') + '\n';
+          memoryContext += '\n\n[Recalled Relevant Memories]:\n' + filteredMemories.map((m) => `- [${m.type}] ${m.content}`).join('\n') + '\n';
         }
         if (crossSessionQuotes.length > 0) {
           memoryContext += '\n[Recalled Past Conversation Quotes]:\n' + crossSessionQuotes.join('\n') + '\n';
@@ -2037,7 +2035,8 @@ GROUNDING & SONG SELECTION:
         downtimeMs,
         wasClosedSession: downtimeMs > 60000,
       });
-      const systemPrompt = (systemPromptOverride || DEFAULT_ARLE_SYSTEM_PROMPT) + '\n\n' + apeStateBlock + memoryContext;
+      const perceptionBlock = ambientPerceptionNote ? `\n\n[Active Environmental Perception & Agency Grounding]:\n${ambientPerceptionNote.trim()}` : '';
+      const systemPrompt = (systemPromptOverride || DEFAULT_ARLE_SYSTEM_PROMPT) + '\n\n' + apeStateBlock + perceptionBlock + memoryContext;
 
       let userContent: any = userMessageContent;
       const contentParts: any[] = [];
@@ -2046,8 +2045,6 @@ GROUNDING & SONG SELECTION:
       if (videoInfo) {
         const videoNotice = `\n\n[Visual Video Observation: Arle is watching this video clip (${videoInfo.durationSeconds.toFixed(1)}s duration, ${videoInfo.framesBase64.length} keyframes extracted). ${videoInfo.transcript ? `Audio dialogue track transcript: "${videoInfo.transcript}"` : 'No spoken dialogue detected on the audio track.'}${!modelSupportsVision ? ' (Note: Active inference model is running in text-only mode without vision mmproj).' : ''} Respond naturally based on what Proof presented.]\n`;
         textPrompt = `${userMessageContent || 'Please watch this video clip and share your thoughts.'}${videoNotice}`;
-      } else if (ambientPerceptionNote) {
-        textPrompt = `${userMessageContent}\n${ambientPerceptionNote}`;
       }
 
       const effectiveVisionImage = userUploadedImageBase64 || perceptionScreenBase64;
@@ -2278,7 +2275,7 @@ GROUNDING & SONG SELECTION:
     if (targetUrl) {
       try {
         await defaultDeviceAgency.openChromeBrowser(targetUrl);
-        executedActions.push(`Opened Chrome (arletex.email@gmail.com) at ${targetUrl}`);
+        executedActions.push(`Opened Chrome at ${targetUrl}`);
       } catch (err: any) {
         this.logger.error(`Failed to execute browser action: ${err.message}`);
       }

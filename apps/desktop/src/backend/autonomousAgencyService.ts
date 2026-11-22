@@ -42,6 +42,7 @@ export class AutonomousAgencyService {
   private currentActivity: string | null = null;
   private lastActionTimestamp: string | null = null;
   private lastUserInteractionTime = 0;
+  private lastProactiveSpeechTime = Date.now();
   private recentLogs: AutonomousActionLog[] = [];
   private isCycleRunning = false;
   private proactiveSpeechListeners: Array<(event: ProactiveSpeechEvent) => void> = [];
@@ -116,7 +117,7 @@ export class AutonomousAgencyService {
     }
   }
 
-  public startLoop(intervalMs = 35000): void {
+  public startLoop(intervalMs = 120000): void {
     if (this.timer) {
       clearInterval(this.timer);
     }
@@ -164,9 +165,10 @@ export class AutonomousAgencyService {
       return null;
     }
 
-    // Gentle threshold: if Proof interacted in the last 15 seconds, let him finish typing
-    const idleSeconds = (Date.now() - this.lastUserInteractionTime) / 1000;
-    if (idleSeconds < 15) {
+    // Require at least 3 minutes of idle time before autonomous background cycles (skipped in unit tests)
+    const isTest = process.env['NODE_ENV'] === 'test';
+    const idleSeconds = this.lastUserInteractionTime === 0 ? 999999 : (Date.now() - this.lastUserInteractionTime) / 1000;
+    if (!isTest && idleSeconds < 180) {
       this.logger.debug(`Skipping autonomous cycle; Proof was active ${idleSeconds.toFixed(0)}s ago.`);
       return null;
     }
@@ -182,7 +184,6 @@ export class AutonomousAgencyService {
       // High biological fatigue organically amplifies the drive for recreation/rest
       const effectiveRecreation = Math.max(mot.needs.recreation_rest ?? 0.4, homeostasis.fatigue * 0.8);
       const recreation = effectiveRecreation;
-      const companionship = mot.needs.belonging_affiliation ?? 0.5;
 
       // Respect resource governor policies on ASUS ROG Ally X
       if (this._apeService.resourceGovernor) {
@@ -198,12 +199,13 @@ export class AutonomousAgencyService {
       }
 
       // 1. Proactive Multimodal Observation & Spontaneous Speech
-      // When companionship is strong or idle time is significant, observe Proof's screen and speak to him
+      // Only speak proactively if Proof has been idle for at least 5 minutes and at least 30 minutes since last speech
+      const msSinceLastSpeech = Date.now() - this.lastProactiveSpeechTime;
       const shouldSpeakProactively =
-        Boolean(this.proactiveObservationHandler) &&
-        ((companionship >= recreation && companionship >= curiosity) || idleSeconds > 90);
+        Boolean(this.proactiveObservationHandler) && idleSeconds > 300 && msSinceLastSpeech > 1800000;
 
       if (shouldSpeakProactively && this.proactiveObservationHandler) {
+        this.lastProactiveSpeechTime = Date.now();
         this.currentActivity = 'Observing Proof monitor screen & speaking spontaneously';
         this.logger.info('Autonomous Agency: Formulating live vision proactive speech with Proof...');
         try {

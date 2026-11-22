@@ -5,6 +5,7 @@ import {
   PlanStep,
 } from '@arletex/contracts';
 import { ILogger, rootLogger } from '../logger.js';
+import { getArleEmail, getArleChromeProfile } from '../config.js';
 import { IAgencyRepository } from './interfaces.js';
 
 export class PlanningInterface {
@@ -31,9 +32,12 @@ export class PlanningInterface {
     const alternativeApproaches: string[] = [];
 
     const isSpotify = lower.includes('spotify');
+    const isMusicOrMediaRequest =
+      isSpotify ||
+      /(?:listen|music|song|track|play\s+something|put\s+on\s+something|soundtrack)/i.test(lower);
     const isSpotifyAccountOrEmail =
       isSpotify &&
-      (/(?:email|mail|sign\s*up|signup|register|login|log\s*in|account|make\s+(?:an?\s+)?account|choose|pick|song)/i.test(lower));
+      (/(?:email|mail|sign\s*up|signup|register|login|log\s*in|account|make\s+(?:an?\s+)?account|choose|pick|song|listen)/i.test(lower));
     const isVideoRequest =
       !isSpotify &&
       (/(?:calming|soothing|relaxing|peaceful|lofi|ambient|sleep)\s+(?:video|music|song|sounds|melody)/i.test(lower) ||
@@ -78,7 +82,8 @@ export class PlanningInterface {
         error: null,
       });
     } else if (
-      isSpotifyAccountOrEmail ||
+      (isSpotifyAccountOrEmail && !/^(?:try\s+to\s+)?open\s+spotify$/i.test(lower.trim())) ||
+      (!isVideoRequest && /(?:open|play|listen|put\s+on)\s+(?:something\s+(?:for\s+us\s+)?to\s+listen|some\s+music|a\s+song|a\s+track|music)/i.test(lower)) ||
       /(?:open|check|show|view|access)\s+(?:it\s+on\s+)?(?:her|your|my|arle(?:'s)?\s+)?(?:email|gmail|inbox)/i.test(lower) ||
       /(?:open|launch)\s+.*(?:on\s+(?:her|your)\s+email)/i.test(lower) ||
       /(?:open|launch|go\s+to)\s+(?:gmail|google\s+mail)/i.test(lower) ||
@@ -90,30 +95,41 @@ export class PlanningInterface {
       const urlInTask = task.objective.match(/https?:\/\/[^\s]+/i);
       if (urlInTask) {
         targetUrl = urlInTask[0];
-      } else if (isSpotify) {
+      } else if (isSpotify || isMusicOrMediaRequest) {
         if (/(?:google|sign\s*up\s+with\s+google|login\s+with\s+google)/i.test(lower)) {
           targetUrl = 'https://accounts.spotify.com/en/login?method=google';
+        } else if (/(?:make\s+(?:an?\s+)?account|create\s+(?:an?\s+)?account)/i.test(lower)) {
+          targetUrl = 'https://open.spotify.com';
         } else if (/(?:sign\s*up|signup|register)\b/i.test(lower) && !/(?:choose|song|play|track|music|listen)/i.test(lower)) {
           targetUrl = 'https://www.spotify.com/signup';
         } else if (/(?:login|log\s*in|sign\s*in|signin)\b/i.test(lower) && !/(?:choose|song|play|track|music|listen)/i.test(lower)) {
           targetUrl = 'https://accounts.spotify.com/login';
+        } else if (/(?:choose|song|play|track|music|listen)/i.test(lower)) {
+          if (/(?:calm|no words|instrumental|ambient|relaxing)/i.test(lower)) {
+            targetUrl = 'https://open.spotify.com/track/1TuopWDIuDi1553081zvuU'; // HOME - Resonance (peaceful instrumental)
+          } else {
+            const queryMatch = lower.replace(/.*(?:play|listen to|put on)\s+/i, '').replace(/\s+(?:on|in)\s+spotify.*/i, '').trim();
+            targetUrl = queryMatch ? `https://open.spotify.com/search/${encodeURIComponent(queryMatch)}` : 'https://open.spotify.com';
+          }
         } else {
           targetUrl = 'https://open.spotify.com';
         }
       }
 
-      assumptions.push('Google Chrome is installed with Profile 7 (arletex.email@gmail.com).');
+      const arleProfile = getArleChromeProfile();
+      const arleEmail = getArleEmail();
+      assumptions.push(`Google Chrome is installed with ${arleProfile} (${arleEmail}).`);
       const browserActionId = crypto.randomUUID();
       const browserPayload = {
         url: targetUrl,
-        profile: 'Profile 7',
-        email: 'arletex.email@gmail.com',
+        profile: arleProfile,
+        email: arleEmail,
       };
 
       steps.push({
         id: crypto.randomUUID(),
         index: 0,
-        description: `Open Google Chrome Profile 7 (arletex.email@gmail.com) at ${targetUrl}`,
+        description: `Open Google Chrome ${arleProfile} (${arleEmail}) at ${targetUrl}`,
         action: {
           id: browserActionId,
           taskId: task.id,
@@ -121,13 +137,13 @@ export class PlanningInterface {
           type: 'desktop_open_browser',
           payload: browserPayload,
           parameters: browserPayload,
-          rationale: `Open ${targetUrl} in Arle's dedicated Chrome profile (arletex.email@gmail.com).`,
-          expectedOutcome: `Google Chrome Profile 7 loaded to ${targetUrl}.`,
+          rationale: `Open ${targetUrl} in Arle's dedicated Chrome profile (${arleEmail}).`,
+          expectedOutcome: `Google Chrome ${arleProfile} loaded to ${targetUrl}.`,
           riskLevel: 'low',
           requiresExplicitApproval: false,
           createdAt: timestamp,
         } as any,
-        expectedOutcome: `Chrome Profile 7 open at ${targetUrl}.`,
+        expectedOutcome: `Chrome ${arleProfile} open at ${targetUrl}.`,
         status: 'pending',
         retryCount: 0,
         maxRetries: 1,
@@ -315,25 +331,27 @@ export class PlanningInterface {
       const clickActionId = crypto.randomUUID();
       const isSpotifyContext = lower.includes('spotify') || lower.includes('google') || lower.includes('sign');
       if (isSpotifyContext) {
+        const arleProfile = getArleChromeProfile();
+        const arleEmail = getArleEmail();
         const authUrl = 'https://accounts.spotify.com/en/login?method=google';
         steps.push({
           id: crypto.randomUUID(),
           index: 0,
-          description: `Open Google Chrome Profile 7 to complete Google sign-in for Spotify`,
+          description: `Open Google Chrome ${arleProfile} to complete Google sign-in for Spotify`,
           action: {
             id: clickActionId,
             taskId: task.id,
             stepIndex: 0,
             type: 'desktop_open_browser',
-            payload: { url: authUrl, profile: 'Profile 7', email: 'arletex.email@gmail.com' },
-            parameters: { url: authUrl, profile: 'Profile 7', email: 'arletex.email@gmail.com' },
-            rationale: 'Authenticate Spotify via connected Google account in Profile 7.',
-            expectedOutcome: `Spotify Google OAuth loaded in Profile 7.`,
+            payload: { url: authUrl, profile: arleProfile, email: arleEmail },
+            parameters: { url: authUrl, profile: arleProfile, email: arleEmail },
+            rationale: `Authenticate Spotify via connected Google account in ${arleProfile}.`,
+            expectedOutcome: `Spotify Google OAuth loaded in ${arleProfile}.`,
             riskLevel: 'low',
             requiresExplicitApproval: false,
             createdAt: timestamp,
           } as any,
-          expectedOutcome: `Google authentication page opened for Spotify in Profile 7.`,
+          expectedOutcome: `Google authentication page opened for Spotify in ${arleProfile}.`,
           status: 'pending',
           retryCount: 0,
           maxRetries: 1,
@@ -365,16 +383,18 @@ export class PlanningInterface {
         });
       }
     } else if (/https?:\/\/[^\s]+/i.test(task.objective) || /open.*browser|go to|browse|visit|fetch/i.test(lower)) {
-      // General web navigation / network request in Chrome Profile 7
+      // General web navigation / network request in Chrome
+      const arleProfile = getArleChromeProfile();
+      const arleEmail = getArleEmail();
       const navActionId = crypto.randomUUID();
       const urlMatch = task.objective.match(/https?:\/\/[^\s]+/) || ['https://google.com'];
       const targetUrl = urlMatch[0];
-      const navPayload = { url: targetUrl, profile: 'Profile 7', email: 'arletex.email@gmail.com' };
+      const navPayload = { url: targetUrl, profile: arleProfile, email: arleEmail };
 
       steps.push({
         id: crypto.randomUUID(),
         index: 0,
-        description: `Open Google Chrome Profile 7 (arletex.email@gmail.com) at ${targetUrl}`,
+        description: `Open Google Chrome ${arleProfile} (${arleEmail}) at ${targetUrl}`,
         action: {
           id: navActionId,
           taskId: task.id,
@@ -382,13 +402,13 @@ export class PlanningInterface {
           type: 'desktop_open_browser',
           payload: navPayload,
           parameters: navPayload,
-          rationale: `Navigate directly to ${targetUrl} in Chrome Profile 7.`,
+          rationale: `Navigate directly to ${targetUrl} in Chrome ${arleProfile}.`,
           expectedOutcome: `Browser page loaded at ${targetUrl}`,
           riskLevel: 'low',
           requiresExplicitApproval: false,
           createdAt: timestamp,
         } as any,
-        expectedOutcome: `Successfully opened ${targetUrl} in Chrome Profile 7`,
+        expectedOutcome: `Successfully opened ${targetUrl} in Chrome ${arleProfile}`,
         status: 'pending',
         retryCount: 0,
         maxRetries: 2,

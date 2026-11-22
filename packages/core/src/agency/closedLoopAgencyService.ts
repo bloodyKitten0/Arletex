@@ -14,6 +14,7 @@ import {
   VerificationResult,
 } from '@arletex/contracts';
 import { ILogger, rootLogger } from '../logger.js';
+import { getArleChromeProfile, getArleEmail } from '../config.js';
 import { ApeService } from '../ape/apeService.js';
 import { AutobiographicalMemoryService } from '../memory/autobiographicalMemoryService.js';
 import { ActionPermissionController } from './actionPermissionController.js';
@@ -865,13 +866,14 @@ export class ClosedLoopAgencyService {
             WAYLAND_DISPLAY: process.env.WAYLAND_DISPLAY || 'wayland-1',
             XDG_RUNTIME_DIR: process.env.XDG_RUNTIME_DIR || `/run/user/${process.getuid ? process.getuid() : 1000}`,
           };
-          const child = spawn('flatpak', ['run', 'com.google.Chrome', '--profile-directory=Profile 7', url], {
+          const arleProfile = getArleChromeProfile();
+          const child = spawn('flatpak', ['run', 'com.google.Chrome', `--profile-directory=${arleProfile}`, url], {
             detached: true,
             stdio: 'ignore',
             env: envVars,
           });
           child.unref();
-          res = { success: true, pid: child.pid, message: `Opened in Chrome Profile 7: ${url}` };
+          res = { success: true, pid: child.pid, message: `Opened in Chrome ${arleProfile}: ${url}` };
         } catch {
           res = { success: false, message: 'Could not launch Google Chrome' };
         }
@@ -888,8 +890,8 @@ export class ClosedLoopAgencyService {
         provenance: 'DesktopEnvironmentProvider.openInArleBrowser',
         data: {
           url,
-          profile: 'Profile 7',
-          email: 'arletex.email@gmail.com',
+          profile: getArleChromeProfile(),
+          email: getArleEmail(),
           message: res.message,
         },
         error: res.success ? null : (res.message || 'Browser launch failed'),
