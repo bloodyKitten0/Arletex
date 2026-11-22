@@ -34,6 +34,8 @@ import {
   EmotionTaxonomyItem,
   MoodTaxonomyItem,
   DesktopCompanionState,
+  ExperientialStateDefinition,
+  ExperientialStateInstance,
 } from '@arletex/contracts';
 
 export interface ArletexApi {
@@ -102,6 +104,16 @@ export interface ArletexApi {
   getApeTaxonomy: () => Promise<
     IPCResponse<{ emotions: EmotionTaxonomyItem[]; moods: MoodTaxonomyItem[] }>
   >;
+  getExperientialStates: () => Promise<
+    IPCResponse<{
+      catalogue: ExperientialStateDefinition[];
+      activeEpisodes: ExperientialStateInstance[];
+    }>
+  >;
+  activateExperientialState: (input: {
+    stateId: string;
+    intensity?: number;
+  }) => Promise<IPCResponse<{ success: boolean; episode: ExperientialStateInstance }>>;
   processApeEvent: (
     event: any,
   ) => Promise<IPCResponse<{ state: ApePsychologicalState; appraisal?: ApeAppraisal }>>;
@@ -261,6 +273,9 @@ const api: ArletexApi = {
   getApeState: () => ipcRenderer.invoke(IPC_CHANNELS.APE_STATE_GET),
   getApeHistory: () => ipcRenderer.invoke(IPC_CHANNELS.APE_HISTORY_GET),
   getApeTaxonomy: () => ipcRenderer.invoke(IPC_CHANNELS.APE_TAXONOMY_GET),
+  getExperientialStates: () => ipcRenderer.invoke(IPC_CHANNELS.APE_EXPERIENTIAL_STATES_GET),
+  activateExperientialState: (input: { stateId: string; intensity?: number }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.APE_EXPERIENTIAL_STATE_ACTIVATE, input),
   processApeEvent: (event) => ipcRenderer.invoke(IPC_CHANNELS.APE_EVENT_PROCESS, event),
   getApeRelationship: () => ipcRenderer.invoke(IPC_CHANNELS.APE_RELATIONSHIP_GET),
   updateApeRelationship: (config) =>

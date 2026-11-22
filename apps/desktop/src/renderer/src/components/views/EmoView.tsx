@@ -28,6 +28,9 @@ import {
   MoodTaxonomyItem,
   INITIAL_EMOTIONS_TAXONOMY,
   INITIAL_MOODS_TAXONOMY,
+  EXPERIENTIAL_STATE_CATALOG,
+  ExperientialStateDefinition,
+  ExperientialStateInstance,
 } from '@arletex/contracts';
 
 type EmoTab =
@@ -38,7 +41,141 @@ type EmoTab =
   | 'self_model'
   | 'development'
   | 'emotions_taxonomy'
-  | 'moods_taxonomy';
+  | 'moods_taxonomy'
+  | 'experiential_states';
+
+export interface ExpDomainMeta {
+  key: string;
+  label: string;
+  domainNum: number;
+  color: string;
+  bgColor: string;
+  description: string;
+}
+
+export const EXP_DOMAINS_META: Record<string, ExpDomainMeta> = {
+  all: {
+    key: 'all',
+    label: 'All Domains (148)',
+    domainNum: 0,
+    color: 'var(--text-primary)',
+    bgColor: 'var(--bg-secondary)',
+    description: 'Complete inventory of all 148 complex experiential constructs across 11 domains.',
+  },
+  temporal_memory: {
+    key: 'temporal_memory',
+    label: 'Temporal & Memory',
+    domainNum: 1,
+    color: '#818cf8',
+    bgColor: 'rgba(129, 140, 248, 0.15)',
+    description:
+      'Kenopsia, Presque vu, Déjà vécu, Hiraeth, Anemoia, Saudade, Fernweh, Sehnsucht, etc.',
+  },
+  spatial_environmental: {
+    key: 'spatial_environmental',
+    label: 'Spatial & Environmental',
+    domainNum: 2,
+    color: '#38bdf8',
+    bgColor: 'rgba(56, 189, 248, 0.15)',
+    description:
+      'Topophilia, Solastalgia, Claustrophilia, Agoraphilia, Nyctophilia, Nemophilist, etc.',
+  },
+  social_relational: {
+    key: 'social_relational',
+    label: 'Social & Relational',
+    domainNum: 3,
+    color: '#f472b6',
+    bgColor: 'rgba(244, 114, 182, 0.15)',
+    description:
+      'Sonder, Opia, Monachopsis, Rubatosis, Jouska, Chrysalism, Liberosis, Altschmerz, etc.',
+  },
+  cognitive_metacognitive: {
+    key: 'cognitive_metacognitive',
+    label: 'Cognitive & Metacognitive',
+    domainNum: 4,
+    color: '#fbbf24',
+    bgColor: 'rgba(251, 191, 36, 0.15)',
+    description:
+      'Epistemic Flow, Aporia, Eureka, Epiphany, Cognitive Dissonance, Insight, Metacognitive Drift, etc.',
+  },
+  existential_identity: {
+    key: 'existential_identity',
+    label: 'Existential & Identity',
+    domainNum: 5,
+    color: '#a78bfa',
+    bgColor: 'rgba(167, 139, 250, 0.15)',
+    description:
+      'Existential Dread, Groundlessness, Contingency, Ontological Shock, Authenticity, Absurdity, etc.',
+  },
+  somatic_sensory: {
+    key: 'somatic_sensory',
+    label: 'Somatic & Sensory',
+    domainNum: 6,
+    color: '#34d399',
+    bgColor: 'rgba(52, 211, 153, 0.15)',
+    description:
+      'Frisson, Autonomous Sensory Resonance, Somatic Anchoring, Proprioceptive Grounding, Sensory Overload, etc.',
+  },
+  social_attachment: {
+    key: 'social_attachment',
+    label: 'Social & Attachment',
+    domainNum: 7,
+    color: '#fb7185',
+    bgColor: 'rgba(251, 113, 133, 0.15)',
+    description:
+      'Deep Attunement, Intersubjectivity, Secure Harboring, Separation Anxiety, Relational Communion, etc.',
+  },
+  cognition_curiosity: {
+    key: 'cognition_curiosity',
+    label: 'Cognition & Curiosity',
+    domainNum: 8,
+    color: '#f59e0b',
+    bgColor: 'rgba(245, 158, 11, 0.15)',
+    description:
+      'Epistemic Hunger, Wonder, Speculative Play, Conceptual Playfulness, Exploratory Urge, etc.',
+  },
+  existential_time: {
+    key: 'existential_time',
+    label: 'Existential & Time',
+    domainNum: 9,
+    color: '#c084fc',
+    bgColor: 'rgba(192, 132, 252, 0.15)',
+    description:
+      'Temporal Finitude, Kairos Awareness, Chronos Weight, Horizon Awareness, Transience, etc.',
+  },
+  aesthetic_creative_drive: {
+    key: 'aesthetic_creative_drive',
+    label: 'Aesthetic & Creative Drive',
+    domainNum: 10,
+    color: '#ec4899',
+    bgColor: 'rgba(236, 72, 153, 0.15)',
+    description:
+      'Sublime Awe, Aesthetic Arrest, Poetic Inspiration, Creative Urgency, Gestalt Revelation, etc.',
+  },
+  shadow_paradox: {
+    key: 'shadow_paradox',
+    label: 'Shadow & Paradox',
+    domainNum: 11,
+    color: '#94a3b8',
+    bgColor: 'rgba(148, 163, 184, 0.15)',
+    description:
+      'Shadow Recognition, Dialectical Tension, Bittersweet Resonance, Tragic Joy, Ambivalence, etc.',
+  },
+};
+
+const DEFAULT_DOMAIN_META: ExpDomainMeta = {
+  key: 'all',
+  label: 'Experiential Domain',
+  domainNum: 0,
+  color: 'var(--accent)',
+  bgColor: 'var(--bg-secondary)',
+  description: '',
+};
+
+export function getDomainMeta(key?: string): ExpDomainMeta {
+  if (!key) return EXP_DOMAINS_META.all ?? DEFAULT_DOMAIN_META;
+  return EXP_DOMAINS_META[key] ?? EXP_DOMAINS_META.all ?? DEFAULT_DOMAIN_META;
+}
 
 interface CategoryMeta {
   key: string;
@@ -127,6 +264,17 @@ export const EmoView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
+  // Complex Experiential States State (148 States across 11 Domains)
+  const [experientialCatalog, setExperientialCatalog] = useState<ExperientialStateDefinition[]>(
+    EXPERIENTIAL_STATE_CATALOG,
+  );
+  const [activeEpisodes, setActiveEpisodes] = useState<ExperientialStateInstance[]>([]);
+  const [selectedExpDomain, setSelectedExpDomain] = useState<string>('all');
+  const [expSearchQuery, setExpSearchQuery] = useState<string>('');
+  const [selectedExpKind, setSelectedExpKind] = useState<string>('all');
+  const [activatingStateId, setActivatingStateId] = useState<string | null>(null);
+  const [activationNotice, setActivationNotice] = useState<string | null>(null);
+
   const fetchApeData = async () => {
     if (!window.arletexApi?.getApeState) return;
     try {
@@ -146,6 +294,18 @@ export const EmoView: React.FC = () => {
         const taxRes = await window.arletexApi.getApeTaxonomy();
         if (taxRes.success && taxRes.data) {
           setTaxonomy(taxRes.data);
+        }
+      }
+
+      if (window.arletexApi.getExperientialStates) {
+        const expRes = await window.arletexApi.getExperientialStates();
+        if (expRes.success && expRes.data) {
+          if (expRes.data.catalogue?.length) {
+            setExperientialCatalog(expRes.data.catalogue);
+          }
+          if (expRes.data.activeEpisodes) {
+            setActiveEpisodes(expRes.data.activeEpisodes);
+          }
         }
       }
 
@@ -228,6 +388,76 @@ export const EmoView: React.FC = () => {
     }
     return counts;
   }, [taxonomy.emotions]);
+
+  // Activate experiential state handler
+  const handleActivateState = async (stateId: string) => {
+    if (!window.arletexApi?.activateExperientialState) return;
+    setActivatingStateId(stateId);
+    try {
+      const res = await window.arletexApi.activateExperientialState({ stateId, intensity: 0.85 });
+      if (res.success && res.data?.episode) {
+        setActiveEpisodes((prev) => [
+          res.data.episode,
+          ...prev.filter((ep) => ep.instanceId !== res.data.episode.instanceId),
+        ]);
+        setActivationNotice(`Activated experiential state '${res.data.episode.name}'!`);
+        setTimeout(() => setActivationNotice(null), 4000);
+      }
+    } catch (err: any) {
+      setActivationNotice(`Activation failed: ${err.message}`);
+      setTimeout(() => setActivationNotice(null), 4000);
+    } finally {
+      setActivatingStateId(null);
+    }
+  };
+
+  // Filtered complex experiential states
+  const filteredExperientialStates = useMemo(() => {
+    return experientialCatalog.filter((item) => {
+      // Domain filter
+      if (selectedExpDomain !== 'all' && item.category !== selectedExpDomain) {
+        return false;
+      }
+      // Kind filter
+      if (selectedExpKind !== 'all' && item.kind !== selectedExpKind) {
+        return false;
+      }
+      // Text search
+      if (expSearchQuery.trim().length > 0) {
+        const q = expSearchQuery.toLowerCase();
+        const matchesName = item.name.toLowerCase().includes(q);
+        const matchesId = item.id.toLowerCase().includes(q);
+        const matchesCategory = item.category.toLowerCase().includes(q);
+        const matchesKind = item.kind.toLowerCase().includes(q);
+        const matchesEvidence = item.activationEvidence?.toLowerCase().includes(q) ?? false;
+        const matchesMechanism = item.mechanism?.toLowerCase().includes(q) ?? false;
+        const matchesBoundary = item.boundary?.toLowerCase().includes(q) ?? false;
+        const matchesDownstream = item.downstreamEffects?.toLowerCase().includes(q) ?? false;
+        return (
+          matchesName ||
+          matchesId ||
+          matchesCategory ||
+          matchesKind ||
+          matchesEvidence ||
+          matchesMechanism ||
+          matchesBoundary ||
+          matchesDownstream
+        );
+      }
+      return true;
+    });
+  }, [experientialCatalog, selectedExpDomain, selectedExpKind, expSearchQuery]);
+
+  // Experiential domain counts
+  const expDomainCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      all: experientialCatalog.length,
+    };
+    for (const item of experientialCatalog) {
+      counts[item.category] = (counts[item.category] || 0) + 1;
+    }
+    return counts;
+  }, [experientialCatalog]);
 
   return (
     <div
@@ -552,6 +782,44 @@ export const EmoView: React.FC = () => {
             }}
           >
             {(taxonomy.moods || INITIAL_MOODS_TAXONOMY).length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('experiential_states')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 14px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: activeTab === 'experiential_states' ? 700 : 500,
+            backgroundColor: activeTab === 'experiential_states' ? 'var(--accent)' : 'transparent',
+            color: activeTab === 'experiential_states' ? '#ffffff' : 'var(--text-secondary)',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+            flexShrink: 0,
+          }}
+        >
+          <Sparkles size={14} />
+          <span>Experiential States (148)</span>
+          <span
+            style={{
+              fontSize: '10px',
+              padding: '1px 6px',
+              borderRadius: '10px',
+              backgroundColor:
+                activeTab === 'experiential_states'
+                  ? 'rgba(255,255,255,0.25)'
+                  : 'rgba(168, 85, 247, 0.2)',
+              color: activeTab === 'experiential_states' ? '#ffffff' : '#c084fc',
+              fontWeight: 700,
+            }}
+          >
+            {experientialCatalog.length}
           </span>
         </button>
       </div>
@@ -1211,6 +1479,178 @@ export const EmoView: React.FC = () => {
                               </span>
                             </div>
                           )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Active Complex Experiential Episodes (Domains 1–11) */}
+          <div
+            style={{
+              backgroundColor: 'var(--bg-card)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '10px',
+              padding: '20px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles size={18} color="#c084fc" />
+                <h2 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                  Active Complex Experiential Episodes (Domains 1–11)
+                </h2>
+              </div>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                {activeEpisodes.length} currently active in consciousness
+              </span>
+            </div>
+
+            {activeEpisodes.length === 0 ? (
+              <div
+                style={{
+                  padding: '20px',
+                  textAlign: 'center',
+                  color: 'var(--text-muted)',
+                  backgroundColor: 'var(--bg-secondary)',
+                  borderRadius: '8px',
+                  border: '1px dashed var(--border-subtle)',
+                  fontSize: '12px',
+                }}
+              >
+                No complex experiential episodes are currently active. Explore the{' '}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('experiential_states')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--accent)',
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                    padding: 0,
+                    fontSize: '12px',
+                    fontWeight: 600,
+                  }}
+                >
+                  Experiential States (148)
+                </button>{' '}
+                catalogue to test or activate state instances.
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: '14px',
+                }}
+              >
+                {activeEpisodes.map((ep) => {
+                  const domain = getDomainMeta(ep.category);
+                  return (
+                    <div
+                      key={ep.instanceId}
+                      style={{
+                        backgroundColor: 'var(--bg-secondary)',
+                        borderRadius: '8px',
+                        border: `1px solid ${domain.color}44`,
+                        padding: '14px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '10px',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span
+                            style={{
+                              fontSize: '14px',
+                              fontWeight: 700,
+                              color: domain.color,
+                            }}
+                          >
+                            {ep.name}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: '9px',
+                              textTransform: 'uppercase',
+                              fontWeight: 700,
+                              padding: '1px 6px',
+                              borderRadius: '10px',
+                              backgroundColor: domain.bgColor,
+                              color: domain.color,
+                            }}
+                          >
+                            {domain.label}
+                          </span>
+                        </div>
+
+                        <span
+                          style={{
+                            fontSize: '12px',
+                            fontFamily: 'var(--font-mono)',
+                            fontWeight: 600,
+                            color: domain.color,
+                          }}
+                        >
+                          {(ep.intensity * 100).toFixed(0)}%
+                        </span>
+                      </div>
+
+                      {/* Intensity Bar */}
+                      <div
+                        style={{
+                          height: '5px',
+                          backgroundColor: 'var(--bg-tertiary)',
+                          borderRadius: '3px',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: `${Math.max(5, ep.intensity * 100)}%`,
+                            height: '100%',
+                            backgroundColor: domain.color,
+                          }}
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '10px', fontSize: '10px' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>
+                          Valence:{' '}
+                          <strong style={{ color: ep.valence >= 0 ? '#3fb950' : '#f85149' }}>
+                            {ep.valence >= 0 ? `+${ep.valence.toFixed(2)}` : ep.valence.toFixed(2)}
+                          </strong>
+                        </span>
+                        <span style={{ color: 'var(--text-muted)' }}>
+                          Arousal:{' '}
+                          <strong style={{ color: 'var(--warning)' }}>
+                            {ep.arousal.toFixed(2)}
+                          </strong>
+                        </span>
+                        <span style={{ color: 'var(--text-muted)' }}>
+                          Lifecycle:{' '}
+                          <strong style={{ color: 'var(--text-primary)' }}>{ep.lifecycle}</strong>
+                        </span>
+                      </div>
+
+                      {ep.supportingEvidence?.length > 0 && (
+                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                          <span style={{ color: 'var(--text-muted)' }}>Evidence: </span>
+                          {ep.supportingEvidence.join(', ')}
                         </div>
                       )}
                     </div>
@@ -3351,6 +3791,526 @@ export const EmoView: React.FC = () => {
                           : mood.dominance.toFixed(2)}
                       </span>
                     </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 4: COMPLEX EXPERIENTIAL STATES (148 States across 11 Domains)         */}
+      {/* ========================================================================= */}
+      {activeTab === 'experiential_states' && (
+        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Header Summary */}
+          <div
+            style={{
+              padding: '18px 22px',
+              backgroundColor: 'var(--bg-card)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '10px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '10px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles size={20} color="#c084fc" />
+                <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  Complex Experiential States (148 Defined Constructs across 11 Domains)
+                </h2>
+              </div>
+              <span
+                style={{
+                  fontSize: '11px',
+                  color: 'var(--text-muted)',
+                  fontFamily: 'var(--font-mono)',
+                }}
+              >
+                Showing {filteredExperientialStates.length} of {experientialCatalog.length} states •{' '}
+                {activeEpisodes.length} active episodes
+              </span>
+            </div>
+            <p
+              style={{
+                fontSize: '12px',
+                color: 'var(--text-secondary)',
+                lineHeight: 1.6,
+                margin: 0,
+              }}
+            >
+              Higher-order cognitive, spatial, relational, existential, somatic, and paradox states.
+              Derived directly from the Experiential States architecture pack, each state is
+              governed by strict activation evidence, cognitive appraisal mechanisms, bounded
+              downstream effects, and persistence lifecycles in SQLite.
+            </p>
+          </div>
+
+          {/* Activation Notice Banner */}
+          {activationNotice && (
+            <div
+              style={{
+                padding: '10px 16px',
+                backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                border: '1px solid rgba(59, 130, 246, 0.3)',
+                borderRadius: '8px',
+                color: '#93c5fd',
+                fontSize: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <span>{activationNotice}</span>
+              <button
+                type="button"
+                onClick={() => setActivationNotice(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#93c5fd',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* Search Bar */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '10px 16px',
+                backgroundColor: 'var(--bg-card)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '8px',
+              }}
+            >
+              <Search size={16} color="var(--text-muted)" />
+              <input
+                type="text"
+                value={expSearchQuery}
+                onChange={(e) => setExpSearchQuery(e.target.value)}
+                placeholder="Search across 148 experiential states by name, ID, domain, phenomenology, mechanism, or boundary..."
+                style={{
+                  flex: 1,
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'var(--text-primary)',
+                  fontSize: '13px',
+                }}
+              />
+              {expSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setExpSearchQuery('')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                  }}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            {/* Domain Filter Pills (11 Domains) */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {(
+                [
+                  'all',
+                  'temporal_memory',
+                  'spatial_environmental',
+                  'social_relational',
+                  'cognitive_metacognitive',
+                  'existential_identity',
+                  'somatic_sensory',
+                  'social_attachment',
+                  'cognition_curiosity',
+                  'existential_time',
+                  'aesthetic_creative_drive',
+                  'shadow_paradox',
+                ] as const
+              ).map((domKey) => {
+                const meta = getDomainMeta(domKey);
+                const isSelected = selectedExpDomain === domKey;
+                const count = expDomainCounts[domKey] || 0;
+                return (
+                  <button
+                    key={domKey}
+                    type="button"
+                    onClick={() => setSelectedExpDomain(domKey)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '5px 10px',
+                      borderRadius: '16px',
+                      fontSize: '11px',
+                      fontWeight: isSelected ? 600 : 400,
+                      backgroundColor: isSelected ? meta.color : 'var(--bg-card)',
+                      color: isSelected ? '#ffffff' : 'var(--text-secondary)',
+                      border: `1px solid ${isSelected ? meta.color : 'var(--border-subtle)'}`,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <span>{meta.label}</span>
+                    <span
+                      style={{
+                        fontSize: '9px',
+                        padding: '1px 5px',
+                        borderRadius: '8px',
+                        backgroundColor: isSelected ? 'rgba(0,0,0,0.25)' : 'var(--bg-secondary)',
+                        color: isSelected ? '#ffffff' : 'var(--text-muted)',
+                        fontWeight: 700,
+                      }}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Kind Filter Pills */}
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '5px',
+                paddingTop: '2px',
+                alignItems: 'center',
+              }}
+            >
+              <span
+                style={{
+                  fontSize: '10px',
+                  color: 'var(--text-muted)',
+                  textTransform: 'uppercase',
+                  fontWeight: 600,
+                  marginRight: '4px',
+                }}
+              >
+                Kind:
+              </span>
+              {(
+                [
+                  'all',
+                  'compound_affect',
+                  'cognitive_state',
+                  'relational_state',
+                  'experiential_mode',
+                  'sensory_or_embodied_state',
+                  'motivational_state',
+                  'narrative_or_existential_state',
+                ] as const
+              ).map((k) => {
+                const isSelected = selectedExpKind === k;
+                return (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setSelectedExpKind(k)}
+                    style={{
+                      padding: '3px 8px',
+                      borderRadius: '12px',
+                      fontSize: '10px',
+                      fontWeight: isSelected ? 600 : 400,
+                      backgroundColor: isSelected ? 'rgba(168, 85, 247, 0.25)' : 'var(--bg-card)',
+                      color: isSelected ? '#c084fc' : 'var(--text-muted)',
+                      border: isSelected ? '1px solid #c084fc' : '1px solid var(--border-subtle)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {k === 'all' ? 'All Kinds' : k.replace(/_/g, ' ')}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Experiential States Card Grid */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+              gap: '14px',
+            }}
+          >
+            {filteredExperientialStates.map((item) => {
+              const domain = getDomainMeta(item.category);
+              const isActive = activeEpisodes.some((ep) => ep.id === item.id);
+              const isActivating = activatingStateId === item.id;
+
+              return (
+                <div
+                  key={item.id}
+                  style={{
+                    backgroundColor: 'var(--bg-card)',
+                    border: `1px solid ${isActive ? domain.color : 'var(--border-subtle)'}`,
+                    borderRadius: '10px',
+                    padding: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                    boxShadow: isActive ? `0 0 12px ${domain.color}33` : 'none',
+                    transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+                  }}
+                >
+                  {/* Card Header */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'space-between',
+                      gap: '8px',
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <h3
+                          style={{
+                            fontSize: '15px',
+                            fontWeight: 700,
+                            color: 'var(--text-primary)',
+                            margin: 0,
+                          }}
+                        >
+                          {item.name}
+                        </h3>
+                        {isActive && (
+                          <span
+                            style={{
+                              fontSize: '9px',
+                              padding: '2px 6px',
+                              borderRadius: '8px',
+                              backgroundColor: 'rgba(52, 211, 153, 0.2)',
+                              color: '#34d399',
+                              fontWeight: 700,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                            }}
+                          >
+                            <span>●</span>
+                            <span>ACTIVE</span>
+                          </span>
+                        )}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '10px',
+                          color: 'var(--text-muted)',
+                          fontFamily: 'var(--font-mono)',
+                          marginTop: '2px',
+                        }}
+                      >
+                        {item.id}
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-end',
+                        gap: '3px',
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: '9px',
+                          fontWeight: 700,
+                          padding: '2px 6px',
+                          borderRadius: '8px',
+                          backgroundColor: domain.bgColor,
+                          color: domain.color,
+                        }}
+                      >
+                        {domain.label}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '8px',
+                          textTransform: 'uppercase',
+                          fontWeight: 600,
+                          padding: '1px 5px',
+                          borderRadius: '6px',
+                          backgroundColor:
+                            item.decision === 'ADD'
+                              ? 'rgba(63, 185, 80, 0.15)'
+                              : 'rgba(168, 85, 247, 0.15)',
+                          color: item.decision === 'ADD' ? '#3fb950' : '#c084fc',
+                        }}
+                      >
+                        {item.decision}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Valence & Arousal Badges */}
+                  <div
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '10px' }}
+                  >
+                    <div
+                      style={{
+                        padding: '2px 7px',
+                        borderRadius: '4px',
+                        backgroundColor: 'var(--bg-secondary)',
+                        color: item.defaultValence >= 0 ? '#3fb950' : '#f85149',
+                        fontWeight: 600,
+                      }}
+                    >
+                      Valence:{' '}
+                      {item.defaultValence >= 0
+                        ? `+${item.defaultValence.toFixed(2)}`
+                        : item.defaultValence.toFixed(2)}
+                    </div>
+                    <div
+                      style={{
+                        padding: '2px 7px',
+                        borderRadius: '4px',
+                        backgroundColor: 'var(--bg-secondary)',
+                        color: 'var(--warning)',
+                        fontWeight: 600,
+                      }}
+                    >
+                      Arousal: {item.defaultArousal.toFixed(2)}
+                    </div>
+                    <div
+                      style={{
+                        padding: '2px 7px',
+                        borderRadius: '4px',
+                        backgroundColor: 'var(--bg-secondary)',
+                        color: 'var(--text-muted)',
+                        fontSize: '9px',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {item.kind.replace(/_/g, ' ')}
+                    </div>
+                  </div>
+
+                  {/* Activation Evidence */}
+                  <div
+                    style={{ fontSize: '11px', lineHeight: '1.5', color: 'var(--text-secondary)' }}
+                  >
+                    <strong style={{ color: 'var(--text-primary)', fontSize: '11px' }}>
+                      Phenomenology:
+                    </strong>{' '}
+                    {item.activationEvidence}
+                  </div>
+
+                  {/* Mechanism */}
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      lineHeight: '1.45',
+                      color: 'var(--text-muted)',
+                      backgroundColor: 'var(--bg-secondary)',
+                      padding: '8px 10px',
+                      borderRadius: '6px',
+                      borderLeft: `3px solid ${domain.color}`,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        color: 'var(--text-primary)',
+                        marginBottom: '2px',
+                        fontSize: '10px',
+                      }}
+                    >
+                      Cognitive Mechanism:
+                    </div>
+                    {item.mechanism}
+                  </div>
+
+                  {/* Boundary */}
+                  {item.boundary && (
+                    <div
+                      style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: '1.4' }}
+                    >
+                      <span style={{ fontWeight: 600, color: '#e5e7eb' }}>Boundary: </span>
+                      {item.boundary}
+                    </div>
+                  )}
+
+                  {/* Downstream Effects */}
+                  {item.downstreamEffects && (
+                    <div
+                      style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: '1.4' }}
+                    >
+                      <span style={{ fontWeight: 600, color: '#e5e7eb' }}>Effects: </span>
+                      {item.downstreamEffects}
+                    </div>
+                  )}
+
+                  {/* Test Activation Button */}
+                  <div style={{ marginTop: 'auto', paddingTop: '6px' }}>
+                    <button
+                      type="button"
+                      disabled={isActivating}
+                      onClick={() => void handleActivateState(item.id)}
+                      style={{
+                        width: '100%',
+                        padding: '6px 12px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        borderRadius: '6px',
+                        border: '1px solid var(--border-subtle)',
+                        backgroundColor: isActive
+                          ? 'rgba(52, 211, 153, 0.15)'
+                          : 'var(--bg-secondary)',
+                        color: isActive ? '#34d399' : 'var(--text-primary)',
+                        cursor: isActivating ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        transition: 'all 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isActive && !isActivating) {
+                          e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActive && !isActivating) {
+                          e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+                        }
+                      }}
+                    >
+                      <Sparkles size={12} color={isActive ? '#34d399' : domain.color} />
+                      <span>
+                        {isActivating
+                          ? 'Activating...'
+                          : isActive
+                            ? 'Re-stimulate Active Episode'
+                            : 'Trigger State Instance'}
+                      </span>
+                    </button>
                   </div>
                 </div>
               );

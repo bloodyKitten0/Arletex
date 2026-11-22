@@ -12,15 +12,33 @@ fi
 
 PORT="${LLAMA_PORT:-8080}"
 SPECIALIST_PORT="${ARLETEX_SPECIALISTS_PORT:-39282}"
-MODEL_PATH="${1:-${ARLETEX_MODEL_PATH:-${HOME}/models/qwen-heretic/Qwen3.5-9B-Heretic-Q4_K_M.gguf}}"
+MODEL_PATH="${ARLETEX_MODEL_PATH:-${HOME}/models/qwen-heretic/Qwen3.5-9B-Heretic-Q4_K_M.gguf}"
+UI_MODE="${ARLETEX_VIEW_MODE:-human}"
+
+for arg in "$@"; do
+  case "$arg" in
+    --mode=human|--human)
+      UI_MODE="human"
+      ;;
+    --mode=full|--mode=arletex|--full|--arletex)
+      UI_MODE="arletex"
+      ;;
+    *.gguf)
+      MODEL_PATH="$arg"
+      ;;
+  esac
+done
+
+export ARLETEX_VIEW_MODE="$UI_MODE"
 
 echo "=========================================================="
 echo " Starting Arletex (Arle Artificial Individual)"
+echo " UI Launch Mode:      $UI_MODE"
 echo " Cognitive Engine:    Qwen 3.5-9B Heretic (Multimodal Vision)"
 echo " Cognitive Port:      $PORT (Vulkan on Radeon 780M)"
 echo " Specialist Services: EmbeddingGemma, Whisper, Kokoro"
 echo " Specialist Port:     $SPECIALIST_PORT"
-echo " UI Specification:    v0.2 (6 Primary Sections + Telemetry)"
+echo " UI Specification:    v0.2 (Human Presence & Full Architecture)"
 echo " Device Profile:      ASUS ROG Ally X (24GB Unified LPDDR5X)"
 echo "=========================================================="
 

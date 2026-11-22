@@ -50,6 +50,8 @@ export const IPC_CHANNELS = {
   APE_EVENT_PROCESS: 'arletex:ape:event:process',
   APE_HISTORY_GET: 'arletex:ape:history:get',
   APE_TAXONOMY_GET: 'arletex:ape:taxonomy:get',
+  APE_EXPERIENTIAL_STATES_GET: 'arletex:ape:experiential_states:get',
+  APE_EXPERIENTIAL_STATE_ACTIVATE: 'arletex:ape:experiential_state:activate',
   APE_RELATIONSHIP_GET: 'arletex:ape:relationship:get',
   APE_RELATIONSHIP_UPDATE: 'arletex:ape:relationship:update',
   APE_PERSONALITY_GET: 'arletex:ape:personality:get',

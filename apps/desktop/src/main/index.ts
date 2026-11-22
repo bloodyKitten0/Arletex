@@ -265,11 +265,12 @@ async function createWindow() {
   });
 
   const isDev = process.env['NODE_ENV'] === 'development' || !app.isPackaged;
+  const viewMode = process.env['ARLETEX_VIEW_MODE'] || 'human';
   if (isDev && process.env['VITE_DEV_SERVER_URL']) {
-    await mainWindow.loadURL(process.env['VITE_DEV_SERVER_URL']);
+    await mainWindow.loadURL(`${process.env['VITE_DEV_SERVER_URL']}?mode=${viewMode}`);
   } else {
     const indexPath = path.join(__dirname, '../renderer/index.html');
-    await mainWindow.loadFile(indexPath);
+    await mainWindow.loadFile(indexPath, { query: { mode: viewMode } });
   }
 
   mainWindow.on('closed', () => {
@@ -610,6 +611,14 @@ function registerIpcHandlers() {
 
   handleSecure(IPC_CHANNELS.APE_TAXONOMY_GET, async () => {
     return callBackend('/api/ape/taxonomy');
+  });
+
+  handleSecure(IPC_CHANNELS.APE_EXPERIENTIAL_STATES_GET, async () => {
+    return callBackend('/api/ape/experiential-states');
+  });
+
+  handleSecure(IPC_CHANNELS.APE_EXPERIENTIAL_STATE_ACTIVATE, async (_, data) => {
+    return callBackend('/api/ape/experiential-states/activate', 'POST', data);
   });
 
   handleSecure(IPC_CHANNELS.APE_EVENT_PROCESS, async (_, event) => {

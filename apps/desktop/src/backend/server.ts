@@ -36,6 +36,8 @@ import {
   SpeechControllerInputSchema,
   WhatsAppConfigSchema,
   WhatsAppSendInputSchema,
+  EXPERIENTIAL_STATE_CATALOG,
+  ExperientialStateInstance,
 } from '@arletex/contracts';
 import {
   ActionPermissionController,
@@ -4716,6 +4718,50 @@ Rules:
           emotions: this.apeService.getEmotionTaxonomy(),
           moods: this.apeService.getMoodTaxonomy(),
         });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/experiential-states' && method === 'GET') {
+        const activeEpisodes = this.experientialStateRepo.listActiveEpisodes();
+        this.sendJson(res, 200, {
+          catalogue: EXPERIENTIAL_STATE_CATALOG,
+          activeEpisodes,
+        });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/experiential-states/activate' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as { stateId: string; intensity?: number };
+        const def = EXPERIENTIAL_STATE_CATALOG.find((s) => s.id === body.stateId);
+        if (!def) {
+          this.sendJson(res, 404, { error: `Experiential state '${body.stateId}' not found` });
+          return;
+        }
+        const now = new Date().toISOString();
+        const episode: ExperientialStateInstance = {
+          id: def.id,
+          instanceId: crypto.randomUUID(),
+          name: def.name,
+          kind: def.kind,
+          category: def.category,
+          intensity: body.intensity ?? 0.8,
+          confidence: 0.9,
+          valence: def.defaultValence,
+          arousal: def.defaultArousal,
+          onsetAt: now,
+          lastUpdatedAt: now,
+          sourceEventIds: [],
+          supportingEvidence: ['Manual activation via API / UI'],
+          counterEvidence: [],
+          associatedMemoryIds: [],
+          relatedStateIds: [],
+          appraisalIds: [],
+          unresolvedTensions: [],
+          effects: [],
+          lifecycle: 'active',
+        };
+        this.experientialStateRepo.saveEpisode(episode);
+        this.sendJson(res, 200, { success: true, episode });
         return;
       }
 

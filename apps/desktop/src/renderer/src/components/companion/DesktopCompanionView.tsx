@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { CompanionAnimation, DesktopCompanionState } from '@arletex/contracts';
 
 interface AnimationConfig {
@@ -9,7 +9,36 @@ interface AnimationConfig {
   durationSeconds: number;
 }
 
-const ANIMATION_CONFIGS: Record<string, Record<CompanionAnimation, AnimationConfig>> = {
+export type CompanionSkin = 'girl_1' | 'girl_2' | 'girl_3';
+
+export const CHARACTER_META: Record<
+  CompanionSkin,
+  { name: string; label: string; description: string; color: string; ribbon: string }
+> = {
+  girl_1: {
+    name: 'Ruby',
+    label: 'Ruby (Arle Original)',
+    description: 'Intimate, warm, affectionate, nostalgic. Default stance.',
+    color: '#f43f5e',
+    ribbon: '🎀',
+  },
+  girl_2: {
+    name: 'Sapphire',
+    label: 'Sapphire (Casual Uniform)',
+    description: 'Curious, analytical, lively, playful, alert.',
+    color: '#38bdf8',
+    ribbon: '🌸',
+  },
+  girl_3: {
+    name: 'Emerald',
+    label: 'Emerald (Elegant Uniform)',
+    description: 'Contemplative, solemn, protective, existential, serene.',
+    color: '#34d399',
+    ribbon: '❄️',
+  },
+};
+
+const ANIMATION_CONFIGS: Record<CompanionSkin, Record<CompanionAnimation, AnimationConfig>> = {
   girl_1: {
     idle: {
       sheet: './sprites/girl_1/Idle.png',
@@ -54,7 +83,198 @@ const ANIMATION_CONFIGS: Record<string, Record<CompanionAnimation, AnimationConf
       durationSeconds: 0.8,
     },
   },
+  girl_2: {
+    idle: {
+      sheet: './sprites/girl_2/Idle.png',
+      frames: 7,
+      frameWidth: 128,
+      frameHeight: 128,
+      durationSeconds: 1.1,
+    },
+    walk: {
+      sheet: './sprites/girl_2/Walk.png',
+      frames: 12,
+      frameWidth: 128,
+      frameHeight: 128,
+      durationSeconds: 1.0,
+    },
+    dialogue: {
+      sheet: './sprites/girl_2/Dialogue.png',
+      frames: 6,
+      frameWidth: 128,
+      frameHeight: 128,
+      durationSeconds: 0.9,
+    },
+    book: {
+      sheet: './sprites/girl_1/Book.png',
+      frames: 10,
+      frameWidth: 64,
+      frameHeight: 64,
+      durationSeconds: 2.0,
+    },
+    protection: {
+      sheet: './sprites/girl_2/Protection.png',
+      frames: 2,
+      frameWidth: 128,
+      frameHeight: 128,
+      durationSeconds: 0.6,
+    },
+    attack: {
+      sheet: './sprites/girl_2/Attack.png',
+      frames: 9,
+      frameWidth: 128,
+      frameHeight: 128,
+      durationSeconds: 0.9,
+    },
+  },
+  girl_3: {
+    idle: {
+      sheet: './sprites/girl_3/Idle.png',
+      frames: 6,
+      frameWidth: 128,
+      frameHeight: 128,
+      durationSeconds: 1.0,
+    },
+    walk: {
+      sheet: './sprites/girl_3/Walk.png',
+      frames: 12,
+      frameWidth: 128,
+      frameHeight: 128,
+      durationSeconds: 1.0,
+    },
+    dialogue: {
+      sheet: './sprites/girl_3/Dialogue.png',
+      frames: 5,
+      frameWidth: 128,
+      frameHeight: 128,
+      durationSeconds: 0.8,
+    },
+    book: {
+      sheet: './sprites/girl_1/Book.png',
+      frames: 10,
+      frameWidth: 64,
+      frameHeight: 64,
+      durationSeconds: 2.0,
+    },
+    protection: {
+      sheet: './sprites/girl_3/Protection.png',
+      frames: 3,
+      frameWidth: 128,
+      frameHeight: 128,
+      durationSeconds: 0.7,
+    },
+    attack: {
+      sheet: './sprites/girl_3/Attack.png',
+      frames: 6,
+      frameWidth: 128,
+      frameHeight: 128,
+      durationSeconds: 0.8,
+    },
+  },
 };
+
+/**
+ * Resolves the resonant companion skin reflecting Arle's emotional or experiential state
+ */
+export function resolveResonantSkin(
+  emotion?: string,
+  valence?: number,
+  category?: string,
+): CompanionSkin {
+  if (emotion) {
+    const e = emotion.toLowerCase();
+    // Sapphire (Girl 2): Curious, cognitive, epistemic, excited, amused, playful
+    if (
+      [
+        'curiosity',
+        'interest',
+        'anticipation',
+        'amusement',
+        'surprise',
+        'pride',
+        'optimism',
+        'flow',
+        'playful',
+        'inquisitive',
+        'epistemic',
+        'delight',
+      ].some((k) => e.includes(k))
+    ) {
+      return 'girl_2';
+    }
+    // Emerald (Girl 3): Contemplative, existential, solemn, melancholic, protective, pensive, grief, shadow
+    if (
+      [
+        'melancholy',
+        'sadness',
+        'grief',
+        'fear',
+        'anxiety',
+        'vulnerability',
+        'pensive',
+        'solemn',
+        'protective',
+        'somber',
+        'existential',
+        'shadow',
+        'longing',
+        'regret',
+        'fatigue',
+        'kenopsia',
+        'saudade',
+      ].some((k) => e.includes(k))
+    ) {
+      return 'girl_3';
+    }
+    // Ruby (Girl 1): Warmth, love, tenderness, joy, intimacy, gratitude, attachment
+    if (
+      [
+        'love',
+        'joy',
+        'affection',
+        'intimacy',
+        'gratitude',
+        'tender',
+        'warmth',
+        'admiration',
+        'cherishing',
+        'devotion',
+        'fondness',
+        'serenity',
+      ].some((k) => e.includes(k))
+    ) {
+      return 'girl_1';
+    }
+  }
+
+  if (category) {
+    const c = category.toLowerCase();
+    if (['cognition_curiosity', 'cognitive_metacognitive', 'spatial_environmental'].includes(c)) {
+      return 'girl_2';
+    }
+    if (['existential_identity', 'existential_time', 'shadow_paradox'].includes(c)) {
+      return 'girl_3';
+    }
+    if (
+      [
+        'social_attachment',
+        'social_relational',
+        'temporal_memory',
+        'aesthetic_creative_drive',
+      ].includes(c)
+    ) {
+      return 'girl_1';
+    }
+  }
+
+  if (valence !== undefined) {
+    if (valence > 0.35) return 'girl_1';
+    if (valence < -0.15) return 'girl_3';
+    return 'girl_2';
+  }
+
+  return 'girl_1';
+}
 
 export const DesktopCompanionView: React.FC = () => {
   const [companionState, setCompanionState] = useState<DesktopCompanionState>({
@@ -71,9 +291,75 @@ export const DesktopCompanionView: React.FC = () => {
   const [currentFrame, setCurrentFrame] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
   const [speechBubbleText, setSpeechBubbleText] = useState<string | null>(null);
+  const [autoReflectSkin, setAutoReflectSkin] = useState<boolean>(() => {
+    try {
+      const stored = localStorage.getItem('arletex_companion_auto_skin');
+      return stored !== null ? stored === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
+  const [currentFeelingLabel, setCurrentFeelingLabel] = useState<string>('Warm & Present');
 
   const dragStartRef = useRef<{ screenX: number; screenY: number } | null>(null);
   const isDraggingRef = useRef(false);
+
+  // Sync autoReflectSkin setting to localStorage
+  const toggleAutoSkin = useCallback(() => {
+    setAutoReflectSkin((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('arletex_companion_auto_skin', String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
+  // Set character skin explicitly and persist
+  const setSkin = useCallback((skin: CompanionSkin) => {
+    setCompanionState((prev) => ({ ...prev, character: skin }));
+    if (window.arletexApi?.updateCompanionState) {
+      window.arletexApi.updateCompanionState({ character: skin });
+    }
+  }, []);
+
+  // Poll psychological state for emotional skin reflection
+  useEffect(() => {
+    let mounted = true;
+    const checkEmotionalState = async () => {
+      if (!window.arletexApi?.getApeState) return;
+      try {
+        const res = await window.arletexApi.getApeState();
+        if (res.success && res.data && mounted) {
+          const primaryEmotion = res.data.activeEmotions?.[0]?.emotionId || 'presence';
+          const valence = res.data.pad?.valence ?? 0;
+          const mood = res.data.currentMood || 'focused';
+
+          setCurrentFeelingLabel(`${primaryEmotion} (${mood})`);
+
+          if (autoReflectSkin) {
+            const resonantSkin = resolveResonantSkin(primaryEmotion, valence);
+            setCompanionState((prev) => {
+              if (prev.character !== resonantSkin) {
+                if (window.arletexApi?.updateCompanionState) {
+                  window.arletexApi.updateCompanionState({ character: resonantSkin });
+                }
+                return { ...prev, character: resonantSkin };
+              }
+              return prev;
+            });
+          }
+        }
+      } catch {}
+    };
+
+    void checkEmotionalState();
+    const interval = setInterval(checkEmotionalState, 5000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [autoReflectSkin]);
 
   // Load initial state & subscribe to changes
   useEffect(() => {
@@ -87,9 +373,17 @@ export const DesktopCompanionView: React.FC = () => {
 
     if (window.arletexApi?.onCompanionStateChange) {
       const unsubscribe = window.arletexApi.onCompanionStateChange((newState) => {
-        setCompanionState((prev) => ({ ...prev, ...newState }));
+        setCompanionState((prev) => {
+          const next = { ...prev, ...newState };
+          // If speaking state changed, switch animation accordingly
+          if (newState.isSpeaking !== undefined) {
+            next.activeAnimation = newState.isSpeaking ? 'dialogue' : 'idle';
+          }
+          return next;
+        });
+
         if (newState.isSpeaking && newState.currentSpeechText) {
-          setSpeechBubbleText(newState.currentSpeechText.slice(0, 100));
+          setSpeechBubbleText(newState.currentSpeechText.slice(0, 120));
         } else if (!newState.isSpeaking) {
           setTimeout(() => setSpeechBubbleText(null), 3000);
         }
@@ -101,8 +395,13 @@ export const DesktopCompanionView: React.FC = () => {
     return undefined;
   }, []);
 
-  const charConfig = ANIMATION_CONFIGS[companionState.character] || ANIMATION_CONFIGS['girl_1']!;
-  const currentAnim = charConfig[companionState.activeAnimation] || charConfig['idle']!;
+  const currentCharacter: CompanionSkin =
+    (companionState.character as CompanionSkin) in ANIMATION_CONFIGS
+      ? (companionState.character as CompanionSkin)
+      : 'girl_1';
+
+  const charConfig = ANIMATION_CONFIGS[currentCharacter];
+  const currentAnim = charConfig[companionState.activeAnimation] || charConfig['idle'];
 
   // Frame ticker based on animation config
   useEffect(() => {
@@ -114,7 +413,7 @@ export const DesktopCompanionView: React.FC = () => {
     return () => clearInterval(timer);
   }, [
     companionState.activeAnimation,
-    companionState.character,
+    currentCharacter,
     currentAnim.durationSeconds,
     currentAnim.frames,
   ]);
@@ -203,20 +502,31 @@ export const DesktopCompanionView: React.FC = () => {
           style={{
             position: 'absolute',
             bottom: '130px',
-            maxWidth: '160px',
-            padding: '6px 10px',
-            background: 'rgba(15, 17, 21, 0.92)',
-            border: '1px solid #3b82f6',
-            borderRadius: '8px',
+            maxWidth: '170px',
+            padding: '7px 11px',
+            background: 'rgba(15, 17, 21, 0.94)',
+            border: `1px solid ${CHARACTER_META[currentCharacter].color}`,
+            borderRadius: '10px',
             color: '#f3f4f6',
             fontSize: '11px',
-            lineHeight: '1.3',
+            lineHeight: '1.35',
             textAlign: 'center',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.6)',
             pointerEvents: 'none',
             zIndex: 10,
+            backdropFilter: 'blur(8px)',
           }}
         >
+          <div
+            style={{
+              fontSize: '9px',
+              color: CHARACTER_META[currentCharacter].color,
+              marginBottom: '2px',
+              fontWeight: 600,
+            }}
+          >
+            Arle ({CHARACTER_META[currentCharacter].name})
+          </div>
           {speechBubbleText}
         </div>
       )}
@@ -226,7 +536,7 @@ export const DesktopCompanionView: React.FC = () => {
         onMouseDown={handleMouseDown}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
-        title="Arle Companion (Click to interact, double-click to open chat, right-click for menu)"
+        title={`Arle (${CHARACTER_META[currentCharacter].label})\nFeeling: ${currentFeelingLabel}\nClick to toggle book, double-click to open chat, right-click for skins & actions`}
         style={{
           width: `${displayWidth}px`,
           height: `${displayHeight}px`,
@@ -236,7 +546,7 @@ export const DesktopCompanionView: React.FC = () => {
           imageRendering: 'pixelated',
           transform: companionState.flipX ? 'scaleX(-1)' : 'none',
           transition: 'transform 0.2s ease',
-          filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.4))',
+          filter: `drop-shadow(0 4px 8px rgba(0,0,0,0.5)) drop-shadow(0 0 2px ${CHARACTER_META[currentCharacter].color}44)`,
         }}
       />
 
@@ -245,51 +555,171 @@ export const DesktopCompanionView: React.FC = () => {
         <div
           style={{
             position: 'absolute',
-            bottom: '40px',
-            right: '10px',
-            background: '#1a1d24',
+            bottom: '36px',
+            right: '8px',
+            background: '#13161c',
             border: '1px solid #374151',
-            borderRadius: '6px',
-            padding: '4px 0',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.7)',
+            borderRadius: '8px',
+            padding: '6px 0',
+            boxShadow: '0 12px 32px rgba(0,0,0,0.8)',
             zIndex: 100,
             fontSize: '11px',
             color: '#e5e7eb',
-            minWidth: '120px',
+            minWidth: '170px',
+            backdropFilter: 'blur(12px)',
           }}
         >
+          {/* Status Header */}
           <div
-            onClick={() => {
-              window.arletexApi?.focusMainWindow?.();
-              setShowMenu(false);
+            style={{
+              padding: '6px 12px 4px',
+              fontSize: '10px',
+              color: '#9ca3af',
+              borderBottom: '1px solid #242b35',
             }}
-            style={{ padding: '6px 12px', cursor: 'pointer', borderBottom: '1px solid #2d3748' }}
           >
-            💬 Open Full Chat
+            <div
+              style={{
+                fontWeight: 700,
+                color: CHARACTER_META[currentCharacter].color,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              <span>{CHARACTER_META[currentCharacter].ribbon}</span>
+              <span>{CHARACTER_META[currentCharacter].name}</span>
+            </div>
+            <div style={{ marginTop: '2px', fontSize: '9px', opacity: 0.8 }}>
+              Feeling: {currentFeelingLabel}
+            </div>
+          </div>
+
+          {/* Skins Section */}
+          <div
+            style={{
+              padding: '4px 12px 2px',
+              fontSize: '9px',
+              fontWeight: 700,
+              color: '#6b7280',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+            }}
+          >
+            Skins
+          </div>
+
+          {(['girl_1', 'girl_2', 'girl_3'] as CompanionSkin[]).map((skinKey) => {
+            const meta = CHARACTER_META[skinKey];
+            const isSelected = currentCharacter === skinKey;
+            return (
+              <div
+                key={skinKey}
+                onClick={() => {
+                  setSkin(skinKey);
+                  setShowMenu(false);
+                }}
+                style={{
+                  padding: '5px 12px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  backgroundColor: isSelected ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
+                  color: isSelected ? '#60a5fa' : '#d1d5db',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSelected) e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)';
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <span>
+                  {meta.ribbon} {meta.name}
+                </span>
+                {isSelected && <span style={{ fontSize: '10px' }}>✓</span>}
+              </div>
+            );
+          })}
+
+          {/* Auto Skin Reflection Toggle */}
+          <div
+            onClick={toggleAutoSkin}
+            style={{
+              padding: '5px 12px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              color: autoReflectSkin ? '#34d399' : '#9ca3af',
+              borderTop: '1px solid #242b35',
+              borderBottom: '1px solid #242b35',
+              margin: '3px 0',
+            }}
+          >
+            <span>✨ Auto Feelings Skin</span>
+            <span style={{ fontSize: '10px' }}>{autoReflectSkin ? 'ON' : 'OFF'}</span>
+          </div>
+
+          {/* Actions Section */}
+          <div
+            style={{
+              padding: '4px 12px 2px',
+              fontSize: '9px',
+              fontWeight: 700,
+              color: '#6b7280',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+            }}
+          >
+            Pose & Actions
           </div>
           <div
             onClick={() => setAnimation('idle')}
-            style={{ padding: '6px 12px', cursor: 'pointer' }}
+            style={{ padding: '4px 12px', cursor: 'pointer' }}
           >
             🌿 Idle Stance
           </div>
           <div
             onClick={() => setAnimation('book')}
-            style={{ padding: '6px 12px', cursor: 'pointer' }}
+            style={{ padding: '4px 12px', cursor: 'pointer' }}
           >
             📖 Read Book
           </div>
           <div
             onClick={() => setAnimation('walk')}
-            style={{ padding: '6px 12px', cursor: 'pointer' }}
+            style={{ padding: '4px 12px', cursor: 'pointer' }}
           >
             🚶 Stroll
           </div>
           <div
             onClick={() => setAnimation('protection')}
-            style={{ padding: '6px 12px', cursor: 'pointer' }}
+            style={{ padding: '4px 12px', cursor: 'pointer' }}
           >
             🛡️ Guard Stance
+          </div>
+          <div
+            onClick={() => setAnimation('attack')}
+            style={{ padding: '4px 12px', cursor: 'pointer' }}
+          >
+            ⚔️ Defend / Strike
+          </div>
+
+          {/* System Section */}
+          <div
+            onClick={() => {
+              window.arletexApi?.focusMainWindow?.();
+              setShowMenu(false);
+            }}
+            style={{
+              padding: '6px 12px',
+              cursor: 'pointer',
+              borderTop: '1px solid #242b35',
+              color: '#38bdf8',
+            }}
+          >
+            💬 Open Full Chat
           </div>
           <div
             onClick={() => {
@@ -297,13 +727,12 @@ export const DesktopCompanionView: React.FC = () => {
               setShowMenu(false);
             }}
             style={{
-              padding: '6px 12px',
+              padding: '5px 12px',
               cursor: 'pointer',
               color: '#ef4444',
-              borderTop: '1px solid #2d3748',
             }}
           >
-            ✕ Hide
+            ✕ Hide Companion
           </div>
         </div>
       )}

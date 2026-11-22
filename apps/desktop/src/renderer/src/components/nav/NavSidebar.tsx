@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   MessageSquare,
   Brain,
@@ -74,6 +74,30 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({
   onToggleCollapse,
   isGenerating = false,
 }) => {
+  const [companionCharacter, setCompanionCharacter] = useState<'girl_1' | 'girl_2' | 'girl_3'>(
+    'girl_1',
+  );
+  const [companionVisible, setCompanionVisible] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (window.arletexApi?.getCompanionState) {
+      window.arletexApi.getCompanionState().then((res) => {
+        if (res.success && res.data) {
+          setCompanionCharacter((res.data.character as any) || 'girl_1');
+          setCompanionVisible(res.data.visible !== false);
+        }
+      });
+    }
+
+    if (window.arletexApi?.onCompanionStateChange) {
+      const unsub = window.arletexApi.onCompanionStateChange((s) => {
+        if (s.character) setCompanionCharacter(s.character as any);
+        if (s.visible !== undefined) setCompanionVisible(s.visible);
+      });
+      return unsub;
+    }
+    return undefined;
+  }, []);
   return (
     <aside
       style={{
@@ -325,42 +349,104 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({
           )}
         </div>
 
-        {/* Desktop Companion Quick Launcher */}
-        <button
-          type="button"
-          onClick={() => {
-            window.arletexApi?.toggleCompanion?.();
-          }}
-          title="Toggle Desktop Companion Body (Girl_1)"
-          style={{
-            marginTop: '10px',
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-            padding: collapsed ? '6px 0' : '6px 8px',
-            fontSize: '11px',
-            fontWeight: 500,
-            borderRadius: '6px',
-            border: '1px solid #374151',
-            background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(147, 51, 234, 0.2))',
-            color: '#93c5fd',
-            cursor: 'pointer',
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = '#60a5fa';
-            e.currentTarget.style.color = '#ffffff';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = '#374151';
-            e.currentTarget.style.color = '#93c5fd';
-          }}
-        >
-          <span>🧚</span>
-          {!collapsed && <span>Desktop Body</span>}
-        </button>
+        {/* Desktop Companion Quick Launcher & Skin Selector */}
+        <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <button
+            type="button"
+            onClick={() => {
+              window.arletexApi?.toggleCompanion?.();
+            }}
+            title={companionVisible ? 'Hide Desktop Companion Body' : 'Show Desktop Companion Body'}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              padding: collapsed ? '6px 0' : '6px 8px',
+              fontSize: '11px',
+              fontWeight: 500,
+              borderRadius: '6px',
+              border: '1px solid #374151',
+              background: companionVisible
+                ? 'linear-gradient(135deg, rgba(37, 99, 235, 0.25), rgba(147, 51, 234, 0.25))'
+                : 'rgba(31, 41, 55, 0.5)',
+              color: companionVisible ? '#93c5fd' : '#9ca3af',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#60a5fa';
+              e.currentTarget.style.color = '#ffffff';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#374151';
+              e.currentTarget.style.color = companionVisible ? '#93c5fd' : '#9ca3af';
+            }}
+          >
+            <span>🧚</span>
+            {!collapsed && <span>Desktop Body {companionVisible ? '●' : '○'}</span>}
+          </button>
+
+          {!collapsed && companionVisible && (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '3px',
+                marginTop: '2px',
+              }}
+            >
+              {(
+                [
+                  { id: 'girl_1', label: 'Ruby', icon: '🎀', title: 'Ruby (Original Arle)' },
+                  {
+                    id: 'girl_2',
+                    label: 'Sapphire',
+                    icon: '🌸',
+                    title: 'Sapphire (Casual Uniform)',
+                  },
+                  {
+                    id: 'girl_3',
+                    label: 'Emerald',
+                    icon: '❄️',
+                    title: 'Emerald (Elegant Uniform)',
+                  },
+                ] as const
+              ).map((skin) => {
+                const isActive = companionCharacter === skin.id;
+                return (
+                  <button
+                    key={skin.id}
+                    type="button"
+                    onClick={() => {
+                      setCompanionCharacter(skin.id);
+                      window.arletexApi?.updateCompanionState?.({ character: skin.id });
+                    }}
+                    title={skin.title}
+                    style={{
+                      padding: '3px 2px',
+                      fontSize: '9px',
+                      fontWeight: isActive ? 700 : 500,
+                      borderRadius: '4px',
+                      border: isActive ? '1px solid #60a5fa' : '1px solid #2d3748',
+                      backgroundColor: isActive ? 'rgba(59, 130, 246, 0.25)' : 'transparent',
+                      color: isActive ? '#93c5fd' : '#9ca3af',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '1px',
+                    }}
+                  >
+                    <span>{skin.icon}</span>
+                    <span>{skin.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </aside>
   );

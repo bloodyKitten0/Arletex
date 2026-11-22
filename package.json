@@ -23,7 +23,8 @@
     "asus-rog-ally-x"
   ],
   "scripts": {
-    "arle": "./scripts/run-arletex.sh",
+    "arle": "./scripts/run-arletex.sh --human",
+    "arletex": "./scripts/run-arletex.sh --full",
     "build:native": "cmake -B native/build -S native -DCMAKE_BUILD_TYPE=Release && cmake --build native/build -j4 && mkdir -p apps/desktop/src/backend/native && cp native/build/reflex_engine apps/desktop/src/backend/native/reflex_engine",
     "build": "pnpm run build:native && pnpm --filter \"@arletex/*\" run build",
     "typecheck": "pnpm --filter \"@arletex/*\" run typecheck",
