@@ -517,8 +517,8 @@ These tasks complete the behavioural substance of APE. They should build on the 
 
 ## P1.9 — Complete genuine offline cognition
 
-**Status:** OPEN — code gap confirmed  
-**Relevant file:** `packages/core/src/ape/offlineCognitiveActivityEngine.ts`
+**Status:** DONE — verified in commit `afd665c`  
+**Relevant files:** `packages/core/src/ape/offlineCognitiveActivityEngine.ts`, `tests/p1_offline_cognition.test.ts`, `tests/offline_cognitive_activity.milestone46.test.ts`
 
 **Observed gaps:**
 - `runAutonomousOfflineCycle()` currently writes predetermined reflection/insight text for goal monitoring, research and default reflection.
@@ -1099,7 +1099,7 @@ Use this table as the persistent record. Do not delete completed entries; retain
 | P1.6 | DONE | `3dd9cff` | `tests/p1_relationship_and_social_development.test.ts` (10/10 pass), `docs/RELATIONSHIP_POLICY.md` | Relationship state model (attachment, dual-factor trust, affection, boundaries, expectations), separation of observed behavior from inferred intent, bounded gradual trust updates and reversals, non-coercive boundary assertions, emotional state distinction, relational independence, and memory governance |
 | P1.7 | DONE | `cb3ffbb` | `tests/p1_evidence_grounded_self_model_and_capabilities.test.ts` (10/10 pass), `tests/self_model.milestone2.test.ts` (10/10 pass) | Structured capability trials linking skills to task difficulty/environment/evidence/outcomes, separate tracking of success/failure/interrupted/unverified trials with strict zero-competence increase on unverified/interrupted, domain isolation, environment change confidence decay and revalidation flags, evidence reports with sample size and uncertainty, and non-inflating reflections |
 | P1.8 | DONE | `514642d` | `tests/p1_longitudinal_evaluation.test.ts` (9/9 pass), `tests/longitudinal_evaluation.milestone48.test.ts` (7/7 pass) | Strict evidence evaluation mode (0 score & insufficient_evidence on missing evidence), deterministic empirical formulas across all 15 dimensions, failing benchmark report drop, removal of consciousness/personhood assertions, canonical state comparison (stripping volatile runtime fields and checking invariant partner equality) |
-| P1.9 | OPEN — code gap confirmed | — | — | Replace canned offline outputs with real work |
+| P1.9 | DONE | `afd665c` | `tests/p1_offline_cognition.test.ts` (9/9 pass), `tests/offline_cognitive_activity.milestone46.test.ts` (8/8 pass) | Declarative offline activities (inputs, objective, tools, budget, deliverables, verification criteria), honest provider failure handling (no synthetic bypasses), genuine memory consolidation without percentage fabrication, real memory-cited reflections, interruption-aware scheduling when Proof is active |
 | P1.10 | OPEN — evidence required | — | — | Actual restart, restore and model-switch tests |
 | P2.1 | OPEN — capability/evidence required | — | — | General-purpose agentic harness |
 | P2.2 | OPEN — integration/evidence required | — | — | Telegram proactive communication |
