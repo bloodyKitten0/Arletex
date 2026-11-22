@@ -943,6 +943,7 @@ export * from './functionalConsciousness.js';
 export * from './knowledge.js';
 export * from './modelRegistry.js';
 export * from './boundedPreservation.js';
+export * from './futureSelf.js';
 
 
 

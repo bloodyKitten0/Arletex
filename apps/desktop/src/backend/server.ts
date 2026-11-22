@@ -2970,6 +2970,37 @@ Rules:
         return;
       }
 
+      // Future-Self Model & Prospective Evaluation (P3.2)
+      if (url.pathname === '/api/future-self/state' && method === 'GET') {
+        const horizon = url.searchParams.get('horizon') || 'medium_term';
+        const state = this.apeService.futureSelfEngine.generateFutureSelfState(horizon);
+        this.sendJson(res, 200, state);
+        return;
+      }
+
+      if (url.pathname === '/api/future-self/evaluate' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const scenarioId = body.scenarioId || crypto.randomUUID();
+        const decisionContext = body.decisionContext || 'Prospective evaluation scenario';
+        const trajectories = this.apeService.futureSelfEngine.generateAlternativeTrajectories(
+          decisionContext,
+          body.alternatives || [],
+        );
+        const evalResult = this.apeService.futureSelfEngine.evaluateAndSelectFuture(
+          scenarioId,
+          decisionContext,
+          trajectories,
+        );
+        this.sendJson(res, 200, evalResult);
+        return;
+      }
+
+      if (url.pathname === '/api/future-self/calibration' && method === 'GET') {
+        const metrics = this.apeService.futureSelfEngine.getCalibrationMetrics();
+        this.sendJson(res, 200, metrics);
+        return;
+      }
+
       // Inference health
       if (url.pathname === '/api/inference/health' && method === 'GET') {
         const health = await this.checkInferenceHealth();

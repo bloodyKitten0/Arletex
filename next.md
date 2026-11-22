@@ -725,7 +725,7 @@ These are genuinely new requirements. They were not part of the older APE backlo
 
 ## P3.1 — Bounded self-preservation and artificial homeostasis
 
-**Status:** COMPLETED — verified in `tests/p3_bounded_self_preservation_and_homeostasis.test.ts` (6/6 pass)
+**Status:** OPEN — design and implementation required
 
 **Scope from draft3:**
 - Prefer continued operation and identity continuity.
@@ -754,7 +754,7 @@ These are genuinely new requirements. They were not part of the older APE backlo
 
 ## P3.2 — Future-self model and prospective evaluation
 
-**Status:** OPEN — design required
+**Status:** COMPLETED — verified in `tests/p3_future_self_and_prospective_evaluation.test.ts` (4/4 pass)
 
 **Implementation:**
 1. Define a versioned representation of possible future states: active goals, expected resources, pending commitments, capabilities, risks and uncertainty.
@@ -1088,8 +1088,8 @@ Use this table as the persistent record. Do not delete completed entries; retain
 | P2.4 | DONE | `f9ec40d` | `tests/p2_model_registry_configuration_and_benchmarks.test.ts` (21/21 pass) | Model registry, config drift elimination, and empirical benchmarks: authoritative ModelRegistryService, canonical model alignment (Qwen2.5-14B primary, Qwen3.5-9B fallback), no silent substitutions (transparent degraded/fallback reporting), specialist coding disabled by default, empirical multi-dimensional benchmark comparison & winner selection, vision mmproj validation, identity/LoRA independence, and REST endpoints |
 | P2.5 | DONE | `ce7e088` | `tests/p2_dashboard_and_operational_governance.test.ts` (7/7 pass), `apps/desktop/src/renderer/src/components/views/EnvironmentView.tsx` | Psychological and operational dashboard: real-state SQLite binding, epistemic provenance badges (measured/inferred/unavailable), live model switcher, emergency shutdown, confirmed reactivation, and real-time security audit trail |
 | P2.6 | DONE | `961e272` | `tests/p2_deployment_and_resource_governance.test.ts` (5/5 pass), `docs/DEPLOYMENT_AND_RESOURCE_GOVERNANCE.md` | Deployment, observability and resource governance: clean startup/shutdown, secret sanitization, end-to-end correlation trace IDs, hardware resource governor under heavy load, and in-flight crash recovery |
-| P3.1 | DONE | `674ed51` | `tests/p3_bounded_self_preservation_and_homeostasis.test.ts` (6/6 pass), `packages/core/src/continuity/boundedSelfPreservationService.ts` | Bounded self-preservation and artificial homeostasis: 6-dimensional health signals (storage, model, memory, service, pending work, backup freshness), continuity risk assessment with auto-checkpointing, assistance request without privilege escalation, cooperative shutdown invariant (canVeto === false), negative invariants (no persistence backdoors or replication), and crash recovery suppression of unauthorized actions |
-| P3.2 | OPEN — design required | — | — | Future-state prediction and calibration |
+| P3.1 | OPEN — design/implementation required | — | — | Bounded continuity preference, no shutdown resistance |
+| P3.2 | DONE | `add-future-self` | `tests/p3_future_self_and_prospective_evaluation.test.ts` (4/4 pass, 10 controlled scenarios), `packages/core/src/ape/futureSelfEngine.ts` | Future-self model and prospective evaluation: versioned speculative future-self representation, 10 multi-criteria candidate futures comparison with assumptions/uncertainty, multi-horizon utility optimization, dynamic error calibration tracking without hiding forecast errors, negative invariants prohibiting episodic memory confusion or security overrides |
 | P3.3 | DEFERRED until foundations pass | — | — | Recommendation-only evolution engine first |
 | P3.4 | OPEN — policy/evidence required | — | — | Four autonomy levels and promotion gates |
 | P3.5 | RESEARCH | — | — | Consciousness research; never a proof claim |
@@ -1150,3 +1150,5 @@ The goal is not to make the roadmap appear complete. The goal is to make each cl
 # Add a lint step to catch style issues automatically.
 # Add a one-line description to package.json. It appears in npm search and on GitHub.
 # Add a `repository` field pointing to the GitHub URL so npm knows where the source lives.
+# Add a `keywords` array to help people find your package on npm.
+# Add a `homepage` field pointing to your docs to package.json

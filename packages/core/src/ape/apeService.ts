@@ -212,6 +212,7 @@ import {
   InMemoryFunctionalConsciousnessRepository,
   FunctionalConsciousnessEngine,
 } from './functionalConsciousnessEngine.js';
+import { FutureSelfEngine } from './futureSelfEngine.js';
 import {
   ISimulationRepository,
   IMetacognitionRepository,
@@ -334,6 +335,7 @@ export class ApeService {
   public readonly securityEngine: EthicalBoundariesSecurityEngine;
   public readonly evaluationEngine: LongitudinalEvaluationEngine;
   public readonly consciousnessEngine: FunctionalConsciousnessEngine;
+  public readonly futureSelfEngine: FutureSelfEngine;
   private cognitiveBus?: any;
 
   public setCognitiveControlBus(bus: any): void {
@@ -694,6 +696,7 @@ export class ApeService {
       repository: consRepo,
       memoryRepository: msRepo,
     });
+    this.futureSelfEngine = new FutureSelfEngine({ logger });
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);

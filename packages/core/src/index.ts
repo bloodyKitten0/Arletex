@@ -53,6 +53,7 @@ export * from './ape/habitsAndRoutinesEngine.js';
 export * from './ape/temperamentPersonalityEngine.js';
 export * from './ape/valuesMoralEngine.js';
 export * from './ape/selfEvaluationEfficacyEngine.js';
+export * from './ape/futureSelfEngine.js';
 export * from './ape/longTermDevelopmentEngine.js';
 export * from './ape/theoryOfMindEngine.js';
 export * from './ape/empathyPerspectiveEngine.js';
