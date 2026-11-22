@@ -70,6 +70,8 @@ export const EvolutionApprovalTokenSchema = z.object({
   id: z.string(),
   proposalId: z.string(),
   patchDigest: z.string(),
+  baseCommit: z.string().optional(),
+  nonce: z.string().optional(),
   approvedBy: z.string(),
   authorizedScope: z.string(),
   validFrom: z.string(),
@@ -90,6 +92,53 @@ export const SandboxEvaluationResultSchema = z.object({
   evaluatedAt: z.string(),
 });
 export type SandboxEvaluationResult = z.infer<typeof SandboxEvaluationResultSchema>;
+
+export const WorktreeSandboxResultSchema = z.object({
+  proposalId: z.string(),
+  success: z.boolean(),
+  worktreePath: z.string().optional(),
+  commandExecuted: z.string().optional(),
+  exitCode: z.number().optional(),
+  stdoutPreview: z.string().optional(),
+  stderrPreview: z.string().optional(),
+  durationMs: z.number(),
+  typecheckPassed: z.boolean(),
+  testsPassed: z.boolean(),
+  decision: z.enum([
+    'accept_proposal',
+    'reject_regression',
+    'reject_security_violation',
+    'sandbox_error',
+  ]),
+  reason: z.string(),
+  evaluatedAt: z.string(),
+});
+export type WorktreeSandboxResult = z.infer<typeof WorktreeSandboxResultSchema>;
+
+export const RealApplicationResultSchema = z.object({
+  proposalId: z.string(),
+  success: z.boolean(),
+  appliedVersion: z.number(),
+  baseCommit: z.string().optional(),
+  modifiedFiles: z.array(z.string()).default([]),
+  preChangeDigest: z.string(),
+  postChangeDigest: z.string(),
+  reason: z.string().optional(),
+  appliedAt: z.string(),
+});
+export type RealApplicationResult = z.infer<typeof RealApplicationResultSchema>;
+
+export const RealRollbackResultSchema = z.object({
+  proposalId: z.string(),
+  success: z.boolean(),
+  restoredDigest: z.string(),
+  expectedDigest: z.string(),
+  verifiedExactMatch: z.boolean(),
+  status: z.enum(['ROLLED_BACK', 'ROLLBACK_FAILED']),
+  reason: z.string().optional(),
+  rolledBackAt: z.string(),
+});
+export type RealRollbackResult = z.infer<typeof RealRollbackResultSchema>;
 
 export const EvolutionRollbackResultSchema = z.object({
   proposalId: z.string(),

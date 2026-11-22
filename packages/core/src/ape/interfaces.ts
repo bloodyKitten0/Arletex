@@ -1033,9 +1033,7 @@ export interface IExperientialStateRepository {
     toLifecycle: ExperientialStateLifecycle,
     reason: string,
   ): void;
-  listRecentTransitions(
-    limit?: number,
-  ): Array<{
+  listRecentTransitions(limit?: number): Array<{
     id: string;
     instanceId: string;
     stateId: string;
@@ -1045,4 +1043,3 @@ export interface IExperientialStateRepository {
     timestamp: string;
   }>;
 }
-

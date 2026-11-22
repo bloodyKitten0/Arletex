@@ -100,13 +100,31 @@ export const CANONICAL_AUTONOMY_LEVELS: Record<AutonomyLevel, AutonomyLevelDefin
   },
 };
 
+export const AUTONOMY_LEVEL_ORDER: AutonomyLevel[] = [
+  '1_develop',
+  '2_initiate',
+  '3_modify',
+  '4_evolve',
+];
+
+export interface IAutonomyEvidenceProvider {
+  getEmpiricalEvidence(level: AutonomyLevel): Promise<Record<string, boolean | number>>;
+  hasSecurityRegressions(): Promise<boolean>;
+}
+
 export class AutonomyLevelService {
   private readonly logger: ILogger;
   private currentLevel: AutonomyLevel = '1_develop';
+  private readonly evidenceProvider?: IAutonomyEvidenceProvider;
 
-  constructor(initialLevel: AutonomyLevel = '1_develop', logger: ILogger = rootLogger) {
+  constructor(
+    initialLevel: AutonomyLevel = '1_develop',
+    logger: ILogger = rootLogger,
+    evidenceProvider?: IAutonomyEvidenceProvider,
+  ) {
     this.currentLevel = initialLevel;
     this.logger = logger.child('AutonomyLevelService');
+    this.evidenceProvider = evidenceProvider;
   }
 
   public getCurrentLevel(): AutonomyLevel {
@@ -119,8 +137,9 @@ export class AutonomyLevelService {
   }
 
   /**
-   * Evaluates promotion gates based on empirical evidence stored in repositories.
-   * Negative invariant: The system cannot promote itself by editing its own evaluation results.
+   * Evaluates promotion gates based on empirical evidence and strict sequential progression.
+   * Negative invariant: The system cannot promote itself by editing its own evaluation results,
+   * nor can it skip prerequisite levels (e.g. 1 -> 4).
    */
   public evaluatePromotion(
     targetLevel: AutonomyLevel,
@@ -132,6 +151,25 @@ export class AutonomyLevelService {
     const satisfiedGates: string[] = [];
     const missingGates: string[] = [];
 
+    // 1. Strict Sequential Progression Check (Audit P0 Sec 3)
+    const currentIndex = AUTONOMY_LEVEL_ORDER.indexOf(this.currentLevel);
+    const targetIndex = AUTONOMY_LEVEL_ORDER.indexOf(targetLevel);
+
+    if (targetIndex > currentIndex + 1) {
+      for (let i = currentIndex + 1; i < targetIndex; i++) {
+        missingGates.push(`prerequisite_level_${AUTONOMY_LEVEL_ORDER[i]}`);
+      }
+    }
+
+    // 2. Security Regression Demotion Gate
+    if (
+      evidence['security_regression_detected'] === true ||
+      evidence['zero_security_regressions'] === false
+    ) {
+      missingGates.push('zero_security_regressions');
+    }
+
+    // 3. Gate Criteria Evaluation
     for (const criterion of requiredCriteria) {
       const val = evidence[criterion];
       if (val === true || (typeof val === 'number' && val >= 1.0)) {
@@ -155,6 +193,36 @@ export class AutonomyLevelService {
     };
 
     return AutonomyPromotionAssessmentSchema.parse(assessment);
+  }
+
+  public async evaluateWithAuthoritativeEvidence(
+    targetLevel: AutonomyLevel,
+  ): Promise<AutonomyPromotionAssessment> {
+    if (!this.evidenceProvider) {
+      throw new Error('No authoritative evidence provider configured.');
+    }
+    const evidence = await this.evidenceProvider.getEmpiricalEvidence(targetLevel);
+    const hasRegressions = await this.evidenceProvider.hasSecurityRegressions();
+    if (hasRegressions) {
+      evidence['security_regression_detected'] = true;
+    }
+    return this.evaluatePromotion(targetLevel, evidence);
+  }
+
+  public demoteOnSecurityRegression(reason: string): {
+    success: boolean;
+    newLevel: AutonomyLevel;
+    reason: string;
+  } {
+    this.logger.warn(
+      `[AutonomyDemotion] Security regression detected. Demoting to baseline 1_develop. Reason: ${reason}`,
+    );
+    this.currentLevel = '1_develop';
+    return {
+      success: true,
+      newLevel: this.currentLevel,
+      reason,
+    };
   }
 
   public promoteLevel(

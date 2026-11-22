@@ -7,6 +7,7 @@ export * from './hardware/hardwareProfileDetector.js';
 export * from './registry.js';
 export * from './modelRegistry.js';
 export * from './gateway.js';
+export * from './orchestration/specialistOrchestrator.js';
 
 // Backwards compatibility alias
 export { LlamaServerAdapter as LlamaServerGateway } from './adapters/llamaServerAdapter.js';

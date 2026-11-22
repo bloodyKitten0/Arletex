@@ -117,3 +117,6 @@ export * from './voice/ttsBackend.js';
 
 // WhatsApp Communication Subsystem (GoWA)
 export * from './communication/whatsAppAdapter.js';
+
+// Creator Directive Authority & Invariant Hierarchy
+export * from './directives/creatorDirectiveService.js';
