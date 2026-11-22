@@ -32,6 +32,7 @@ import {
   stopCurrentAudio,
   splitIntoSpeechChunks,
   playSpeechQueue,
+  StreamingVoicePlayer,
 } from '../../utils/mediaUtils';
 
 function parseToneAndText(raw: string) {
@@ -102,6 +103,7 @@ export const MainView: React.FC<MainViewProps> = ({
   const [showThoughts, setShowThoughts] = useState(false);
   const [memorySavedId, setMemorySavedId] = useState<string | null>(null);
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
+  const [voiceEngine, setVoiceEngine] = useState<'kokoro' | 'qwen3-tts'>('kokoro');
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -111,6 +113,8 @@ export const MainView: React.FC<MainViewProps> = ({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const lastSpokenMsgIdRef = useRef<string | null>(null);
+  const streamingPlayerRef = useRef<StreamingVoicePlayer | null>(null);
+  const didStreamSpeakRef = useRef<boolean>(false);
 
   const handleScroll = () => {
     if (!messagesContainerRef.current) return;
@@ -135,13 +139,18 @@ export const MainView: React.FC<MainViewProps> = ({
     }
   };
 
-  // Load persistent preference for voice
+  // Load persistent preference for voice and engine
   useEffect(() => {
     const loadPref = async () => {
       if (window.arletexApi?.getPreferences) {
         const res = await window.arletexApi.getPreferences();
-        if (res.success && res.data['voice_output_enabled'] === 'true') {
-          setVoiceEnabled(true);
+        if (res.success && res.data) {
+          if (res.data['voice_output_enabled'] === 'true') {
+            setVoiceEnabled(true);
+          }
+          if (res.data['voice_engine']) {
+            setVoiceEngine(res.data['voice_engine'] === 'qwen3-tts' ? 'qwen3-tts' : 'kokoro');
+          }
         }
       }
     };
@@ -158,6 +167,17 @@ export const MainView: React.FC<MainViewProps> = ({
     }
     if (window.arletexApi?.setPreference) {
       await window.arletexApi.setPreference('voice_output_enabled', String(nextVal));
+    }
+  };
+
+  // Toggle voice engine between Kokoro (fast) and Qwen3-TTS (neural)
+  const handleToggleVoiceEngine = async () => {
+    const nextEngine = voiceEngine === 'kokoro' ? 'qwen3-tts' : 'kokoro';
+    setVoiceEngine(nextEngine);
+    stopCurrentAudio();
+    setPlayingMessageId(null);
+    if (window.arletexApi?.setPreference) {
+      await window.arletexApi.setPreference('voice_engine', nextEngine);
     }
   };
 
@@ -185,6 +205,8 @@ export const MainView: React.FC<MainViewProps> = ({
             'arlecchino',
             tone,
             leadPaddingMs,
+            true,
+            voiceEngine,
           );
           return res.success && res.data ? res.data : {};
         },
@@ -209,7 +231,62 @@ export const MainView: React.FC<MainViewProps> = ({
     }
   }, [conversation?.id]);
 
-  // Play voice when assistant completion arrives if voice enabled
+  // Sentence-level streaming speech playback during generation
+  useEffect(() => {
+    if (!voiceEnabled) {
+      if (streamingPlayerRef.current) {
+        streamingPlayerRef.current.stop();
+        streamingPlayerRef.current = null;
+      }
+      return;
+    }
+
+    if (isGenerating) {
+      if (!streamingPlayerRef.current) {
+        didStreamSpeakRef.current = true;
+        streamingPlayerRef.current = new StreamingVoicePlayer({
+          synthesizeFn: async (chunkText, tone, leadPaddingMs) => {
+            const res = await window.arletexApi!.synthesizeSpeech(
+              chunkText,
+              'arlecchino',
+              tone,
+              leadPaddingMs,
+              true,
+              voiceEngine,
+            );
+            return res.success && res.data ? res.data : {};
+          },
+          onSpeakingChange: (isSpeaking) => {
+            if (isSpeaking) {
+              setPlayingMessageId('streaming');
+            } else {
+              setPlayingMessageId((prev) => (prev === 'streaming' ? null : prev));
+            }
+          },
+          onEnd: () => {
+            setPlayingMessageId((prev) => (prev === 'streaming' ? null : prev));
+          },
+          onError: (err) => {
+            console.warn('[StreamingTTS] Synthesis note:', err);
+            setPlayingMessageId((prev) => (prev === 'streaming' ? null : prev));
+          },
+        });
+      }
+      if (streamingText) {
+        streamingPlayerRef.current.feedText(streamingText);
+      }
+    }
+  }, [streamingText, isGenerating, voiceEnabled, voiceEngine]);
+
+  // When generation completes, flush remaining streaming text
+  useEffect(() => {
+    if (!isGenerating && streamingPlayerRef.current) {
+      streamingPlayerRef.current.finishStream(streamingText);
+      streamingPlayerRef.current = null;
+    }
+  }, [isGenerating]);
+
+  // Fallback auto-speak only if message wasn't already streamed
   useEffect(() => {
     if (!voiceEnabled || isGenerating || !messages.length) return;
     const lastMsg = messages[messages.length - 1];
@@ -220,7 +297,10 @@ export const MainView: React.FC<MainViewProps> = ({
       lastSpokenMsgIdRef.current !== lastMsg.id
     ) {
       lastSpokenMsgIdRef.current = lastMsg.id;
-      void speakText(lastMsg.content, lastMsg.id);
+      if (!didStreamSpeakRef.current) {
+        void speakText(lastMsg.content, lastMsg.id);
+      }
+      didStreamSpeakRef.current = false;
     }
   }, [messages, isGenerating, voiceEnabled]);
 
@@ -489,11 +569,47 @@ export const MainView: React.FC<MainViewProps> = ({
             }}
           />
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>
-              {conversation?.title || 'Active Dialogue & Reflection'}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                Arle
+              </span>
+              <button
+                type="button"
+                onClick={handleToggleVoiceEngine}
+                title={`Swap Voice Engine. Current: ${
+                  voiceEngine === 'qwen3-tts'
+                    ? 'Qwen3-TTS 1.7B Neural (Click to switch to Kokoro 82M Fast)'
+                    : 'Kokoro 82M + RVC Fast (Click to switch to Qwen3-TTS 1.7B Neural)'
+                }`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  fontSize: '10px',
+                  fontWeight: 600,
+                  fontFamily: 'var(--font-mono)',
+                  backgroundColor:
+                    voiceEngine === 'qwen3-tts'
+                      ? 'rgba(163, 113, 247, 0.15)'
+                      : 'rgba(56, 139, 253, 0.15)',
+                  color: voiceEngine === 'qwen3-tts' ? '#a371f7' : '#58a6ff',
+                  border: `1px solid ${
+                    voiceEngine === 'qwen3-tts'
+                      ? 'rgba(163, 113, 247, 0.4)'
+                      : 'rgba(56, 139, 253, 0.4)'
+                  }`,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <Sparkles size={11} />
+                <span>{voiceEngine === 'qwen3-tts' ? 'Qwen3-TTS 🧠' : 'Kokoro ⚡'}</span>
+              </button>
+            </div>
             <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-              Model:{' '}
+              {conversation?.title || 'Active Dialogue & Reflection'} • Model:{' '}
               {health?.modelLoaded?.split('/').pop()?.replace('.gguf', '') ||
                 'Qwen 2.5-14B Uncensored'}{' '}
               • Vulkan 780M
@@ -710,6 +826,28 @@ export const MainView: React.FC<MainViewProps> = ({
                     <span style={{ color: 'var(--accent)', fontWeight: 600 }}>
                       {isArleInitiated ? 'Arle (Initiated)' : 'Arle'}
                     </span>
+                    <button
+                      type="button"
+                      onClick={handleToggleVoiceEngine}
+                      title={`Swap Voice Engine (Current: ${
+                        voiceEngine === 'qwen3-tts' ? 'Qwen3-TTS' : 'Kokoro'
+                      })`}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '2px',
+                        padding: '1px 5px',
+                        borderRadius: '4px',
+                        fontSize: '9px',
+                        fontFamily: 'var(--font-mono)',
+                        backgroundColor: 'var(--bg-tertiary)',
+                        border: '1px solid var(--border-subtle)',
+                        color: voiceEngine === 'qwen3-tts' ? 'var(--accent)' : 'var(--success)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {voiceEngine === 'qwen3-tts' ? 'Qwen' : 'Kokoro'}
+                    </button>
                   </>
                 )}
                 <span>•</span>
@@ -946,12 +1084,50 @@ export const MainView: React.FC<MainViewProps> = ({
             >
               <Bot size={12} color="var(--accent)" />
               <span style={{ color: 'var(--accent)', fontWeight: 600 }}>Arle</span>
+              <button
+                type="button"
+                onClick={handleToggleVoiceEngine}
+                title={`Swap Voice Engine (Current: ${
+                  voiceEngine === 'qwen3-tts' ? 'Qwen3-TTS' : 'Kokoro'
+                })`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '2px',
+                  padding: '1px 5px',
+                  borderRadius: '4px',
+                  fontSize: '9px',
+                  fontFamily: 'var(--font-mono)',
+                  backgroundColor: 'var(--bg-tertiary)',
+                  border: '1px solid var(--border-subtle)',
+                  color: voiceEngine === 'qwen3-tts' ? 'var(--accent)' : 'var(--success)',
+                  cursor: 'pointer',
+                }}
+              >
+                {voiceEngine === 'qwen3-tts' ? 'Qwen' : 'Kokoro'}
+              </button>
               <span>•</span>
               <span style={{ color: 'var(--warning)', fontFamily: 'var(--font-mono)' }}>
                 {generationStats.tokensPerSecond > 0
                   ? `${generationStats.tokensPerSecond.toFixed(1)} t/s`
                   : 'generating...'}
               </span>
+              {playingMessageId === 'streaming' && (
+                <>
+                  <span>•</span>
+                  <span
+                    style={{
+                      color: 'var(--accent)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    <Volume2 size={12} /> Speaking...
+                  </span>
+                </>
+              )}
             </div>
             <div
               style={{

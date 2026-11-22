@@ -491,6 +491,7 @@ export const SynthesizeSpeechInputSchema = z.object({
   tone: z.string().optional(),
   leadPaddingMs: z.number().optional().default(0),
   useRvc: z.boolean().optional(),
+  engine: z.string().optional(),
   pad: z
     .object({
       valence: z.number(),

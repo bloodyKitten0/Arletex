@@ -2151,6 +2151,9 @@ export class ArletexBackendServer {
     if (key === 'active_model_name' && this.continuityManager) {
       this.continuityManager.setActiveInferenceModel(value);
     }
+    if (key === 'voice_engine') {
+      process.env['ARLE_VOICE_ENGINE'] = value;
+    }
   }
 
   // ==========================================
@@ -3894,8 +3897,15 @@ Rules:
         const resolvedTone =
           input.tone && input.tone !== 'auto' ? input.tone : apeModulation.vocalRegister;
 
+        const resolvedEngine =
+          input.engine ||
+          this.preferenceRepo.get('voice_engine') ||
+          process.env['ARLE_VOICE_ENGINE'] ||
+          'kokoro';
+
         const synthPayload = {
           ...input,
+          engine: resolvedEngine,
           tone: resolvedTone,
           pad: input.pad || apeMaster.affective.pad,
           emotion: input.emotion || dominantEmotion,

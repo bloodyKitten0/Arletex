@@ -27,9 +27,16 @@ export function blobToBase64(blob: Blob): Promise<string> {
 let activeAudioElement: HTMLAudioElement | null = null;
 let activeQueueId = 0;
 let cancelActivePlayback: (() => void) | null = null;
+let activeStreamingPlayer: StreamingVoicePlayer | null = null;
 
 export function stopCurrentAudio(): void {
   activeQueueId++;
+  if (activeStreamingPlayer) {
+    try {
+      activeStreamingPlayer.stop();
+    } catch {}
+    activeStreamingPlayer = null;
+  }
   if (cancelActivePlayback) {
     try {
       cancelActivePlayback();
@@ -280,5 +287,195 @@ export async function playSpeechQueue(
     if (queueId === activeQueueId && !isCancelled) {
       if (onEnd) onEnd();
     }
+  }
+}
+
+/**
+ * Streaming Voice Player — Pipelined sentence-level speech playback.
+ * Synthesizes and buffers audio chunks in real time as the assistant generates tokens,
+ * eliminating waiting time so the user hears Arle speak on the very first completed sentence.
+ */
+export class StreamingVoicePlayer {
+  private queueId: number;
+  private isCancelled = false;
+  private isStreamDone = false;
+  private audioQueue: HTMLAudioElement[] = [];
+  private isPlaying = false;
+  private activeAudio: HTMLAudioElement | null = null;
+  private processedCharIndex = 0;
+  private activeTone: string | undefined = undefined;
+  private chunkCount = 0;
+  private synthesizeFn: (
+    chunkText: string,
+    tone?: string,
+    leadPaddingMs?: number,
+  ) => Promise<{ audioBase64?: string | null }>;
+  private onSpeakingChange?: (isSpeaking: boolean) => void;
+  private onEnd?: () => void;
+  private onError?: (err: any) => void;
+  private activeSynthesesCount = 0;
+
+  constructor(options: {
+    synthesizeFn: (
+      chunkText: string,
+      tone?: string,
+      leadPaddingMs?: number,
+    ) => Promise<{ audioBase64?: string | null }>;
+    onSpeakingChange?: (isSpeaking: boolean) => void;
+    onEnd?: () => void;
+    onError?: (err: any) => void;
+  }) {
+    stopCurrentAudio();
+    this.queueId = ++activeQueueId;
+    this.synthesizeFn = options.synthesizeFn;
+    this.onSpeakingChange = options.onSpeakingChange;
+    this.onEnd = options.onEnd;
+    this.onError = options.onError;
+    activeStreamingPlayer = this;
+
+    // Pre-warm audio sink
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      if (ctx.state === 'suspended') {
+        void ctx.resume();
+      }
+    } catch {}
+  }
+
+  public feedText(fullStreamingText: string): void {
+    if (this.isCancelled || this.queueId !== activeQueueId) return;
+
+    const unparsed = fullStreamingText.slice(this.processedCharIndex);
+    if (!unparsed) return;
+
+    // Split on sentence-ending punctuation or line breaks
+    const sentenceEndRegex = /([^.!?\n]+[.!?\n]+)(?:\s+|$)/g;
+    let match: RegExpExecArray | null;
+    let lastMatchEnd = 0;
+
+    while ((match = sentenceEndRegex.exec(unparsed)) !== null) {
+      const rawChunk = match[1];
+      if (rawChunk && rawChunk.trim()) {
+        this.dispatchChunk(rawChunk.trim());
+      }
+      lastMatchEnd = sentenceEndRegex.lastIndex;
+    }
+
+    if (lastMatchEnd > 0) {
+      this.processedCharIndex += lastMatchEnd;
+    }
+  }
+
+  public finishStream(finalFullText?: string): void {
+    if (this.isCancelled || this.queueId !== activeQueueId) return;
+    this.isStreamDone = true;
+
+    if (finalFullText && finalFullText.length > this.processedCharIndex) {
+      const remainder = finalFullText.slice(this.processedCharIndex).trim();
+      if (remainder) {
+        this.dispatchChunk(remainder);
+        this.processedCharIndex = finalFullText.length;
+      }
+    }
+
+    this.checkIfAllCompleted();
+  }
+
+  private dispatchChunk(rawText: string): void {
+    const toneMatch = rawText.match(/\[(?:tone|emotion|register):\s*([^\]]+)\]/i);
+    if (toneMatch && toneMatch[1]) {
+      this.activeTone = toneMatch[1].trim().toLowerCase();
+      rawText = rawText.replace(/\[(?:tone|emotion|register):\s*[^\]]+\]/gi, '').trim();
+    }
+
+    const clean = cleanTextForSpeech(rawText);
+    if (!clean || clean.length < 2) return;
+
+    const isFirst = this.chunkCount === 0;
+    this.chunkCount++;
+    const leadPaddingMs = isFirst ? 250 : 0;
+    const tone = this.activeTone;
+
+    this.activeSynthesesCount++;
+    this.onSpeakingChange?.(true);
+
+    this.synthesizeFn(clean, tone, leadPaddingMs)
+      .then((res) => {
+        this.activeSynthesesCount--;
+        if (this.isCancelled || this.queueId !== activeQueueId) return;
+
+        if (res?.audioBase64) {
+          const dataUrl = res.audioBase64.startsWith('data:')
+            ? res.audioBase64
+            : `data:audio/wav;base64,${res.audioBase64}`;
+          const audio = new Audio(dataUrl);
+          this.audioQueue.push(audio);
+          this.playNext();
+        } else {
+          this.checkIfAllCompleted();
+        }
+      })
+      .catch((err) => {
+        this.activeSynthesesCount--;
+        if (this.onError && !this.isCancelled && this.queueId === activeQueueId) {
+          this.onError(err);
+        }
+        this.checkIfAllCompleted();
+      });
+  }
+
+  private playNext(): void {
+    if (this.isCancelled || this.queueId !== activeQueueId) return;
+    if (this.isPlaying) return;
+
+    if (this.audioQueue.length === 0) {
+      this.checkIfAllCompleted();
+      return;
+    }
+
+    const audio = this.audioQueue.shift()!;
+    this.isPlaying = true;
+    this.activeAudio = audio;
+    this.onSpeakingChange?.(true);
+
+    const onDone = () => {
+      this.isPlaying = false;
+      this.activeAudio = null;
+      this.playNext();
+    };
+
+    audio.onended = onDone;
+    audio.onerror = onDone;
+    audio.play().catch(onDone);
+  }
+
+  private checkIfAllCompleted(): void {
+    if (
+      this.isStreamDone &&
+      this.activeSynthesesCount === 0 &&
+      this.audioQueue.length === 0 &&
+      !this.isPlaying
+    ) {
+      this.onSpeakingChange?.(false);
+      this.onEnd?.();
+      if (activeStreamingPlayer === this) {
+        activeStreamingPlayer = null;
+      }
+    }
+  }
+
+  public stop(): void {
+    this.isCancelled = true;
+    if (this.activeAudio) {
+      try {
+        this.activeAudio.pause();
+        this.activeAudio.src = '';
+        this.activeAudio.currentTime = 0;
+      } catch {}
+      this.activeAudio = null;
+    }
+    this.audioQueue = [];
+    this.isPlaying = false;
+    this.onSpeakingChange?.(false);
   }
 }
