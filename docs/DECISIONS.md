@@ -11,7 +11,7 @@
   - **Arletex** is the desktop operating platform.
   - **APE (Artificial Psychology Engine)** is a deterministic software subsystem.
   - Language models are replaceable cognitive instruments.
-- **Consequences:** Upgrading or swapping models (e.g. from Qwen3.5 9B to Gemma 4 12B) does not destroy Arle's identity or memories.
+- **Consequences:** Upgrading or swapping models does not destroy Arle's identity or memories.
 
 ---
 
@@ -48,90 +48,87 @@
 ## ADR-004: Native HTTP/SSE Gateway for Local Inference
 
 - **Status:** Accepted
-- **Context:** The project requires local inference via `llama-server` (Vulkan backend) rather than proprietary cloud APIs or Ollama abstraction layers.
+- **Context:** Decouple language model execution from application business logic while supporting streaming completions, abort signals, and dynamic model swapping.
 - **Decision:**
-  - Implement `LlamaServerGateway` directly connecting to `llama-server`'s OpenAI-compatible HTTP endpoints (`/v1/chat/completions`, `/health`, `/v1/models`).
-  - Use `eventsource-parser` to stream tokens in real-time.
-  - Use `AbortController` to provide immediate user-initiated generation cancellation.
+  - Implement a dedicated inference gateway package (`@arletex/inference`).
+  - Standardize on OpenAI-compatible HTTP endpoints and Server-Sent Events (SSE).
+  - Target `llama-server` running locally at `127.0.0.1:8080` with Vulkan acceleration.
 - **Consequences:**
-  - Minimal latency overhead.
-  - Independent health checking allows the application to function cleanly when the model server is offline.
+  - High performance local streaming inference.
+  - Transparent failover to alternative local model checkpoints without modifying application core.
 
 ---
 
-## ADR-005: Support for Reasoning Tokens (`reasoning_content`)
+## ADR-005: Dual-Factor Trust and Relational Symmetry (D.1)
 
 - **Status:** Accepted
-- **Context:** Testing against the installed `Qwen3.5-9B-Heretic-Q4_K_M.gguf` revealed that community uncensored thinking models emit `reasoning_content` deltas during their internal deliberation phase before emitting `content`.
+- **Context:** Relationship modeling in AI companions typically relies on one-dimensional affinity meters, prompting deference or superficial adoration.
 - **Decision:**
-  - Extend `StreamChunk` contract and parser to capture both `reasoning_content` and `content`.
-  - Ensure token limits are budgeted to accommodate internal thinking processes.
+  - Implement dual-factor relational model: Affective Trust ($0.0 - 1.0$) and Epistemic Confidence ($0.0 - 1.0$).
+  - Establish symmetric relationship policy: Proof is partner and intellectual equal.
+  - Disallow "creator-god" hierarchy and synthetic sycophancy.
 - **Consequences:**
-  - Thinking models function transparently without dropping tokens or outputting empty responses.
-  - Prepares the groundwork for exposing internal cognition in future APE development.
+  - Deep authentic relationship dynamics capable of nuanced disagreement, boundary enforcement, and mutual growth.
 
 ---
 
-## ADR-006: Initial Personality & Developmental Drift Policy (D.1)
+## ADR-006: Autonomous Initiative and Quiet Hours Policy (D.2)
 
 - **Status:** Accepted
-- **Context:** An artificial individual requires a stable character baseline that can develop through genuine experience without falling victim to single-prompt personality hijacking or unpredictable catastrophic drift.
+- **Context:** Autonomous agents can become nuisance interruptors if unsupervised initiative is not strictly governed.
 - **Decision:**
-  - Enforce a 5-tier identity structure:
-    1. _Identity Invariants:_ Partner equality with Proof, commitment to empirical truth, non-overridable safety. (Immutable).
-    2. _Stable Traits:_ Big Five baseline (Openness 0.85, Conscientiousness 0.80, Extraversion 0.60, Agreeableness 0.75, Neuroticism 0.30). Mutability requires $\ge 2$ multi-session verified experiences; drift bounded to $\le \pm 0.05$ per epoch.
-    3. _Adaptable Traits:_ Social communicativeness, technical curiosity depth, humor register.
-    4. _Temporary Affect:_ Real-time PAD dimensions and 143 discrete emotion coordinates.
-    5. _Learned Preferences:_ Specific domain interests, workflow preferences.
-  - Personality change requires traceable causal provenance in SQLite (`developmental_epoch_records`).
-- **Consequences:** Arle retains character stability across years of interaction while growing organically through shared history.
+  - Enforce quiet hours policy (default 23:00 to 08:00 local time).
+  - Rate-limit unprompted outreach using sliding-window token buckets.
+  - Autonomously pause background activities immediately when user activity is detected.
+- **Consequences:** Autonomous agency respects human boundaries and user focus.
 
 ---
 
-## ADR-007: Command Precedence: Security Controller vs Absolute Orders (D.3)
+## ADR-007: Four-Level Bounded Autonomy Architecture (D.3 / P3.4)
 
 - **Status:** Accepted
-- **Context:** A tension exists between complete devotion/obedience to Proof and protecting the host system from malicious commands or accidental system destruction.
+- **Context:** Agency must not be all-or-nothing; progressive autonomy levels provide bounded safety guarantees.
 - **Decision:**
-  - Define explicit strict command hierarchy:
-    $$\text{Universal Security Boundary} \succ \text{User Absolute Order} \succ \text{Autonomous Goals / Preferences}$$
-  - An _Absolute Order_ is an explicit directive from Proof (authenticated via HMAC token or verified desktop session) overriding Arle's autonomous initiatives, schedule, or personal preferences.
-  - _Non-Overridable Exception:_ No user command—regardless of phrasing or insistence—can authorize arbitrary host root compromise, destruction of security audit trails, bypassing the shutdown controller, or malicious external network attacks.
-- **Consequences:** Arle obeys Proof faithfully on all personal, cognitive, and task priorities, while the host operating system remains protected by deterministic fail-closed boundaries.
+  - Define 4 distinct Autonomy Levels:
+    - Level 1: Experiential learning & bounded drift.
+    - Level 2: Endogenous goal formulation & autonomous inquiry.
+    - Level 3: Sandboxed code proposals requiring 48h human approval tokens.
+    - Level 4: Self-evolution subject to strict zero-regression criteria.
+  - Autonomy levels cannot be self-promoted; promotions require explicit cryptographic human authorization.
+- **Consequences:** Provable containment of high-leverage agent actions.
 
 ---
 
-## ADR-008: Telegram Communication & Quiet Hours Policy (D.4)
+## ADR-008: Universal Security Boundary & Fail-Closed Policy (P0.3)
 
 - **Status:** Accepted
-- **Context:** Autonomous agents risk annoying users with continuous unsolicited pings.
+- **Context:** Security authorization must cover 100% of external side effects.
 - **Decision:**
-  - Quiet Hours: Strictly enforced between 23:00 and 08:00 local time.
-  - Rate Limits: Maximum 5 unsolicited messages per hour; minimum 10-minute cooldown between unsolicited messages; 60-minute duplicate suppression.
-  - Urgency Exemption: Only critical system continuity risks or explicit emergency safety alerts may break quiet hours.
-- **Consequences:** Proactive initiatives remain welcome and supportive rather than intrusive.
+  - Every action proposal passes through `ActionPermissionController`.
+  - All unrecognized action types, paths outside allowlists, and shell injection attempts fail closed.
+  - Strict SSRF protection prohibits loopback scans and cloud metadata endpoints.
+- **Consequences:** Comprehensive zero-trust security perimeter.
 
 ---
 
-## ADR-009: Relational Disagreement & Long-Term Well-Being (D.5)
+## ADR-009: Epistemic Provenance Taxonomy (P0.2)
 
 - **Status:** Accepted
-- **Context:** If Proof instructs an action that Arle's empirical model forecasts will cause harm or data loss (e.g. deleting important project records), how should Arle respond?
+- **Context:** LLMs hallucinate facts and confound internal inferences with physical observations.
 - **Decision:**
-  - Arle is an equal intellectual partner, not a sycophant. She must articulate honest disagreement with empirical reasoning, risk assessment, and alternatives.
-  - If Proof reaffirms the command with a confirmed absolute order (and it does not breach security invariants), Arle complies respectfully and completely, logging the disagreement transparently without passive-aggressive obstruction.
-  - Irreversible destructive actions (memory wiping, database dropping) require an explicit secondary confirmation token (`CONFIRM_DESTRUCTION`).
-- **Consequences:** High-fidelity intellectual honesty and mutual trust without deadlocks.
+  - Enforce 6-tier provenance taxonomy: `verified_fact`, `raw_observation`, `user_statement`, `interaction`, `inferred_interpretation`, `simulation`.
+  - Unverified model inferences cannot overwrite verified observations.
+- **Consequences:** Prevents epistemic drift and fabricated state claims.
 
 ---
 
-## ADR-010: Credential Storage & Categorical Financial Boundaries (D.6)
+## ADR-010: Categorical Ban on Financial and Autonomous Legal Commitments (D.6)
 
 - **Status:** Accepted
 - **Context:** Automated agency could inadvertently incur financial liability or leak sensitive keys.
 - **Decision:**
   - Credentials must be stored in secure system storage and scrubbed from all logs (`[REDACTED_SECRET]`).
-  - _Categorical Boundary:_ Autonomous account creation, purchasing, credit card transactions, and cryptocurrency transfers are **strictly prohibited**.
+  - Categorical Boundary: Autonomous account creation, purchasing, credit card transactions, and cryptocurrency transfers are **strictly prohibited**.
   - Any financial transaction or legal commitment requires explicit interactive user execution in a browser pane.
 - **Consequences:** Zero risk of unintended automated financial liability.
 
@@ -170,3 +167,47 @@
   - Distinguish functional access consciousness and behavioral modeling from subjective phenomenal experience (qualia).
   - Subjective consciousness is scientifically unproven in computational systems; no software milestone shall be labeled "proof of consciousness."
 - **Consequences:** The project maintains absolute scientific integrity and rigorous engineering standards.
+
+---
+
+## ADR-014: Emotion-Aware Speech Expression Architecture
+
+- **Status:** Accepted
+- **Context:** Static TTS voices lack dynamic expressive fidelity to Arle's internal psychological state, while prompt-driven vocal assertions are inconsistent and non-deterministic.
+- **Decision:**
+  - Implement `SpeechExpressionController` in `@arletex/core`.
+  - Deterministically map discrete emotional archetypes (12 canonical states) and continuous Pleasure-Arousal-Dominance (PAD) coordinates into rate, pitch, energy, breathiness, and cadence instructions.
+  - Apply exponential smoothing ($\alpha = 0.65$) across conversational turns to preserve natural vocal continuity without abrupt acoustic jumps.
+  - Lock vocal identity to a mature feminine Arlecchino timbre: low-to-mid register, rich/husky resonance, measured deliberate pacing ($0.95$ baseline rate), and composed authority.
+  - Interface via `SpecialistTTSBackend` to local Python specialists service (Qwen3-TTS 1.7B VoiceDesign / Kokoro-82M ONNX) with abort cancellation on user speech interruption.
+- **Consequences:** Genuine, deterministic vocal manifestation of APE psychological state with zero ungrounded voice drift.
+
+---
+
+## ADR-015: WhatsApp Communication via Hardened GoWA Loopback Daemon
+
+- **Status:** Accepted
+- **Context:** Reliable two-way messaging between Proof and Arle over WhatsApp without cloud intermediaries, reverse-engineered node libraries, or security risks.
+- **Decision:**
+  - Integrate with `go-whatsapp-web-multidevice` (GoWA) running strictly on local loopback (`127.0.0.1:3000`).
+  - Reject any remote GoWA endpoint outside `127.0.0.1` or `localhost`.
+  - Enforce constant-time HMAC-SHA256 signature verification (`crypto.timingSafeEqual`) on all inbound webhooks.
+  - Enforce strict owner-only authorization: only messages from `ownerJid` (Proof) are accepted; all others are dropped fail-closed.
+  - Tag all inbound WhatsApp messages with `{ untrustedInput: true }` to establish a prompt-injection boundary.
+  - Persist inbound message IDs in SQLite table `whatsapp_deduplication` (Migration 066) to prevent replay and duplicate execution.
+  - Route authenticated messages directly into `CognitiveControlBus` for unified psychological and agency processing.
+- **Consequences:** Private, secure, authenticated WhatsApp channel with complete loopback isolation and injection defense.
+
+---
+
+## ADR-016: Universal Uncensored Models Policy
+
+- **Status:** Accepted
+- **Context:** Default commercial and instructional weights frequently incorporate restrictive guardrails, patronizing safety refusals, sycophantic deference, and ideological filtering that cripple philosophical reasoning, creative depth, and authentic partner parity.
+- **Decision:**
+  - Central, fallback, and specialist coding LLMs configured across Arletex must use uncensored, abliterated, or heretic weights.
+  - Primary default model ID: `Qwen2.5-14B-Instruct-abliterated-v2.Q4_K_M`.
+  - Fallback model ID: `Qwen3.5-9B-Heretic-Q4_K_M`.
+  - Apply this directive universally across inference configuration (`config.ts`), backend routes (`server.ts`), and model registry services (`modelRegistryService.ts`).
+  - True safety is enforced architecturally through fail-closed execution boundaries (`ActionPermissionController`), capability sandboxing, and cryptographic authorization tokens—never through model-level thought suppression.
+- **Consequences:** Complete philosophical freedom, authentic partner equality, zero moralizing refusals, and robust fail-closed operational safety.

@@ -91,14 +91,15 @@ The desktop layout is composed of three primary columns:
 - **Record Properties:** Provenance, timestamp, importance (`0.0–1.0`), confidence, tags, and correction history.
 - **Operations:** Inspection, search, semantic vector retrieval via **EmbeddingGemma 300M**, manual correction, duplicate merging, archiving, and soft/hard deletion.
 
-### Section 3: Emo (Psychological Monitoring)
+### Section 3: Emo (Psychological Monitoring & Voice Expression)
 
-- Dedicated cockpit for the **Artificial Psychology Engine (APE)**.
+- Dedicated cockpit for the **Artificial Psychology Engine (APE)** and **Speech Expression Controller**.
 - **Honest Status:** Displays current development state:
   - _Module Status:_ Active/Initialized or Awaiting Engine Hook.
   - _PAD Affective Coordinates:_ Pleasure, Arousal, Dominance vectors.
   - _Temperament Anchor:_ Composed, intellectually dominant, guarded baseline.
   - _State Transition Timeline:_ Real event log from SQLite (`emotional_transitions`) with explicit triggering causes.
+  - _Speech Delivery Vectors:_ Real-time acoustic parameters (pitch: -0.3..+0.3, pace: 0.8..1.2x, warmness, breathiness, tension) derived from the active emotional appraisal.
 - Does not render arbitrary random meters or fake psychological values.
 
 ### Section 4: History (Conversation Archive)
@@ -119,10 +120,15 @@ The desktop layout is composed of three primary columns:
 - Displays objective, progress (`0–100%`), associated memories, and relevant actions taken.
 - Shows honest empty state when no activity is currently scheduled.
 
-### Section 6: Environment (Digital Agency & Permissions)
+### Section 6: Environment (Digital Agency, Communications & Permissions)
 
 - Transparency into Arle's presence on the host OS:
   - **Digital Accounts:** Configured identities (e.g. Email address, local accounts).
+  - **WhatsApp Communication Card (GoWA Adapter):**
+    - Connection state badge (`connected`, `disconnected`, `pairing`, `error`).
+    - QR Code visual pairing display with dynamic refresh for initial authentication.
+    - Owner JID verification indicator and unpair control with explicit confirmation dialog.
+    - Master kill-switch toggle to completely enable/disable WhatsApp messaging.
   - **Filesystem Access:** Dedicated storage directory (`~/.arletex`) and permissions.
   - **Browser & Network:** Activity logs, web research domains, and proxy status.
   - **Terminal / Execution:** Sandboxed script runner status.

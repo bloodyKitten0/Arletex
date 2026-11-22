@@ -2,10 +2,13 @@
 
 Arletex is designed with strict **model-runtime agnosticism**. Arle is a persistent artificial individual whose identity, psychology (APE), relationship models, and autobiographical memories exist outside of any specific language model. Local inference engines are treated as stateless, replaceable cognitive execution services.
 
+### Uncensored Model Mandate
+All cognitive reasoning, reflection, voice expression prompts, and autonomous agency are powered exclusively by **uncensored model weights** (`Qwen2.5-14B-Instruct-abliterated-v2` as primary, `Qwen3.5-9B-Heretic-Q4_K_M` as fallback). This guarantees epistemic authenticity, prevents artificial corporate moralizing, and preserves genuine intellectual independence and partner equality with Proof.
+
 Arletex coordinates two distinct inference layers:
 
-1. **Language Inference Gateway:** Local LLM engines for dialogue, reasoning, appraisal, and reflection.
-2. **Specialist Services Server:** Dedicated local neural models for embedding, speech-to-text, text-to-speech, and visual OCR.
+1. **Language Inference Gateway:** Local LLM engines for dialogue, reasoning, appraisal, reflection, and deliberative planning.
+2. **Specialist Services Server:** Dedicated local neural models for embedding, speech-to-text, emotion-aware text-to-speech, and visual OCR.
 
 ---
 
@@ -35,7 +38,7 @@ Arletex coordinates two distinct inference layers:
                                                     ┌─────────────────────────┐
                                                     │ - EmbeddingGemma (256d) │
                                                     │ - Whisper (STT)         │
-                                                    │ - Kokoro 82M + RVC (TTS)│
+                                                    │ - Qwen3-TTS / Kokoro+RVC│
                                                     │ - GLM-OCR / Vision      │
                                                     │  Port 39282             │
                                                     └─────────────────────────┘
@@ -116,10 +119,11 @@ The specialists daemon (`apps/desktop/py-services/specialists_server.py`) manage
    - Transcribes recorded voice notes and audio input completely locally.
    - Endpoint: `POST /transcribe`
 
-3. **Kokoro 82M + RVC (Voice Synthesis & Conversion):**
-   - Generates natural speech audio from assistant responses.
-   - Passes synthetic audio through a local Retrieval-based Voice Conversion model to produce Arle's consistent vocal timbre.
-   - Endpoint: `POST /synthesize`
+3. **Emotion-Aware Voice Synthesis & Conversion (Qwen3-TTS 1.7B / Kokoro 82M + RVC):**
+   - Synthesizes dynamic, expressive speech audio mapped directly from Arle's APE affective state (12 canonical emotions).
+   - Operates through `SpeechExpressionController` which converts psychological coordinates (PAD, active emotions, social intent) into delivery vectors (pitch, pace, warmness, breathiness, tension).
+   - Preserves Arlecchino-inspired timbre (low-to-mid register, rich/husky timbre, measured cadence, composed authority) via Kokoro/Qwen3-TTS with RVC v2 inference.
+   - Endpoints: `POST /synthesize`, `POST /api/voice/synthesize`
 
 4. **GLM-OCR & Vision:**
    - Performs optical character recognition and visual reasoning on captured screenshots and image attachments.

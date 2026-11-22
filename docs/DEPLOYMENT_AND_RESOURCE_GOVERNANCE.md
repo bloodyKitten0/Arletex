@@ -46,9 +46,14 @@ Arletex is deployed entirely offline and locally on the ROG Ally X target hardwa
    - PyTorch / Transformers / ONNX microservice (`specialists_server.py`).
    - Semantic Embeddings: `embeddinggemma-300m` (384-dim).
    - Audio Transcription (STT): `whisper-small`.
-   - Voice Synthesis (TTS): `kokoro-82m` with dynamic PAD emotional modulation.
+   - Voice Synthesis (TTS): `kokoro-82m` with dynamic PAD emotional modulation (or Qwen3-TTS 1.7B VoiceDesign).
    - Voice Conversion: `rvc-arlecchino` (Applio checkpoint).
    - Optical Character Recognition (OCR): `glm-ocr-0.9b` (multimodal vision template).
+4. **GoWA WhatsApp Adapter** (`127.0.0.1:3000` / loopback):
+   - Standalone Go binary (`go-whatsapp-web-multidevice` v1.2.0) running locally without Docker.
+   - SQLite session persistence (`gowa.db`), local REST API with `Basic` authorization.
+   - Constant-time HMAC-SHA256 signature verification for inbound webhooks (`/api/whatsapp/webhook`).
+   - Strict owner authorization (`ownerJid`), outbound rate limiting, and zero conversation leaks.
 
 ---
 

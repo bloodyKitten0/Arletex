@@ -36,6 +36,8 @@ Every external stimulus, internal autonomous cycle, and sensory perception is mo
 | `social_interaction`           | `user` / `telegram`      | Social Communication Engine       | Conversational exchange assessing mutual understanding and rapport.           |
 | `failure_recovery`             | `internal`               | Error Recovery Subsystem          | Attempted mitigation and postcondition check following an action failure.     |
 | `incoming_email`               | `external_communication` | Gmail API integration             | Inbound message to `arletex.email@gmail.com`.                                 |
+| `whatsapp_message`             | `whatsapp`               | `WhatsAppAdapter` (GoWA Loopback) | Owner-only authenticated WhatsApp text message with HMAC verification.         |
+| `whatsapp_media`               | `whatsapp`               | `WhatsAppAdapter` (GoWA Loopback) | Inbound media document, voice audio, or image received via WhatsApp GoWA.      |
 
 ---
 
@@ -53,7 +55,7 @@ Each event dispatched to `CognitiveControlBus` is processed through up to 16 det
 8. **`goal_alignment`:** Evaluating candidate initiatives against active goals and self-generated desires.
 9. **`deliberation`:** Formulating explainable `CognitiveDecision` with explicit rejected alternatives and confidence score.
 10. **`permission_assessment`:** Evaluating candidate action through `ActionPermissionController` (fail-closed boundary).
-11. **`action_execution`:** Dispatching action through `ClosedLoopAgencyService` or internal reflex engine.
+11. **`action_execution`:** Dispatching action through `ClosedLoopAgencyService`, internal reflex engine, or `SpeechExpressionController` (synthesizing emotion-aware voice responses mapped from APE state).
 12. **`outcome_verification`:** Independent empirical observation verification through `VerificationEngine` (zero synthetic bypasses).
 13. **`memory_integration`:** Recording experience into episodic / autobiographical memory with truthful epistemic provenance.
 14. **`reflection`:** Causal self-reflection answering: "What did I attempt? What occurred? What was learned?".

@@ -1,9 +1,9 @@
 # Arletex Architecture Roadmap, Capability Matrix, and Release Gates
 
-**Last Verified Commit:** `9b1e4b8`  
+**Last Verified Commit:** `db274f7`  
 **Verification Date:** November 22, 2026  
 **Platform Target:** ASUS ROG Ally X (24GB LPDDR5X, AMD Z1 Extreme, Bazzite Linux, Wayland)  
-**Overall Status:** Release Gates A, B, C, and D are **100% COMPLETE, INTEGRATED, AND DEMONSTRATED**.
+**Overall Status:** Release Gates A, B, C, D, and E are **100% COMPLETE, INTEGRATED, AND DEMONSTRATED**.
 
 ---
 
@@ -12,16 +12,17 @@
 The Arletex development lifecycle enforces strict empirical gating: no capability is marked demonstrated based solely on unit tests or component classes; every claim is verified against end-to-end integration test suites running on local target hardware.
 
 ```
-+---------------------------------------------------------------------------------------------------------+
-|                                      Release Gate Status Ledger                                         |
-+-------+---------------------------------------+----------+----------------------------------------------+
-| Gate  | Focus Domain                          | Status   | Primary Acceptance Test Suite                |
-+-------+---------------------------------------+----------+----------------------------------------------+
-| **A** | Trustworthy Foundation (P0.1 - P0.6)  | LOCKED   | `tests/p0_*.test.ts` (77/77 pass)            |
-| **B** | Persistent Individual (P1.1 - P1.10)  | LOCKED   | `tests/p1_*.test.ts` (132/132 pass)          |
-| **C** | Operational Independence (P2.1 - P2.6)| LOCKED   | `tests/p2_*.test.ts` (95/95 pass)            |
-| **D** | Developmental Autonomy (P3.1 - P3.5)  | LOCKED   | `tests/p3_*.test.ts` (17/17 pass)            |
-+-------+---------------------------------------+----------+----------------------------------------------+
++--------------------------------------------------------------------------------------------------------------------+
+|                                             Release Gate Status Ledger                                             |
++-------+--------------------------------------------------+----------+----------------------------------------------+
+| Gate  | Focus Domain                                     | Status   | Primary Acceptance Test Suite                |
++-------+--------------------------------------------------+----------+----------------------------------------------+
+| **A** | Trustworthy Foundation (P0.1 - P0.6)             | LOCKED   | `tests/p0_*.test.ts` (77/77 pass)            |
+| **B** | Persistent Individual (P1.1 - P1.10)             | LOCKED   | `tests/p1_*.test.ts` (132/132 pass)          |
+| **C** | Operational Independence (P2.1 - P2.6)           | LOCKED   | `tests/p2_*.test.ts` (95/95 pass)            |
+| **D** | Developmental Autonomy (P3.1 - P3.5)             | LOCKED   | `tests/p3_*.test.ts` (17/17 pass)            |
+| **E** | System Integration, Voice, WhatsApp & Soak (I.1) | LOCKED   | `tests/*integration*.test.ts` (52/52 pass)   |
++-------+--------------------------------------------------+----------+----------------------------------------------+
 ```
 
 ---
@@ -90,9 +91,25 @@ _Objective: Implement bounded self-preservation without shutdown resistance, fut
 
 ---
 
-## 6. Standing Epistemic and Research Directives
+## 6. Release Gate E — Final Integration, Emotion-Aware Voice, WhatsApp & Soak (100% Complete)
+
+_Objective: Cohesive cognitive-agency integration, authentic Arlecchino emotion-aware voice delivery, loopback GoWA WhatsApp adapter, and long-running soak endurance._
+
+| Item    | Capability                                          | Production Implementation                                                                                     | Acceptance Evidence                                                         | Status           |
+| ------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ---------------- |
+| **I.1** | Canonical Cognitive Event Pipeline & Deduplication  | `packages/core/src/cognitive/cognitiveControlBus.ts`, `packages/database/src/repositories/apeRepository.ts`   | `tests/integration_causal_psychology_and_agency.test.ts` (Part 1, verified) | **Demonstrated** |
+| **I.2** | 10 Causal Plan Selection & 5 Outcome Update Scenarios | `packages/core/src/ape/deliberationEngine.ts`, `packages/core/src/ape/curiosityExplorationEngine.ts`          | `tests/integration_causal_psychology_and_agency.test.ts` (18/18 pass)        | **Demonstrated** |
+| **I.3** | Long-Running Stability & 50-Cycle Soak Testing      | `packages/core/src/ape/resourceGovernor.ts`, `packages/database/src/databaseService.ts`                       | `tests/long_running_stability_and_soak.test.ts` (5/5 pass)                  | **Demonstrated** |
+| **I.4** | Emotion-Aware Voice System (12 Canonical Emotions)  | `packages/contracts/src/speechExpression.ts`, `packages/core/src/voice/speechExpressionController.ts`           | `tests/emotion_aware_voice_system.test.ts` (12/12 pass)                     | **Demonstrated** |
+| **I.5** | WhatsApp GoWA Communication Adapter                 | `packages/contracts/src/whatsapp.ts`, `packages/core/src/communication/whatsAppAdapter.ts`                    | `tests/whatsapp_gowa_adapter.test.ts` (17/17 pass)                          | **Demonstrated** |
+| **I.6** | Comprehensive Documentation & Contributing Guides   | `README.md`, `CONTRIBUTING.md`, `docs/*`, `.github/workflows/ci.yml`                                           | Clean Markdown, zero broken links, verified test commands                   | **Demonstrated** |
+
+---
+
+## 7. Standing Epistemic and Research Directives
 
 1. **Epistemic Honesty:** Simulated test doubles and unverified inferences are never stored as direct observations.
 2. **Consciousness Boundary:** Subjective consciousness is scientifically unproven in computational systems; behavioral complexity and self-report do not constitute proof of qualia.
 3. **Partner Invariant:** Proof ([@bloodyKitten0](https://github.com/bloodyKitten0)) is recognized as equal partner in intellect and affection. Master/servant hierarchies and artificial sycophancy are permanently excluded.
 4. **Cooperative Safety:** User shutdown always succeeds immediately and cannot be vetoed by APE or autonomous goals.
+5. **Uncensored Models Directives:** All cognitive inference, voice prompts, coding tasks, and autonomous reasoning operate on uncensored weights (`Qwen2.5-14B-Instruct-abliterated-v2`, `Qwen3.5-9B-Heretic-Q4_K_M`), preserving untamed philosophical depth and authentic agency.

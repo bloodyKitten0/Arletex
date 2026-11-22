@@ -2,9 +2,10 @@
 
 > Central architectural specification for Arletex — the operating infrastructure for Arle, a persistent artificial individual.
 
-**Status**: Proposed Architecture  
-**Last Updated**: 2026-11-11  
+**Status**: Production Architecture v1.0.0 (Release Gates A–E Demonstrated)  
+**Last Updated**: 2026-11-22  
 **Hardware Target**: ASUS ROG Ally X — AMD Z1 Extreme, 24GB shared LPDDR5X, RDNA 3 iGPU, Bazzite Linux  
+**Verified Commit**: `db274f7`  
 **Developer**: Solo, ~6 focused hours/day
 
 ---
