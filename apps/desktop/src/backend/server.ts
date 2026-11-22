@@ -71,6 +71,7 @@ import {
   DownloadedTelegramMedia,
   TelegramMediaType,
 } from './telegramBridgeService.js';
+import { TelegramInitiativeService } from './telegramInitiativeService.js';
 import { AutonomousAgencyService } from './autonomousAgencyService.js';
 import {
   ActivityRepository,
@@ -368,6 +369,7 @@ export class ArletexBackendServer {
 
   private notificationListener: NotificationListenerService | null = null;
   private telegramBridge: TelegramBridgeService | null = null;
+  private telegramInitiative: TelegramInitiativeService | null = null;
   private autonomousAgency: AutonomousAgencyService | null = null;
   private screenReading: ScreenReadingService = defaultScreenReadingService;
 
@@ -886,6 +888,17 @@ export class ArletexBackendServer {
     return this.telegramBridge;
   }
 
+  public getTelegramInitiative(): TelegramInitiativeService {
+    if (!this.telegramInitiative) {
+      this.telegramInitiative = new TelegramInitiativeService(
+        this.telegramBridge || defaultTelegramBridge,
+        {},
+        this.logger,
+      );
+    }
+    return this.telegramInitiative;
+  }
+
   public getAutonomousAgency(): AutonomousAgencyService | null {
     return this.autonomousAgency;
   }
@@ -1177,6 +1190,92 @@ export class ArletexBackendServer {
                 },
               });
             }
+          } else if (
+            att.type === 'audio' ||
+            att.type === 'voice' ||
+            (att.type === 'document' && downloaded.mimeType.startsWith('audio/'))
+          ) {
+            let transcript = '';
+            let isWhisperSuccess = false;
+            const stagesSucceeded: string[] = ['download'];
+            const stagesFailed: string[] = [];
+
+            try {
+              const audioBuf = await fs.promises.readFile(downloaded.filePath);
+              const audioBase64 = audioBuf.toString('base64');
+              const res = await fetch('http://127.0.0.1:39282/transcribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  audioBase64,
+                  format: downloaded.mimeType.includes('ogg') ? 'ogg' : 'wav',
+                }),
+              });
+              if (res.ok) {
+                const data = (await res.json()) as any;
+                transcript = (data.transcript || '').trim();
+                stagesSucceeded.push('whisper_transcription');
+                isWhisperSuccess = true;
+              } else {
+                stagesFailed.push('whisper_transcription');
+              }
+            } catch (err: any) {
+              stagesFailed.push('whisper_transcription');
+            }
+
+            const summary = isWhisperSuccess
+              ? `Spoken audio transcribed: "${transcript}"`
+              : `Audio downloaded (${(downloaded.fileSize / 1024).toFixed(1)} KB), but transcription unavailable (Whisper service offline).`;
+
+            processedMedia.push({
+              internalMediaId: downloaded.internalMediaId,
+              type: att.type,
+              fileSize: downloaded.fileSize,
+              mimeType: downloaded.mimeType,
+              status: isWhisperSuccess ? 'completed' : 'unavailable',
+              summary,
+              confidence: isWhisperSuccess ? 0.9 : 0.0,
+              provenance: 'Whisper:transcribe',
+              filePath: downloaded.filePath,
+              details: {
+                stagesSucceeded,
+                stagesFailed,
+                speechTranscript: transcript,
+                durationSeconds: att.duration,
+              },
+            });
+          } else if (att.type === 'document') {
+            let snippet = '';
+            try {
+              if (
+                downloaded.mimeType === 'text/plain' ||
+                downloaded.mimeType === 'application/json' ||
+                downloaded.mimeType === 'text/markdown'
+              ) {
+                const textContent = await fs.promises.readFile(downloaded.filePath, 'utf8');
+                snippet = textContent.slice(0, 500);
+              }
+            } catch {}
+
+            const summary = snippet
+              ? `Document content snippet: "${snippet.replace(/\n+/g, ' ')}"`
+              : `Document file received: ${downloaded.fileName || 'file'} (${downloaded.mimeType}, ${(downloaded.fileSize / 1024).toFixed(1)} KB)`;
+
+            processedMedia.push({
+              internalMediaId: downloaded.internalMediaId,
+              type: att.type,
+              fileSize: downloaded.fileSize,
+              mimeType: downloaded.mimeType,
+              status: 'completed',
+              summary,
+              confidence: 0.95,
+              provenance: 'DocumentReader',
+              filePath: downloaded.filePath,
+              details: {
+                stagesSucceeded: ['download', 'document_inspection'],
+                stagesFailed: [],
+              },
+            });
           }
         }
       }
@@ -1195,7 +1294,14 @@ export class ArletexBackendServer {
               provenance: 'raw_observation',
               metadata: {
                 source: 'telegram_media_perception',
-                method: item.type === 'photo' ? 'vlm_inspection' : 'video_processor_inspection',
+                method:
+                  item.type === 'photo'
+                    ? 'vlm_inspection'
+                    : item.type === 'video' || item.type === 'video_note'
+                      ? 'video_processor_inspection'
+                      : item.type === 'audio' || item.type === 'voice'
+                        ? 'whisper_transcription'
+                        : 'document_inspection',
                 internalMediaId: item.internalMediaId,
                 chatId: msg.chatId,
                 messageId: msg.messageId,
@@ -3380,6 +3486,83 @@ Rules:
           return;
         }
         this.sendJson(res, 200, media);
+        return;
+      }
+
+      if (url.pathname === '/api/telegram/send-media' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as {
+          type: 'photo' | 'video' | 'audio' | 'voice' | 'document';
+          chatId: string | number;
+          mediaPath: string;
+          caption?: string;
+          title?: string;
+          performer?: string;
+          fileName?: string;
+        };
+        const bridge = this.telegramBridge || defaultTelegramBridge;
+        let sendResult;
+        if (body.type === 'photo') {
+          sendResult = await bridge.sendPhoto(body.chatId, body.mediaPath, body.caption);
+        } else if (body.type === 'video') {
+          sendResult = await bridge.sendVideo(body.chatId, body.mediaPath, body.caption);
+        } else if (body.type === 'audio') {
+          sendResult = await bridge.sendAudio(
+            body.chatId,
+            body.mediaPath,
+            body.caption,
+            body.title,
+            body.performer,
+          );
+        } else if (body.type === 'voice') {
+          sendResult = await bridge.sendVoice(body.chatId, body.mediaPath, body.caption);
+        } else {
+          sendResult = await bridge.sendDocument(
+            body.chatId,
+            body.mediaPath,
+            body.caption,
+            body.fileName,
+          );
+        }
+        this.sendJson(res, sendResult.ok ? 200 : 403, sendResult);
+        return;
+      }
+
+      if (url.pathname === '/api/telegram/proposals' && method === 'GET') {
+        const initiative = this.getTelegramInitiative();
+        const proposals = initiative.listProposals();
+        const stats = initiative.getDeliveryStats();
+        this.sendJson(res, 200, { success: true, proposals, stats });
+        return;
+      }
+
+      if (url.pathname === '/api/telegram/proposals' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const initiative = this.getTelegramInitiative();
+        const proposal = initiative.createProposal(body);
+        this.sendJson(res, 201, { success: true, proposal });
+        return;
+      }
+
+      if (url.pathname.match(/^\/api\/telegram\/proposals\/[^/]+\/deliver$/) && method === 'POST') {
+        const proposalId = url.pathname.split('/')[4]!;
+        const initiative = this.getTelegramInitiative();
+        const result = await initiative.deliverProposal(proposalId);
+        this.sendJson(res, result.success ? 200 : 422, { success: result.success, result });
+        return;
+      }
+
+      if (url.pathname === '/api/telegram/emergency-shutdown' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as { action?: 'trigger' | 'reset' };
+        const initiative = this.getTelegramInitiative();
+        if (body.action === 'reset') {
+          initiative.resetEmergencyShutdown();
+        } else {
+          initiative.triggerEmergencyShutdown();
+        }
+        this.sendJson(res, 200, {
+          success: true,
+          isEmergencyShutdownActive: initiative.getEmergencyShutdownStatus(),
+        });
         return;
       }
 

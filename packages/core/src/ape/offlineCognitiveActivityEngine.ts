@@ -490,7 +490,7 @@ export class OfflineCognitiveActivityEngine {
     topic: string,
     message: string,
     reasoning: string,
-    urgency: 'low' | 'medium' | 'high' = 'medium',
+    urgency: 'low' | 'medium' | 'high' | 'emergency' = 'medium',
     shouldDeliverImmediately: boolean = false,
   ): ProactiveNotificationProposal {
     const proposal: ProactiveNotificationProposal = {
@@ -499,6 +499,10 @@ export class OfflineCognitiveActivityEngine {
       topic,
       message,
       reasoning,
+      evidence: [],
+      origin: 'offline_insight',
+      cooldownStatus: 'ready',
+      status: 'generated',
       shouldDeliverImmediately,
       delivered: false,
       createdAt: new Date().toISOString(),

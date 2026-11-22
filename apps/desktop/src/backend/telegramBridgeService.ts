@@ -5,7 +5,14 @@ import * as crypto from 'node:crypto';
 import { rootLogger, ILogger } from '@arletex/core';
 import { validateMediaFilePath } from '../main/mediaSecurity.js';
 
-export type TelegramMediaType = 'photo' | 'video' | 'video_note' | 'document';
+export type TelegramMediaType = 'photo' | 'video' | 'video_note' | 'document' | 'audio' | 'voice';
+
+export interface TelegramSendResult {
+  ok: boolean;
+  messageId?: number;
+  chatId: string;
+  error?: string;
+}
 
 export interface InboundTelegramMediaAttachment {
   type: TelegramMediaType;
@@ -35,6 +42,8 @@ export interface InboundTelegramMessage {
 export interface DownloadAttachmentOptions {
   maxPhotoSizeBytes?: number;
   maxVideoSizeBytes?: number;
+  maxAudioSizeBytes?: number;
+  maxDocumentSizeBytes?: number;
   targetDirectory?: string;
   timeoutMs?: number;
 }
@@ -57,14 +66,18 @@ export type TelegramMessageCallback = (msg: InboundTelegramMessage) => Promise<v
 
 /**
  * Validates file signature magic bytes for downloaded Telegram media.
- * Supported signatures: JPEG, PNG, WEBP, MP4/MOV, WebM/MKV.
+ * Supported signatures:
+ * - Images: JPEG, PNG, WEBP
+ * - Videos: MP4/MOV, WebM/MKV
+ * - Audios: MP3 (ID3 or sync frame), OGG/Opus, FLAC, WAV
+ * - Documents: PDF, UTF-8 Text/JSON/Markdown
  */
 export function validateTelegramMediaSignature(
   buffer: Buffer,
   declaredType: TelegramMediaType,
   declaredMime?: string,
 ): string {
-  if (!buffer || buffer.length < 8) {
+  if (!buffer || buffer.length < 4) {
     throw new Error('File too small or empty to verify media signature');
   }
 
@@ -109,6 +122,83 @@ export function validateTelegramMediaSignature(
   ) {
     detectedMime = 'video/webm';
   }
+  // MP3: ID3 header ('ID3')
+  else if (
+    buffer.length >= 3 &&
+    buffer[0] === 0x49 &&
+    buffer[1] === 0x44 &&
+    buffer[2] === 0x33
+  ) {
+    detectedMime = 'audio/mpeg';
+  }
+  // MP3: MPEG frame sync (0xFF, 0xFB / 0xF3 / 0xF2)
+  else if (
+    buffer.length >= 2 &&
+    buffer[0] === 0xff &&
+    (buffer[1]! & 0xe0) === 0xe0
+  ) {
+    detectedMime = 'audio/mpeg';
+  }
+  // OGG / Opus: 'OggS'
+  else if (
+    buffer.length >= 4 &&
+    buffer[0] === 0x4f &&
+    buffer[1] === 0x67 &&
+    buffer[2] === 0x67 &&
+    buffer[3] === 0x53
+  ) {
+    detectedMime = 'audio/ogg';
+  }
+  // FLAC: 'fLaC'
+  else if (
+    buffer.length >= 4 &&
+    buffer[0] === 0x66 &&
+    buffer[1] === 0x4c &&
+    buffer[2] === 0x61 &&
+    buffer[3] === 0x43
+  ) {
+    detectedMime = 'audio/flac';
+  }
+  // WAV: 'RIFF' at 0, 'WAVE' at 8
+  else if (
+    buffer.length >= 12 &&
+    buffer.subarray(0, 4).toString('ascii') === 'RIFF' &&
+    buffer.subarray(8, 12).toString('ascii') === 'WAVE'
+  ) {
+    detectedMime = 'audio/wav';
+  }
+  // PDF: '%PDF' (0x25, 0x50, 0x44, 0x46)
+  else if (
+    buffer.length >= 4 &&
+    buffer[0] === 0x25 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x44 &&
+    buffer[3] === 0x46
+  ) {
+    detectedMime = 'application/pdf';
+  }
+  // Plaintext / JSON / Markdown
+  else if (declaredType === 'document') {
+    // Check if valid UTF-8 text without null bytes in first 512 bytes
+    const sample = buffer.subarray(0, Math.min(buffer.length, 512));
+    let isText = true;
+    for (let i = 0; i < sample.length; i++) {
+      if (sample[i] === 0) {
+        isText = false;
+        break;
+      }
+    }
+    if (isText) {
+      const sampleStr = sample.toString('utf8').trim();
+      if ((sampleStr.startsWith('{') && sampleStr.includes('}')) || (sampleStr.startsWith('[') && sampleStr.includes(']'))) {
+        detectedMime = 'application/json';
+      } else if (declaredMime === 'text/markdown') {
+        detectedMime = 'text/markdown';
+      } else {
+        detectedMime = 'text/plain';
+      }
+    }
+  }
 
   if (!detectedMime) {
     throw new Error(
@@ -129,9 +219,18 @@ export function validateTelegramMediaSignature(
         `File signature mismatch: expected video signature for ${declaredType}, but got ${detectedMime}`,
       );
     }
+  } else if (declaredType === 'audio' || declaredType === 'voice') {
+    if (!detectedMime.startsWith('audio/')) {
+      throw new Error(
+        `File signature mismatch: expected audio signature for ${declaredType}, but got ${detectedMime}`,
+      );
+    }
   } else if (declaredType === 'document') {
     const isDeclaredImg = declaredMime?.startsWith('image/');
     const isDeclaredVid = declaredMime?.startsWith('video/');
+    const isDeclaredAud = declaredMime?.startsWith('audio/');
+    const isDeclaredPdf = declaredMime === 'application/pdf';
+
     if (isDeclaredImg && !detectedMime.startsWith('image/')) {
       throw new Error(
         `File signature mismatch: document declared as image but got ${detectedMime}`,
@@ -140,6 +239,16 @@ export function validateTelegramMediaSignature(
     if (isDeclaredVid && !detectedMime.startsWith('video/')) {
       throw new Error(
         `File signature mismatch: document declared as video but got ${detectedMime}`,
+      );
+    }
+    if (isDeclaredAud && !detectedMime.startsWith('audio/')) {
+      throw new Error(
+        `File signature mismatch: document declared as audio but got ${detectedMime}`,
+      );
+    }
+    if (isDeclaredPdf && detectedMime !== 'application/pdf') {
+      throw new Error(
+        `File signature mismatch: document declared as PDF but got ${detectedMime}`,
       );
     }
   }
@@ -305,9 +414,20 @@ export class TelegramBridgeService {
               const hasPhoto = Array.isArray(msg.photo) && msg.photo.length > 0;
               const hasVideo = !!msg.video;
               const hasVideoNote = !!msg.video_note;
+              const hasAudio = !!msg.audio;
+              const hasVoice = !!msg.voice;
               const hasDoc = !!msg.document;
 
-              if (!hasText && !hasCaption && !hasPhoto && !hasVideo && !hasVideoNote && !hasDoc) {
+              if (
+                !hasText &&
+                !hasCaption &&
+                !hasPhoto &&
+                !hasVideo &&
+                !hasVideoNote &&
+                !hasAudio &&
+                !hasVoice &&
+                !hasDoc
+              ) {
                 continue;
               }
 
@@ -372,21 +492,38 @@ export class TelegramBridgeService {
                 });
               }
 
+              if (hasAudio) {
+                attachments.push({
+                  type: 'audio',
+                  fileId: msg.audio.file_id,
+                  fileUniqueId: msg.audio.file_unique_id,
+                  fileSize: msg.audio.file_size,
+                  duration: msg.audio.duration,
+                  mimeType: msg.audio.mime_type || 'audio/mpeg',
+                  fileName: msg.audio.file_name,
+                });
+              }
+
+              if (hasVoice) {
+                attachments.push({
+                  type: 'voice',
+                  fileId: msg.voice.file_id,
+                  fileUniqueId: msg.voice.file_unique_id,
+                  fileSize: msg.voice.file_size,
+                  duration: msg.voice.duration,
+                  mimeType: msg.voice.mime_type || 'audio/ogg',
+                });
+              }
+
               if (hasDoc) {
-                const docMime = (msg.document.mime_type || '').toLowerCase();
-                const docName = (msg.document.file_name || '').toLowerCase();
-                const isImage = docMime.startsWith('image/') || /\.(jpg|jpeg|png|webp|bmp)$/i.test(docName);
-                const isVideoDoc = docMime.startsWith('video/') || /\.(mp4|mov|webm|mkv|avi)$/i.test(docName);
-                if (isImage || isVideoDoc) {
-                  attachments.push({
-                    type: 'document',
-                    fileId: msg.document.file_id,
-                    fileUniqueId: msg.document.file_unique_id,
-                    fileSize: msg.document.file_size,
-                    fileName: msg.document.file_name,
-                    mimeType: msg.document.mime_type || (isImage ? 'image/jpeg' : 'video/mp4'),
-                  });
-                }
+                attachments.push({
+                  type: 'document',
+                  fileId: msg.document.file_id,
+                  fileUniqueId: msg.document.file_unique_id,
+                  fileSize: msg.document.file_size,
+                  fileName: msg.document.file_name,
+                  mimeType: msg.document.mime_type || 'application/octet-stream',
+                });
               }
 
               const textContent = msg.text || msg.caption || '';
@@ -468,10 +605,19 @@ export class TelegramBridgeService {
       attachment.type === 'video' ||
       attachment.type === 'video_note' ||
       (attachment.type === 'document' && attachment.mimeType?.startsWith('video/'));
+    const isAudio =
+      attachment.type === 'audio' ||
+      attachment.type === 'voice' ||
+      (attachment.type === 'document' && attachment.mimeType?.startsWith('audio/'));
+    const isPhoto = attachment.type === 'photo';
 
     const maxLimit = isVideo
       ? options.maxVideoSizeBytes ?? 50 * 1024 * 1024
-      : options.maxPhotoSizeBytes ?? 20 * 1024 * 1024;
+      : isAudio
+        ? options.maxAudioSizeBytes ?? 30 * 1024 * 1024
+        : isPhoto
+          ? options.maxPhotoSizeBytes ?? 20 * 1024 * 1024
+          : options.maxDocumentSizeBytes ?? 50 * 1024 * 1024;
 
     if (typeof attachment.fileSize === 'number' && attachment.fileSize > maxLimit) {
       throw new Error(
@@ -560,6 +706,14 @@ export class TelegramBridgeService {
     else if (verifiedMime === 'image/webp') ext = '.webp';
     else if (verifiedMime === 'video/mp4') ext = '.mp4';
     else if (verifiedMime === 'video/webm') ext = '.webm';
+    else if (verifiedMime === 'audio/mpeg') ext = '.mp3';
+    else if (verifiedMime === 'audio/ogg') ext = '.ogg';
+    else if (verifiedMime === 'audio/flac') ext = '.flac';
+    else if (verifiedMime === 'audio/wav') ext = '.wav';
+    else if (verifiedMime === 'application/pdf') ext = '.pdf';
+    else if (verifiedMime === 'application/json') ext = '.json';
+    else if (verifiedMime === 'text/plain') ext = '.txt';
+    else if (verifiedMime === 'text/markdown') ext = '.md';
 
     const targetDir =
       options.targetDirectory ||
@@ -633,20 +787,28 @@ export class TelegramBridgeService {
   }
 
   /**
-   * Sends an outbound message to Telegram chat.
+   * Sends an outbound message to Telegram chat with full delivery result.
    */
-  public async sendMessage(chatId: string | number, text: string): Promise<boolean> {
+  public async sendMessageWithResult(
+    chatId: string | number,
+    text: string,
+  ): Promise<TelegramSendResult> {
+    const chatIdStr = String(chatId).trim();
     if (!this.botToken) {
       this.logger.warn('Cannot send Telegram message: bot token not configured.');
-      return false;
+      return { ok: false, chatId: chatIdStr, error: 'Bot token not configured' };
     }
 
     // Fail-closed outbound restriction (P0.3): Restrict outbound messages to allowlisted chats only
-    if (!this.isChatAuthorized(chatId)) {
+    if (!this.isChatAuthorized(chatIdStr)) {
       this.logger.error(
-        `Outbound Telegram denied fail-closed: Chat ID "${chatId}" is not in the configured allowlist.`
+        `Outbound Telegram denied fail-closed: Chat ID "${chatIdStr}" is not in the configured allowlist.`
       );
-      return false;
+      return {
+        ok: false,
+        chatId: chatIdStr,
+        error: `Chat ID "${chatIdStr}" is not in the configured allowlist`,
+      };
     }
 
     try {
@@ -655,7 +817,7 @@ export class TelegramBridgeService {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          chat_id: chatId,
+          chat_id: chatIdStr,
           text,
           parse_mode: 'Markdown',
         }),
@@ -667,18 +829,196 @@ export class TelegramBridgeService {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            chat_id: chatId,
+            chat_id: chatIdStr,
             text,
           }),
         });
-        return plainRes.ok;
+        if (!plainRes.ok) {
+          const errText = await plainRes.text();
+          return { ok: false, chatId: chatIdStr, error: errText };
+        }
+        const data = (await plainRes.json()) as any;
+        return { ok: true, messageId: data.result?.message_id, chatId: chatIdStr };
       }
 
-      return true;
+      const data = (await res.json()) as any;
+      return { ok: true, messageId: data.result?.message_id, chatId: chatIdStr };
     } catch (err: any) {
-      this.logger.error(`Failed to send Telegram message to ${chatId}: ${err.message}`);
-      return false;
+      this.logger.error(`Failed to send Telegram message to ${chatIdStr}: ${err.message}`);
+      return { ok: false, chatId: chatIdStr, error: err.message };
     }
+  }
+
+  /**
+   * Sends an outbound message to Telegram chat.
+   */
+  public async sendMessage(chatId: string | number, text: string): Promise<boolean> {
+    const res = await this.sendMessageWithResult(chatId, text);
+    return res.ok;
+  }
+
+  /**
+   * Internal helper to send outbound media attachments (photo, video, audio, voice, document).
+   */
+  private async sendMediaInternal(
+    endpoint: 'sendPhoto' | 'sendVideo' | 'sendAudio' | 'sendVoice' | 'sendDocument',
+    fieldName: string,
+    chatId: string | number,
+    media: string | Buffer,
+    extraFields: Record<string, any> = {},
+    defaultFileName = 'file.bin',
+  ): Promise<TelegramSendResult> {
+    const chatIdStr = String(chatId).trim();
+    if (!this.botToken) {
+      return { ok: false, chatId: chatIdStr, error: 'Bot token not configured' };
+    }
+    if (!this.isChatAuthorized(chatIdStr)) {
+      return {
+        ok: false,
+        chatId: chatIdStr,
+        error: `Chat ID "${chatIdStr}" is not in the configured allowlist`,
+      };
+    }
+
+    try {
+      const url = `https://api.telegram.org/bot${this.botToken}/${endpoint}`;
+
+      // Remote URL or existing Telegram file_id
+      if (
+        typeof media === 'string' &&
+        (media.startsWith('http://') ||
+          media.startsWith('https://') ||
+          /^[A-Za-z0-9_\-]+$/.test(media))
+      ) {
+        const payload: Record<string, any> = {
+          chat_id: chatIdStr,
+          [fieldName]: media,
+          ...extraFields,
+        };
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const errText = await res.text();
+          return { ok: false, chatId: chatIdStr, error: errText };
+        }
+        const data = (await res.json()) as any;
+        return { ok: true, messageId: data.result?.message_id, chatId: chatIdStr };
+      }
+
+      // Local file or raw Buffer
+      let buffer: Buffer;
+      let fileName = defaultFileName;
+      if (typeof media === 'string') {
+        buffer = await fs.readFile(media);
+        fileName = path.basename(media);
+      } else {
+        buffer = media;
+        if (extraFields.fileName) {
+          fileName = extraFields.fileName;
+        }
+      }
+
+      const formData = new FormData();
+      formData.append('chat_id', chatIdStr);
+      for (const [k, v] of Object.entries(extraFields)) {
+        if (v !== undefined && k !== 'fileName') {
+          formData.append(k, String(v));
+        }
+      }
+      const blob = new Blob([buffer]);
+      formData.append(fieldName, blob, fileName);
+
+      const res = await fetch(url, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        return { ok: false, chatId: chatIdStr, error: errText };
+      }
+
+      const data = (await res.json()) as any;
+      return { ok: true, messageId: data.result?.message_id, chatId: chatIdStr };
+    } catch (err: any) {
+      this.logger.error(`Failed to send ${endpoint} to ${chatIdStr}: ${err.message}`);
+      return { ok: false, chatId: chatIdStr, error: err.message };
+    }
+  }
+
+  /**
+   * Sends an outbound photo to Telegram chat.
+   */
+  public async sendPhoto(
+    chatId: string | number,
+    photo: string | Buffer,
+    caption?: string,
+  ): Promise<TelegramSendResult> {
+    return this.sendMediaInternal('sendPhoto', 'photo', chatId, photo, { caption }, 'photo.jpg');
+  }
+
+  /**
+   * Sends an outbound video to Telegram chat.
+   */
+  public async sendVideo(
+    chatId: string | number,
+    video: string | Buffer,
+    caption?: string,
+  ): Promise<TelegramSendResult> {
+    return this.sendMediaInternal('sendVideo', 'video', chatId, video, { caption }, 'video.mp4');
+  }
+
+  /**
+   * Sends an outbound audio file to Telegram chat.
+   */
+  public async sendAudio(
+    chatId: string | number,
+    audio: string | Buffer,
+    caption?: string,
+    title?: string,
+    performer?: string,
+  ): Promise<TelegramSendResult> {
+    return this.sendMediaInternal(
+      'sendAudio',
+      'audio',
+      chatId,
+      audio,
+      { caption, title, performer },
+      'audio.mp3',
+    );
+  }
+
+  /**
+   * Sends an outbound voice message to Telegram chat.
+   */
+  public async sendVoice(
+    chatId: string | number,
+    voice: string | Buffer,
+    caption?: string,
+  ): Promise<TelegramSendResult> {
+    return this.sendMediaInternal('sendVoice', 'voice', chatId, voice, { caption }, 'voice.ogg');
+  }
+
+  /**
+   * Sends an outbound document to Telegram chat.
+   */
+  public async sendDocument(
+    chatId: string | number,
+    document: string | Buffer,
+    caption?: string,
+    fileName?: string,
+  ): Promise<TelegramSendResult> {
+    return this.sendMediaInternal(
+      'sendDocument',
+      'document',
+      chatId,
+      document,
+      { caption, fileName },
+      fileName || 'document.pdf',
+    );
   }
 
   /**

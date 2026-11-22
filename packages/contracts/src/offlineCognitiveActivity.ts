@@ -75,14 +75,63 @@ export const UnfinishedWorkItemSchema = z.object({
 });
 export type UnfinishedWorkItem = z.infer<typeof UnfinishedWorkItemSchema>;
 
+export const ProactiveUrgencySchema = z.enum(['low', 'medium', 'high', 'emergency']);
+export type ProactiveUrgency = z.infer<typeof ProactiveUrgencySchema>;
+
+export const ProactiveProposalOriginSchema = z.enum([
+  'goal',
+  'interest',
+  'relationship',
+  'offline_insight',
+  'direct_initiative',
+]);
+export type ProactiveProposalOrigin = z.infer<typeof ProactiveProposalOriginSchema>;
+
+export const ProactiveProposalStatusSchema = z.enum([
+  'generated',
+  'pending',
+  'delivered',
+  'failed',
+  'cancelled',
+]);
+export type ProactiveProposalStatus = z.infer<typeof ProactiveProposalStatusSchema>;
+
+export const ProactiveDeliveryPolicySchema = z.object({
+  quietHoursStart: z.number().int().min(0).max(23).default(23),
+  quietHoursEnd: z.number().int().min(0).max(23).default(8),
+  allowQuietHoursOverride: z.boolean().default(false),
+  rateLimitMaxPerHour: z.number().positive().default(5),
+  cooldownMinutes: z.number().nonnegative().default(10),
+  batchingDelayMinutes: z.number().nonnegative().default(0),
+  duplicateSuppressionWindowMinutes: z.number().positive().default(60),
+});
+export type ProactiveDeliveryPolicy = z.infer<typeof ProactiveDeliveryPolicySchema>;
+
+export const ProactiveProposalDeliveryResultSchema = z.object({
+  attemptedAt: z.string().datetime(),
+  telegramMessageId: z.number().optional(),
+  chatId: z.string(),
+  success: z.boolean(),
+  error: z.string().optional(),
+  idempotencyKey: z.string(),
+});
+export type ProactiveProposalDeliveryResult = z.infer<typeof ProactiveProposalDeliveryResultSchema>;
+
 export const ProactiveNotificationProposalSchema = z.object({
   id: z.string().uuid(),
-  urgency: z.enum(['low', 'medium', 'high']),
+  urgency: ProactiveUrgencySchema.optional().default('medium'),
   topic: z.string(),
   message: z.string(),
   reasoning: z.string(),
-  shouldDeliverImmediately: z.boolean().default(false),
-  delivered: z.boolean().default(false),
+  evidence: z.array(z.string()).optional().default([]),
+  origin: ProactiveProposalOriginSchema.optional().default('direct_initiative'),
+  recipientChatId: z.string().optional(),
+  deliveryPolicy: ProactiveDeliveryPolicySchema.optional(),
+  cooldownStatus: z.enum(['active', 'ready', 'bypassed']).optional().default('ready'),
+  status: ProactiveProposalStatusSchema.optional().default('generated'),
+  deliveryResult: ProactiveProposalDeliveryResultSchema.optional(),
+  shouldDeliverImmediately: z.boolean().optional().default(false),
+  delivered: z.boolean().optional().default(false),
   createdAt: z.string().datetime(),
 });
 export type ProactiveNotificationProposal = z.infer<typeof ProactiveNotificationProposalSchema>;
