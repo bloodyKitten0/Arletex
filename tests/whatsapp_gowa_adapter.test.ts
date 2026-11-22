@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import http from 'node:http';
 import crypto from 'node:crypto';
+import path from 'node:path';
+import os from 'node:os';
+import fs from 'node:fs';
 import { AddressInfo } from 'node:net';
 import { WhatsAppAdapter, IWhatsAppRepository } from '@arletex/core';
 import { WhatsAppWebhookPayload, WhatsAppSendInput } from '@arletex/contracts';
@@ -323,6 +326,12 @@ describe('Arle WhatsApp Communication Adapter — GoWA', () => {
             return;
           }
 
+          if ((req.url === '/send/file' || req.url === '/send/image') && req.method === 'POST') {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ results: { id: `gowa_media_${Date.now()}` } }));
+            return;
+          }
+
           if (req.url === '/app/login/phone' && req.method === 'POST') {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ results: { pair_code: 'ABCD-1234' } }));
@@ -416,6 +425,39 @@ describe('Arle WhatsApp Communication Adapter — GoWA', () => {
       const pairRes = await integrationAdapter.getPairingCode('+1 987 654 3210');
       expect(pairRes.pairingCode).toBe('ABCD-1234');
       expect(pairRes.status).toBe('code_generated');
+    });
+
+    it('should dispatch outbound media file to /send/file with multipart payload', async () => {
+      const integrationAdapter = new WhatsAppAdapter({
+        enabled: true,
+        baseUrl: `http://127.0.0.1:${mockPort}`,
+        deviceId: 'device_001',
+      });
+
+      // Create a temporary file on disk
+      const tempFilePath = path.join(os.tmpdir(), `test_doc_${Date.now()}.pdf`);
+      await fs.promises.writeFile(tempFilePath, '%PDF-1.4 test document content');
+
+      try {
+        const sendRes = await integrationAdapter.sendMessage({
+          recipientJid: ownerJid,
+          text: 'Here is the requested document from the PC.',
+          mediaPath: tempFilePath,
+          mediaType: 'document',
+        });
+
+        expect(sendRes.success).toBe(true);
+        expect(sendRes.status).toBe('accepted');
+        expect(sendRes.messageId).toBeDefined();
+
+        const sendCall = mockCalls.find((c) => c.url === '/send/file');
+        expect(sendCall).toBeDefined();
+        expect(sendCall?.headers['x-device-id']).toBe('device_001');
+      } finally {
+        if (fs.existsSync(tempFilePath)) {
+          await fs.promises.unlink(tempFilePath);
+        }
+      }
     });
 
     it('should handle disconnect / logout flow', async () => {

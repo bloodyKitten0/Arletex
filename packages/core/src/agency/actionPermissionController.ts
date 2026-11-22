@@ -364,6 +364,7 @@ export class ActionPermissionController {
     }
     if (
       actionType.startsWith('telegram_') ||
+      actionType.startsWith('whatsapp_') ||
       actionType === 'send_message' ||
       actionType === 'send_email'
     ) {
@@ -601,6 +602,7 @@ export class ActionPermissionController {
         category = 'credential_access';
       } else if (
         actionType.startsWith('telegram_') ||
+        actionType.startsWith('whatsapp_') ||
         actionType === 'send_message' ||
         actionType === 'send_email'
       ) {
@@ -1013,6 +1015,7 @@ export class ActionPermissionController {
     // 5. External Communication validation
     if (
       action.type.startsWith('telegram_') ||
+      action.type.startsWith('whatsapp_') ||
       action.type === 'send_message' ||
       action.type === 'send_email'
     ) {

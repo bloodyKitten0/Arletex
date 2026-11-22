@@ -50,6 +50,7 @@ export interface ClosedLoopAgencyDependencies {
   webAgency?: WebAgencyService;
   deviceAgency?: any;
   telegramBridge?: any;
+  whatsAppAdapter?: any;
   emailProvider?: EmailProvider;
   logger?: ILogger;
 }
@@ -81,6 +82,7 @@ export class ClosedLoopAgencyService {
   private webAgency?: WebAgencyService;
   private deviceAgency?: any;
   private telegramBridge?: any;
+  private whatsAppAdapter?: any;
   private emailProvider?: EmailProvider;
   private logger: ILogger;
 
@@ -101,6 +103,7 @@ export class ClosedLoopAgencyService {
     this.webAgency = deps.webAgency || new WebAgencyService(deps.browserProvider, deps.logger);
     this.deviceAgency = deps.deviceAgency;
     this.telegramBridge = deps.telegramBridge;
+    this.whatsAppAdapter = deps.whatsAppAdapter;
     this.emailProvider = deps.emailProvider;
     this.logger = (deps.logger || rootLogger).child('ClosedLoopAgencyService');
   }
@@ -1646,21 +1649,52 @@ export class ClosedLoopAgencyService {
     if (action.type.startsWith('telegram_') || (action.type as string) === 'send_message') {
       const text = String(params['text'] || params['message'] || params['content'] || '');
       const chatId = String(params['chatId'] || params['recipient'] || '');
-      if (this.telegramBridge && typeof this.telegramBridge.sendMessage === 'function') {
+      const mediaPath =
+        params['filePath'] || params['mediaPath']
+          ? String(params['filePath'] || params['mediaPath'])
+          : undefined;
+
+      if (this.telegramBridge) {
         try {
-          const sent = await this.telegramBridge.sendMessage(chatId, text);
-          return {
-            id: crypto.randomUUID(),
-            taskId,
-            actionId: action.id,
-            source: 'process_table',
-            timestamp,
-            success: Boolean(sent),
-            confidence: sent ? 0.98 : 0.0,
-            provenance: 'TelegramBridgeService.sendMessage',
-            data: { sent: Boolean(sent), chatId, messageId: (sent as any)?.message_id || 'sent' },
-            error: sent ? null : 'Telegram dispatch failed',
-          };
+          if (
+            mediaPath &&
+            (action.type === 'telegram_send_file' ||
+              typeof this.telegramBridge.sendDocument === 'function')
+          ) {
+            const isImage = /\.(jpe?g|png|webp|gif)$/i.test(mediaPath);
+            const sent =
+              isImage && typeof this.telegramBridge.sendPhoto === 'function'
+                ? await this.telegramBridge.sendPhoto(chatId, mediaPath, text || undefined)
+                : await this.telegramBridge.sendDocument(chatId, mediaPath, text || undefined);
+
+            const isSuccess = Boolean(sent?.ok ?? sent);
+            return {
+              id: crypto.randomUUID(),
+              taskId,
+              actionId: action.id,
+              source: 'process_table',
+              timestamp,
+              success: isSuccess,
+              confidence: isSuccess ? 0.98 : 0.0,
+              provenance: 'TelegramBridgeService.sendMedia',
+              data: { sent: isSuccess, chatId, mediaPath, result: sent },
+              error: isSuccess ? null : sent?.description || 'Telegram file dispatch failed',
+            };
+          } else if (typeof this.telegramBridge.sendMessage === 'function') {
+            const sent = await this.telegramBridge.sendMessage(chatId, text);
+            return {
+              id: crypto.randomUUID(),
+              taskId,
+              actionId: action.id,
+              source: 'process_table',
+              timestamp,
+              success: Boolean(sent),
+              confidence: sent ? 0.98 : 0.0,
+              provenance: 'TelegramBridgeService.sendMessage',
+              data: { sent: Boolean(sent), chatId, messageId: (sent as any)?.message_id || 'sent' },
+              error: sent ? null : 'Telegram dispatch failed',
+            };
+          }
         } catch (err: any) {
           return {
             id: crypto.randomUUID(),
@@ -1670,8 +1704,8 @@ export class ClosedLoopAgencyService {
             timestamp,
             success: false,
             confidence: 0.0,
-            provenance: 'TelegramBridgeService.sendMessage',
-            data: { sent: false, chatId },
+            provenance: 'TelegramBridgeService.dispatch',
+            data: { sent: false, chatId, mediaPath },
             error: err.message,
           };
         }
@@ -1687,6 +1721,70 @@ export class ClosedLoopAgencyService {
         provenance: 'ClosedLoopAgency:message_dispatch_unconfigured',
         data: { sent: false, chatId, textSnippet: text.slice(0, 50) },
         error: 'TelegramBridge provider not configured for message dispatch',
+      };
+    }
+
+    // 10b. External Communication: WhatsApp & File Dispatch
+    if (action.type.startsWith('whatsapp_')) {
+      const text = String(params['text'] || params['message'] || params['content'] || '');
+      const recipientJid = String(params['recipientJid'] || params['to'] || params['phone'] || '');
+      const mediaPath =
+        params['filePath'] || params['mediaPath']
+          ? String(params['filePath'] || params['mediaPath'])
+          : undefined;
+      const mediaType = params['mediaType'] as any;
+
+      if (this.whatsAppAdapter && typeof this.whatsAppAdapter.sendMessage === 'function') {
+        try {
+          const sent = await this.whatsAppAdapter.sendMessage({
+            recipientJid,
+            text,
+            mediaPath,
+            mediaType,
+          });
+          return {
+            id: crypto.randomUUID(),
+            taskId,
+            actionId: action.id,
+            source: 'process_table',
+            timestamp,
+            success: Boolean(sent.success),
+            confidence: sent.success ? 0.98 : 0.0,
+            provenance: 'WhatsAppAdapter.sendMessage',
+            data: {
+              sent: Boolean(sent.success),
+              recipientJid,
+              messageId: sent.messageId,
+              mediaPath,
+            },
+            error: sent.success ? null : sent.error || 'WhatsApp dispatch failed',
+          };
+        } catch (err: any) {
+          return {
+            id: crypto.randomUUID(),
+            taskId,
+            actionId: action.id,
+            source: 'process_table',
+            timestamp,
+            success: false,
+            confidence: 0.0,
+            provenance: 'WhatsAppAdapter.sendMessage',
+            data: { sent: false, recipientJid },
+            error: err.message,
+          };
+        }
+      }
+      return {
+        id: crypto.randomUUID(),
+        taskId,
+        actionId: action.id,
+        source: 'process_table',
+        timestamp,
+        success: false,
+        confidence: 0.0,
+        provenance: 'ClosedLoopAgency:whatsapp_dispatch_unconfigured',
+        data: { sent: false, recipientJid, textSnippet: text.slice(0, 50) },
+        error: 'WhatsAppAdapter provider not configured for message dispatch',
       };
     }
 

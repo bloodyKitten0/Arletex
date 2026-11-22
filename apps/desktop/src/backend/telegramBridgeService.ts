@@ -317,6 +317,10 @@ export class TelegramBridgeService {
     return this.allowedUserIds.has(userId);
   }
 
+  public getTargetChatId(): string | null {
+    return this.targetChatId;
+  }
+
   public getStatus(): {
     isConfigured: boolean;
     isPolling: boolean;

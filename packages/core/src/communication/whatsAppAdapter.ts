@@ -347,23 +347,22 @@ export class WhatsAppAdapter implements IWhatsAppAdapter {
 
     const auditId = `wa_out_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
-    // Build Basic Auth header if configured
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'X-Device-Id': this.config.deviceId || 'default',
-    };
-    if (this.config.username && this.config.password) {
-      const creds = Buffer.from(`${this.config.username}:${this.config.password}`).toString(
-        'base64',
-      );
-      headers['Authorization'] = `Basic ${creds}`;
+    const hasMedia = Boolean(validated.mediaPath);
+    let mediaBuffer: Buffer | null = null;
+    let fileName = '';
+    if (hasMedia && validated.mediaPath) {
+      if (!fs.existsSync(validated.mediaPath)) {
+        return WhatsAppSendResultSchema.parse({
+          success: false,
+          status: 'failed',
+          recipientJid: validated.recipientJid,
+          timestamp: new Date().toISOString(),
+          error: `Media file not found at path: ${validated.mediaPath}`,
+        });
+      }
+      mediaBuffer = await fs.promises.readFile(validated.mediaPath);
+      fileName = path.basename(validated.mediaPath);
     }
-
-    const payload = {
-      phone: validated.recipientJid.replace(/@s\.whatsapp\.net$/i, ''),
-      message: validated.text,
-      reply_message_id: validated.replyToMessageId,
-    };
 
     let attempts = 0;
     const maxRetries = 3;
@@ -372,11 +371,53 @@ export class WhatsAppAdapter implements IWhatsAppAdapter {
     while (attempts < maxRetries) {
       attempts++;
       try {
-        const res = await fetch(`${this.config.baseUrl}/send/message`, {
+        let fetchUrl: string;
+        let fetchBody: any;
+        const fetchHeaders: Record<string, string> = {};
+
+        if (this.config.username && this.config.password) {
+          const creds = Buffer.from(`${this.config.username}:${this.config.password}`).toString(
+            'base64',
+          );
+          fetchHeaders['Authorization'] = `Basic ${creds}`;
+        }
+        if (this.config.deviceId) {
+          fetchHeaders['X-Device-Id'] = this.config.deviceId;
+        }
+
+        const phone = validated.recipientJid.replace(/@s\.whatsapp\.net$/i, '');
+
+        if (hasMedia && mediaBuffer) {
+          const isImage =
+            validated.mediaType === 'image' || /\.(jpe?g|png|webp|gif)$/i.test(fileName);
+          fetchUrl = `${this.config.baseUrl}${isImage ? '/send/image' : '/send/file'}`;
+
+          const formData = new FormData();
+          formData.append('phone', phone);
+          if (validated.text) {
+            formData.append('caption', validated.text);
+          }
+          if (validated.replyToMessageId) {
+            formData.append('reply_message_id', validated.replyToMessageId);
+          }
+          const fileBlob = new Blob([mediaBuffer]);
+          formData.append(isImage ? 'image' : 'file', fileBlob, fileName);
+          fetchBody = formData;
+        } else {
+          fetchUrl = `${this.config.baseUrl}/send/message`;
+          fetchHeaders['Content-Type'] = 'application/json';
+          fetchBody = JSON.stringify({
+            phone,
+            message: validated.text,
+            reply_message_id: validated.replyToMessageId,
+          });
+        }
+
+        const res = await fetch(fetchUrl, {
           method: 'POST',
-          headers,
-          body: JSON.stringify(payload),
-          signal: AbortSignal.timeout(10000),
+          headers: fetchHeaders,
+          body: fetchBody,
+          signal: AbortSignal.timeout(15000),
         });
 
         if (res.ok) {

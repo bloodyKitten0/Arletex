@@ -551,6 +551,7 @@ export class ArletexBackendServer {
 
     // Instantiate Digital Agency Subsystem
     this.agencyRepo = new AgencyRepository(db);
+    this.whatsAppRepo = new WhatsAppRepository(db);
     this.permissionController = new ActionPermissionController(undefined, logger);
     this.safeComputerAgency = new SafeComputerAgencyService(
       this.permissionController,
@@ -586,6 +587,56 @@ export class ArletexBackendServer {
       autobiographicalMemory: this.autobiographicalMemoryService,
       logger,
     });
+
+    // Initialize WhatsApp Adapter
+    const waEnabled =
+      process.env['ARLE_WHATSAPP_ENABLED'] === 'true' ||
+      this.preferenceRepo.get('whatsapp_enabled') === 'true';
+    const waBaseUrl =
+      process.env['ARLE_WHATSAPP_BASE_URL'] ||
+      this.preferenceRepo.get('whatsapp_base_url') ||
+      'http://127.0.0.1:3000';
+    const waUsername =
+      process.env['ARLE_WHATSAPP_USERNAME'] || this.preferenceRepo.get('whatsapp_username') || '';
+    const waPassword =
+      process.env['ARLE_WHATSAPP_PASSWORD'] || this.preferenceRepo.get('whatsapp_password') || '';
+    const waDeviceId =
+      process.env['ARLE_WHATSAPP_DEVICE_ID'] ||
+      this.preferenceRepo.get('whatsapp_device_id') ||
+      'default';
+    const waSecret =
+      process.env['ARLE_WHATSAPP_WEBHOOK_SECRET'] ||
+      this.preferenceRepo.get('whatsapp_webhook_secret') ||
+      '';
+    const waOwnerJid =
+      process.env['ARLE_WHATSAPP_OWNER_JID'] || this.preferenceRepo.get('whatsapp_owner_jid') || '';
+    const waAutoReply =
+      process.env['ARLE_WHATSAPP_AUTO_REPLY'] === 'true' ||
+      this.preferenceRepo.get('whatsapp_auto_reply') === 'true';
+    const waRateLimit = process.env['ARLE_WHATSAPP_RATE_LIMIT']
+      ? parseInt(process.env['ARLE_WHATSAPP_RATE_LIMIT'], 10)
+      : 30;
+
+    this.whatsAppAdapter = new WhatsAppAdapter(
+      {
+        enabled: waEnabled,
+        baseUrl: waBaseUrl,
+        username: waUsername,
+        password: waPassword,
+        deviceId: waDeviceId,
+        webhookSecret: waSecret,
+        ownerJid: waOwnerJid,
+        autoReply: waAutoReply,
+        rateLimitPerMinute: waRateLimit,
+      },
+      this.whatsAppRepo,
+      logger,
+    );
+
+    this.whatsAppAdapter.onMessage(async (envelope) => {
+      await this.handleInboundWhatsAppMessage(envelope);
+    });
+
     this.closedLoopAgency = new ClosedLoopAgencyService({
       agencyRepo: this.agencyRepo,
       taskManager: this.intentTaskManager,
@@ -602,6 +653,7 @@ export class ArletexBackendServer {
       openWorldBrowser: this.openWorldBrowserAgency,
       deviceAgency: defaultDeviceAgency,
       telegramBridge: defaultTelegramBridge,
+      whatsAppAdapter: this.whatsAppAdapter,
       emailProvider: this.emailProvider,
       logger,
     });
@@ -655,54 +707,6 @@ export class ArletexBackendServer {
       },
       logger,
     );
-    this.whatsAppRepo = new WhatsAppRepository(db);
-    const waEnabled =
-      process.env['ARLE_WHATSAPP_ENABLED'] === 'true' ||
-      this.preferenceRepo.get('whatsapp_enabled') === 'true';
-    const waBaseUrl =
-      process.env['ARLE_WHATSAPP_BASE_URL'] ||
-      this.preferenceRepo.get('whatsapp_base_url') ||
-      'http://127.0.0.1:3000';
-    const waUsername =
-      process.env['ARLE_WHATSAPP_USERNAME'] || this.preferenceRepo.get('whatsapp_username') || '';
-    const waPassword =
-      process.env['ARLE_WHATSAPP_PASSWORD'] || this.preferenceRepo.get('whatsapp_password') || '';
-    const waDeviceId =
-      process.env['ARLE_WHATSAPP_DEVICE_ID'] ||
-      this.preferenceRepo.get('whatsapp_device_id') ||
-      'default';
-    const waSecret =
-      process.env['ARLE_WHATSAPP_WEBHOOK_SECRET'] ||
-      this.preferenceRepo.get('whatsapp_webhook_secret') ||
-      '';
-    const waOwnerJid =
-      process.env['ARLE_WHATSAPP_OWNER_JID'] || this.preferenceRepo.get('whatsapp_owner_jid') || '';
-    const waAutoReply =
-      process.env['ARLE_WHATSAPP_AUTO_REPLY'] === 'true' ||
-      this.preferenceRepo.get('whatsapp_auto_reply') === 'true';
-    const waRateLimit = process.env['ARLE_WHATSAPP_RATE_LIMIT']
-      ? parseInt(process.env['ARLE_WHATSAPP_RATE_LIMIT'], 10)
-      : 30;
-
-    this.whatsAppAdapter = new WhatsAppAdapter(
-      {
-        enabled: waEnabled,
-        baseUrl: waBaseUrl,
-        username: waUsername,
-        password: waPassword,
-        deviceId: waDeviceId,
-        webhookSecret: waSecret,
-        ownerJid: waOwnerJid,
-        autoReply: waAutoReply,
-        rateLimitPerMinute: waRateLimit,
-      },
-      this.whatsAppRepo,
-      logger,
-    );
-
-    this.whatsAppAdapter.onMessage(async (envelope) => {
-      await this.handleInboundWhatsAppMessage(envelope);
-    });
   }
 
   public getIntentTaskManager(): IntentTaskManager {
@@ -2866,6 +2870,16 @@ export class ArletexBackendServer {
     const clickRegex = /\[action:\s*mouse_click(?:\s+x=(\d+)\s+y=(\d+))?(?:\s+button=(\d+))?\]/i;
     const clickMatch = responseContent.match(clickRegex);
 
+    // [action: send_telegram file="..." (caption="...")]
+    const tgFileRegex =
+      /\[action:\s*send_telegram\s+file=["'](.*?)["'](?:\s+caption=["'](.*?)["'])?\]/i;
+    const tgFileMatch = responseContent.match(tgFileRegex);
+
+    // [action: send_whatsapp file="..." (caption="...")]
+    const waFileRegex =
+      /\[action:\s*send_whatsapp\s+file=["'](.*?)["'](?:\s+caption=["'](.*?)["'])?\]/i;
+    const waFileMatch = responseContent.match(waFileRegex);
+
     // 2. Browser opening directive from assistant tag
     let targetUrl: string | undefined;
     if (browserMatch && browserMatch[1]) {
@@ -3024,6 +3038,89 @@ export class ArletexBackendServer {
         }
       } catch (err: any) {
         this.logger.error(`Failed to click mouse: ${err.message}`);
+      }
+    }
+
+    // Path pattern matcher in user prompt if user explicitly says "send me <path> on telegram/whatsapp"
+    const filePathMatch =
+      userPrompt.match(
+        /(?:(?:send|deliver|transfer)\s+(?:me\s+)?(?:the\s+)?(?:file|doc|document|image|photo|video)?\s*["']?([/~][a-zA-Z0-9_\-\.\/]+\.[a-zA-Z0-9]+)["']?)/i,
+      ) || userPrompt.match(/["']([/~][a-zA-Z0-9_\-\.\/]+\.[a-zA-Z0-9]+)["']/);
+    const candidatePath =
+      filePathMatch && filePathMatch[1]
+        ? filePathMatch[1].replace(/^~/, process.env.HOME || '/home/proof')
+        : undefined;
+
+    const shouldSendTelegram =
+      tgFileMatch ||
+      (candidatePath &&
+        lowerUser.includes('telegram') &&
+        (lowerUser.includes('send') || lowerUser.includes('deliver')));
+    if (shouldSendTelegram) {
+      const targetPath = tgFileMatch ? tgFileMatch[1] : candidatePath;
+      const caption = tgFileMatch && tgFileMatch[2] ? tgFileMatch[2] : undefined;
+      const targetChatId =
+        this.preferenceRepo.get('telegram_target_chat_id') ||
+        defaultTelegramBridge.getTargetChatId() ||
+        undefined;
+
+      if (targetPath && targetChatId) {
+        try {
+          const obs = await this.closedLoopAgency.executeAction({
+            id: crypto.randomUUID(),
+            taskId: 'assistant_telegram_file',
+            stepIndex: 0,
+            type: 'telegram_send_file',
+            payload: { chatId: targetChatId, filePath: targetPath, text: caption },
+            rationale: `Send file ${targetPath} to Telegram`,
+            expectedOutcome: 'File sent to Telegram',
+            riskLevel: 'low',
+            requiresExplicitApproval: false,
+            createdAt: new Date().toISOString(),
+          });
+          if (obs.success) {
+            executedActions.push(`Sent file "${path.basename(targetPath)}" to Telegram`);
+          } else {
+            this.logger.warn(`Telegram file send failed: ${obs.error || 'Unknown error'}`);
+          }
+        } catch (err: any) {
+          this.logger.error(`Failed to send Telegram file: ${err.message}`);
+        }
+      }
+    }
+
+    const shouldSendWhatsApp =
+      waFileMatch ||
+      (candidatePath &&
+        (lowerUser.includes('whatsapp') || lowerUser.includes("what's app")) &&
+        (lowerUser.includes('send') || lowerUser.includes('deliver')));
+    if (shouldSendWhatsApp) {
+      const targetPath = waFileMatch ? waFileMatch[1] : candidatePath;
+      const caption = waFileMatch && waFileMatch[2] ? waFileMatch[2] : undefined;
+      const ownerJid = this.preferenceRepo.get('whatsapp_owner_jid');
+
+      if (targetPath && ownerJid) {
+        try {
+          const obs = await this.closedLoopAgency.executeAction({
+            id: crypto.randomUUID(),
+            taskId: 'assistant_whatsapp_file',
+            stepIndex: 0,
+            type: 'whatsapp_send_file',
+            payload: { recipientJid: ownerJid, filePath: targetPath, text: caption },
+            rationale: `Send file ${targetPath} to WhatsApp`,
+            expectedOutcome: 'File sent to WhatsApp',
+            riskLevel: 'low',
+            requiresExplicitApproval: false,
+            createdAt: new Date().toISOString(),
+          });
+          if (obs.success) {
+            executedActions.push(`Sent file "${path.basename(targetPath)}" to WhatsApp`);
+          } else {
+            this.logger.warn(`WhatsApp file send failed: ${obs.error || 'Unknown error'}`);
+          }
+        } catch (err: any) {
+          this.logger.error(`Failed to send WhatsApp file: ${err.message}`);
+        }
       }
     }
 
@@ -4358,6 +4455,24 @@ Rules:
         const input = WhatsAppSendInputSchema.parse(body);
         const result = await this.whatsAppAdapter.sendMessage(input);
         this.sendJson(res, 200, result);
+        return;
+      }
+
+      if (url.pathname === '/api/whatsapp/send-media' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as {
+          recipientJid: string;
+          mediaPath: string;
+          caption?: string;
+          mediaType?: 'image' | 'video' | 'audio' | 'document';
+        };
+        const input = WhatsAppSendInputSchema.parse({
+          recipientJid: body.recipientJid,
+          text: body.caption || '',
+          mediaPath: body.mediaPath,
+          mediaType: body.mediaType || 'document',
+        });
+        const result = await this.whatsAppAdapter.sendMessage(input);
+        this.sendJson(res, result.success ? 200 : 500, result);
         return;
       }
 

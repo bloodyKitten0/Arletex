@@ -124,6 +124,10 @@ export const ActionTypeSchema = z.enum([
   'send_message',
   'telegram_message',
   'telegram_send_message',
+  'telegram_send_file',
+  'whatsapp_message',
+  'whatsapp_send_message',
+  'whatsapp_send_file',
   'send_email',
 ]);
 export type ActionType = z.infer<typeof ActionTypeSchema>;

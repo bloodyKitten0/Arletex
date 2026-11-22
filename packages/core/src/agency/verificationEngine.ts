@@ -592,7 +592,11 @@ export class VerificationEngine {
     }
 
     // 4e. External Communication Verification
-    if (action.type.startsWith('telegram_') || action.type === 'send_message') {
+    if (
+      action.type.startsWith('telegram_') ||
+      action.type.startsWith('whatsapp_') ||
+      action.type === 'send_message'
+    ) {
       const sent = Boolean(
         observation.success && (observation.data?.messageId || observation.data?.sent),
       );
