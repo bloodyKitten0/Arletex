@@ -16,6 +16,7 @@ import io
 import wave
 import re
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
+from typing import Optional, Dict, Any
 
 # Paths to models
 BASE_MODELS_DIR = os.getenv("ARLETEX_SPECIALISTS_DIR", os.path.expanduser("~/models/arle-specialists"))
@@ -508,7 +509,7 @@ TONE_PROFILES = {
     },
 }
 
-def resolve_tone_profile(tone_input: str, pad: dict = None, emotion: str = None) -> dict:
+def resolve_tone_profile(tone_input: str, pad: Optional[dict] = None, emotion: Optional[str] = None) -> dict:
     """
     Resolves canonical tone profile from arbitrary tone descriptions, compound vocal registers
     (e.g., 'gentle, warm, affectionate', 'cool, measured, stern', 'strained, hollow_laugh, breathless'),
@@ -553,7 +554,8 @@ def resolve_tone_profile(tone_input: str, pad: dict = None, emotion: str = None)
                     matched_key = target
                     break
 
-    base = dict(TONE_PROFILES.get(matched_key or "composed"))
+    matched_profile = TONE_PROFILES.get(matched_key or "composed", TONE_PROFILES["composed"])
+    base: dict[str, Any] = dict(matched_profile)
 
     # Dynamic PAD modulation
     if pad and isinstance(pad, dict):
@@ -660,7 +662,7 @@ def apply_rvc_pipeline(audio_numpy, sample_rate, envelope=0.25, consonant_protec
             respiration_median_filtering=3,
             envelope_ratio=envelope,
             consonant_breath_protection=consonant_protection,
-            pitch_lvl=pitch_shift,
+            pitch_lvl=int(round(pitch_shift)),
         )
         rvc_res = rvc([temp_in], ["arlecchino"], show_progress=False)
         if rvc_res and len(rvc_res) > 0 and os.path.exists(rvc_res[0]):
