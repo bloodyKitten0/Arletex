@@ -678,6 +678,15 @@ export class ApeService {
       memoryRepository: msRepo,
       securityRepository: secRepo,
       offlineActivityRepository: offRepo,
+      attachmentRepository: raRepo,
+      temperamentRepository: tempRepo,
+      learningRepository: lRepo,
+      creativityRepository: crtRepo,
+      curiosityRepository: curRepo,
+      reasoningRepository: rRepo,
+      causalRepository: cRepo,
+      projectService: this.personalProjectService,
+      developmentEngine: this.developmentEngine,
     });
 
     const consRepo = consciousnessRepo || new InMemoryFunctionalConsciousnessRepository();
@@ -3384,6 +3393,14 @@ export class ApeService {
   // ==========================================
   public evaluateLongitudinalSystem(input?: any) {
     return this.evaluationEngine.evaluateSystem(input);
+  }
+
+  public evaluateOfficialReport(input?: any) {
+    return this.evaluationEngine.evaluateOfficialReport(input);
+  }
+
+  public verifyCanonicalStateContinuity(probeType: any, baseline: Record<string, any>, postEvent: Record<string, any>) {
+    return this.evaluationEngine.verifyCanonicalStateContinuity(probeType, baseline, postEvent);
   }
 
   public verifyContinuityProbe(probeType: any, baseline: string, postEvent: string) {

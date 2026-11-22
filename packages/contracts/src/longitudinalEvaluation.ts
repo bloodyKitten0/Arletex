@@ -69,5 +69,7 @@ export const TriggerEvaluationInputSchema = z.object({
   modelIdentifier: z.string().optional(),
   targetDimensions: z.array(LongitudinalEvaluationDimensionSchema).optional(),
   contextualObservations: z.array(z.string()).optional(),
+  requireTraceableEvidence: z.boolean().optional(),
+  isOfficialReport: z.boolean().optional(),
 });
 export type TriggerEvaluationInput = z.infer<typeof TriggerEvaluationInputSchema>;
