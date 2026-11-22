@@ -418,6 +418,13 @@ export class ArletexBackendServer {
   private telegramInitiative: TelegramInitiativeService | null = null;
   private autonomousAgency: AutonomousAgencyService | null = null;
   private screenReading: ScreenReadingService = defaultScreenReadingService;
+  private lastScreenObservation: {
+    timestamp: string;
+    imageBase64: string;
+    width: number;
+    height: number;
+    source: string;
+  } | null = null;
   public readonly ocrService: OcrService;
   public readonly modelRegistry: ModelRegistryService;
   public readonly boundedPreservation: BoundedSelfPreservationService;
@@ -2322,11 +2329,42 @@ export class ArletexBackendServer {
           const cap = await defaultDeviceAgency.captureScreen();
           if (cap.imageBase64) {
             perceptionScreenBase64 = cap.imageBase64;
-            ambientPerceptionNote += `\n[Live Host Perception - Screen Inspection]: Current desktop frame (${cap.width}x${cap.height}) captured per Proof's request. Inspect this image to address what is on his monitor.\n`;
+            const nowIso = new Date().toISOString();
+            this.lastScreenObservation = {
+              timestamp: nowIso,
+              imageBase64: cap.imageBase64,
+              width: cap.width,
+              height: cap.height,
+              source: 'desktop_screen_capture',
+            };
+            ambientPerceptionNote += `\n[Visual Observation Status: OBSERVATION_AVAILABLE] (Fresh capture at ${nowIso}, source: desktop_screen_capture, dimensions: ${cap.width}x${cap.height}). Current desktop frame is attached.\n`;
+          } else {
+            ambientPerceptionNote += `\n[Visual Observation Status: OBSERVATION_FAILED] Screen capture attempted but yielded empty image buffer.\n`;
           }
         } catch (capErr: any) {
           this.logger.debug(`Screen capture note: ${capErr.message}`);
+          ambientPerceptionNote += `\n[Visual Observation Status: OBSERVATION_FAILED] Screen capture failed: ${capErr.message}.\n`;
         }
+      } else if (
+        userUploadedImageBase64 ||
+        (userUploadedImagesBase64 && userUploadedImagesBase64.length > 0)
+      ) {
+        const nowIso = new Date().toISOString();
+        ambientPerceptionNote += `\n[Visual Observation Status: OBSERVATION_AVAILABLE] (Direct image attachment provided by Proof at ${nowIso}).\n`;
+      } else if (this.lastScreenObservation) {
+        const ageSec = Math.round(
+          (Date.now() - new Date(this.lastScreenObservation.timestamp).getTime()) / 1000,
+        );
+        if (ageSec <= 60) {
+          perceptionScreenBase64 = this.lastScreenObservation.imageBase64;
+          ambientPerceptionNote += `\n[Visual Observation Status: OBSERVATION_AVAILABLE] (Recent capture ${ageSec}s ago at ${this.lastScreenObservation.timestamp}).\n`;
+        } else if (ageSec <= 300) {
+          ambientPerceptionNote += `\n[Visual Observation Status: OBSERVATION_STALE] (Observation from ${ageSec}s ago at ${this.lastScreenObservation.timestamp}). Note: this observation is outside the freshness window; qualify visual statements.\n`;
+        } else {
+          ambientPerceptionNote += `\n[Visual Observation Status: OBSERVATION_UNAVAILABLE] (Last observation expired ${ageSec}s ago; no active visual feed for this turn).\n`;
+        }
+      } else {
+        ambientPerceptionNote += `\n[Visual Observation Status: OBSERVATION_UNAVAILABLE] No visual screen observation is attached for this turn.\n`;
       }
 
       // Digital Agency: Neural Semantic Intent Classification via EmbeddingGemma 300M

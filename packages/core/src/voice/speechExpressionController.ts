@@ -249,13 +249,79 @@ export class SpeechExpressionController implements ISpeechExpressionController {
       });
     }
 
-    const { pad, primaryEmotion, intensity = 0.5 } = input.psychologicalState;
+    const {
+      pad,
+      primaryEmotion,
+      secondaryEmotion,
+      intensity = 0.5,
+      secondaryIntensity,
+      confidence = 0.85,
+    } = input.psychologicalState;
     const clampedIntensity = Math.max(0.0, Math.min(1.0, intensity));
+    const clampedConfidence = Math.max(0.0, Math.min(1.0, confidence));
 
     // 2. Select canonical base delivery profile
     const canonicalEmotion = mapApeEmotionToCanonical(primaryEmotion);
-    const baseDelivery =
+    const primaryDelivery =
       CANONICAL_EMOTION_DELIVERIES[canonicalEmotion] || CANONICAL_EMOTION_DELIVERIES.neutral;
+
+    // 2b. Secondary emotion blending (Section 7.2 & 7.3)
+    let baseDelivery = primaryDelivery;
+    let combinedEmotionLabel: string = canonicalEmotion;
+
+    if (secondaryEmotion) {
+      const canonicalSecondary = mapApeEmotionToCanonical(secondaryEmotion);
+      const secondaryDelivery =
+        CANONICAL_EMOTION_DELIVERIES[canonicalSecondary] || CANONICAL_EMOTION_DELIVERIES.neutral;
+
+      const rawSecIntensity =
+        secondaryIntensity !== undefined ? secondaryIntensity : clampedIntensity * 0.5;
+      const clampedSecIntensity = Math.max(0.0, Math.min(1.0, rawSecIntensity));
+
+      // Weight is proportional to intensity and confidence, strictly bounded
+      const wSecondary = Number(
+        Math.min(0.45, clampedSecIntensity * clampedConfidence * 0.6).toFixed(4),
+      );
+
+      if (wSecondary > 0 && canonicalSecondary !== canonicalEmotion) {
+        const wPrimary = 1.0 - wSecondary;
+        baseDelivery = {
+          pitchMod: Number(
+            (primaryDelivery.pitchMod * wPrimary + secondaryDelivery.pitchMod * wSecondary).toFixed(
+              2,
+            ),
+          ),
+          speedMultiplier: Number(
+            (
+              primaryDelivery.speedMultiplier * wPrimary +
+              secondaryDelivery.speedMultiplier * wSecondary
+            ).toFixed(3),
+          ),
+          forcefulness: Number(
+            (
+              primaryDelivery.forcefulness * wPrimary +
+              secondaryDelivery.forcefulness * wSecondary
+            ).toFixed(3),
+          ),
+          breathiness: Number(
+            (
+              primaryDelivery.breathiness * wPrimary +
+              secondaryDelivery.breathiness * wSecondary
+            ).toFixed(3),
+          ),
+          warmth: Number(
+            (primaryDelivery.warmth * wPrimary + secondaryDelivery.warmth * wSecondary).toFixed(3),
+          ),
+          pauseCadenceMs: Math.round(
+            primaryDelivery.pauseCadenceMs * wPrimary +
+              secondaryDelivery.pauseCadenceMs * wSecondary,
+          ),
+          vocalRegister: `${primaryDelivery.vocalRegister}_with_${secondaryDelivery.vocalRegister}`,
+          styleInstructions: `${primaryDelivery.styleInstructions} Blended with secondary affective undertones of ${canonicalSecondary}: ${secondaryDelivery.styleInstructions}`,
+        };
+        combinedEmotionLabel = `${canonicalEmotion}+${canonicalSecondary}`;
+      }
+    }
 
     // 3. Compute continuous PAD modulation
     // Valence [-1, 1]: modulates warmth (+/- 0.15) and pitchMod (+/- 0.20)
@@ -322,7 +388,7 @@ export class SpeechExpressionController implements ISpeechExpressionController {
       warmth,
       pauseCadenceMs,
       vocalRegister: baseDelivery.vocalRegister,
-      emotionLabel: canonicalEmotion,
+      emotionLabel: combinedEmotionLabel,
       intensity: clampedIntensity,
       styleInstructions: `${baseDelivery.styleInstructions} [Vocal register: ${baseDelivery.vocalRegister}, warmth: ${warmth.toFixed(2)}, tempo: ${speedMultiplier.toFixed(2)}x, force: ${forcefulness.toFixed(2)}].`,
       leadPaddingMs: 0,

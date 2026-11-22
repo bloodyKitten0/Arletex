@@ -593,8 +593,8 @@ export class MemoryRepository {
         );
 
         const similarity = this.cosineSimilarity(queryVector, candidateVector);
-        // Hybrid score: 70% semantic similarity + 20% importance + 10% recency
-        const recencyScore = this.calculateRecencyScore(row.timestamp);
+        // Hybrid score: 70% semantic similarity + 20% importance + 10% recency/retention
+        const recencyScore = this.calculateRecencyScore(row.timestamp, row.type, row.importance);
         const hybridScore = similarity * 0.7 + (row.importance || 0.5) * 0.2 + recencyScore * 0.1;
 
         const memory = this.mapRow(row);
@@ -627,12 +627,28 @@ export class MemoryRepository {
     return denom === 0 ? 0 : dot / denom;
   }
 
-  private calculateRecencyScore(timestamp: string): number {
-    const ageMs = Date.now() - new Date(timestamp).getTime();
+  private calculateRecencyScore(timestamp: string, type?: string, importance = 0.5): number {
+    // Invariant (P2.8): Autobiographical and relationship memories are permanent with zero decay
+    if (type === 'autobiographical' || type === 'relationship') {
+      return 1.0;
+    }
+    // High importance memories are exempt from episodic decay
+    if (importance >= 0.8) {
+      return 1.0;
+    }
+
+    const ageMs = Math.max(0, Date.now() - new Date(timestamp).getTime());
     const dayMs = 24 * 60 * 60 * 1000;
-    const ageDays = Math.max(0, ageMs / dayMs);
-    // Exponential decay with half-life of ~14 days
-    return Math.exp(-ageDays / 14);
+    const ageDays = ageMs / dayMs;
+
+    let halfLife = 14;
+    if (type === 'semantic' || type === 'procedural') {
+      halfLife = 365;
+    } else if (type === 'working' || type === 'perceptual' || type === 'raw_sensory') {
+      halfLife = 2;
+    }
+
+    return Math.exp(-ageDays / halfLife);
   }
 
   private mapRow(row: any): Memory {

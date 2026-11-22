@@ -826,15 +826,17 @@ These requirements concern self-preservation, future-self modelling, self-develo
 
 ## P3.3 — Evolution engine and cognitive self-development
 
-**Status:** `REVALIDATION REQUIRED` against the latest baseline. The older `next.md` recorded proposal-only evolution as complete; the latest revision introduced further release-gate work.
+**Status:** `VERIFIED`  
+**Verified Commit:** `0ff9f09`  
+**Acceptance Test Suites:** `tests/p0_sandboxed_self_modification_and_autonomy_governance.test.ts` (7/7 pass), `tests/p3_evolution_engine_and_autonomy_levels.test.ts` (7/7 pass)
 
 **Implementation:**
 
 1. Begin with recommendation-only operation.
 2. Detect a repeatable weakness from benchmark evidence.
 3. Produce a reproducible failure case and an explicit improvement hypothesis.
-4. Create candidate changes in an isolated worktree or disposable sandbox.
-5. Run typecheck, unit, integration, security, and relevant performance/behaviour benchmarks against baseline and candidate.
+4. Create candidate changes in an isolated worktree or disposable sandbox (`git worktree add --detach <tempPath> HEAD`).
+5. Run typecheck, unit, integration, security, and allowlisted test suites against baseline and candidate.
 6. Reject changes that regress functionality, security, or identity invariants.
 7. Preserve patch, test output, benchmark comparison, approval, version, and rollback instructions.
 8. Require explicit, time-limited authorization bound to the exact patch digest, scope, user, and expiry before applying any permitted change.
@@ -861,7 +863,9 @@ These requirements concern self-preservation, future-self modelling, self-develo
 
 ## P3.4 — Four developmental autonomy levels
 
-**Status:** `REVALIDATION REQUIRED` against the latest baseline. The older `next.md` recorded the levels as complete; current release-gate changes must be revalidated.
+**Status:** `VERIFIED`  
+**Verified Commit:** `0ff9f09`  
+**Acceptance Test Suites:** `tests/p0_sandboxed_self_modification_and_autonomy_governance.test.ts` (7/7 pass), `tests/p3_evolution_engine_and_autonomy_levels.test.ts` (7/7 pass)
 
 | Level | Capability | Promotion prerequisite |
 |---|---|---|
@@ -1187,8 +1191,8 @@ The older `next.md` contains a detailed historical ledger. Preserve those record
 | P2.6 | DONE | `961e272`; deployment/resource governance tests | Preserve; revalidate if runtime/resource contracts changed. |
 | P3.1 | DONE | `674ed51`; bounded self-preservation tests | Revalidation required against latest release-gate changes. |
 | P3.2 | DONE | `c334477`; future-self tests | Preserve unless future-self/planning contract changed. |
-| P3.3 | DONE | `5df59f8`; evolution tests | Revalidation required against latest release-gate changes. |
-| P3.4 | DONE | `5df59f8`; autonomy-level tests | Revalidation required against latest release-gate changes. |
+| P3.3 | VERIFIED | `0ff9f09`; `tests/p0_sandboxed_self_modification_and_autonomy_governance.test.ts` (7/7) | Genuine worktree sandbox, HMAC approval token, atomic rollback verified. |
+| P3.4 | VERIFIED | `0ff9f09`; `tests/p0_sandboxed_self_modification_and_autonomy_governance.test.ts` (7/7) | Sequential 4-level promotion and regression demotion verified. |
 | P3.5 | RESEARCH COMPLETE | `docs/ARTIFICIAL_CONSCIOUSNESS_RESEARCH_REVIEW.md` | Research deliverable; not an engineering proof or release gate. |
 | D.1–D.8 | RESOLVED | `docs/DECISIONS.md`, ADR-006 through ADR-013, relationship policy | Preserve decisions unless explicitly revised through a new ADR. |
 | P0.1–P0.6 | HARDENED | `db274f7`; `tests/p0_*.test.ts` (77/77 pass) | Release Gate A fully revalidated and locked; zero synthetic bypasses. (2026-11-22) |

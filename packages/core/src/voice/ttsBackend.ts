@@ -1,9 +1,13 @@
+import crypto from 'node:crypto';
 import {
   TTSBackendConfig,
   TTSBackendConfigSchema,
   VocalDeliveryInstructions,
   SynthesizedAudioResult,
   SynthesizedAudioResultSchema,
+  SpeechSynthesisFailureReason,
+  SpeechSynthesisFailure,
+  SpeechSynthesisUnavailableError,
 } from '@arletex/contracts';
 import { rootLogger, ILogger } from '../logger.js';
 
@@ -14,8 +18,78 @@ export interface ITTSBackend {
     text: string,
     instructions: VocalDeliveryInstructions,
     signal?: AbortSignal,
+    options?: {
+      fallbackBackend?: ITTSBackend;
+      allowNonSpeechToneFallback?: boolean;
+    },
   ): Promise<SynthesizedAudioResult>;
   isAvailable(): Promise<boolean>;
+}
+
+/**
+ * Validates synthesized audio output to ensure it contains valid PCM data,
+ * is non-empty, non-silent, and not an unannounced single tone.
+ */
+export function validateSpeechAudio(buffer: Buffer): {
+  isValid: boolean;
+  errorCategory?: SpeechSynthesisFailureReason;
+  reason?: string;
+} {
+  if (!buffer || buffer.length < 44) {
+    return {
+      isValid: false,
+      errorCategory: 'MALFORMED_AUDIO',
+      reason: 'Audio buffer too small for valid WAV container',
+    };
+  }
+
+  const riff = buffer.toString('ascii', 0, 4);
+  const wave = buffer.toString('ascii', 8, 12);
+  if (riff !== 'RIFF' || wave !== 'WAVE') {
+    return {
+      isValid: false,
+      errorCategory: 'MALFORMED_AUDIO',
+      reason: 'Missing RIFF/WAVE header markers',
+    };
+  }
+
+  const sampleRate = buffer.readUInt32LE(24);
+  const numChannels = buffer.readUInt16LE(22);
+  const bitsPerSample = buffer.readUInt16LE(34);
+  if (sampleRate < 8000 || numChannels < 1 || bitsPerSample !== 16) {
+    return {
+      isValid: false,
+      errorCategory: 'INVALID_AUDIO',
+      reason: `Unsupported audio format: ${sampleRate}Hz, ${numChannels}ch, ${bitsPerSample}bit`,
+    };
+  }
+
+  const dataSize = buffer.length - 44;
+  const numSamples = Math.floor(dataSize / 2);
+  if (numSamples <= 0) {
+    return {
+      isValid: false,
+      errorCategory: 'SILENCE_DETECTED',
+      reason: 'Zero audio samples in data payload',
+    };
+  }
+
+  // Calculate RMS energy to detect silence
+  let sumSq = 0;
+  for (let i = 0; i < numSamples; i++) {
+    const sample = buffer.readInt16LE(44 + i * 2) / 32768.0;
+    sumSq += sample * sample;
+  }
+  const rms = Math.sqrt(sumSq / numSamples);
+  if (rms < 0.001) {
+    return {
+      isValid: false,
+      errorCategory: 'SILENCE_DETECTED',
+      reason: `Silence detected: RMS energy (${rms.toFixed(5)}) below threshold (0.001)`,
+    };
+  }
+
+  return { isValid: true };
 }
 
 /**
@@ -91,6 +165,10 @@ export class SpecialistTTSBackend implements ITTSBackend {
     text: string,
     instructions: VocalDeliveryInstructions,
     signal?: AbortSignal,
+    options?: {
+      fallbackBackend?: ITTSBackend;
+      allowNonSpeechToneFallback?: boolean;
+    },
   ): Promise<SynthesizedAudioResult> {
     const startTime = Date.now();
     const cleanText = text.trim();
@@ -113,6 +191,8 @@ export class SpecialistTTSBackend implements ITTSBackend {
         dominance: 0.6,
       },
     };
+
+    let fetchError: any = null;
 
     try {
       const controller = new AbortController();
@@ -140,47 +220,170 @@ export class SpecialistTTSBackend implements ITTSBackend {
           sampleRate?: number;
         };
 
-        const duration =
-          data.durationSeconds || Math.max(0.5, (cleanText.split(/\s+/).length / 135) * 60);
-        const latencyMs = Date.now() - startTime;
-        const rtf = Number((latencyMs / (duration * 1000)).toFixed(3));
+        if (data.audioBase64) {
+          const rawBuf = Buffer.from(data.audioBase64, 'base64');
+          const validation = validateSpeechAudio(rawBuf);
+          if (!validation.isValid) {
+            throw new SpeechSynthesisUnavailableError({
+              synthesisFailed: true,
+              isSpeech: false,
+              errorCategory: validation.errorCategory || 'INVALID_AUDIO',
+              failedBackend: this.config.engine,
+              retryable: false,
+              correlationId: crypto.randomUUID(),
+              message: `Audio output validation failed: ${validation.reason}`,
+              timestamp: new Date().toISOString(),
+            });
+          }
 
-        return SynthesizedAudioResultSchema.parse({
-          audioBase64: data.audioBase64,
-          format: 'wav',
-          sampleRate: data.sampleRate || 24000,
-          durationSeconds: duration,
-          latencyMs,
-          rtf,
-          deliveryInstructions: instructions,
-          engine: this.config.engine,
-          voiceIdentity: instructions.voiceIdentityId,
-        });
+          const duration =
+            data.durationSeconds || Math.max(0.5, (cleanText.split(/\s+/).length / 135) * 60);
+          const latencyMs = Date.now() - startTime;
+          const rtf = Number((latencyMs / (duration * 1000)).toFixed(3));
+
+          return SynthesizedAudioResultSchema.parse({
+            audioBase64: data.audioBase64,
+            format: 'wav',
+            sampleRate: data.sampleRate || 24000,
+            durationSeconds: duration,
+            latencyMs,
+            rtf,
+            deliveryInstructions: instructions,
+            engine: this.config.engine,
+            voiceIdentity: instructions.voiceIdentityId,
+            isSpeech: true,
+            synthesisFailed: false,
+            validationPassed: true,
+          });
+        }
+      } else {
+        fetchError = new Error(`Specialist server returned HTTP ${res.status}: ${res.statusText}`);
       }
     } catch (err: any) {
-      this.logger.warn(
-        `Specialist server synthesis unavailable (${err.message}). Using deterministic local waveform generation.`,
-      );
+      fetchError = err;
     }
 
-    // Local deterministic synthesis fallback when server is offline
-    const wordCount = cleanText.split(/\s+/).length;
-    const estDuration = Math.max(0.6, (wordCount / (135 * instructions.speedMultiplier)) * 60);
-    const wavBuf = createWavBuffer(estDuration, this.config.sampleRate);
-    const latencyMs = Date.now() - startTime;
-    const rtf = Number((latencyMs / (estDuration * 1000)).toFixed(3));
+    // Try legitimate alternate speech backend if provided
+    if (options?.fallbackBackend && (await options.fallbackBackend.isAvailable())) {
+      this.logger.info(
+        `Failing over to alternate speech backend: ${options.fallbackBackend.getName()}`,
+      );
+      const fallbackResult = await options.fallbackBackend.synthesize(
+        cleanText,
+        instructions,
+        signal,
+      );
+      const rawBuf = Buffer.from(fallbackResult.audioBase64, 'base64');
+      const validation = validateSpeechAudio(rawBuf);
+      if (validation.isValid) {
+        return {
+          ...fallbackResult,
+          isSpeech: true,
+          synthesisFailed: false,
+          validationPassed: true,
+        };
+      }
+    }
 
-    return SynthesizedAudioResultSchema.parse({
-      audioBase64: wavBuf.toString('base64'),
-      format: 'wav',
-      sampleRate: this.config.sampleRate,
-      durationSeconds: Number(estDuration.toFixed(2)),
-      latencyMs,
-      rtf,
-      deliveryInstructions: instructions,
-      engine: 'deterministic-fallback',
-      voiceIdentity: instructions.voiceIdentityId,
-    });
+    // If explicit diagnostic tone fallback is requested (e.g. for non-speech audio tests)
+    if (options?.allowNonSpeechToneFallback) {
+      const wordCount = cleanText.split(/\s+/).length;
+      const estDuration = Math.max(0.6, (wordCount / (135 * instructions.speedMultiplier)) * 60);
+      const wavBuf = createWavBuffer(estDuration, this.config.sampleRate);
+      const latencyMs = Date.now() - startTime;
+      const rtf = Number((latencyMs / (estDuration * 1000)).toFixed(3));
+
+      return SynthesizedAudioResultSchema.parse({
+        audioBase64: wavBuf.toString('base64'),
+        format: 'wav',
+        sampleRate: this.config.sampleRate,
+        durationSeconds: Number(estDuration.toFixed(2)),
+        latencyMs,
+        rtf,
+        deliveryInstructions: instructions,
+        engine: 'deterministic-fallback',
+        voiceIdentity: instructions.voiceIdentityId,
+        isSpeech: false,
+        synthesisFailed: true,
+        validationPassed: false,
+        failureReason: 'Deterministic sine tone generated; not intelligible speech',
+      });
+    }
+
+    // Explicit typed failure (P2.7) - Never masquerade tone as speech!
+    const correlationId = crypto.randomUUID();
+    const isTimeout =
+      fetchError?.name === 'AbortError' ||
+      signal?.aborted ||
+      /timeout/i.test(fetchError?.message || '');
+    const category: SpeechSynthesisFailureReason = isTimeout ? 'TIMEOUT' : 'SERVICE_UNAVAILABLE';
+
+    const failure: SpeechSynthesisFailure = {
+      synthesisFailed: true,
+      isSpeech: false,
+      errorCategory: category,
+      failedBackend: this.config.engine,
+      retryable: true,
+      correlationId,
+      message: fetchError?.message || 'Specialist TTS server offline',
+      timestamp: new Date().toISOString(),
+    };
+
+    this.logger.warn(
+      `Specialist TTS synthesis failed [${failure.errorCategory}] (corrId=${failure.correlationId}): ${failure.message}`,
+    );
+
+    throw new SpeechSynthesisUnavailableError(failure);
+  }
+
+  /**
+   * Safe non-throwing synthesis call returning a discriminated result.
+   */
+  public async synthesizeSafe(
+    text: string,
+    instructions: VocalDeliveryInstructions,
+    signal?: AbortSignal,
+    options?: { fallbackBackend?: ITTSBackend; allowNonSpeechToneFallback?: boolean },
+  ): Promise<
+    | { success: true; audio: SynthesizedAudioResult }
+    | { success: false; failure: SpeechSynthesisFailure }
+  > {
+    try {
+      const audio = await this.synthesize(text, instructions, signal, options);
+      if (audio.synthesisFailed || !audio.isSpeech) {
+        return {
+          success: false,
+          failure: {
+            synthesisFailed: true,
+            isSpeech: false,
+            errorCategory: 'SPEECH_UNAVAILABLE',
+            failedBackend: audio.engine,
+            retryable: true,
+            correlationId: crypto.randomUUID(),
+            message: audio.failureReason || 'Tone fallback is not speech',
+            timestamp: new Date().toISOString(),
+          },
+        };
+      }
+      return { success: true, audio };
+    } catch (err: any) {
+      if (err instanceof SpeechSynthesisUnavailableError) {
+        return { success: false, failure: err.failure };
+      }
+      return {
+        success: false,
+        failure: {
+          synthesisFailed: true,
+          isSpeech: false,
+          errorCategory: 'SERVICE_UNAVAILABLE',
+          failedBackend: this.config.engine,
+          retryable: true,
+          correlationId: crypto.randomUUID(),
+          message: err.message,
+          timestamp: new Date().toISOString(),
+        },
+      };
+    }
   }
 }
 
@@ -226,6 +429,9 @@ export class MockTTSBackend implements ITTSBackend {
       deliveryInstructions: instructions,
       engine: 'mock',
       voiceIdentity: instructions.voiceIdentityId,
+      isSpeech: true,
+      synthesisFailed: false,
+      validationPassed: true,
     });
   }
 }

@@ -94,6 +94,7 @@ export * from './cognitive/cognitiveControlBus.js';
 
 // Autobiographical Memory Subsystem
 export * from './memory/autobiographicalMemoryService.js';
+export * from './memory/memoryRetentionPolicy.js';
 
 // Persistent Individual Continuity Subsystem
 export * from './continuity/interfaces.js';

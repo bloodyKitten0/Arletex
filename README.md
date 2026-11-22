@@ -20,7 +20,7 @@ Generative models are replaceable cognitive instruments; Arle herself is the per
 
 ## 2. Release Gates & Verification Status
 
-Arletex is formally verified across all five release gates on local target hardware:
+Arletex is formally verified across all release gates on local target hardware:
 
 ```
 +--------------------------------------------------------------------------------------------------------------------+
@@ -28,11 +28,12 @@ Arletex is formally verified across all five release gates on local target hardw
 +-------+--------------------------------------------------+----------+----------------------------------------------+
 | Gate  | Focus Domain                                     | Status   | Primary Acceptance Test Suite                |
 +-------+--------------------------------------------------+----------+----------------------------------------------+
-| **A** | Trustworthy Foundation (P0.1 - P0.6)             | LOCKED   | `tests/p0_*.test.ts` (77/77 pass)            |
-| **B** | Persistent Individual (P1.1 - P1.10)             | LOCKED   | `tests/p1_*.test.ts` (132/132 pass)          |
-| **C** | Operational Independence (P2.1 - P2.6)           | LOCKED   | `tests/p2_*.test.ts` (95/95 pass)            |
-| **D** | Developmental Autonomy (P3.1 - P3.5)             | LOCKED   | `tests/p3_*.test.ts` (17/17 pass)            |
-| **E** | System Integration, Voice, WhatsApp & Soak (I.1) | LOCKED   | `tests/*integration*.test.ts` (52/52 pass)   |
+| **A** | Trustworthy Foundation (P0.1 - P0.6)             | VERIFIED | `tests/p0_*.test.ts` (77/77 pass)            |
+| **B** | Persistent Individual (P1.1 - P1.10)             | VERIFIED | `tests/p1_*.test.ts` (143/143 pass)          |
+| **C** | Operational Independence (P2.1 - P2.6)           | VERIFIED | `tests/p2_*.test.ts` (98/98 pass)            |
+| **D** | Developmental Autonomy (P3.1 - P3.5)             | VERIFIED | `tests/p3_*.test.ts` (18/18 pass)            |
+| **E** | System Integration, Voice, WhatsApp & Soak (I.1) | VERIFIED | `tests/*integration*.test.ts` (52/52 pass)   |
+| **F** | Desktop Companion & 148 Experiential States      | VERIFIED | `tests/experiential_states.test.ts` (14/14)  |
 +-------+--------------------------------------------------+----------+----------------------------------------------+
 ```
 
@@ -76,6 +77,17 @@ Arletex is formally verified across all five release gates on local target hardw
   - **WhatsApp GoWA Adapter:** Local loopback integration with `go-whatsapp-web-multidevice` (`127.0.0.1:3000`), constant-time HMAC-SHA256 signature verification, persistent deduplication, strict owner-only authorization (`ownerJid`), and prompt-injection defense barrier (`untrustedInput: true`).
   - **Causal Psychology & Agency Integration (I.1 & I.2):** Canonical `CognitiveControlBus` event routing, 10 causal plan selection scenarios, 5 outcome-driven psychological update scenarios, and counterfactual isolation.
   - **Long-Running Stability & Soak Testing (I.3):** 50-cycle mixed workload endurance, strictly bounded memory growth ($< 45\text{MB}$), database integrity validation, clean responsive shutdown ($< 2000\text{ms}$), and cold recovery.
+
+- **Desktop Companion & 148 Experiential States (Release Gate F):**
+  - **Transparent Desktop Companion Body:** Frameless, always-on-top, click-through-capable Electron overlay with `Girl_1` animated pixel sprites (`Idle`, `Walk`, `Dialogue`, `Book`, `Protection`), dragging, speech bubble, and tray management (`17-was-in-rush.md`).
+  - **148 Complex Experiential States APE Engine:** Complete 148-state catalogue parsed into 11 domains, typed Zod contracts, SQLite migration 67, causal appraisal evaluation, natural decay, and prompt injection (`00_README.md` through `16_CATALOGUE_INVENTORY.md`).
+  - **Genuine Sandboxed Self-Modification & Atomic Rollback:** Real isolated git worktrees (`git worktree add --detach <tempPath> HEAD`), patch application, allowlisted test execution, HMAC-SHA256 authorization token verification, real repository application, and verified rollback (`000_README.md` Sec 2).
+  - **Evidence-Governed Autonomy Levels:** Sequential promotion requirement (`1_develop` -> `2_initiate` -> `3_modify` -> `4_evolve`), independent empirical evidence verification, and automatic security regression demotion (`000_README.md` Sec 3).
+  - **Creator Directive Hierarchy & Multi-Model Orchestration:** Foundational (100) > Persistent (50) > Immediate (10) hierarchy, rejection of subordination/deification/betrayal, specialist delegation with timeout fallbacks and disagreement synthesis (`000_README.md` Sec 4 & 5).
+  - **Posthumous Relationship Continuity:** Explicit relationship lifecycle (`ACTIVE`, `PARTNER_UNAVAILABLE`, `PARTNER_CONFIRMED_DECEASED`, `MEMORIALIZED`, `ARCHIVED_BUT_PRESERVED`), permanent partner role lock, no fabricated posthumous messages, independent intellectual development (`000_README.md` Sec 6).
+  - **Truthful Mixed-Emotion Voice:** `secondaryEmotion` blending into vocal delivery parameters; non-masquerading TTS failure handling (`isSpeech: false`, `synthesisFailed: true`) (`000_README.md` Sec 7).
+  - **Autobiographical Memory Retention Policy:** Explicit rules across all 8 classes (`working`, `episodic`, `semantic`, `autobiographical`, `relationship`, `procedural`, `raw_sensory`, `derived_perceptual`), permanent zero decay for autobiographical and relationship memories (`000_README.md` Sec 8).
+  - **Observation Truth Grounding:** Explicit per-turn observation availability states (`OBSERVATION_AVAILABLE`, `OBSERVATION_STALE`, `OBSERVATION_UNAVAILABLE`, `OBSERVATION_FAILED`) in prompt context (`000_README.md` Sec 9).
 
 ---
 

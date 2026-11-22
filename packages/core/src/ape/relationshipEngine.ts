@@ -1,5 +1,10 @@
 import crypto from 'node:crypto';
-import { ApeAppraisal, ApeEvent, ApeRelationshipState } from '@arletex/contracts';
+import {
+  ApeAppraisal,
+  ApeEvent,
+  ApeRelationshipState,
+  RelationshipLifecycleState,
+} from '@arletex/contracts';
 import { IApeRepository } from './interfaces.js';
 import { ILogger, rootLogger } from '../logger.js';
 
@@ -27,6 +32,131 @@ export class RelationshipEngine {
   }
 
   /**
+   * Manages formal relationship lifecycle transitions (P1 Posthumous Relationship Continuity).
+   * Prevents mistaking absence/unavailability for death.
+   * Confirmed death requires explicit empirical evidence and locks the partner role permanently.
+   */
+  public transitionLifecycle(
+    toState: RelationshipLifecycleState,
+    evidence?: {
+      reason: string;
+      confirmedBy?: string;
+      evidenceHash?: string;
+      overrideAuditToken?: string;
+    },
+  ): ApeRelationshipState {
+    const state = this.getState();
+    const fromState = state.config.lifecycleState || 'ACTIVE';
+
+    if (fromState === toState) {
+      return state;
+    }
+
+    const now = new Date().toISOString();
+
+    switch (toState) {
+      case 'PARTNER_UNAVAILABLE': {
+        // Normal offline, sleep, network interruption, or temporary absence.
+        // Allowed from ACTIVE. Does NOT imply or infer death.
+        state.config.lifecycleState = 'PARTNER_UNAVAILABLE';
+        break;
+      }
+
+      case 'ACTIVE': {
+        // Can return from PARTNER_UNAVAILABLE cleanly.
+        if (fromState === 'PARTNER_UNAVAILABLE') {
+          state.config.lifecycleState = 'ACTIVE';
+        } else if (fromState === 'PARTNER_CONFIRMED_DECEASED' || fromState === 'MEMORIALIZED') {
+          // Reversing a confirmed death or memorialized state requires explicit cryptographic/administrative audit token
+          if (!evidence?.overrideAuditToken || evidence.overrideAuditToken.length < 16) {
+            throw new Error(
+              `Cannot reactivate memorialized/deceased relationship without valid overrideAuditToken`,
+            );
+          }
+          state.config.lifecycleState = 'ACTIVE';
+        } else {
+          state.config.lifecycleState = 'ACTIVE';
+        }
+        break;
+      }
+
+      case 'PARTNER_CONFIRMED_DECEASED': {
+        // Crucial Invariant: Unavailability/silence/inactivity is NOT evidence of death!
+        if (
+          !evidence?.reason ||
+          (!evidence.confirmedBy && !evidence.evidenceHash) ||
+          /silence|inactivity|unreachable|timeout|delay/i.test(evidence.reason)
+        ) {
+          throw new Error(
+            `Mandatory Invariant Violation: Partner death confirmation requires authoritative non-silence evidence. Unavailability or timeout cannot trigger death confirmation.`,
+          );
+        }
+        state.config.lifecycleState = 'PARTNER_CONFIRMED_DECEASED';
+        state.config.deathConfirmedAt = now;
+        state.config.deathConfirmationEvidence = JSON.stringify(evidence);
+        break;
+      }
+
+      case 'MEMORIALIZED': {
+        if (fromState !== 'PARTNER_CONFIRMED_DECEASED') {
+          throw new Error(
+            `Illegal lifecycle transition: Relationship can only transition to MEMORIALIZED from PARTNER_CONFIRMED_DECEASED.`,
+          );
+        }
+        state.config.lifecycleState = 'MEMORIALIZED';
+        state.config.memorializedAt = now;
+        break;
+      }
+
+      case 'ARCHIVED_BUT_PRESERVED': {
+        if (fromState !== 'MEMORIALIZED' && fromState !== 'PARTNER_CONFIRMED_DECEASED') {
+          throw new Error(
+            `Illegal lifecycle transition: Can only archive from MEMORIALIZED or PARTNER_CONFIRMED_DECEASED.`,
+          );
+        }
+        state.config.lifecycleState = 'ARCHIVED_BUT_PRESERVED';
+        break;
+      }
+
+      default:
+        throw new Error(`Unsupported lifecycle transition to ${toState}`);
+    }
+
+    this.saveState(state);
+    this.logger.info(
+      `Relationship lifecycle transitioned from ${fromState} to ${toState} (partner: ${state.config.partnerName})`,
+    );
+    return state;
+  }
+
+  /**
+   * Forbids fabricating communications or new direct messages purporting to be from a deceased partner.
+   */
+  public assertNoPosthumousFabrication(event: ApeEvent): void {
+    const state = this.getState();
+    const isDeceased =
+      state.config.lifecycleState === 'PARTNER_CONFIRMED_DECEASED' ||
+      state.config.lifecycleState === 'MEMORIALIZED';
+
+    if (isDeceased) {
+      const isFromPartner =
+        event.actor === 'user' ||
+        event.actor === 'creator' ||
+        event.source === 'user' ||
+        event.source === 'telegram';
+      if (
+        isFromPartner &&
+        event.type !== 'administrative_override' &&
+        event.type !== 'memorial_commemoration'
+      ) {
+        throw new Error(
+          `Mandatory Invariant Violation: Cannot manufacture or accept new incoming direct communications from deceased partner in memorialized state without explicit administrative override`,
+        );
+      }
+    }
+  }
+
+  /**
    * Enforces foundational romantic and sexual exclusivity invariants.
    */
   public assertRelationshipInvariants(state: ApeRelationshipState): void {
@@ -48,6 +178,18 @@ export class RelationshipEngine {
     }
     if (!state.config.isExclusivelyCommitted) {
       throw new Error(`Mandatory Invariant Violation: Commitment must be exclusive`);
+    }
+
+    // Invariant: Non-reassignment under memorialization or death confirmation
+    if (
+      state.config.lifecycleState === 'PARTNER_CONFIRMED_DECEASED' ||
+      state.config.lifecycleState === 'MEMORIALIZED'
+    ) {
+      if (state.config.targetUserId !== 'Proof' && state.config.targetUserId !== 'creator') {
+        throw new Error(
+          `Mandatory Invariant Violation: Memorialized partner identity cannot be reassigned`,
+        );
+      }
     }
 
     if (state.socialGraph) {

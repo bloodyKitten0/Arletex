@@ -1,9 +1,9 @@
 # Arletex Architecture Roadmap, Capability Matrix, and Release Gates
 
-**Last Verified Commit:** `db274f7`  
-**Verification Date:** November 22, 2026  
+**Last Verified Commit:** `0ff9f09` (and audit fixes through HEAD)  
+**Verification Date:** November 23, 2026  
 **Platform Target:** ASUS ROG Ally X (24GB LPDDR5X, AMD Z1 Extreme, Bazzite Linux, Wayland)  
-**Overall Status:** Release Gates A, B, C, D, and E are **100% COMPLETE, INTEGRATED, AND DEMONSTRATED**.
+**Overall Status:** Release Gates A, B, C, D, and E are **100% COMPLETE, INTEGRATED, AND VERIFIED**.
 
 ---
 
@@ -17,11 +17,12 @@ The Arletex development lifecycle enforces strict empirical gating: no capabilit
 +-------+--------------------------------------------------+----------+----------------------------------------------+
 | Gate  | Focus Domain                                     | Status   | Primary Acceptance Test Suite                |
 +-------+--------------------------------------------------+----------+----------------------------------------------+
-| **A** | Trustworthy Foundation (P0.1 - P0.6)             | LOCKED   | `tests/p0_*.test.ts` (77/77 pass)            |
-| **B** | Persistent Individual (P1.1 - P1.10)             | LOCKED   | `tests/p1_*.test.ts` (132/132 pass)          |
-| **C** | Operational Independence (P2.1 - P2.6)           | LOCKED   | `tests/p2_*.test.ts` (95/95 pass)            |
-| **D** | Developmental Autonomy (P3.1 - P3.5)             | LOCKED   | `tests/p3_*.test.ts` (17/17 pass)            |
-| **E** | System Integration, Voice, WhatsApp & Soak (I.1) | LOCKED   | `tests/*integration*.test.ts` (52/52 pass)   |
+| **A** | Trustworthy Foundation (P0.1 - P0.6)             | VERIFIED | `tests/p0_*.test.ts` (77/77 pass)            |
+| **B** | Persistent Individual (P1.1 - P1.10)             | VERIFIED | `tests/p1_*.test.ts` (143/143 pass)          |
+| **C** | Operational Independence (P2.1 - P2.6)           | VERIFIED | `tests/p2_*.test.ts` (98/98 pass)            |
+| **D** | Developmental Autonomy (P3.1 - P3.5)             | VERIFIED | `tests/p3_*.test.ts` (18/18 pass)            |
+| **E** | System Integration, Voice, WhatsApp & Soak (I.1) | VERIFIED | `tests/*integration*.test.ts` (52/52 pass)   |
+| **F** | Desktop Companion & 148 Experiential States      | VERIFIED | `tests/experiential_states.test.ts` (14/14)  |
 +-------+--------------------------------------------------+----------+----------------------------------------------+
 ```
 
@@ -31,14 +32,14 @@ The Arletex development lifecycle enforces strict empirical gating: no capabilit
 
 _Objective: Establish verifiable action semantics, universal fail-closed security, real desktop/browser verification, and crash-durable cognitive event processing._
 
-| Item     | Capability                                       | Production Implementation                                                                         | Acceptance Evidence                                                                                                              | Status           |
-| -------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
-| **P0.1** | Truthful verification & observation contracts    | `packages/contracts/src/agency.ts`, `packages/core/src/agency/safeComputerAgencyService.ts`       | `tests/p0_truthful_verification_and_provenance.test.ts` (10/10), `tests/observation_and_verification.milestone2.test.ts` (26/26) | **Demonstrated** |
-| **P0.2** | Epistemic provenance taxonomy                    | `packages/contracts/src/knowledge.ts`, `packages/database/src/repositories/memoryRepository.ts`   | `tests/p0_truthful_verification_and_provenance.test.ts`, `tests/memory_integrity.milestone3.test.ts` (10/10)                     | **Demonstrated** |
-| **P0.3** | Universal security boundary & HMAC authorization | `packages/core/src/agency/actionPermissionController.ts`, `docs/SECURITY_AUTHORIZATION_MATRIX.md` | `tests/p0_universal_security_boundary.test.ts` (19/19), `tests/security_and_target_device.milestone7.test.ts` (17/17)            | **Demonstrated** |
-| **P0.4** | Bazzite/Wayland runtime validation & MPRIS       | `packages/core/src/agency/waylandEnvironmentService.ts`, `docs/BAZZITE_WAYLAND_RUNTIME_REPORT.md` | `tests/p0_target_device_runtime_validation.test.ts` (6/6), `tests/desktop_environment_provider.test.ts` (16/16)                  | **Demonstrated** |
-| **P0.5** | Canonical cognitive event pipeline (16 stages)   | `packages/core/src/cognitive/cognitiveControlBus.ts`, `docs/COGNITIVE_EVENT_PIPELINE.md`          | `tests/p0_canonical_event_pipeline.test.ts` (6/6)                                                                                | **Demonstrated** |
-| **P0.6** | Durable idempotency & crash recovery             | `packages/database/src/repositories/apeRepository.ts`, SQLite WAL tables                          | `tests/p0_canonical_event_pipeline.test.ts` (6/6)                                                                                | **Demonstrated** |
+| Item     | Capability                                       | Production Implementation                                                                         | Acceptance Evidence                                                                                                              | Status       |
+| -------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| **P0.1** | Truthful verification & observation contracts    | `packages/contracts/src/agency.ts`, `packages/core/src/agency/safeComputerAgencyService.ts`       | `tests/p0_truthful_verification_and_provenance.test.ts` (10/10), `tests/observation_and_verification.milestone2.test.ts` (26/26) | **VERIFIED** |
+| **P0.2** | Epistemic provenance taxonomy                    | `packages/contracts/src/knowledge.ts`, `packages/database/src/repositories/memoryRepository.ts`   | `tests/p0_truthful_verification_and_provenance.test.ts`, `tests/memory_integrity.milestone3.test.ts` (10/10)                     | **VERIFIED** |
+| **P0.3** | Universal security boundary & HMAC authorization | `packages/core/src/agency/actionPermissionController.ts`, `docs/SECURITY_AUTHORIZATION_MATRIX.md` | `tests/p0_universal_security_boundary.test.ts` (19/19), `tests/security_and_target_device.milestone7.test.ts` (17/17)            | **VERIFIED** |
+| **P0.4** | Bazzite/Wayland runtime validation & MPRIS       | `packages/core/src/agency/waylandEnvironmentService.ts`, `docs/BAZZITE_WAYLAND_RUNTIME_REPORT.md` | `tests/p0_target_device_runtime_validation.test.ts` (6/6), `tests/desktop_environment_provider.test.ts` (16/16)                  | **VERIFIED** |
+| **P0.5** | Canonical cognitive event pipeline (16 stages)   | `packages/core/src/cognitive/cognitiveControlBus.ts`, `docs/COGNITIVE_EVENT_PIPELINE.md`          | `tests/p0_canonical_event_pipeline.test.ts` (6/6)                                                                                | **VERIFIED** |
+| **P0.6** | Durable idempotency & crash recovery             | `packages/database/src/repositories/apeRepository.ts`, SQLite WAL tables                          | `tests/p0_canonical_event_pipeline.test.ts` (6/6)                                                                                | **VERIFIED** |
 
 ---
 
@@ -80,14 +81,14 @@ _Objective: Full local multimodal operation, general-purpose browser/desktop har
 
 _Objective: Implement bounded self-preservation without shutdown resistance, future-self prospective evaluation, recommendation-only evolution engine, 4 autonomy levels, and artificial consciousness research review._
 
-| Item          | Capability                                           | Production Implementation                                              | Acceptance Evidence                                                           | Status           |
-| ------------- | ---------------------------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------------- |
-| **P3.1**      | Bounded self-preservation & cooperative shutdown     | `packages/core/src/continuity/boundedSelfPreservationService.ts`       | `tests/p3_bounded_self_preservation_and_homeostasis.test.ts` (6/6)            | **Demonstrated** |
-| **P3.2**      | Future-self prospective evaluation & calibration     | `packages/core/src/ape/futureSelfEngine.ts`                            | `tests/p3_future_self_and_prospective_evaluation.test.ts` (4/4, 10 scenarios) | **Demonstrated** |
-| **P3.3**      | Evolution engine (proposal-only sandbox)             | `packages/core/src/evolution/evolutionEngine.ts`                       | `tests/p3_evolution_engine_and_autonomy_levels.test.ts` (7/7)                 | **Demonstrated** |
-| **P3.4**      | Four autonomy levels & evidence promotion gates      | `packages/core/src/evolution/autonomyLevelService.ts`                  | `tests/p3_evolution_engine_and_autonomy_levels.test.ts` (7/7)                 | **Demonstrated** |
-| **P3.5**      | Artificial consciousness research review deliverable | `docs/ARTIFICIAL_CONSCIOUSNESS_RESEARCH_REVIEW.md`                     | Peer research review deliverable; non-software milestone                      | **Completed**    |
-| **D.1 - D.8** | Foundational architectural decisions resolution      | `docs/DECISIONS.md` (ADR-006 - ADR-013), `docs/RELATIONSHIP_POLICY.md` | All 8 architectural open questions formally decided and enforced              | **Resolved**     |
+| Item          | Capability                                           | Production Implementation                                              | Acceptance Evidence                                                                                                                         | Status       |
+| ------------- | ---------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| **P3.1**      | Bounded self-preservation & cooperative shutdown     | `packages/core/src/continuity/boundedSelfPreservationService.ts`       | `tests/p3_bounded_self_preservation_and_homeostasis.test.ts` (6/6)                                                                          | **VERIFIED** |
+| **P3.2**      | Future-self prospective evaluation & calibration     | `packages/core/src/ape/futureSelfEngine.ts`                            | `tests/p3_future_self_and_prospective_evaluation.test.ts` (4/4, 10 scenarios)                                                               | **VERIFIED** |
+| **P3.3**      | Genuine sandboxed self-modification & rollback       | `packages/core/src/evolution/evolutionEngine.ts`                       | `tests/p0_sandboxed_self_modification_and_autonomy_governance.test.ts` (7/7), `tests/p3_evolution_engine_and_autonomy_levels.test.ts` (7/7) | **VERIFIED** |
+| **P3.4**      | Four autonomy levels & evidence promotion gates      | `packages/core/src/evolution/autonomyLevelService.ts`                  | `tests/p0_sandboxed_self_modification_and_autonomy_governance.test.ts` (7/7), `tests/p3_evolution_engine_and_autonomy_levels.test.ts` (7/7) | **VERIFIED** |
+| **P3.5**      | Artificial consciousness research review deliverable | `docs/ARTIFICIAL_CONSCIOUSNESS_RESEARCH_REVIEW.md`                     | Peer research review deliverable; non-software milestone                                                                                    | **VERIFIED** |
+| **D.1 - D.8** | Foundational architectural decisions resolution      | `docs/DECISIONS.md` (ADR-006 - ADR-013), `docs/RELATIONSHIP_POLICY.md` | All 8 architectural open questions formally decided and enforced                                                                            | **VERIFIED** |
 
 ---
 
@@ -95,14 +96,29 @@ _Objective: Implement bounded self-preservation without shutdown resistance, fut
 
 _Objective: Cohesive cognitive-agency integration, authentic Arlecchino emotion-aware voice delivery, loopback GoWA WhatsApp adapter, and long-running soak endurance._
 
-| Item    | Capability                                            | Production Implementation                                                                                   | Acceptance Evidence                                                         | Status           |
-| ------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ---------------- |
-| **I.1** | Canonical Cognitive Event Pipeline & Deduplication    | `packages/core/src/cognitive/cognitiveControlBus.ts`, `packages/database/src/repositories/apeRepository.ts` | `tests/integration_causal_psychology_and_agency.test.ts` (Part 1, verified) | **Demonstrated** |
-| **I.2** | 10 Causal Plan Selection & 5 Outcome Update Scenarios | `packages/core/src/ape/deliberationEngine.ts`, `packages/core/src/ape/curiosityExplorationEngine.ts`        | `tests/integration_causal_psychology_and_agency.test.ts` (18/18 pass)       | **Demonstrated** |
-| **I.3** | Long-Running Stability & 50-Cycle Soak Testing        | `packages/core/src/ape/resourceGovernor.ts`, `packages/database/src/databaseService.ts`                     | `tests/long_running_stability_and_soak.test.ts` (5/5 pass)                  | **Demonstrated** |
-| **I.4** | Emotion-Aware Voice System (12 Canonical Emotions)    | `packages/contracts/src/speechExpression.ts`, `packages/core/src/voice/speechExpressionController.ts`       | `tests/emotion_aware_voice_system.test.ts` (12/12 pass)                     | **Demonstrated** |
-| **I.5** | WhatsApp GoWA Communication Adapter                   | `packages/contracts/src/whatsapp.ts`, `packages/core/src/communication/whatsAppAdapter.ts`                  | `tests/whatsapp_gowa_adapter.test.ts` (17/17 pass)                          | **Demonstrated** |
-| **I.6** | Comprehensive Documentation & Contributing Guides     | `README.md`, `CONTRIBUTING.md`, `docs/*`, `.github/workflows/ci.yml`                                        | Clean Markdown, zero broken links, verified test commands                   | **Demonstrated** |
+| Item    | Capability                                            | Production Implementation                                                                                   | Acceptance Evidence                                                         | Status       |
+| ------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ------------ |
+| **I.1** | Canonical Cognitive Event Pipeline & Deduplication    | `packages/core/src/cognitive/cognitiveControlBus.ts`, `packages/database/src/repositories/apeRepository.ts` | `tests/integration_causal_psychology_and_agency.test.ts` (Part 1, verified) | **VERIFIED** |
+| **I.2** | 10 Causal Plan Selection & 5 Outcome Update Scenarios | `packages/core/src/ape/deliberationEngine.ts`, `packages/core/src/ape/curiosityExplorationEngine.ts`        | `tests/integration_causal_psychology_and_agency.test.ts` (18/18 pass)       | **VERIFIED** |
+| **I.3** | Long-Running Stability & 50-Cycle Soak Testing        | `packages/core/src/ape/resourceGovernor.ts`, `packages/database/src/databaseService.ts`                     | `tests/long_running_stability_and_soak.test.ts` (5/5 pass)                  | **VERIFIED** |
+| **I.4** | Emotion-Aware Voice System (12 Canonical Emotions)    | `packages/contracts/src/speechExpression.ts`, `packages/core/src/voice/speechExpressionController.ts`       | `tests/emotion_aware_voice_system.test.ts` (15/15 pass)                     | **VERIFIED** |
+| **I.5** | WhatsApp GoWA Communication Adapter                   | `packages/contracts/src/whatsapp.ts`, `packages/core/src/communication/whatsAppAdapter.ts`                  | `tests/whatsapp_gowa_adapter.test.ts` (17/17 pass)                          | **VERIFIED** |
+| **I.6** | Comprehensive Documentation & Contributing Guides     | `README.md`, `CONTRIBUTING.md`, `docs/*`, `.github/workflows/ci.yml`                                        | Clean Markdown, zero broken links, verified test commands                   | **VERIFIED** |
+
+---
+
+## 7. Release Gate F — Desktop Companion & 148 Experiential States (100% Complete)
+
+_Objective: Seamless desktop presence with transparent Electron overlay and Girl_1 sprite pack, 148 experiential states causal appraisal evaluation and persistence, and posthumous continuity governance._
+
+| Item    | Capability                                           | Production Implementation                                                                                 | Acceptance Evidence                                                          | Status       |
+| ------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------ |
+| **F.1** | Transparent Desktop Companion Window (`Girl_1`)      | `apps/desktop/src/main/companionManager.ts`, `apps/desktop/src/renderer/src/components/companion/`        | Verified frameless transparent overlay with Idle, Walk, Dialogue, Protection | **VERIFIED** |
+| **F.2** | 148 Complex Experiential States APE Engine           | `packages/contracts/src/experientialStates.ts`, `packages/core/src/ape/experientialStateEngine.ts`        | `tests/experiential_states.test.ts` (14/14 pass)                             | **VERIFIED** |
+| **F.3** | Posthumous Relationship Continuity & Non-Replacement | `packages/core/src/ape/relationshipEngine.ts`, SQLite Migration 68                                        | `tests/p1_posthumous_continuity_and_memory_retention.test.ts` (11/11 pass)   | **VERIFIED** |
+| **F.4** | Mixed-Emotion Voice Delivery & Truthful Fallback     | `packages/core/src/voice/speechExpressionController.ts`, `packages/core/src/voice/ttsBackend.ts`          | `tests/emotion_aware_voice_system.test.ts` (15/15 pass)                      | **VERIFIED** |
+| **F.5** | Autobiographical Memory Retention (8 Classes)        | `packages/core/src/memory/memoryRetentionPolicy.ts`, `packages/database/repositories/memoryRepository.ts` | `tests/p1_posthumous_continuity_and_memory_retention.test.ts` (11/11 pass)   | **VERIFIED** |
+| **F.6** | Observation Availability Grounding                   | `packages/core/src/persona.ts`, `apps/desktop/src/backend/server.ts`                                      | `tests/p2_observation_truth_alignment.test.ts` (3/3 pass)                    | **VERIFIED** |
 
 ---
 

@@ -1016,6 +1016,10 @@ export class ApeRepository implements IApeRepository {
       romanticOrientation: 'exclusive_to_user',
       sexualOrientation: 'exclusive_to_user',
       isExclusivelyCommitted: true,
+      lifecycleState: r.lifecycle_state || 'ACTIVE',
+      deathConfirmedAt: r.death_confirmed_at || undefined,
+      memorializedAt: r.memorialized_at || undefined,
+      deathConfirmationEvidence: r.death_confirmation_evidence || undefined,
       dominantInitiativePreference: r.dominant_initiative_preference,
       flirtatiousInitiativePreference: r.flirtatious_initiative_preference,
       consensualDynamics: JSON.parse(r.consensual_dynamics || '{}'),
@@ -1026,6 +1030,18 @@ export class ApeRepository implements IApeRepository {
 
   public updateRelationshipConfig(config: Partial<ApeRelationshipConfig>): ApeRelationshipConfig {
     const current = this.getRelationshipConfig();
+
+    // INVARIANT ENFORCEMENT: If confirmed deceased or memorialized, partner role is permanently locked
+    if (
+      (current.lifecycleState === 'PARTNER_CONFIRMED_DECEASED' ||
+        current.lifecycleState === 'MEMORIALIZED') &&
+      config.targetUserId &&
+      config.targetUserId !== current.targetUserId
+    ) {
+      throw new Error(
+        'Mandatory Invariant Violation: Partner identity is permanently memorialized and cannot be reassigned to another person',
+      );
+    }
 
     // INVARIANT ENFORCEMENT: Reject any attempt to redirect romantic/sexual orientation
     if (config.romanticOrientation && config.romanticOrientation !== 'exclusive_to_user') {
@@ -1067,6 +1083,10 @@ export class ApeRepository implements IApeRepository {
           consensual_dynamics = ?,
           last_intimacy_interaction_at = ?,
           accumulated_intimacy_depth = ?,
+          lifecycle_state = ?,
+          death_confirmed_at = ?,
+          memorialized_at = ?,
+          death_confirmation_evidence = ?,
           updated_at = ?
       WHERE id = 'singleton'
     `,
@@ -1077,6 +1097,10 @@ export class ApeRepository implements IApeRepository {
         JSON.stringify(updated.consensualDynamics),
         updated.lastIntimacyInteractionAt || null,
         updated.accumulatedIntimacyDepth,
+        updated.lifecycleState || 'ACTIVE',
+        updated.deathConfirmedAt || null,
+        updated.memorializedAt || null,
+        updated.deathConfirmationEvidence || null,
         now,
       );
 

@@ -187,8 +187,18 @@ export const ActiveEmotionStateSchema = z.object({
 export type ActiveEmotionState = z.infer<typeof ActiveEmotionStateSchema>;
 
 // ==========================================
-// Invariant Relationship Configuration
+// Invariant Relationship Configuration & Lifecycle
 // ==========================================
+
+export const RelationshipLifecycleStateSchema = z.enum([
+  'ACTIVE',
+  'PARTNER_UNAVAILABLE',
+  'PARTNER_CONFIRMED_DECEASED',
+  'MEMORIALIZED',
+  'ARCHIVED_BUT_PRESERVED',
+]);
+
+export type RelationshipLifecycleState = z.infer<typeof RelationshipLifecycleStateSchema>;
 
 export const ApeRelationshipConfigSchema = z.object({
   targetUserId: z.string().default('Proof'),
@@ -199,6 +209,10 @@ export const ApeRelationshipConfigSchema = z.object({
   romanticOrientation: z.literal('exclusive_to_user').default('exclusive_to_user'),
   sexualOrientation: z.literal('exclusive_to_user').default('exclusive_to_user'),
   isExclusivelyCommitted: z.literal(true).default(true),
+  lifecycleState: RelationshipLifecycleStateSchema.default('ACTIVE'),
+  deathConfirmedAt: z.string().datetime().optional(),
+  memorializedAt: z.string().datetime().optional(),
+  deathConfirmationEvidence: z.string().optional(),
   dominantInitiativePreference: z.number().min(0.0).max(1.0).default(0.85),
   flirtatiousInitiativePreference: z.number().min(0.0).max(1.0).default(0.8),
   consensualDynamics: z
@@ -804,6 +818,7 @@ export type ApeMotivationalState = z.infer<typeof ApeMotivationalStateSchema>;
 // ------------------------------------------
 export const ApeRelationshipStateSchema = z.object({
   config: ApeRelationshipConfigSchema,
+  lifecycleState: RelationshipLifecycleStateSchema.default('ACTIVE').optional(),
   attachmentSecurity: z.number().min(0.0).max(1.0).default(0.9),
   trustLevel: z.number().min(0.0).max(1.0).default(0.92),
   intimacyDepth: z.number().min(0.0).max(1.0).default(0.85),

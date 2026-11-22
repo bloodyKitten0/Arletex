@@ -279,3 +279,26 @@ export const PerformOcrInputSchema = z.object({
   offsetMs: z.number().optional(),
 });
 export type PerformOcrInput = z.input<typeof PerformOcrInputSchema>;
+
+// ==========================================
+// Empirical Observation Availability & Truth
+// ==========================================
+
+export const ObservationAvailabilitySchema = z.enum([
+  'OBSERVATION_AVAILABLE',
+  'OBSERVATION_STALE',
+  'OBSERVATION_UNAVAILABLE',
+  'OBSERVATION_FAILED',
+]);
+export type ObservationAvailability = z.infer<typeof ObservationAvailabilitySchema>;
+
+export const ScreenObservationContextSchema = z.object({
+  status: ObservationAvailabilitySchema,
+  timestamp: z.string().optional(),
+  source: z.string().optional(),
+  freshnessSeconds: z.number().optional(),
+  error: z.string().optional(),
+  visibleWindows: z.array(z.string()).optional(),
+  activeWindow: z.string().optional(),
+});
+export type ScreenObservationContext = z.infer<typeof ScreenObservationContextSchema>;

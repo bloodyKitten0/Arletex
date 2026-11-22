@@ -71,6 +71,8 @@ export const SpeechControllerInputSchema = z.object({
       primaryEmotion: z.string(),
       secondaryEmotion: z.string().optional(),
       intensity: z.number().min(0.0).max(1.0).default(0.5),
+      secondaryIntensity: z.number().min(0.0).max(1.0).optional(),
+      confidence: z.number().min(0.0).max(1.0).optional(),
     })
     .optional(),
   conversationalIntent: z.string().optional(),
@@ -92,6 +94,41 @@ export const TTSBackendConfigSchema = z.object({
 
 export type TTSBackendConfig = z.infer<typeof TTSBackendConfigSchema>;
 
+export const SpeechSynthesisFailureReasonEnum = z.enum([
+  'SERVICE_UNAVAILABLE',
+  'TIMEOUT',
+  'MALFORMED_AUDIO',
+  'SILENCE_DETECTED',
+  'INVALID_AUDIO',
+  'SPEECH_UNAVAILABLE',
+]);
+
+export type SpeechSynthesisFailureReason = z.infer<typeof SpeechSynthesisFailureReasonEnum>;
+
+export const SpeechSynthesisFailureSchema = z.object({
+  synthesisFailed: z.literal(true).default(true),
+  isSpeech: z.literal(false).default(false),
+  errorCategory: SpeechSynthesisFailureReasonEnum,
+  failedBackend: z.string(),
+  retryable: z.boolean(),
+  correlationId: z.string(),
+  message: z.string(),
+  timestamp: z.string().datetime(),
+});
+
+export type SpeechSynthesisFailure = z.infer<typeof SpeechSynthesisFailureSchema>;
+
+export class SpeechSynthesisUnavailableError extends Error {
+  public readonly failure: SpeechSynthesisFailure;
+  constructor(failure: SpeechSynthesisFailure) {
+    super(
+      `Speech synthesis unavailable [${failure.errorCategory}] on backend '${failure.failedBackend}': ${failure.message}`,
+    );
+    this.name = 'SpeechSynthesisUnavailableError';
+    this.failure = failure;
+  }
+}
+
 export const SynthesizedAudioResultSchema = z.object({
   audioBase64: z.string(),
   format: z.enum(['wav', 'mp3', 'ogg', 'pcm']).default('wav'),
@@ -103,6 +140,10 @@ export const SynthesizedAudioResultSchema = z.object({
   engine: z.string(),
   memoryUsageMb: z.number().optional(),
   voiceIdentity: z.string().default('arle-baseline'),
+  isSpeech: z.boolean().default(true),
+  synthesisFailed: z.boolean().default(false),
+  validationPassed: z.boolean().default(true),
+  failureReason: z.string().optional(),
 });
 
 export type SynthesizedAudioResult = z.infer<typeof SynthesizedAudioResultSchema>;

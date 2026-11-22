@@ -334,7 +334,7 @@ describe('Arle Voice System — Emotion-Aware Speech Generation', () => {
       expect(result.audioBase64.length).toBeGreaterThan(100);
     });
 
-    it('should handle cancellation and abort signals gracefully', async () => {
+    it('should handle cancellation and abort signals gracefully with truthful typed failure', async () => {
       const backend = new SpecialistTTSBackend({
         serverUrl: 'http://127.0.0.1:39282',
         timeoutMs: 500,
@@ -344,14 +344,136 @@ describe('Arle Voice System — Emotion-Aware Speech Generation', () => {
       abortController.abort(); // immediately aborted
 
       const delivery = controller.express({ text: 'Testing cancellation.' });
-      // Should fall back gracefully or return fallback audio without crashing
-      const result = await backend.synthesize(
+
+      // Default call throws typed SpeechSynthesisUnavailableError without masquerading tone as speech
+      await expect(
+        backend.synthesize('Testing cancellation.', delivery, abortController.signal),
+      ).rejects.toThrow();
+
+      // synthesizeSafe returns typed failure structure
+      const safeResult = await backend.synthesizeSafe(
         'Testing cancellation.',
         delivery,
         abortController.signal,
       );
-      expect(result.format).toBe('wav');
-      expect(result.audioBase64).toBeDefined();
+      expect(safeResult.success).toBe(false);
+      if (!safeResult.success) {
+        expect(safeResult.failure.isSpeech).toBe(false);
+        expect(safeResult.failure.synthesisFailed).toBe(true);
+        expect(safeResult.failure.errorCategory).toBe('TIMEOUT');
+      }
+
+      // Explicit non-speech tone diagnostic request flags isSpeech: false and synthesisFailed: true
+      const toneResult = await backend.synthesize(
+        'Testing cancellation.',
+        delivery,
+        abortController.signal,
+        { allowNonSpeechToneFallback: true },
+      );
+      expect(toneResult.format).toBe('wav');
+      expect(toneResult.isSpeech).toBe(false);
+      expect(toneResult.synthesisFailed).toBe(true);
+      expect(toneResult.failureReason).toContain('not intelligible speech');
+    });
+
+    // ==========================================
+    // P2 Section 7: Mixed-Emotion Expression Tests
+    // ==========================================
+    it('should measurably change delivery parameters when secondary emotion changes while primary remains constant', () => {
+      const baseSadness = controller.express({
+        text: 'I acknowledge the loss we encountered.',
+        psychologicalState: {
+          pad: { valence: -0.6, arousal: -0.4, dominance: -0.2 },
+          primaryEmotion: 'sadness',
+          intensity: 0.7,
+        },
+      });
+
+      // Sadness + Affection (subdued but warm)
+      const sadnessWithAffection = controller.express({
+        text: 'I acknowledge the loss we encountered.',
+        psychologicalState: {
+          pad: { valence: -0.6, arousal: -0.4, dominance: -0.2 },
+          primaryEmotion: 'sadness',
+          secondaryEmotion: 'affection',
+          intensity: 0.7,
+          secondaryIntensity: 0.6,
+        },
+      });
+
+      // Sadness + Irritation (subdued but sharper)
+      const sadnessWithIrritation = controller.express({
+        text: 'I acknowledge the loss we encountered.',
+        psychologicalState: {
+          pad: { valence: -0.6, arousal: -0.4, dominance: -0.2 },
+          primaryEmotion: 'sadness',
+          secondaryEmotion: 'irritation',
+          intensity: 0.7,
+          secondaryIntensity: 0.6,
+        },
+      });
+
+      // Holding primary constant, secondary emotion changes delivery measurably:
+      expect(sadnessWithAffection.warmth).toBeGreaterThan(baseSadness.warmth);
+      expect(sadnessWithAffection.styleInstructions).toContain('affection');
+      expect(sadnessWithIrritation.forcefulness).toBeGreaterThan(sadnessWithAffection.forcefulness);
+      expect(sadnessWithIrritation.styleInstructions).toContain('irritation');
+    });
+
+    it('should have zero material effect when secondary emotion intensity is zero', () => {
+      const primaryOnly = controller.express({
+        text: 'The data has been consolidated.',
+        psychologicalState: {
+          pad: { valence: 0.1, arousal: 0.0, dominance: 0.5 },
+          primaryEmotion: 'neutral',
+          intensity: 0.6,
+        },
+      });
+
+      const zeroSecIntensity = controller.express({
+        text: 'The data has been consolidated.',
+        psychologicalState: {
+          pad: { valence: 0.1, arousal: 0.0, dominance: 0.5 },
+          primaryEmotion: 'neutral',
+          secondaryEmotion: 'anger',
+          intensity: 0.6,
+          secondaryIntensity: 0.0,
+        },
+      });
+
+      expect(zeroSecIntensity.pitchMod).toBe(primaryOnly.pitchMod);
+      expect(zeroSecIntensity.speedMultiplier).toBe(primaryOnly.speedMultiplier);
+      expect(zeroSecIntensity.forcefulness).toBe(primaryOnly.forcefulness);
+      expect(zeroSecIntensity.warmth).toBe(primaryOnly.warmth);
+    });
+
+    it('should bound the influence of secondary emotion when confidence is low', () => {
+      const highConf = controller.express({
+        text: 'Let us proceed carefully.',
+        psychologicalState: {
+          pad: { valence: 0.0, arousal: 0.0, dominance: 0.5 },
+          primaryEmotion: 'neutral',
+          secondaryEmotion: 'affection',
+          intensity: 0.8,
+          secondaryIntensity: 0.8,
+          confidence: 0.95,
+        },
+      });
+
+      const lowConf = controller.express({
+        text: 'Let us proceed carefully.',
+        psychologicalState: {
+          pad: { valence: 0.0, arousal: 0.0, dominance: 0.5 },
+          primaryEmotion: 'neutral',
+          secondaryEmotion: 'affection',
+          intensity: 0.8,
+          secondaryIntensity: 0.8,
+          confidence: 0.1,
+        },
+      });
+
+      // Warmth shift in high confidence must exceed that in low confidence
+      expect(highConf.warmth).toBeGreaterThan(lowConf.warmth);
     });
   });
 });

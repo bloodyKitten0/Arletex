@@ -3583,4 +3583,19 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('complex_experiential_states_148', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 68,
+    name: '068_relationship_lifecycle_and_posthumous_continuity',
+    up: `
+      -- 1. Upgrade ape_relationship_config with explicit lifecycle states and memorialization records
+      ALTER TABLE ape_relationship_config ADD COLUMN lifecycle_state TEXT NOT NULL DEFAULT 'ACTIVE';
+      ALTER TABLE ape_relationship_config ADD COLUMN death_confirmed_at TEXT;
+      ALTER TABLE ape_relationship_config ADD COLUMN memorialized_at TEXT;
+      ALTER TABLE ape_relationship_config ADD COLUMN death_confirmation_evidence TEXT;
+
+      -- 2. System state version update
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('relationship_lifecycle_and_posthumous_continuity', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];
