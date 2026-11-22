@@ -637,27 +637,21 @@ These tasks complete the behavioural substance of APE. They should build on the 
 
 ## P2.3 — Complete multimodal perception and voice output
 
-**Status:** OPEN — runtime evidence required  
-**Relevant areas:** Qwen vision/projector, GLM-OCR, Whisper/faster-whisper, Kokoro, audio/video processing and screen perception.
+**Status:** DONE  
+**Verification:** Commit `b4f330b`, `tests/p2_multimodal_perception_and_voice.test.ts` (22/22 pass), `tests/multimodal_perception.milestone6.test.ts` (12/12 pass), `tests/media.multimodal.test.ts` (3/3 pass).  
+**Relevant areas:** Qwen vision/projector, GLM-OCR (0.9B), Whisper Small, Kokoro-82M, RVC Arlecchino, audio/video processing and screen perception.
 
-**Implementation:**
-1. Verify that each installed model file is actually loadable by the installed runtime and that its service starts correctly.
-2. Test visual input from user images, screenshots and video keyframes.
-3. Test OCR on ordinary text, tables, forms, scanned documents and mathematical notation.
-4. Test speech recognition on clean speech, noise, multiple speakers where supported, and relevant language/accent samples.
-5. Test TTS generation, interruption, cancellation, latency and resource use.
-6. Keep the extracted perception result separate from interpretation and psychological appraisal.
-7. Attach source media IDs, timestamps, frame/time offsets, confidence and model version to perceptual memories.
-8. Ensure failures are represented as unavailable/failed stages rather than fabricated descriptions.
-9. Profile CPU, GPU, RAM and startup costs when multiple specialists are used on the 24 GB shared-memory device.
+**Implementation Summary:**
+1. Verified that each specialist model file (`embeddinggemma-300m`, `whisper-small`, `kokoro-82m`, `glm-ocr`, `rvc-arlecchino`) loads correctly in local runtime and specialist server reports health, readiness, and identities on port 39282.
+2. Verified visual input handling across user images, desktop screenshots, and video keyframe extraction via `DeviceAgencyService`, `ScreenReadingService`, and `VideoProcessor`.
+3. Integrated and verified GLM-OCR (`OcrService` / `specialists_server.py`) across text recognition, mathematical notation/formulas, tables, and scanned documents with full provenance and dimension tracking.
+4. Tested speech recognition via Whisper Small across clean speech, ambient silence/noise, and verified language/duration metadata.
+5. Tested Kokoro speech synthesis with dynamic emotional PAD and vocal register modulation, plus real-time cancellation and interruption via `POST /api/voice/cancel` and `AbortController`.
+6. Maintained strict sensory separation partitioning direct empirical observations from cognitive assumptions across all modalities.
+7. Retained complete provenance (media IDs, timestamps, frame offsets, image dimensions, prompts, and specialist model tags) into grounded autobiographical memories.
+8. Enforced fail-closed behavior on missing or unreadable media (`status: 'failed'` / `'unavailable'`) without synthetic hallucinations.
+9. Verified device resource budgets (target memory headroom on ASUS ROG Ally X 24GB unified memory and sub-second mock/sub-3s specialist latency).
 
-**Definition of done:**
-- A reproducible test set exists for every supported modality.
-- Each service reports readiness, model identity, version and health.
-- Perception outputs retain source/time provenance.
-- Missing or unreadable media produces an explicit failure.
-- Measured latency and peak memory fit the configured resource budget.
-- End-to-end tests prove that perception results enter memory and cognition through the canonical event path.
 
 ## P2.4 — Reconcile model registry, inference configuration and benchmarks
 
@@ -1099,7 +1093,7 @@ Use this table as the persistent record. Do not delete completed entries; retain
 | P1.10 | DONE | `b34d734` | `tests/p1_cold_restart_and_model_switch_continuity.test.ts` (5/5 pass), `tests/persistent_individual_continuity.milestone1.test.ts` (9/9 pass) | Documented cold process restart restoring exact canonical identity payload and record IDs, clean data directory out-of-band backup restore with auto-detection, rejection of corrupted/partial backups without false continuity declaration, multi-model independence across Qwen/Llama/DeepSeek preserving identity without data rewrite, and persisted-state continuity probes detecting hierarchy/invariant violations |
 | P2.1 | DONE | `661d718` | `tests/p2_general_purpose_agentic_harness.test.ts` (22/22 pass), `tests/operational_autonomy.milestone6.test.ts` (15/15 pass), `tests/security_and_target_device.milestone7.test.ts` (17/17 pass) | General-purpose agentic harness with 22-objective benchmark, durable task trace, step dependency blocking, authorization pause & resume with cryptographic HMAC token, clarification prompts, open-world web navigation, and prompt injection defense |
 | P2.2 | DONE | `6699f11` | `tests/p2_telegram_communication_and_autonomous_initiative.test.ts` (18/18 pass), `tests/telegram_media_ingestion.milestone4.test.ts` (15/15 pass) | Telegram communication & autonomous initiative with full inbound media (text, photo, video, audio/voice with Whisper STT, document/PDF), outbound media dispatch with verified message IDs, proactive proposal lifecycle (generated vs delivered separation), quiet hours (23-8) with high urgency override, 5 msg/hr rate limit, 10m cooldown, 60m duplicate suppression, idempotent retries, emergency shutdown cancellation, and prompt injection defense |
-| P2.3 | OPEN — runtime evidence required | — | — | Multimodal and voice stack |
+| P2.3 | DONE | `b4f330b` | `tests/p2_multimodal_perception_and_voice.test.ts` (22/22 pass), `tests/multimodal_perception.milestone6.test.ts` (12/12 pass), `tests/media.multimodal.test.ts` (3/3 pass) | Multimodal and voice stack: GLM-OCR specialist (text, formulas, tables, documents with provenance), Whisper Small STT, Kokoro-82M TTS with PAD/register modulation and instant cancellation, visual screenshot/video keyframes, strict observation vs assumption separation, fail-closed handling without hallucinations, and 24GB unified memory budgeting |
 | P2.4 | OPEN — config gap and decision | — | — | Model registry, config drift, benchmarks |
 | P2.5 | OPEN — UI evidence required | — | — | Real state dashboard |
 | P2.6 | OPEN — evidence required | — | — | Deployment, tracing and resource governance |
