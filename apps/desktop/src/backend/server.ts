@@ -90,6 +90,7 @@ import {
 import { TelegramInitiativeService } from './telegramInitiativeService.js';
 import { AutonomousAgencyService } from './autonomousAgencyService.js';
 import { OcrService } from './ocrService.js';
+import { defaultMediaFinder } from './mediaFinderService.js';
 import {
   ActivityRepository,
   AgencyRepository,
@@ -3051,75 +3052,106 @@ export class ArletexBackendServer {
         ? filePathMatch[1].replace(/^~/, process.env.HOME || '/home/proof')
         : undefined;
 
-    const shouldSendTelegram =
+    const isTelegramSendRequest =
       tgFileMatch ||
-      (candidatePath &&
-        lowerUser.includes('telegram') &&
-        (lowerUser.includes('send') || lowerUser.includes('deliver')));
-    if (shouldSendTelegram) {
-      const targetPath = tgFileMatch ? tgFileMatch[1] : candidatePath;
-      const caption = tgFileMatch && tgFileMatch[2] ? tgFileMatch[2] : undefined;
-      const targetChatId =
-        this.preferenceRepo.get('telegram_target_chat_id') ||
-        defaultTelegramBridge.getTargetChatId() ||
-        undefined;
+      (lowerUser.includes('telegram') &&
+        (lowerUser.includes('send') ||
+          lowerUser.includes('deliver') ||
+          lowerUser.includes('forward')));
+    const isWhatsAppSendRequest =
+      waFileMatch ||
+      ((lowerUser.includes('whatsapp') || lowerUser.includes("what's app")) &&
+        (lowerUser.includes('send') ||
+          lowerUser.includes('deliver') ||
+          lowerUser.includes('forward')));
 
-      if (targetPath && targetChatId) {
-        try {
-          const obs = await this.closedLoopAgency.executeAction({
-            id: crypto.randomUUID(),
-            taskId: 'assistant_telegram_file',
-            stepIndex: 0,
-            type: 'telegram_send_file',
-            payload: { chatId: targetChatId, filePath: targetPath, text: caption },
-            rationale: `Send file ${targetPath} to Telegram`,
-            expectedOutcome: 'File sent to Telegram',
-            riskLevel: 'low',
-            requiresExplicitApproval: false,
-            createdAt: new Date().toISOString(),
-          });
-          if (obs.success) {
-            executedActions.push(`Sent file "${path.basename(targetPath)}" to Telegram`);
-          } else {
-            this.logger.warn(`Telegram file send failed: ${obs.error || 'Unknown error'}`);
+    if (isTelegramSendRequest || isWhatsAppSendRequest) {
+      let targetPath = tgFileMatch
+        ? tgFileMatch[1]
+        : waFileMatch
+          ? waFileMatch[1]
+          : candidatePath;
+      const caption =
+        (tgFileMatch && tgFileMatch[2]) || (waFileMatch && waFileMatch[2]) || undefined;
+
+      // If targetPath is not an existing file on disk, resolve it through MediaFinder (local search + online GIF discovery)
+      if (!targetPath || !fs.existsSync(targetPath)) {
+        const cleanedQuery = userPrompt
+          .replace(/(?:on|to|via)\s+(?:telegram|whatsapp|what's\s*app)[\s\S]*/i, '')
+          .replace(
+            /^(?:can\s+you\s+|please\s+|arle\s*,?\s*)?(?:send|deliver|give|forward)\s+(?:me\s+)?(?:the\s+)?(?:file|doc|document|image|photo|picture|video|gif|meme|clip)?(?:\s+of)?\s*/i,
+            '',
+          )
+          .trim();
+
+        if (cleanedQuery) {
+          try {
+            const resolved = await defaultMediaFinder.resolveMedia(cleanedQuery);
+            if (resolved && resolved.filePath && fs.existsSync(resolved.filePath)) {
+              targetPath = resolved.filePath;
+            }
+          } catch (findErr: any) {
+            this.logger.debug(`MediaFinder error: ${findErr.message}`);
           }
-        } catch (err: any) {
-          this.logger.error(`Failed to send Telegram file: ${err.message}`);
         }
       }
-    }
 
-    const shouldSendWhatsApp =
-      waFileMatch ||
-      (candidatePath &&
-        (lowerUser.includes('whatsapp') || lowerUser.includes("what's app")) &&
-        (lowerUser.includes('send') || lowerUser.includes('deliver')));
-    if (shouldSendWhatsApp) {
-      const targetPath = waFileMatch ? waFileMatch[1] : candidatePath;
-      const caption = waFileMatch && waFileMatch[2] ? waFileMatch[2] : undefined;
-      const ownerJid = this.preferenceRepo.get('whatsapp_owner_jid');
+      if (isTelegramSendRequest && targetPath && fs.existsSync(targetPath)) {
+        const targetChatId =
+          this.preferenceRepo.get('telegram_target_chat_id') ||
+          defaultTelegramBridge.getTargetChatId() ||
+          undefined;
 
-      if (targetPath && ownerJid) {
-        try {
-          const obs = await this.closedLoopAgency.executeAction({
-            id: crypto.randomUUID(),
-            taskId: 'assistant_whatsapp_file',
-            stepIndex: 0,
-            type: 'whatsapp_send_file',
-            payload: { recipientJid: ownerJid, filePath: targetPath, text: caption },
-            rationale: `Send file ${targetPath} to WhatsApp`,
-            expectedOutcome: 'File sent to WhatsApp',
-            riskLevel: 'low',
-            requiresExplicitApproval: false,
-            createdAt: new Date().toISOString(),
-          });
-          if (obs.success) {
-            executedActions.push(`Sent file "${path.basename(targetPath)}" to WhatsApp`);
-          } else {
-            this.logger.warn(`WhatsApp file send failed: ${obs.error || 'Unknown error'}`);
+        if (targetChatId) {
+          try {
+            const obs = await this.closedLoopAgency.executeAction({
+              id: crypto.randomUUID(),
+              taskId: 'assistant_telegram_file',
+              stepIndex: 0,
+              type: 'telegram_send_file',
+              payload: { chatId: targetChatId, filePath: targetPath, text: caption },
+              rationale: `Send file ${targetPath} to Telegram`,
+              expectedOutcome: 'File sent to Telegram',
+              riskLevel: 'low',
+              requiresExplicitApproval: false,
+              createdAt: new Date().toISOString(),
+            });
+            if (obs.success) {
+              executedActions.push(`Sent file "${path.basename(targetPath)}" to Telegram`);
+            } else {
+              this.logger.warn(`Telegram file send failed: ${obs.error || 'Unknown error'}`);
+            }
+          } catch (err: any) {
+            this.logger.error(`Failed to send Telegram file: ${err.message}`);
           }
-        } catch (err: any) {
-          this.logger.error(`Failed to send WhatsApp file: ${err.message}`);
+        }
+      }
+
+      if (isWhatsAppSendRequest && targetPath && fs.existsSync(targetPath)) {
+        const ownerJid = this.preferenceRepo.get('whatsapp_owner_jid');
+
+        if (ownerJid) {
+          try {
+            const obs = await this.closedLoopAgency.executeAction({
+              id: crypto.randomUUID(),
+              taskId: 'assistant_whatsapp_file',
+              stepIndex: 0,
+              type: 'whatsapp_send_file',
+              payload: { recipientJid: ownerJid, filePath: targetPath, text: caption },
+              rationale: `Send file ${targetPath} to WhatsApp`,
+              expectedOutcome: 'File sent to WhatsApp',
+              riskLevel: 'low',
+              requiresExplicitApproval: false,
+              createdAt: new Date().toISOString(),
+            });
+            if (obs.success) {
+              executedActions.push(`Sent file "${path.basename(targetPath)}" to WhatsApp`);
+            } else {
+              this.logger.warn(`WhatsApp file send failed: ${obs.error || 'Unknown error'}`);
+            }
+          } catch (err: any) {
+            this.logger.error(`Failed to send WhatsApp file: ${err.message}`);
+          }
         }
       }
     }
