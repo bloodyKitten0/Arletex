@@ -19,7 +19,7 @@
   "dependencies": {
     "@arletex/contracts": "workspace:*",
     "@arletex/core": "workspace:*",
-    "better-sqlite3": "^13.0.3"
+    "better-sqlite3": "^13.2.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",

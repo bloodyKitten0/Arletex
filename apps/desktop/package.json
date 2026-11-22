@@ -19,7 +19,7 @@
     "@arletex/core": "workspace:*",
     "@arletex/database": "workspace:*",
     "@arletex/inference": "workspace:*",
-    "better-sqlite3": "^13.0.3",
+    "better-sqlite3": "^13.2.0",
     "lucide-react": "^0.468.0",
     "playwright-core": "^1.65.1",
     "react": "^18.3.1",
