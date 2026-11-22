@@ -1,7 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-MODEL_PATH="${1:-${HOME}/models/qwen-heretic/Qwen3.5-9B-Heretic-Q4_K_M.gguf}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+if [ -f "$PROJECT_DIR/.env" ]; then
+  set -a
+  source "$PROJECT_DIR/.env"
+  set +a
+fi
+
+MODEL_PATH="${1:-${ARLETEX_MODEL_PATH:-${HOME}/models/qwen-heretic/Qwen3.5-9B-Heretic-Q4_K_M.gguf}}"
 PORT="${2:-8080}"
 HOST="127.0.0.1"
 THREADS="8"

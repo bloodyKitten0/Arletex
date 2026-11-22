@@ -648,7 +648,10 @@ export class ArletexBackendServer {
     this.autonomyLevelService = new AutonomyLevelService('1_develop', logger);
     this.speechController = defaultSpeechExpressionController;
     this.ttsBackend = new SpecialistTTSBackend(
-      { serverUrl: process.env['ARLETEX_SPECIALISTS_URL'] || 'http://127.0.0.1:39282' },
+      {
+        engine: (process.env['ARLE_VOICE_ENGINE'] as any) || 'specialist',
+        serverUrl: process.env['ARLETEX_SPECIALISTS_URL'] || 'http://127.0.0.1:39282',
+      },
       logger,
     );
     this.whatsAppRepo = new WhatsAppRepository(db);
@@ -659,6 +662,18 @@ export class ArletexBackendServer {
       process.env['ARLE_WHATSAPP_BASE_URL'] ||
       this.preferenceRepo.get('whatsapp_base_url') ||
       'http://127.0.0.1:3000';
+    const waUsername =
+      process.env['ARLE_WHATSAPP_USERNAME'] ||
+      this.preferenceRepo.get('whatsapp_username') ||
+      '';
+    const waPassword =
+      process.env['ARLE_WHATSAPP_PASSWORD'] ||
+      this.preferenceRepo.get('whatsapp_password') ||
+      '';
+    const waDeviceId =
+      process.env['ARLE_WHATSAPP_DEVICE_ID'] ||
+      this.preferenceRepo.get('whatsapp_device_id') ||
+      'default';
     const waSecret =
       process.env['ARLE_WHATSAPP_WEBHOOK_SECRET'] ||
       this.preferenceRepo.get('whatsapp_webhook_secret') ||
@@ -670,14 +685,21 @@ export class ArletexBackendServer {
     const waAutoReply =
       process.env['ARLE_WHATSAPP_AUTO_REPLY'] === 'true' ||
       this.preferenceRepo.get('whatsapp_auto_reply') === 'true';
+    const waRateLimit = process.env['ARLE_WHATSAPP_RATE_LIMIT']
+      ? parseInt(process.env['ARLE_WHATSAPP_RATE_LIMIT'], 10)
+      : 30;
 
     this.whatsAppAdapter = new WhatsAppAdapter(
       {
         enabled: waEnabled,
         baseUrl: waBaseUrl,
+        username: waUsername,
+        password: waPassword,
+        deviceId: waDeviceId,
         webhookSecret: waSecret,
         ownerJid: waOwnerJid,
         autoReply: waAutoReply,
+        rateLimitPerMinute: waRateLimit,
       },
       this.whatsAppRepo,
       logger,
