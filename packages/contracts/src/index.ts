@@ -949,3 +949,4 @@ export * from './modelRegistry.js';
 export * from './boundedPreservation.js';
 export * from './futureSelf.js';
 export * from './evolutionAndAutonomy.js';
+export * from './speechExpression.js';

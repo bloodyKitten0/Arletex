@@ -33,6 +33,7 @@ import {
   VisualPerceptionInputSchema,
   AuditoryPerceptionInputSchema,
   PerformOcrInputSchema,
+  SpeechControllerInputSchema,
 } from '@arletex/contracts';
 import {
   ActionPermissionController,
@@ -45,6 +46,7 @@ import {
   CognitiveControlBus,
   ContinuityManager,
   DEFAULT_ARLE_SYSTEM_PROMPT,
+  defaultSpeechExpressionController,
   DesktopEnvironmentProvider,
   EmailProvider,
   EvolutionEngine,
@@ -58,6 +60,8 @@ import {
   PlaywrightBrowserProvider,
   rootLogger,
   SafeComputerAgencyService,
+  SpecialistTTSBackend,
+  SpeechExpressionController,
   VerificationEngine,
   WebAgencyService,
 } from '@arletex/core';
@@ -411,6 +415,8 @@ export class ArletexBackendServer {
   public readonly boundedPreservation: BoundedSelfPreservationService;
   public readonly evolutionEngine: EvolutionEngine;
   public readonly autonomyLevelService: AutonomyLevelService;
+  public readonly speechController: SpeechExpressionController;
+  public readonly ttsBackend: SpecialistTTSBackend;
 
   constructor(config: AppConfig, logger: ILogger = rootLogger) {
     this.config = config;
@@ -634,6 +640,11 @@ export class ArletexBackendServer {
     });
     this.evolutionEngine = new EvolutionEngine(logger);
     this.autonomyLevelService = new AutonomyLevelService('1_develop', logger);
+    this.speechController = defaultSpeechExpressionController;
+    this.ttsBackend = new SpecialistTTSBackend(
+      { serverUrl: process.env['ARLETEX_SPECIALISTS_URL'] || 'http://127.0.0.1:39282' },
+      logger,
+    );
   }
 
   public getIntentTaskManager(): IntentTaskManager {
@@ -3518,6 +3529,19 @@ Rules:
           status: 'unavailable',
           notice: 'Whisper specialist model is initializing or offline.',
         });
+        return;
+      }
+
+      if (url.pathname === '/api/voice/identity' && method === 'GET') {
+        this.sendJson(res, 200, this.speechController.getBaselineIdentity());
+        return;
+      }
+
+      if (url.pathname === '/api/voice/express' && method === 'POST') {
+        const body = await this.readJsonBody(req);
+        const input = SpeechControllerInputSchema.parse(body);
+        const instructions = this.speechController.express(input);
+        this.sendJson(res, 200, instructions);
         return;
       }
 

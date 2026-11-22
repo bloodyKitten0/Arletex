@@ -131,22 +131,24 @@ export function createDefaultConfig(overrides?: AppConfigOverrides | string): Ap
         'Qwen3.5-9B-Heretic-Q4_K_M',
       specialistCoding: {
         enabled:
-          overrides?.inference?.specialistCoding?.enabled ??
+          normalizedOverrides.inference?.specialistCoding?.enabled ??
           process.env['SPECIALIST_CODING_ENABLED'] === 'true',
         provider:
-          overrides?.inference?.specialistCoding?.provider ??
+          normalizedOverrides.inference?.specialistCoding?.provider ??
           (process.env['SPECIALIST_CODING_PROVIDER'] as any) ??
           'llama.cpp',
         serverUrl:
-          overrides?.inference?.specialistCoding?.serverUrl ??
+          normalizedOverrides.inference?.specialistCoding?.serverUrl ??
           process.env['SPECIALIST_CODING_URL'] ??
           'http://127.0.0.1:8001',
         modelId:
-          overrides?.inference?.specialistCoding?.modelId ??
+          normalizedOverrides.inference?.specialistCoding?.modelId ??
           process.env['SPECIALIST_CODING_MODEL'] ??
           'Qwen3.5-9B-Heretic-Q4_K_M',
-        temperature: overrides?.inference?.specialistCoding?.temperature ?? 0.2,
-        maxTokens: overrides?.inference?.specialistCoding?.maxTokens ?? 4096,
+        temperature:
+          normalizedOverrides.inference?.specialistCoding?.temperature ?? 0.2,
+        maxTokens:
+          normalizedOverrides.inference?.specialistCoding?.maxTokens ?? 4096,
       },
     },
   };
