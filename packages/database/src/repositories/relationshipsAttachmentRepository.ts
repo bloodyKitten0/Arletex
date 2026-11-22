@@ -5,6 +5,10 @@ import {
   RelationalConflict,
   ApologyAndRepair,
   ConflictStatus,
+  TrustEventLog,
+  ObservedBehaviorVsIntent,
+  RelationalExpectation,
+  RelationalMemoryControl,
 } from '@arletex/contracts';
 import { DatabaseError, IRelationshipsAttachmentRepository } from '@arletex/core';
 
@@ -331,6 +335,243 @@ export class SqliteRelationshipsAttachmentRepository implements IRelationshipsAt
         `Failed to list apology repairs for conflict ${conflictId}: ${err.message}`,
         err,
       );
+    }
+  }
+
+  // =========================================================================
+  // Pillar 1.6: Trust lineage, behavioral intent, expectations, and memory control
+  // =========================================================================
+
+  public saveTrustEventLog(log: TrustEventLog): void {
+    try {
+      this.db
+        .prepare(
+          `INSERT INTO relationship_trust_event_logs (
+            id, person_id, dimension, previous_score, updated_score,
+            delta, reason, evidence_event_id, is_reversal, reversal_of_log_id, timestamp
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            dimension = excluded.dimension,
+            previous_score = excluded.previous_score,
+            updated_score = excluded.updated_score,
+            delta = excluded.delta,
+            reason = excluded.reason,
+            evidence_event_id = excluded.evidence_event_id,
+            is_reversal = excluded.is_reversal,
+            reversal_of_log_id = excluded.reversal_of_log_id,
+            timestamp = excluded.timestamp`,
+        )
+        .run(
+          log.id,
+          log.personId,
+          log.dimension,
+          log.previousScore,
+          log.updatedScore,
+          log.delta,
+          log.reason,
+          log.evidenceEventId || null,
+          log.isReversal ? 1 : 0,
+          log.reversalOfLogId || null,
+          log.timestamp,
+        );
+    } catch (err: any) {
+      throw new DatabaseError(`Failed to save trust event log ${log.id}: ${err.message}`, err);
+    }
+  }
+
+  public listTrustEventLogs(personId: string, limit: number = 50): TrustEventLog[] {
+    try {
+      const rows = this.db
+        .prepare(
+          `SELECT * FROM relationship_trust_event_logs WHERE person_id = ? ORDER BY timestamp DESC LIMIT ?`,
+        )
+        .all(personId, limit) as any[];
+      return rows.map((r) => ({
+        id: r.id,
+        personId: r.person_id,
+        dimension: r.dimension,
+        previousScore: r.previous_score,
+        updatedScore: r.updated_score,
+        delta: r.delta,
+        reason: r.reason,
+        evidenceEventId: r.evidence_event_id || undefined,
+        isReversal: Boolean(r.is_reversal),
+        reversalOfLogId: r.reversal_of_log_id || undefined,
+        timestamp: r.timestamp,
+      }));
+    } catch (err: any) {
+      throw new DatabaseError(`Failed to list trust event logs for ${personId}: ${err.message}`, err);
+    }
+  }
+
+  public getTrustEventLog(id: string): TrustEventLog | null {
+    try {
+      const r = this.db
+        .prepare(`SELECT * FROM relationship_trust_event_logs WHERE id = ?`)
+        .get(id) as any;
+      if (!r) return null;
+      return {
+        id: r.id,
+        personId: r.person_id,
+        dimension: r.dimension,
+        previousScore: r.previous_score,
+        updatedScore: r.updated_score,
+        delta: r.delta,
+        reason: r.reason,
+        evidenceEventId: r.evidence_event_id || undefined,
+        isReversal: Boolean(r.is_reversal),
+        reversalOfLogId: r.reversal_of_log_id || undefined,
+        timestamp: r.timestamp,
+      };
+    } catch (err: any) {
+      throw new DatabaseError(`Failed to get trust event log ${id}: ${err.message}`, err);
+    }
+  }
+
+  public saveBehaviorIntentEvaluation(record: ObservedBehaviorVsIntent): void {
+    try {
+      this.db
+        .prepare(
+          `INSERT INTO relationship_behavior_intent_evaluations (
+            id, person_id, observed_fact, context,
+            inferred_intent_candidates, selected_interpretation,
+            is_hostile_or_betrayal, timestamp
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            observed_fact = excluded.observed_fact,
+            context = excluded.context,
+            inferred_intent_candidates = excluded.inferred_intent_candidates,
+            selected_interpretation = excluded.selected_interpretation,
+            is_hostile_or_betrayal = excluded.is_hostile_or_betrayal,
+            timestamp = excluded.timestamp`,
+        )
+        .run(
+          record.id,
+          record.personId,
+          record.observedFact,
+          record.context,
+          JSON.stringify(record.inferredIntentCandidates),
+          record.selectedInterpretation,
+          record.isHostileOrBetrayal ? 1 : 0,
+          record.timestamp,
+        );
+    } catch (err: any) {
+      throw new DatabaseError(`Failed to save behavior intent evaluation ${record.id}: ${err.message}`, err);
+    }
+  }
+
+  public listBehaviorIntentEvaluations(personId: string, limit: number = 50): ObservedBehaviorVsIntent[] {
+    try {
+      const rows = this.db
+        .prepare(
+          `SELECT * FROM relationship_behavior_intent_evaluations WHERE person_id = ? ORDER BY timestamp DESC LIMIT ?`,
+        )
+        .all(personId, limit) as any[];
+      return rows.map((r) => ({
+        id: r.id,
+        personId: r.person_id,
+        observedFact: r.observed_fact,
+        context: r.context,
+        inferredIntentCandidates: JSON.parse(r.inferred_intent_candidates),
+        selectedInterpretation: r.selected_interpretation,
+        isHostileOrBetrayal: Boolean(r.is_hostile_or_betrayal),
+        timestamp: r.timestamp,
+      }));
+    } catch (err: any) {
+      throw new DatabaseError(`Failed to list behavior intent evaluations for ${personId}: ${err.message}`, err);
+    }
+  }
+
+  public saveExpectation(expectation: RelationalExpectation): void {
+    try {
+      this.db
+        .prepare(
+          `INSERT INTO relationship_expectations (
+            id, person_id, category, description, agreed_upon, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            category = excluded.category,
+            description = excluded.description,
+            agreed_upon = excluded.agreed_upon,
+            created_at = excluded.created_at`,
+        )
+        .run(
+          expectation.id,
+          expectation.personId,
+          expectation.category,
+          expectation.description,
+          expectation.agreedUpon ? 1 : 0,
+          expectation.createdAt,
+        );
+    } catch (err: any) {
+      throw new DatabaseError(`Failed to save relationship expectation ${expectation.id}: ${err.message}`, err);
+    }
+  }
+
+  public listExpectations(personId: string): RelationalExpectation[] {
+    try {
+      const rows = this.db
+        .prepare(`SELECT * FROM relationship_expectations WHERE person_id = ? ORDER BY created_at ASC`)
+        .all(personId) as any[];
+      return rows.map((r) => ({
+        id: r.id,
+        personId: r.person_id,
+        category: r.category,
+        description: r.description,
+        agreedUpon: Boolean(r.agreed_upon),
+        createdAt: r.created_at,
+      }));
+    } catch (err: any) {
+      throw new DatabaseError(`Failed to list relationship expectations for ${personId}: ${err.message}`, err);
+    }
+  }
+
+  public saveMemoryControlRecord(record: RelationalMemoryControl): void {
+    try {
+      this.db
+        .prepare(
+          `INSERT INTO relationship_memory_controls (
+            id, person_id, memory_id, action, reason, correction_text, lineage_previous_id, timestamp
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            action = excluded.action,
+            reason = excluded.reason,
+            correction_text = excluded.correction_text,
+            lineage_previous_id = excluded.lineage_previous_id,
+            timestamp = excluded.timestamp`,
+        )
+        .run(
+          record.id,
+          record.personId,
+          record.memoryId,
+          record.action,
+          record.reason,
+          record.correctionText || null,
+          record.lineagePreviousId || null,
+          record.timestamp,
+        );
+    } catch (err: any) {
+      throw new DatabaseError(`Failed to save relationship memory control ${record.id}: ${err.message}`, err);
+    }
+  }
+
+  public listMemoryControlRecords(personId: string): RelationalMemoryControl[] {
+    try {
+      const rows = this.db
+        .prepare(`SELECT * FROM relationship_memory_controls WHERE person_id = ? ORDER BY timestamp DESC`)
+        .all(personId) as any[];
+      return rows.map((r) => ({
+        id: r.id,
+        personId: r.person_id,
+        memoryId: r.memory_id,
+        action: r.action,
+        reason: r.reason,
+        correctionText: r.correction_text || undefined,
+        lineagePreviousId: r.lineage_previous_id || undefined,
+        timestamp: r.timestamp,
+      }));
+    } catch (err: any) {
+      throw new DatabaseError(`Failed to list relationship memory control records for ${personId}: ${err.message}`, err);
     }
   }
 }

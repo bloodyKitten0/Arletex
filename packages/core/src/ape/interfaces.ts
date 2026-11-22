@@ -162,6 +162,10 @@ import {
   RelationalConflict,
   ApologyAndRepair,
   ConflictStatus,
+  TrustEventLog,
+  ObservedBehaviorVsIntent,
+  RelationalExpectation,
+  RelationalMemoryControl,
   SocialNorm,
   ObservationalLearningRecord,
   GroupDynamicProfile,
@@ -805,6 +809,17 @@ export interface IRelationshipsAttachmentRepository {
   listConflicts(personId?: string, status?: ConflictStatus): RelationalConflict[];
   saveApologyRepair(repair: ApologyAndRepair): void;
   listApologyRepairs(conflictId: string): ApologyAndRepair[];
+
+  // Pillar 1.6: Trust lineage, behavioral intent, expectations, and memory control
+  saveTrustEventLog(log: TrustEventLog): void;
+  listTrustEventLogs(personId: string, limit?: number): TrustEventLog[];
+  getTrustEventLog(id: string): TrustEventLog | null;
+  saveBehaviorIntentEvaluation(record: ObservedBehaviorVsIntent): void;
+  listBehaviorIntentEvaluations(personId: string, limit?: number): ObservedBehaviorVsIntent[];
+  saveExpectation(expectation: RelationalExpectation): void;
+  listExpectations(personId: string): RelationalExpectation[];
+  saveMemoryControlRecord(record: RelationalMemoryControl): void;
+  listMemoryControlRecords(personId: string): RelationalMemoryControl[];
 }
 
 export interface ISocialLearningCultureRepository {

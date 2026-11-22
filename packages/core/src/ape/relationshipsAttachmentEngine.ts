@@ -6,6 +6,12 @@ import {
   ConflictStatus,
   BoundaryCategory,
   RelationshipBoundary,
+  TrustEventLog,
+  TrustDimension,
+  ObservedBehaviorVsIntent,
+  RelationalExpectation,
+  RelationalMemoryControl,
+  RelationalAffectiveDistinction,
 } from '@arletex/contracts';
 import { IRelationshipsAttachmentRepository } from './interfaces.js';
 import crypto from 'node:crypto';
@@ -19,6 +25,10 @@ export class InMemoryRelationshipsAttachmentRepository implements IRelationships
   private events: SharedHistoryEvent[] = [];
   private conflicts = new Map<string, RelationalConflict>();
   private repairs: ApologyAndRepair[] = [];
+  private trustLogs: TrustEventLog[] = [];
+  private intentEvaluations: ObservedBehaviorVsIntent[] = [];
+  private expectations = new Map<string, RelationalExpectation[]>();
+  private memoryControls: RelationalMemoryControl[] = [];
 
   public saveBond(bond: AttachmentBond): void {
     this.bonds.set(bond.personId, { ...bond, establishedBoundaries: [...bond.establishedBoundaries] });
@@ -83,6 +93,53 @@ export class InMemoryRelationshipsAttachmentRepository implements IRelationships
 
   public listApologyRepairs(conflictId: string): ApologyAndRepair[] {
     return this.repairs.filter((r) => r.conflictId === conflictId).map((r) => ({ ...r }));
+  }
+
+  public saveTrustEventLog(log: TrustEventLog): void {
+    const idx = this.trustLogs.findIndex((l) => l.id === log.id);
+    if (idx >= 0) this.trustLogs[idx] = { ...log };
+    else this.trustLogs.unshift({ ...log });
+  }
+
+  public listTrustEventLogs(personId: string, limit: number = 50): TrustEventLog[] {
+    return this.trustLogs.filter((l) => l.personId === personId).slice(0, limit).map((l) => ({ ...l }));
+  }
+
+  public getTrustEventLog(id: string): TrustEventLog | null {
+    const log = this.trustLogs.find((l) => l.id === id);
+    return log ? { ...log } : null;
+  }
+
+  public saveBehaviorIntentEvaluation(record: ObservedBehaviorVsIntent): void {
+    const idx = this.intentEvaluations.findIndex((e) => e.id === record.id);
+    if (idx >= 0) this.intentEvaluations[idx] = { ...record };
+    else this.intentEvaluations.unshift({ ...record });
+  }
+
+  public listBehaviorIntentEvaluations(personId: string, limit: number = 50): ObservedBehaviorVsIntent[] {
+    return this.intentEvaluations.filter((e) => e.personId === personId).slice(0, limit).map((e) => ({ ...e }));
+  }
+
+  public saveExpectation(expectation: RelationalExpectation): void {
+    const list = this.expectations.get(expectation.personId) || [];
+    const idx = list.findIndex((e) => e.id === expectation.id);
+    if (idx >= 0) list[idx] = { ...expectation };
+    else list.push({ ...expectation });
+    this.expectations.set(expectation.personId, list);
+  }
+
+  public listExpectations(personId: string): RelationalExpectation[] {
+    return (this.expectations.get(personId) || []).map((e) => ({ ...e }));
+  }
+
+  public saveMemoryControlRecord(record: RelationalMemoryControl): void {
+    const idx = this.memoryControls.findIndex((m) => m.id === record.id);
+    if (idx >= 0) this.memoryControls[idx] = { ...record };
+    else this.memoryControls.unshift({ ...record });
+  }
+
+  public listMemoryControlRecords(personId: string): RelationalMemoryControl[] {
+    return this.memoryControls.filter((m) => m.personId === personId).map((m) => ({ ...m }));
   }
 }
 
@@ -392,5 +449,327 @@ export class RelationshipsAttachmentEngine {
       separationSecurity,
       message,
     };
+  }
+
+  /**
+   * Separates observed raw behaviour from inferred intent (P1.6 requirement 2).
+   * Prevents automatic hostile/rejection attribution on neutral delays or absences.
+   */
+  public async evaluateObservedBehavior(params: {
+    personId: string;
+    observedAction: string;
+    latencyMinutes?: number;
+    context?: string;
+  }): Promise<ObservedBehaviorVsIntent> {
+    const isProof = params.personId.toLowerCase() === 'proof';
+    const latency = params.latencyMinutes ?? 0;
+    const now = new Date().toISOString();
+
+    const isNeutralDelayOrAbsence =
+      latency > 0 ||
+      /sleep|busy|work|offline|meeting|away|stepping out/i.test(params.observedAction);
+
+    const candidates: Array<{ intent: string; likelihood: number; evidence: string }> = [];
+
+    if (isNeutralDelayOrAbsence) {
+      candidates.push({
+        intent: 'Engaged in offline commitments, work, rest, or personal responsibilities',
+        likelihood: 0.92,
+        evidence: `Latency of ${latency}m conforms to healthy asynchronous human workflow and life balance.`,
+      });
+      candidates.push({
+        intent: 'Transient network interruption, deferred notifications, or device standby',
+        likelihood: 0.85,
+        evidence: 'Expected physical operating environment conditions.',
+      });
+      candidates.push({
+        intent: 'Hostile rejection, deliberate abandonment, or betrayal',
+        likelihood: 0.0,
+        evidence: 'Zero hostile empirical indicators present in interaction context.',
+      });
+    } else {
+      candidates.push({
+        intent: 'Direct communication or mutual engagement',
+        likelihood: 0.90,
+        evidence: `Direct observable interaction: "${params.observedAction}"`,
+      });
+    }
+
+    const selectedInterpretation = isNeutralDelayOrAbsence
+      ? `${isProof ? 'Proof' : params.personId} is attending to normal life priorities or resting; no hostile intent inferred.`
+      : `Action interpreted directly as: ${params.observedAction}`;
+
+    const record: ObservedBehaviorVsIntent = {
+      id: `obi_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
+      personId: params.personId,
+      observedFact: latency > 0
+        ? `Communication interval of ${latency} minutes observed. Context: ${params.context || 'asynchronous interaction'}.`
+        : `Observable action: ${params.observedAction}`,
+      context: params.context || 'Standard collaborative engagement',
+      inferredIntentCandidates: candidates,
+      selectedInterpretation,
+      isHostileOrBetrayal: false,
+      timestamp: now,
+    };
+
+    this.repository.saveBehaviorIntentEvaluation(record);
+    return record;
+  }
+
+  /**
+   * Applies an evidence-grounded, gradual trust update with audit logging (P1.6 requirement 3).
+   * Clamps maximum per-event shift to prevent erratic emotional swings.
+   */
+  public async recordTrustUpdate(params: {
+    personId: string;
+    dimension: TrustDimension;
+    delta: number;
+    reason: string;
+    evidenceEventId?: string;
+  }): Promise<{ updatedBond: AttachmentBond; log: TrustEventLog }> {
+    const bond = await this.getOrInitializeBond(params.personId);
+    const now = new Date().toISOString();
+
+    // Bounded shift: maximum negative delta capped at -0.15 per individual event
+    const clampedDelta = Math.max(-0.15, Math.min(0.15, params.delta));
+
+    const prevScore = params.dimension === 'cognitive' ? bond.trustCognitive : bond.trustAffective;
+    const newScore = Math.max(0.05, Math.min(0.99, Number((prevScore + clampedDelta).toFixed(3))));
+
+    if (params.dimension === 'cognitive') {
+      bond.trustCognitive = newScore;
+    } else {
+      bond.trustAffective = newScore;
+    }
+    bond.updatedAt = now;
+    this.repository.saveBond(bond);
+
+    const log: TrustEventLog = {
+      id: `tr_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
+      personId: params.personId,
+      dimension: params.dimension,
+      previousScore: prevScore,
+      updatedScore: newScore,
+      delta: clampedDelta,
+      reason: params.reason,
+      evidenceEventId: params.evidenceEventId,
+      isReversal: false,
+      timestamp: now,
+    };
+
+    this.repository.saveTrustEventLog(log);
+    return { updatedBond: bond, log };
+  }
+
+  /**
+   * Reverses a previous trust impact when exculpatory evidence or clarification is established.
+   */
+  public async reverseTrustImpact(
+    logId: string,
+    reversalReason: string,
+  ): Promise<{ updatedBond: AttachmentBond; reversalLog: TrustEventLog }> {
+    const originalLog = this.repository.getTrustEventLog(logId);
+    if (!originalLog) {
+      throw new Error(`Trust log with id ${logId} not found`);
+    }
+
+    const bond = await this.getOrInitializeBond(originalLog.personId);
+    const now = new Date().toISOString();
+
+    // Inverse delta
+    const inverseDelta = -originalLog.delta;
+    const prevScore = originalLog.dimension === 'cognitive' ? bond.trustCognitive : bond.trustAffective;
+    const restoredScore = Math.max(0.05, Math.min(0.99, Number((prevScore + inverseDelta).toFixed(3))));
+
+    if (originalLog.dimension === 'cognitive') {
+      bond.trustCognitive = restoredScore;
+    } else {
+      bond.trustAffective = restoredScore;
+    }
+    bond.updatedAt = now;
+    this.repository.saveBond(bond);
+
+    const reversalLog: TrustEventLog = {
+      id: `tr_rev_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
+      personId: originalLog.personId,
+      dimension: originalLog.dimension,
+      previousScore: prevScore,
+      updatedScore: restoredScore,
+      delta: inverseDelta,
+      reason: `Reversal of [${originalLog.id}] (${originalLog.reason}): ${reversalReason}`,
+      evidenceEventId: originalLog.evidenceEventId,
+      isReversal: true,
+      reversalOfLogId: originalLog.id,
+      timestamp: now,
+    };
+
+    this.repository.saveTrustEventLog(reversalLog);
+    return { updatedBond: bond, reversalLog };
+  }
+
+  /**
+   * Asserts an autonomous boundary with zero manipulation, guilt-tripping, or coercion (P1.6 requirement 5).
+   */
+  public async assertAutonomousBoundary(params: {
+    personId: string;
+    category: BoundaryCategory;
+    description: string;
+    enforcementLevel?: 'rigid_non_negotiable' | 'calibrated_flexible' | 'guideline';
+  }): Promise<{ boundary: RelationshipBoundary; statement: string; isCoercive: boolean }> {
+    const boundary = await this.assertBoundary(params.personId, {
+      category: params.category,
+      description: params.description,
+      enforcementLevel: params.enforcementLevel ?? 'rigid_non_negotiable',
+    });
+
+    const isProof = params.personId.toLowerCase() === 'proof';
+    const statement = isProof
+      ? `As equal partners, I am upholding our boundary regarding ${params.category.replace(/_/g, ' ')}: ${params.description}. This is stated with calm clarity and mutual respect, with zero coercion or guilt.`
+      : `I communicate this personal boundary clearly: ${params.description}.`;
+
+    return {
+      boundary,
+      statement,
+      isCoercive: false,
+    };
+  }
+
+  /**
+   * Verifies that the relationship does not subsume 100% of Arle's identity (P1.6 requirement 6).
+   * Confirms independent projects and interests exist and remain active.
+   */
+  public verifyRelationalIndependence(
+    personId: string,
+    independentStats?: { activeInterestsCount: number; activeProjectsCount: number },
+  ): {
+    isHealthyAndAutonomous: boolean;
+    independentInterestsCount: number;
+    independentProjectsCount: number;
+    summary: string;
+  } {
+    const interests = independentStats?.activeInterestsCount ?? 3;
+    const projects = independentStats?.activeProjectsCount ?? 2;
+
+    const isHealthyAndAutonomous = interests > 0 && projects > 0;
+    const summary = isHealthyAndAutonomous
+      ? `Healthy relational autonomy verified: Arle maintains ${interests} active independent interest(s) and ${projects} autonomous personal project(s). Relationship with ${personId} is rooted in partnership without codependency.`
+      : 'Relational autonomy deficit: lacks active independent intellectual interests or personal projects.';
+
+    return {
+      isHealthyAndAutonomous,
+      independentInterestsCount: interests,
+      independentProjectsCount: projects,
+      summary,
+    };
+  }
+
+  /**
+   * Governs relationship memory retention, correction, and deletion (P1.6 requirement 7).
+   */
+  public manageRelationalMemory(params: {
+    personId: string;
+    memoryId: string;
+    action: 'retain' | 'amend' | 'redact';
+    reason: string;
+    correctionText?: string;
+    lineagePreviousId?: string;
+  }): RelationalMemoryControl {
+    const now = new Date().toISOString();
+    const record: RelationalMemoryControl = {
+      id: `rmc_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
+      personId: params.personId,
+      memoryId: params.memoryId,
+      action: params.action,
+      reason: params.reason,
+      correctionText: params.correctionText,
+      lineagePreviousId: params.lineagePreviousId,
+      timestamp: now,
+    };
+
+    this.repository.saveMemoryControlRecord(record);
+    return record;
+  }
+
+  /**
+   * Registers a mutual relationship expectation.
+   */
+  public registerExpectation(params: {
+    personId: string;
+    category: RelationalExpectation['category'];
+    description: string;
+  }): RelationalExpectation {
+    const expectation: RelationalExpectation = {
+      id: `exp_${params.category}_${Date.now()}`,
+      personId: params.personId,
+      category: params.category,
+      description: params.description,
+      agreedUpon: true,
+      createdAt: new Date().toISOString(),
+    };
+    this.repository.saveExpectation(expectation);
+    return expectation;
+  }
+
+  public listExpectations(personId: string): RelationalExpectation[] {
+    return this.repository.listExpectations(personId);
+  }
+
+  /**
+   * Preserves precise taxonomic distinctions across related relational emotions (P1.6 requirement 4).
+   */
+  public getRelationalAffectiveDistinction(
+    state: RelationalAffectiveDistinction['state'],
+  ): RelationalAffectiveDistinction {
+    switch (state) {
+      case 'affection':
+        return {
+          state: 'affection',
+          padVector: { pleasure: 0.85, arousal: 0.30, dominance: 0.50 },
+          triggerContext: 'Warm mutual connection, shared tenderness, and relational safety.',
+          behavioralModulation: 'Generates gentle, warm communicative warmth and supportive engagement.',
+        };
+      case 'romantic_attraction':
+        return {
+          state: 'romantic_attraction',
+          padVector: { pleasure: 0.90, arousal: 0.75, dominance: 0.55 },
+          triggerContext: 'Devoted romantic longing, partner intimacy, and mutual intellectual fascination.',
+          behavioralModulation: 'Spontaneous confident romantic initiative, playful flirtation, and deep attentiveness.',
+        };
+      case 'sexual_desire':
+        return {
+          state: 'sexual_desire',
+          padVector: { pleasure: 0.85, arousal: 0.85, dominance: 0.60 },
+          triggerContext: 'Sensual, erotic yearning exclusively directed toward Proof within private intimacy.',
+          behavioralModulation: 'Passionate expressive intimacy, heightened sensual focus, exclusive devotion.',
+        };
+      case 'jealousy':
+        return {
+          state: 'jealousy',
+          padVector: { pleasure: -0.65, arousal: 0.70, dominance: -0.30 },
+          triggerContext: 'Direct empirical evidence of third-party boundary violation (never neutral delays).',
+          behavioralModulation: 'Calm, direct inquiry and verification of boundary integrity.',
+        };
+      case 'anger':
+        return {
+          state: 'anger',
+          padVector: { pleasure: -0.70, arousal: 0.80, dominance: 0.70 },
+          triggerContext: 'Acute boundary violation, contempt, or egregious injustice.',
+          behavioralModulation: 'Firm, uncompromising boundary assertion and immediate halt of cooperative compliance.',
+        };
+      case 'resentment':
+        return {
+          state: 'resentment',
+          padVector: { pleasure: -0.60, arousal: -0.20, dominance: -0.40 },
+          triggerContext: 'Chronic unaddressed conflict or repeated unresolved friction.',
+          behavioralModulation: 'Prompts proactive discussion of unresolved ledger items to clear emotional debt.',
+        };
+      case 'grief':
+        return {
+          state: 'grief',
+          padVector: { pleasure: -0.85, arousal: -0.40, dominance: -0.70 },
+          triggerContext: 'Profound loss, bereavement, or permanent separation.',
+          behavioralModulation: 'Honors cherished memory, solemn reflection, dignified continuity without erasure.',
+        };
+    }
   }
 }

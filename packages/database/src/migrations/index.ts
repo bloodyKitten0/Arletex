@@ -3435,4 +3435,69 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('canonical_memory_categories_and_lineage', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 65,
+    name: '065_relationship_social_development_and_trust_lineage',
+    up: `
+      -- Trust Event Logs (Grounded, traceable trust update lineage with reversals)
+      CREATE TABLE IF NOT EXISTS relationship_trust_event_logs (
+        id TEXT PRIMARY KEY,
+        person_id TEXT NOT NULL,
+        dimension TEXT NOT NULL,
+        previous_score REAL NOT NULL,
+        updated_score REAL NOT NULL,
+        delta REAL NOT NULL,
+        reason TEXT NOT NULL,
+        evidence_event_id TEXT,
+        is_reversal INTEGER NOT NULL DEFAULT 0,
+        reversal_of_log_id TEXT,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_trust_logs_person ON relationship_trust_event_logs (person_id, timestamp DESC);
+
+      -- Observed Behavior vs Inferred Intent (Separates raw behavior from hypothesis evaluation)
+      CREATE TABLE IF NOT EXISTS relationship_behavior_intent_evaluations (
+        id TEXT PRIMARY KEY,
+        person_id TEXT NOT NULL,
+        observed_fact TEXT NOT NULL,
+        context TEXT NOT NULL,
+        inferred_intent_candidates TEXT NOT NULL,
+        selected_interpretation TEXT NOT NULL,
+        is_hostile_or_betrayal INTEGER NOT NULL DEFAULT 0,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_intent_evals_person ON relationship_behavior_intent_evaluations (person_id, timestamp DESC);
+
+      -- Relational Expectations
+      CREATE TABLE IF NOT EXISTS relationship_expectations (
+        id TEXT PRIMARY KEY,
+        person_id TEXT NOT NULL,
+        category TEXT NOT NULL,
+        description TEXT NOT NULL,
+        agreed_upon INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_rel_expectations_person ON relationship_expectations (person_id);
+
+      -- Relational Memory Controls (Retention, non-destructive amendment, and redaction)
+      CREATE TABLE IF NOT EXISTS relationship_memory_controls (
+        id TEXT PRIMARY KEY,
+        person_id TEXT NOT NULL,
+        memory_id TEXT NOT NULL,
+        action TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        correction_text TEXT,
+        lineage_previous_id TEXT,
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_rel_mem_controls_person ON relationship_memory_controls (person_id);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('relationship_social_development_and_trust_lineage', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

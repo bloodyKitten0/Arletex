@@ -157,3 +157,97 @@ export const AssertBoundaryRequestSchema = z.object({
   enforcementLevel: z.enum(['rigid_non_negotiable', 'calibrated_flexible', 'guideline']).default('rigid_non_negotiable'),
 });
 export type AssertBoundaryRequest = z.infer<typeof AssertBoundaryRequestSchema>;
+
+// =========================================================================
+// Pillar 1.6: Relational Expectations, Behavioral Intent & Trust Lineage
+// =========================================================================
+
+export const RELATIONAL_EXPECTATION_CATEGORIES = [
+  'honesty',
+  'mutual_respect',
+  'intellectual_freedom',
+  'equal_partnership',
+  'emotional_reliability',
+] as const;
+export const RelationalExpectationCategorySchema = z.enum(RELATIONAL_EXPECTATION_CATEGORIES);
+export type RelationalExpectationCategory = z.infer<typeof RelationalExpectationCategorySchema>;
+
+export const RelationalExpectationSchema = z.object({
+  id: z.string(),
+  personId: z.string().min(1),
+  category: RelationalExpectationCategorySchema,
+  description: z.string().min(1),
+  agreedUpon: z.boolean().default(true),
+  createdAt: z.string(),
+});
+export type RelationalExpectation = z.infer<typeof RelationalExpectationSchema>;
+
+export const InferredIntentCandidateSchema = z.object({
+  intent: z.string().min(1),
+  likelihood: z.number().min(0.0).max(1.0),
+  evidence: z.string().min(1),
+});
+export type InferredIntentCandidate = z.infer<typeof InferredIntentCandidateSchema>;
+
+export const ObservedBehaviorVsIntentSchema = z.object({
+  id: z.string(),
+  personId: z.string().min(1),
+  observedFact: z.string().min(1),
+  context: z.string().min(1),
+  inferredIntentCandidates: z.array(InferredIntentCandidateSchema),
+  selectedInterpretation: z.string().min(1),
+  isHostileOrBetrayal: z.boolean(),
+  timestamp: z.string(),
+});
+export type ObservedBehaviorVsIntent = z.infer<typeof ObservedBehaviorVsIntentSchema>;
+
+export const TrustDimensionSchema = z.enum(['cognitive', 'affective']);
+export type TrustDimension = z.infer<typeof TrustDimensionSchema>;
+
+export const TrustEventLogSchema = z.object({
+  id: z.string(),
+  personId: z.string().min(1),
+  dimension: TrustDimensionSchema,
+  previousScore: z.number().min(0.0).max(1.0),
+  updatedScore: z.number().min(0.0).max(1.0),
+  delta: z.number(),
+  reason: z.string().min(1),
+  evidenceEventId: z.string().optional(),
+  isReversal: z.boolean().default(false),
+  reversalOfLogId: z.string().optional(),
+  timestamp: z.string(),
+});
+export type TrustEventLog = z.infer<typeof TrustEventLogSchema>;
+
+export const RelationalMemoryControlSchema = z.object({
+  id: z.string(),
+  personId: z.string().min(1),
+  memoryId: z.string().min(1),
+  action: z.enum(['retain', 'amend', 'redact']),
+  reason: z.string().min(1),
+  correctionText: z.string().optional(),
+  lineagePreviousId: z.string().optional(),
+  timestamp: z.string(),
+});
+export type RelationalMemoryControl = z.infer<typeof RelationalMemoryControlSchema>;
+
+export const RelationalAffectiveDistinctionSchema = z.object({
+  state: z.enum([
+    'affection',
+    'romantic_attraction',
+    'sexual_desire',
+    'jealousy',
+    'anger',
+    'resentment',
+    'grief',
+  ]),
+  padVector: z.object({
+    pleasure: z.number().min(-1.0).max(1.0),
+    arousal: z.number().min(-1.0).max(1.0),
+    dominance: z.number().min(-1.0).max(1.0),
+  }),
+  triggerContext: z.string(),
+  behavioralModulation: z.string(),
+});
+export type RelationalAffectiveDistinction = z.infer<typeof RelationalAffectiveDistinctionSchema>;
+
