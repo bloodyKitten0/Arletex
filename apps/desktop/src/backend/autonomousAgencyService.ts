@@ -462,13 +462,17 @@ export class AutonomousAgencyService {
     const textSnippet = paragraphMatches.join(' ').slice(0, 400);
     const byteCount = Buffer.byteLength(rawText, 'utf8');
 
+    const contentHash = crypto.createHash('sha256').update(rawText).digest('hex');
     const provenance = {
       sourceUrl: topic.url,
+      finalUrl: topic.url,
       retrievedAt: new Date().toISOString(),
       byteCount,
       statusCode,
       extractedTitle,
       headings: headingMatches,
+      contentHash,
+      parserVersion: '1.0',
     };
 
     // 6. Complete activity with grounded provenance
@@ -484,15 +488,20 @@ export class AutonomousAgencyService {
       },
     });
 
-    // 7. Store episodic memory grounded in verified retrieval
+    // 7. Store episodic memory grounded in verified retrieval (provenance: retrieved_source)
     this.memoryRepo.create({
       type: 'episodic',
       content: `Researched "${extractedTitle}" at ${topic.url}. Explored key concepts: ${headingMatches.slice(0, 3).join(', ')}. Core snippet: "${textSnippet.slice(0, 200)}..."`,
       importance: 0.6,
-      tags: ['autonomous', 'research', 'grounded', 'reading', 'empirical'],
+      provenance: 'retrieved_source',
+      tags: ['autonomous', 'research', 'grounded', 'reading', 'empirical', 'retrieved_source'],
       metadata: {
         provenance,
         sourceUrl: topic.url,
+        finalUrl: topic.url,
+        contentHash,
+        parserVersion: '1.0',
+        retrievalTimestamp: provenance.retrievedAt,
         emotionalContext: 'empirically grounded, intellectually engaged',
       },
     });

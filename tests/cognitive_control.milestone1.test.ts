@@ -256,7 +256,7 @@ describe('Milestone 1 — Central Cognitive Control Architecture', () => {
       expect(lastMem.tags).toContain('failure');
     });
 
-    it('records verified fact provenance when an action completes and verifies successfully', async () => {
+    it('records interaction provenance when a conversational action completes successfully', async () => {
       permissionController.updatePolicy({
         allowProcessExecution: true,
         allowBrowserAutomation: true,
@@ -274,7 +274,7 @@ describe('Milestone 1 — Central Cognitive Control Architecture', () => {
 
       const memories = memoryRepo.list({ limit: 5 });
       const lastMem = memories[0]!;
-      expect(lastMem.provenance).toBe('verified_fact');
+      expect(lastMem.provenance).toBe('interaction');
       expect(lastMem.tags).toContain('success');
     });
   });

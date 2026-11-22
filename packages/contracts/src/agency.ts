@@ -205,6 +205,34 @@ export const ExecutionStatusSchema = z.enum([
 ]);
 export type ExecutionStatus = z.infer<typeof ExecutionStatusSchema>;
 
+export const ActionLifecycleStateSchema = z.enum([
+  'proposed',
+  'authorized',
+  'execution_started',
+  'execution_returned',
+  'observed',
+  'verified',
+  'failed',
+  'denied',
+  'interrupted',
+  'cancelled',
+]);
+export type ActionLifecycleState = z.infer<typeof ActionLifecycleStateSchema>;
+
+export const ActionExecutionResultSchema = z.object({
+  actionId: z.string().uuid(),
+  taskId: z.string().uuid().optional(),
+  status: z.enum(['execution_returned', 'failed', 'interrupted', 'cancelled']),
+  attempted: z.boolean(),
+  rawObservation: z.record(z.string(), z.any()).default({}),
+  provider: z.string(),
+  isSynthetic: z.boolean().default(false),
+  durationMs: z.number().default(0),
+  error: z.string().nullable().default(null),
+  timestamp: z.string(),
+});
+export type ActionExecutionResult = z.infer<typeof ActionExecutionResultSchema>;
+
 export const PlanStepStatusSchema = z.enum([
   'pending',
   'awaiting_authorization',
@@ -313,6 +341,7 @@ export const VerificationResultSchema = z.object({
   timestamp: z.string(),
 });
 export type VerificationResult = z.infer<typeof VerificationResultSchema>;
+export type ActionVerificationResult = VerificationResult;
 
 // ==========================================
 // 6. Action & Permission Controller Contracts

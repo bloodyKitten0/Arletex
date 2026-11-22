@@ -881,6 +881,7 @@ export class ClosedLoopAgencyService {
         }
       }
 
+      const isSynthetic = Boolean(res.pid === 99999 || (!this.desktopProvider && (process.env['NODE_ENV'] === 'test' || process.env['VITEST'])));
       return {
         id: crypto.randomUUID(),
         taskId,
@@ -888,13 +889,15 @@ export class ClosedLoopAgencyService {
         source: 'process_table',
         timestamp,
         success: res.success,
-        confidence: res.success ? 1.0 : 0.0,
+        confidence: res.success ? (isSynthetic ? 0.5 : 1.0) : 0.0,
         provenance: 'DesktopEnvironmentProvider.openInArleBrowser',
         data: {
           url,
           profile: getArleChromeProfile(),
           email: getArleEmail(),
+          pid: res.pid,
           message: res.message,
+          isSynthetic,
         },
         error: res.success ? null : (res.message || 'Browser launch failed'),
       };
@@ -961,16 +964,18 @@ export class ClosedLoopAgencyService {
         let sha256: string | null = null;
         const expectedSha256 = crypto.createHash('sha256').update(content).digest('hex');
         let contentVerified = false;
+        let readBackPerformed = false;
         if (res.success && typeof this.computerProvider.readFile === 'function') {
           try {
             const readBack = await this.computerProvider.readFile(filePath);
             sha256 = crypto.createHash('sha256').update(readBack).digest('hex');
             contentVerified = sha256 === expectedSha256;
+            readBackPerformed = true;
           } catch {
             // Read back failed
           }
         }
-        const writeSuccess = res.success && (sha256 ? contentVerified : true);
+        const writeSuccess = Boolean(res.success && readBackPerformed && contentVerified);
         return {
           id: crypto.randomUUID(),
           taskId,
@@ -987,8 +992,15 @@ export class ClosedLoopAgencyService {
             sha256,
             expectedSha256,
             contentVerified,
+            readBackPerformed,
           },
-          error: writeSuccess ? null : (contentVerified ? 'File write failed' : 'Content SHA-256 hash mismatch upon read-back'),
+          error: writeSuccess
+            ? null
+            : (!res.success
+                ? 'File write execution failed'
+                : (!readBackPerformed
+                    ? 'Mandatory read-back verification was unsupported or failed'
+                    : 'Content SHA-256 hash mismatch upon read-back')),
         };
       } catch (err: any) {
         return {

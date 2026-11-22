@@ -354,6 +354,7 @@ export class CognitiveControlBus {
       let outcomeVerified = false;
       let verifiedFact: string | undefined;
 
+      let isSyntheticAction = false;
       if (!isAuthorized) {
         actionOutcomeSuccess = false;
       } else if (proposal && this.closedLoopAgency && (decision.actionType === 'execute_agency_task' || decision.actionType === 'research')) {
@@ -365,9 +366,12 @@ export class CognitiveControlBus {
         });
         actionOutcomeSuccess = loopRes.success;
         outcomeObserved = loopRes.observations.length > 0;
+        isSyntheticAction = loopRes.observations.some(
+          (o) => o.data?.isSynthetic || o.data?.pid === 99999 || (o as any).isSynthetic,
+        );
         if (loopRes.verifications.length > 0) {
           const lastVer = loopRes.verifications[loopRes.verifications.length - 1];
-          if (lastVer && lastVer.verified) {
+          if (lastVer && lastVer.verified && !isSyntheticAction) {
             verifiedFact = lastVer.observedOutcome;
             outcomeVerified = true;
           }
@@ -404,15 +408,19 @@ export class CognitiveControlBus {
       if (this.autobiographicalMemoryService) {
         let autoProvenance: MemoryProvenance;
         if (proposal) {
-          autoProvenance = outcomeVerified && actionOutcomeSuccess
-            ? 'verified_fact'
-            : (actionExecuted ? 'digital_agency' : 'inferred_interpretation');
-        } else if (event.source === 'user' || event.source === 'telegram') {
-          autoProvenance = 'user_statement';
+          if (isSyntheticAction) {
+            autoProvenance = 'simulation';
+          } else if (outcomeVerified && actionOutcomeSuccess) {
+            autoProvenance = 'verified_fact';
+          } else {
+            autoProvenance = actionExecuted ? 'digital_agency' : 'inferred_interpretation';
+          }
         } else if (decision.actionType === 'speak') {
           autoProvenance = 'interaction';
+        } else if (event.source === 'user' || event.source === 'telegram') {
+          autoProvenance = 'user_statement';
         } else {
-          autoProvenance = 'autobiographical_experience';
+          autoProvenance = 'internal_reflection';
         }
 
         const mem = this.autobiographicalMemoryService.recordExperience({
@@ -420,7 +428,7 @@ export class CognitiveControlBus {
           content: memContent,
           rawObservation: verifiedFact,
           provenance: autoProvenance,
-          confidence: actionOutcomeSuccess ? 0.95 : 0.60,
+          confidence: actionOutcomeSuccess ? (isSyntheticAction ? 0.6 : 0.95) : 0.60,
           importance: appraisal.dimensions.personalSignificance || 0.6,
           tags: ['cognitive_bus', event.type, decision.actionType, actionOutcomeSuccess ? 'success' : 'failure'],
           metadata: {
@@ -433,6 +441,7 @@ export class CognitiveControlBus {
             actionExecuted,
             outcomeObserved,
             outcomeVerified,
+            isSynthetic: isSyntheticAction,
             taskSucceeded: proposal ? actionOutcomeSuccess : true,
           },
         });
@@ -442,20 +451,24 @@ export class CognitiveControlBus {
       } else if (this.memorySink) {
         let sinkProvenance: MemoryProvenance;
         if (proposal) {
-          sinkProvenance = outcomeVerified && actionOutcomeSuccess ? 'verified_fact' : 'raw_observation';
-        } else if (actionOutcomeSuccess) {
-          sinkProvenance = 'verified_fact';
+          if (isSyntheticAction) {
+            sinkProvenance = 'simulation';
+          } else {
+            sinkProvenance = outcomeVerified && actionOutcomeSuccess ? 'verified_fact' : 'raw_observation';
+          }
+        } else if (decision.actionType === 'speak') {
+          sinkProvenance = 'interaction';
         } else if (event.source === 'user' || event.source === 'telegram') {
           sinkProvenance = 'user_statement';
         } else {
-          sinkProvenance = 'raw_observation';
+          sinkProvenance = 'internal_reflection';
         }
 
         const mem = await this.memorySink.create?.({
           type: 'episodic',
           content: memContent,
           importance: appraisal.dimensions.personalSignificance || 0.6,
-          confidence: actionOutcomeSuccess ? 0.95 : 0.8,
+          confidence: actionOutcomeSuccess ? (isSyntheticAction ? 0.6 : 0.95) : 0.8,
           provenance: sinkProvenance,
           tags: ['cognitive_bus', event.type, decision.actionType, actionOutcomeSuccess ? 'success' : 'failure'],
           metadata: {
@@ -463,6 +476,7 @@ export class CognitiveControlBus {
             decisionId: decision.id,
             actionOutcomeSuccess,
             permissionReason,
+            isSynthetic: isSyntheticAction,
           },
         });
         if (mem && mem.id) {
@@ -925,6 +939,10 @@ export class CognitiveControlBus {
     let stimulusContext = '';
     if (typeof event.payload?.text === 'string') {
       stimulusContext = ` Text: "${event.payload.text}".`;
+    } else if (typeof event.payload?.thought === 'string') {
+      stimulusContext = ` Thought: "${event.payload.thought}".`;
+    } else if (typeof event.payload?.content === 'string') {
+      stimulusContext = ` Content: "${event.payload.content}".`;
     } else if (typeof event.payload?.subject === 'string') {
       stimulusContext = ` Subject: "${event.payload.subject}".`;
       if (typeof event.payload?.bodySnippet === 'string') {

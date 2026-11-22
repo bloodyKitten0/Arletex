@@ -828,21 +828,40 @@ export class DesktopEnvironmentProvider {
     if (!focused) return false;
     await new Promise((r) => setTimeout(r, 400));
     try {
-      // 1. Try Space key (57)
+      // 1. Dispatch a mouse click into the web page viewport to ensure DOM contents have active focus
+      await execFilePromise('ydotool', ['mousemove', '--absolute', '500', '400'], {
+        env: { ...process.env, YDOTOOL_SOCKET: '/tmp/ydotool.sock' },
+      });
+      await execFilePromise('ydotool', ['click', '0xC0'], {
+        env: { ...process.env, YDOTOOL_SOCKET: '/tmp/ydotool.sock' },
+      });
+      await new Promise((r) => setTimeout(r, 300));
+
+      // 2. Try Space key (57) now that DOM has focus
       await execFilePromise('ydotool', ['key', '57:1', '57:0'], {
         env: { ...process.env, YDOTOOL_SOCKET: '/tmp/ydotool.sock' },
       });
       await new Promise((r) => setTimeout(r, 600));
       if (await this.isAudioPlaying()) return true;
 
-      // 2. Try Enter key (28) in case focus is on a search result or track card
+      // 3. Try Enter key (28) in case focus is on a search result or track card
       await execFilePromise('ydotool', ['key', '28:1', '28:0'], {
         env: { ...process.env, YDOTOOL_SOCKET: '/tmp/ydotool.sock' },
       });
       await new Promise((r) => setTimeout(r, 600));
       if (await this.isAudioPlaying()) return true;
 
-      // 3. Try hardware Media Play/Pause key (164)
+      // 4. Try bottom media control bar play button (standard center-bottom on 1080p display)
+      await execFilePromise('ydotool', ['mousemove', '--absolute', '960', '1040'], {
+        env: { ...process.env, YDOTOOL_SOCKET: '/tmp/ydotool.sock' },
+      });
+      await execFilePromise('ydotool', ['click', '0xC0'], {
+        env: { ...process.env, YDOTOOL_SOCKET: '/tmp/ydotool.sock' },
+      });
+      await new Promise((r) => setTimeout(r, 600));
+      if (await this.isAudioPlaying()) return true;
+
+      // 5. Try hardware Media Play/Pause key (164)
       await execFilePromise('ydotool', ['key', '164:1', '164:0'], {
         env: { ...process.env, YDOTOOL_SOCKET: '/tmp/ydotool.sock' },
       });

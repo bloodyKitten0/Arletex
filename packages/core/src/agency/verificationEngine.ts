@@ -299,6 +299,28 @@ export class VerificationEngine {
     if (action.type === 'desktop_media_control') {
       const command = String(action.payload?.command || 'PlayPause');
       const success = Boolean(observation.success);
+      const playbackStatus = observation.data?.playbackStatus as string | undefined;
+      const isAudioActive = Boolean(observation.data?.audioStreamActive || observation.data?.isAudioPlaying);
+
+      // If the command was Play or Resume, verify playback is genuinely active
+      if (command === 'Play' || command === 'Resume') {
+        const isActuallyPlaying = playbackStatus === 'Playing' || isAudioActive;
+        return {
+          actionId: action.id,
+          expectedOutcome: `Media playback active (${command})`,
+          observedOutcome: isActuallyPlaying
+            ? `Media playback confirmed active (status: ${playbackStatus || 'active audio stream'})`
+            : `Play command dispatched, but audio stream is not active (playback status: ${playbackStatus || 'Paused/Stopped'})`,
+          verified: isActuallyPlaying && success,
+          confidence: isActuallyPlaying ? 0.98 : 0.9,
+          status: isActuallyPlaying ? 'verified_successful' : 'failed',
+          failureReason: isActuallyPlaying ? null : 'Audio stream is not active in PipeWire or MPRIS',
+          isRecoverable: true,
+          recommendedStrategy: 'retry_with_backoff',
+          evidence: observation.data || {},
+          timestamp,
+        };
+      }
 
       return {
         actionId: action.id,
@@ -323,6 +345,41 @@ export class VerificationEngine {
       const profile = String(action.payload?.profile || 'Profile 7');
       const email = String(action.payload?.email || 'arletex.email@gmail.com');
       const success = Boolean(observation.success);
+      const isSynthetic = Boolean(observation.data?.isSynthetic || observation.data?.pid === 99999);
+      const pid = observation.data?.pid as number | undefined;
+      const windowFound = observation.data?.windowFound as boolean | undefined;
+      const currentUrl = observation.data?.currentUrl as string | undefined;
+
+      if (isSynthetic) {
+        return {
+          actionId: action.id,
+          expectedOutcome: `Google Chrome Profile 7 (${email}) opened to ${url}`,
+          observedOutcome: `Synthetic test double browser returned PID 99999 for ${url}`,
+          verified: false,
+          confidence: 0.5,
+          status: 'partially_successful',
+          failureReason: 'Synthetic test double observation cannot verify real browser navigation',
+          isRecoverable: false,
+          evidence: { url, profile, email, isSynthetic: true },
+          timestamp,
+        };
+      }
+
+      if (success && windowFound === false && !currentUrl) {
+        return {
+          actionId: action.id,
+          expectedOutcome: `Google Chrome Profile 7 (${email}) opened and window mapped to ${url}`,
+          observedOutcome: `Browser process started (PID ${pid || 'unknown'}), but window or destination was not mapped`,
+          verified: false,
+          confidence: 0.8,
+          status: 'partially_successful',
+          failureReason: 'Browser process spawned but window was not observed in window manager',
+          isRecoverable: true,
+          recommendedStrategy: 'retry_with_backoff',
+          evidence: observation.data || {},
+          timestamp,
+        };
+      }
 
       return {
         actionId: action.id,
@@ -330,7 +387,7 @@ export class VerificationEngine {
         observedOutcome: success
           ? `Google Chrome (${profile} - ${email}) opened at ${url}`
           : `Failed to open Google Chrome (${profile}): ${observation.error || 'launch error'}`,
-        verified: success,
+        verified: success && !isSynthetic,
         confidence: success ? 0.98 : 0.0,
         status: success ? 'verified_successful' : 'failed',
         failureReason: success ? null : (observation.error || 'Browser launch failed'),
@@ -366,32 +423,42 @@ export class VerificationEngine {
       };
     }
 
-    // 4. File Write Verification
+    // 4. File Write Verification (Empirical Read-back Mandatory)
     if (action.type === 'system_write_file') {
       const filePath = action.payload?.filePath as string;
       const fileExists = Boolean(observation.data?.exists);
       const sizeBytes = Number(observation.data?.sizeBytes || 0);
       const sha256 = observation.data?.sha256;
       const expectedSha256 = observation.data?.expectedSha256;
-      const hashMatched = sha256 && expectedSha256 ? sha256 === expectedSha256 : true;
+      const readBackPerformed = Boolean(sha256 && expectedSha256);
+      const hashMatched = Boolean(readBackPerformed && sha256 === expectedSha256);
+      const contentVerified = Boolean(observation.data?.contentVerified ?? hashMatched);
 
-      const verified = Boolean(fileExists && sizeBytes >= 0 && hashMatched && observation.success);
+      const verified = Boolean(fileExists && sizeBytes >= 0 && hashMatched && contentVerified && observation.success);
       return {
         actionId: action.id,
-        expectedOutcome: `File written at ${filePath}`,
+        expectedOutcome: `File written at ${filePath} with verified content hash`,
         observedOutcome: verified
-          ? `File exists (${sizeBytes} bytes${sha256 ? `, sha256: ${sha256.slice(0, 8)}... verified` : ''})`
-          : (!hashMatched
-              ? 'SHA-256 hash mismatch: file contents on disk do not match written payload'
-              : 'File missing or zero length on disk'),
+          ? `File exists (${sizeBytes} bytes, sha256: ${sha256!.slice(0, 8)}... read-back verified)`
+          : (!observation.success
+              ? 'File write execution failed'
+              : (!fileExists
+                  ? 'File missing or zero length on disk'
+                  : (!readBackPerformed
+                      ? 'Read-back verification was unperformed or unsupported'
+                      : 'SHA-256 hash mismatch: file contents on disk do not match written payload'))),
         verified,
-        confidence: 1.0,
-        status: verified ? 'verified_successful' : 'failed',
+        confidence: verified ? 1.0 : (observation.success ? 0.7 : 0.0),
+        status: verified ? 'verified_successful' : (observation.success && !readBackPerformed ? 'executed_unverified' : 'failed'),
         failureReason: verified
           ? null
-          : (!hashMatched
-              ? 'SHA-256 content verification failed upon read-back'
-              : 'Filesystem write could not be verified on disk'),
+          : (!observation.success
+              ? 'Filesystem write could not be executed on disk'
+              : (!fileExists
+                  ? 'File missing or zero length on disk'
+                  : (!readBackPerformed
+                      ? 'Read-back verification is mandatory for file write verification'
+                      : 'SHA-256 content verification failed upon read-back'))),
         isRecoverable: !verified,
         recommendedStrategy: verified ? undefined : 'replan_sub_steps',
         evidence: observation.data || {},

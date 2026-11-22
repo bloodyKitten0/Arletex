@@ -346,39 +346,51 @@ export class AutonomousAgencyEngine {
     activityId: string,
     criteria: string,
     observedEvidence: string,
-    verifiedOption?: boolean,
+    verifiedOption?: boolean | { verified: boolean; isSynthetic?: boolean },
   ): AutonomousActivityRecord {
     const activity = this.repo.getActivityById(activityId);
     if (!activity) throw new Error(`Activity ${activityId} not found.`);
 
     const now = new Date().toISOString();
-    const isSuccess =
-      verifiedOption !== undefined
-        ? verifiedOption
-        : Boolean(observedEvidence && observedEvidence.trim().length > 0) &&
-          !/^(error|failed|failure|denied|rejection)/i.test(observedEvidence.trim());
+    let isSuccess = false;
+    let isSynthetic = false;
+
+    if (typeof verifiedOption === 'object' && verifiedOption !== null) {
+      isSuccess = Boolean(verifiedOption.verified);
+      isSynthetic = Boolean(verifiedOption.isSynthetic);
+    } else if (typeof verifiedOption === 'boolean') {
+      isSuccess = verifiedOption;
+    } else {
+      isSuccess = Boolean(observedEvidence && observedEvidence.trim().length > 0) &&
+        !/^(error|failed|failure|denied|rejection|unverified|missing)/i.test(observedEvidence.trim());
+    }
+
+    // Prohibit synthetic test double observations from marking production verified
+    const verifiedFinal = isSuccess && !isSynthetic;
 
     activity.verification = {
-      verified: isSuccess,
+      verified: verifiedFinal,
       criteria,
       observedEvidence: observedEvidence || 'No empirical evidence observed',
       verifiedAt: now,
     };
 
-    if (isSuccess) {
+    if (verifiedFinal) {
       activity.status = 'completed';
       activity.completedAt = now;
     } else {
       activity.status = 'failed';
       activity.failureInfo = {
-        failureReason: `Verification failed against criteria: ${criteria}. Evidence: ${observedEvidence}`,
+        failureReason: isSynthetic
+          ? `Synthetic observation rejected: autonomous activity requires independent empirical verification`
+          : `Verification failed against criteria: ${criteria}. Evidence: ${observedEvidence}`,
         attemptCount: (activity.failureInfo?.attemptCount || 0) + 1,
       };
     }
 
     assertAutonomousActivityIntegrity(activity);
     this.repo.saveActivity(activity);
-    this.logger.info(`Verified autonomous activity ${activityId}: ${criteria} (result: ${isSuccess})`);
+    this.logger.info(`Verified autonomous activity ${activityId}: ${criteria} (result: ${verifiedFinal})`);
     return activity;
   }
 
@@ -407,14 +419,21 @@ export class AutonomousAgencyEngine {
   public async recoverFailedActivity(
     activityId: string,
     recoveryStrategy: string,
+    postRecoveryObservation?: { verified: boolean; evidence?: string; isSynthetic?: boolean },
   ): Promise<AutonomousActivityRecord> {
     const activity = this.repo.getActivityById(activityId);
     if (!activity) throw new Error(`Activity ${activityId} not found.`);
 
     const now = new Date().toISOString();
-    activity.status = 'recovered';
     const priorAttempts = activity.failureInfo?.attemptCount ?? 1;
 
+    // Verify recovery outcome: if an observation is provided, respect its verified state.
+    // If none provided, execute recovery transition and record evidence.
+    const isVerified = postRecoveryObservation
+      ? (postRecoveryObservation.verified && !postRecoveryObservation.isSynthetic)
+      : true;
+
+    activity.status = isVerified ? 'completed' : 'recovered';
     activity.failureInfo = {
       failureReason: activity.failureInfo?.failureReason || 'Transient failure',
       attemptCount: priorAttempts + 1,
@@ -423,17 +442,18 @@ export class AutonomousAgencyEngine {
 
     // Re-verify after recovery strategy
     activity.verification = {
-      verified: true,
+      verified: isVerified,
       criteria: `Recovery verification via strategy: ${recoveryStrategy}`,
-      observedEvidence: `Activity resumed and verified intact under ${recoveryStrategy}`,
+      observedEvidence: postRecoveryObservation?.evidence || `Activity resumed and verified intact under ${recoveryStrategy}`,
       verifiedAt: now,
     };
-    activity.completedAt = now;
-    activity.status = 'completed';
+    if (isVerified) {
+      activity.completedAt = now;
+    }
 
     assertAutonomousActivityIntegrity(activity);
     this.repo.saveActivity(activity);
-    this.logger.info(`Successfully recovered activity ${activityId} with strategy: ${recoveryStrategy}`);
+    this.logger.info(`Successfully recovered activity ${activityId} with strategy: ${recoveryStrategy} (verified: ${isVerified})`);
     return activity;
   }
 

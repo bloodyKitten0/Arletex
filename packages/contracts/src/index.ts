@@ -189,11 +189,14 @@ export const MemoryCorrectionSchema = z.object({
 export type MemoryCorrection = z.infer<typeof MemoryCorrectionSchema>;
 
 export const MemoryProvenanceSchema = z.enum([
+  'direct_observation',
   'raw_observation',
   'user_statement',
   'user_reported',
   'tool_returned',
+  'retrieved_source',
   'inferred_interpretation',
+  'internal_reflection',
   'simulation',
   'model_generated',
   'verified_fact',
