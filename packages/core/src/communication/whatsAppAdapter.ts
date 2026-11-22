@@ -1,4 +1,6 @@
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   WhatsAppConfig,
   WhatsAppConfigSchema,
@@ -13,6 +15,14 @@ import {
   WhatsAppWebhookPayloadSchema,
 } from '@arletex/contracts';
 import { rootLogger, ILogger } from '../logger.js';
+
+export interface DownloadedWhatsAppMedia {
+  filePath: string;
+  fileSize: number;
+  mimeType: string;
+  fileName: string;
+  internalMediaId: string;
+}
 
 export interface IWhatsAppRepository {
   isProcessed(messageId: string): boolean;
@@ -47,6 +57,17 @@ export interface IWhatsAppAdapter {
     reason?: string;
   }>;
   sendMessage(input: WhatsAppSendInput): Promise<WhatsAppSendResult>;
+  downloadMedia(
+    mediaUrlOrId?: string,
+    options?: {
+      destinationDir?: string;
+      timeoutMs?: number;
+      base64Data?: string;
+      mimeType?: string;
+      fileName?: string;
+      mediaId?: string;
+    },
+  ): Promise<DownloadedWhatsAppMedia>;
   getPairingQr(): Promise<{ qrCodeBase64?: string; status: string }>;
   getPairingCode(phoneNumber: string): Promise<{ pairingCode?: string; status: string }>;
   disconnect(): Promise<boolean>;
@@ -231,7 +252,44 @@ export class WhatsAppAdapter implements IWhatsAppAdapter {
       });
     }
 
-    // 4. Construct untrusted message envelope
+    // 4. Extract and normalize media attributes
+    const rawMsg = (payload.message as any) || {};
+    const rawObj = (parsedJson?.message || parsedJson) as any;
+    const rawMediaType =
+      rawMsg.mediaType ||
+      rawMsg.media_type ||
+      rawObj.mediaType ||
+      rawObj.media_type ||
+      (rawMsg.image
+        ? 'image'
+        : rawMsg.video
+          ? 'video'
+          : rawMsg.audio
+            ? 'audio'
+            : rawMsg.document
+              ? 'document'
+              : 'text');
+
+    let normalizedMediaType:
+      'text' | 'image' | 'photo' | 'video' | 'audio' | 'voice' | 'document' | 'unsupported' =
+      'text';
+
+    if (rawMediaType === 'image' || rawMediaType === 'photo') normalizedMediaType = 'image';
+    else if (rawMediaType === 'video') normalizedMediaType = 'video';
+    else if (rawMediaType === 'audio' || rawMediaType === 'voice') normalizedMediaType = 'audio';
+    else if (rawMediaType === 'document') normalizedMediaType = 'document';
+    else if (rawMediaType && rawMediaType !== 'text') normalizedMediaType = 'unsupported';
+
+    const mediaUrl =
+      rawMsg.mediaUrl || rawMsg.media_url || rawObj.mediaUrl || rawObj.media_url || rawObj.url;
+    const mediaData =
+      rawMsg.mediaData || rawMsg.media_data || rawMsg.base64 || rawObj.mediaData || rawObj.base64;
+    const mimeType =
+      rawMsg.mimeType || rawMsg.mimetype || rawMsg.mime_type || rawObj.mimeType || rawObj.mimetype;
+    const fileName =
+      rawMsg.fileName || rawMsg.filename || rawMsg.file_name || rawObj.fileName || rawObj.filename;
+
+    // 5. Construct untrusted message envelope
     const envelope: WhatsAppMessageEnvelope = {
       id: msg.id,
       source: 'whatsapp',
@@ -239,7 +297,12 @@ export class WhatsAppAdapter implements IWhatsAppAdapter {
       senderName: msg.senderName || 'Owner',
       isOwner: true,
       timestamp: new Date(msg.timestamp * 1000).toISOString(),
-      text: msg.text,
+      text: msg.text || '',
+      mediaType: normalizedMediaType,
+      mediaUrl: mediaUrl ? String(mediaUrl) : undefined,
+      mediaData: mediaData ? String(mediaData) : undefined,
+      mimeType: mimeType ? String(mimeType) : undefined,
+      fileName: fileName ? String(fileName) : undefined,
       untrustedInput: true, // Fenced prompt injection boundary
       rawPayload: parsedJson,
     };
@@ -380,6 +443,177 @@ export class WhatsAppAdapter implements IWhatsAppAdapter {
       timestamp: new Date().toISOString(),
       error: lastError,
     });
+  }
+
+  /**
+   * Downloads or decodes WhatsApp media received via GoWA:
+   * - Decodes base64 inline payloads or fetches from GoWA loopback endpoint.
+   * - Validates loopback binding to strictly block SSRF.
+   * - Enforces filesystem path containment.
+   * - Detects MIME types and extension from magic bytes / headers.
+   */
+  public async downloadMedia(
+    mediaUrlOrId?: string,
+    options: {
+      destinationDir?: string;
+      timeoutMs?: number;
+      base64Data?: string;
+      mimeType?: string;
+      fileName?: string;
+      mediaId?: string;
+    } = {},
+  ): Promise<DownloadedWhatsAppMedia> {
+    const internalMediaId = crypto.randomUUID();
+    const defaultStorage = path.resolve(
+      process.env['HOME'] || '/tmp',
+      '.arletex_media',
+      'whatsapp',
+    );
+    const targetDir = path.resolve(options.destinationDir || defaultStorage);
+
+    // Enforce directory creation
+    await fs.promises.mkdir(targetDir, { recursive: true });
+
+    let buffer: Buffer;
+    let detectedMime = options.mimeType || 'application/octet-stream';
+    const suggestedName = options.fileName || `${internalMediaId}`;
+
+    if (options.base64Data) {
+      const clean = options.base64Data.replace(/^data:[^;]+;base64,/, '');
+      buffer = Buffer.from(clean, 'base64');
+    } else if (mediaUrlOrId) {
+      let downloadUrl = mediaUrlOrId;
+      if (downloadUrl.startsWith('http://') || downloadUrl.startsWith('https://')) {
+        this.validateBaseUrl(downloadUrl);
+      } else {
+        const cleanPath = downloadUrl.startsWith('/') ? downloadUrl : `/${downloadUrl}`;
+        downloadUrl = `${this.config.baseUrl}${cleanPath}`;
+        this.validateBaseUrl(downloadUrl);
+      }
+
+      const headers: Record<string, string> = {
+        'X-Device-Id': this.config.deviceId || 'default',
+      };
+      if (this.config.username && this.config.password) {
+        const creds = Buffer.from(`${this.config.username}:${this.config.password}`).toString(
+          'base64',
+        );
+        headers['Authorization'] = `Basic ${creds}`;
+      }
+
+      const res = await fetch(downloadUrl, {
+        headers,
+        signal: AbortSignal.timeout(options.timeoutMs || 30000),
+      });
+
+      if (!res.ok) {
+        throw new Error(`GoWA media download failed with HTTP ${res.status}`);
+      }
+
+      const headerMime = res.headers.get('content-type');
+      if (headerMime && headerMime !== 'application/octet-stream') {
+        detectedMime = headerMime.split(';')[0]?.trim() || detectedMime;
+      }
+
+      const arrayBuf = await res.arrayBuffer();
+      buffer = Buffer.from(arrayBuf);
+    } else {
+      throw new Error('Neither mediaUrl nor base64Data provided for WhatsApp media download');
+    }
+
+    // Determine extension and MIME type from magic bytes or file extension
+    let ext = path.extname(suggestedName);
+
+    let magicMime: string | undefined;
+    let magicExt: string | undefined;
+    if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+      magicExt = '.jpg';
+      magicMime = 'image/jpeg';
+    } else if (
+      buffer.length >= 4 &&
+      buffer[0] === 0x89 &&
+      buffer[1] === 0x50 &&
+      buffer[2] === 0x4e &&
+      buffer[3] === 0x47
+    ) {
+      magicExt = '.png';
+      magicMime = 'image/png';
+    } else if (
+      buffer.length >= 12 &&
+      buffer.subarray(0, 4).toString('ascii') === 'RIFF' &&
+      buffer.subarray(8, 12).toString('ascii') === 'WEBP'
+    ) {
+      magicExt = '.webp';
+      magicMime = 'image/webp';
+    } else if (buffer.length >= 4 && buffer.subarray(0, 4).toString('ascii') === '%PDF') {
+      magicExt = '.pdf';
+      magicMime = 'application/pdf';
+    } else if (buffer.length >= 4 && buffer.subarray(0, 4).toString('ascii') === 'OggS') {
+      magicExt = '.ogg';
+      magicMime = 'audio/ogg';
+    } else if (
+      buffer.length >= 12 &&
+      buffer.subarray(0, 4).toString('ascii') === 'RIFF' &&
+      buffer.subarray(8, 12).toString('ascii') === 'WAVE'
+    ) {
+      magicExt = '.wav';
+      magicMime = 'audio/wav';
+    } else if (buffer.length >= 8 && buffer.subarray(4, 8).toString('ascii') === 'ftyp') {
+      magicExt = '.mp4';
+      magicMime = 'video/mp4';
+    }
+
+    if (magicMime) {
+      if (detectedMime === 'application/octet-stream' || !options.mimeType) {
+        detectedMime = magicMime;
+      }
+      if (!ext || ext === '') {
+        ext = magicExt || '.bin';
+      }
+    } else if (!ext || ext === '') {
+      if (detectedMime.includes('json')) {
+        ext = '.json';
+      } else if (detectedMime.includes('text')) {
+        ext = '.txt';
+      } else {
+        ext = '.bin';
+      }
+    }
+
+    if (detectedMime === 'application/octet-stream' && ext) {
+      const extLower = ext.toLowerCase();
+      if (extLower === '.png') detectedMime = 'image/png';
+      else if (extLower === '.jpg' || extLower === '.jpeg') detectedMime = 'image/jpeg';
+      else if (extLower === '.webp') detectedMime = 'image/webp';
+      else if (extLower === '.pdf') detectedMime = 'application/pdf';
+      else if (extLower === '.mp4') detectedMime = 'video/mp4';
+      else if (extLower === '.ogg') detectedMime = 'audio/ogg';
+      else if (extLower === '.wav') detectedMime = 'audio/wav';
+      else if (extLower === '.json') detectedMime = 'application/json';
+      else if (extLower === '.txt') detectedMime = 'text/plain';
+    }
+
+    const safeFileName = `${internalMediaId}${ext}`;
+    const targetFilePath = path.join(targetDir, safeFileName);
+
+    // Containment verification
+    if (!targetFilePath.startsWith(targetDir + path.sep) && targetFilePath !== targetDir) {
+      throw new Error(`Path containment violation: ${targetFilePath}`);
+    }
+
+    await fs.promises.writeFile(targetFilePath, buffer);
+
+    this.logger.info(
+      `Downloaded WhatsApp media (${(buffer.length / 1024).toFixed(1)} KB, ${detectedMime}) to ${targetFilePath}`,
+    );
+
+    return {
+      filePath: targetFilePath,
+      fileSize: buffer.length,
+      mimeType: detectedMime,
+      fileName: options.fileName || safeFileName,
+      internalMediaId,
+    };
   }
 
   public async getStatus(): Promise<WhatsAppCommunicationStatus> {

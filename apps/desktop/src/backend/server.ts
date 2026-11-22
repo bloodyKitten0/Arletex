@@ -67,6 +67,7 @@ import {
   VerificationEngine,
   WebAgencyService,
   WhatsAppAdapter,
+  DownloadedWhatsAppMedia,
 } from '@arletex/core';
 import { defaultVideoProcessor, ProcessedVideoResult } from './videoProcessor.js';
 import { syncHistoricalMemories } from './historicalMemorySync.js';
@@ -1552,7 +1553,7 @@ export class ArletexBackendServer {
   public async handleInboundWhatsAppMessage(envelope: any): Promise<void> {
     try {
       this.logger.info(
-        `Handling inbound WhatsApp message from ${envelope.senderName || envelope.senderJid}: "${envelope.text}"`,
+        `Handling inbound WhatsApp message from ${envelope.senderName || envelope.senderJid} (type=${envelope.mediaType || 'text'}): "${envelope.text || ''}"`,
       );
 
       if (this.autonomousAgency) {
@@ -1580,17 +1581,194 @@ export class ArletexBackendServer {
         });
       }
 
+      let mediaObservation = '';
+      let mediaDetails: any = null;
+      let downloadedMedia: DownloadedWhatsAppMedia | null = null;
+
+      if (
+        (envelope.mediaType && envelope.mediaType !== 'text') ||
+        envelope.mediaUrl ||
+        envelope.mediaData
+      ) {
+        try {
+          downloadedMedia = await this.whatsAppAdapter.downloadMedia(envelope.mediaUrl, {
+            base64Data: envelope.mediaData,
+            mimeType: envelope.mimeType,
+            fileName: envelope.fileName,
+            mediaId: envelope.id,
+          });
+
+          const isImage =
+            envelope.mediaType === 'image' ||
+            envelope.mediaType === 'photo' ||
+            downloadedMedia.mimeType.startsWith('image/');
+          const isVideo =
+            envelope.mediaType === 'video' || downloadedMedia.mimeType.startsWith('video/');
+          const isAudio =
+            envelope.mediaType === 'audio' ||
+            envelope.mediaType === 'voice' ||
+            downloadedMedia.mimeType.startsWith('audio/');
+          const isDocument =
+            envelope.mediaType === 'document' ||
+            downloadedMedia.mimeType.includes('pdf') ||
+            downloadedMedia.mimeType.includes('text') ||
+            downloadedMedia.mimeType.includes('json');
+
+          if (isImage) {
+            const vlmRes = await this.inspectImageWithVLM(
+              downloadedMedia.filePath,
+              envelope.text || 'WhatsApp image from Proof',
+            );
+            if (vlmRes.status === 'completed' && vlmRes.visualDescription) {
+              mediaObservation = `[Visual Perception]: ${vlmRes.visualDescription}`;
+              mediaDetails = {
+                type: 'image',
+                visualDescription: vlmRes.visualDescription,
+                filePath: downloadedMedia.filePath,
+                mimeType: downloadedMedia.mimeType,
+                fileSize: downloadedMedia.fileSize,
+              };
+            } else {
+              mediaObservation = `[Visual Perception]: Image received (${(downloadedMedia.fileSize / 1024).toFixed(1)} KB), but visual recognition was unavailable.`;
+            }
+          } else if (isAudio) {
+            let transcript = '';
+            try {
+              const audioBuf = await fs.promises.readFile(downloadedMedia.filePath);
+              const audioBase64 = audioBuf.toString('base64');
+              const res = await fetch('http://127.0.0.1:39282/transcribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  audioBase64,
+                  format: downloadedMedia.mimeType.includes('ogg') ? 'ogg' : 'wav',
+                }),
+              });
+              if (res.ok) {
+                const data = (await res.json()) as any;
+                transcript = (data.transcript || '').trim();
+              }
+            } catch {}
+
+            if (transcript) {
+              mediaObservation = `[Voice Note Transcribed]: "${transcript}"`;
+              mediaDetails = {
+                type: 'audio',
+                transcript,
+                filePath: downloadedMedia.filePath,
+                mimeType: downloadedMedia.mimeType,
+                fileSize: downloadedMedia.fileSize,
+              };
+            } else {
+              mediaObservation = `[Voice Note]: Audio received (${(downloadedMedia.fileSize / 1024).toFixed(1)} KB).`;
+            }
+          } else if (isVideo) {
+            let videoDesc = '';
+            try {
+              const videoRes = await defaultVideoProcessor.processVideo({
+                videoPath: downloadedMedia.filePath,
+                mimeType: downloadedMedia.mimeType,
+                maxFrames: 6,
+              });
+              let kfDesc = '';
+              if (videoRes.framesBase64.length > 0) {
+                const kfRes = await this.inspectImageBase64WithVLM(
+                  videoRes.framesBase64[0]!,
+                  `Keyframe from WhatsApp video. Caption: "${envelope.text || 'none'}"`,
+                );
+                if (kfRes.status === 'completed' && kfRes.visualDescription) {
+                  kfDesc = kfRes.visualDescription;
+                }
+              }
+              const visiblePart = `${videoRes.durationSeconds.toFixed(1)}s video clip, ${videoRes.framesBase64.length} keyframes extracted.${kfDesc ? ` Visual scene: ${kfDesc}` : ''}`;
+              const audiblePart = videoRes.transcript ? ` Dialogue: "${videoRes.transcript}"` : '';
+              videoDesc = `${visiblePart}${audiblePart}`;
+            } catch (vErr: any) {
+              videoDesc = `Video received (${(downloadedMedia.fileSize / 1024).toFixed(1)} KB), keyframe processing incomplete.`;
+            }
+
+            mediaObservation = `[Video Perception]: ${videoDesc}`;
+            mediaDetails = {
+              type: 'video',
+              summary: videoDesc,
+              filePath: downloadedMedia.filePath,
+              mimeType: downloadedMedia.mimeType,
+              fileSize: downloadedMedia.fileSize,
+            };
+          } else if (isDocument) {
+            let docSnippet = '';
+            try {
+              if (
+                downloadedMedia.mimeType === 'text/plain' ||
+                downloadedMedia.mimeType === 'application/json' ||
+                downloadedMedia.mimeType === 'text/markdown'
+              ) {
+                const textContent = await fs.promises.readFile(downloadedMedia.filePath, 'utf8');
+                docSnippet = textContent.slice(0, 1000);
+              }
+            } catch {}
+
+            mediaObservation = docSnippet
+              ? `[Document Content (${downloadedMedia.fileName})]: "${docSnippet.replace(/\n+/g, ' ')}"`
+              : `[Document File Received]: ${downloadedMedia.fileName} (${downloadedMedia.mimeType}, ${(downloadedMedia.fileSize / 1024).toFixed(1)} KB)`;
+            mediaDetails = {
+              type: 'document',
+              fileName: downloadedMedia.fileName,
+              snippet: docSnippet,
+              filePath: downloadedMedia.filePath,
+              mimeType: downloadedMedia.mimeType,
+              fileSize: downloadedMedia.fileSize,
+            };
+          }
+
+          // Store grounded episodic memory
+          if (mediaObservation) {
+            try {
+              this.memoryRepo.create({
+                type: 'episodic',
+                content: `WhatsApp ${envelope.mediaType} from Proof. Caption: "${envelope.text || 'none'}". Observation: ${mediaObservation}`,
+                rawObservation: mediaObservation,
+                tags: ['whatsapp', 'media', envelope.mediaType, 'empirical', 'grounded'],
+                importance: 0.75,
+                confidence: 0.9,
+                provenance: 'whatsapp_multimodal_perception',
+                metadata: {
+                  source: 'whatsapp_media_perception',
+                  mediaType: envelope.mediaType,
+                  internalMediaId: downloadedMedia.internalMediaId,
+                  senderJid: envelope.senderJid,
+                  messageId: envelope.id,
+                  filePath: downloadedMedia.filePath,
+                  mimeType: downloadedMedia.mimeType,
+                },
+              });
+            } catch (mErr: any) {
+              this.logger.warn(
+                `Failed to store episodic memory for WhatsApp media: ${mErr.message}`,
+              );
+            }
+          }
+        } catch (dlErr: any) {
+          this.logger.error(`Failed to download and process WhatsApp media: ${dlErr.message}`);
+          mediaObservation = `[Attached ${envelope.mediaType} could not be downloaded: ${dlErr.message}]`;
+        }
+      }
+
       // Record message in persistent conversation history with untrustedInput metadata
+      const displayContent = [envelope.text, mediaObservation].filter(Boolean).join('\n\n');
       this.messageRepo.create({
         conversationId: conv.id,
         role: 'user',
-        content: envelope.text,
+        content: displayContent || `[WhatsApp ${envelope.mediaType} received]`,
         metadata: {
           source: 'whatsapp',
           senderJid: envelope.senderJid,
           messageId: envelope.id,
           isOwner: envelope.isOwner,
           untrustedInput: true,
+          mediaType: envelope.mediaType,
+          mediaDetails,
+          hasMedia: Boolean(downloadedMedia),
         },
       });
 
@@ -1604,6 +1782,8 @@ export class ArletexBackendServer {
           payload: {
             senderJid: envelope.senderJid,
             text: envelope.text,
+            mediaType: envelope.mediaType,
+            mediaObservation,
             isOwner: envelope.isOwner,
             untrustedInput: true,
           },
@@ -1619,13 +1799,15 @@ export class ArletexBackendServer {
         payload: {
           sender: envelope.senderName || envelope.senderJid,
           text: envelope.text,
+          mediaType: envelope.mediaType,
+          mediaObservation,
         },
       });
 
       // Run inference and auto-reply if enabled and authorized
       const waConfig = this.whatsAppAdapter.getConfig();
       if (waConfig.autoReply && envelope.isOwner) {
-        const streamPrompt = `[WhatsApp message from Proof]:\n${envelope.text}`;
+        const streamPrompt = `[WhatsApp message from Proof]:\n${envelope.text || ''}${mediaObservation ? `\n\n${mediaObservation}` : ''}`;
         let replyText = '';
         await this.runInferenceStream(conv.id, streamPrompt, (chunk) => {
           replyText = chunk.fullContent;

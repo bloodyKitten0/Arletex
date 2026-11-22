@@ -15,6 +15,19 @@ export const WhatsAppConfigSchema = z.object({
 
 export type WhatsAppConfig = z.infer<typeof WhatsAppConfigSchema>;
 
+export const WhatsAppMediaTypeEnum = z.enum([
+  'text',
+  'image',
+  'photo',
+  'video',
+  'audio',
+  'voice',
+  'document',
+  'unsupported',
+]);
+
+export type WhatsAppMediaType = z.infer<typeof WhatsAppMediaTypeEnum>;
+
 export const WhatsAppWebhookMessageSchema = z.object({
   id: z.string(),
   from: z.string(), // e.g. "1234567890@s.whatsapp.net"
@@ -23,8 +36,11 @@ export const WhatsAppWebhookMessageSchema = z.object({
   groupJid: z.string().optional(),
   timestamp: z.number(),
   text: z.string().default(''),
-  mediaType: z.enum(['text', 'image', 'video', 'audio', 'document', 'unsupported']).default('text'),
+  mediaType: WhatsAppMediaTypeEnum.default('text'),
   mediaUrl: z.string().optional(),
+  mediaData: z.string().optional(),
+  mimeType: z.string().optional(),
+  fileName: z.string().optional(),
   quotedMessageId: z.string().optional(),
 });
 
@@ -106,6 +122,12 @@ export const WhatsAppMessageEnvelopeSchema = z.object({
   isOwner: z.boolean(),
   timestamp: z.string(),
   text: z.string(),
+  mediaType: WhatsAppMediaTypeEnum.default('text'),
+  mediaUrl: z.string().optional(),
+  mediaData: z.string().optional(),
+  mediaPath: z.string().optional(),
+  mimeType: z.string().optional(),
+  fileName: z.string().optional(),
   untrustedInput: z.literal(true).default(true), // prompt injection defense flag
   rawPayload: z.record(z.any()).optional(),
 });

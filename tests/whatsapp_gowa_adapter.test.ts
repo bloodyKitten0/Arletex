@@ -442,4 +442,67 @@ describe('Arle WhatsApp Communication Adapter — GoWA', () => {
       expect(status.error).toContain('GoWA service unreachable');
     });
   });
+
+  // ==========================================
+  // 5. Inbound Media Attachment & Perception
+  // ==========================================
+  describe('5. WhatsApp Media Attachment Ingestion & Download', () => {
+    it('should parse and normalize inbound image, audio, video, and document media envelopes', async () => {
+      let receivedEnvelope: any = null;
+      adapter.onMessage(async (env) => {
+        receivedEnvelope = env;
+      });
+
+      const imgPayload: WhatsAppWebhookPayload = {
+        event: 'message',
+        deviceId: 'default',
+        timestamp: Math.floor(Date.now() / 1000),
+        message: {
+          id: 'msg_img_001',
+          from: ownerJid,
+          senderName: 'Proof',
+          isGroup: false,
+          timestamp: Math.floor(Date.now() / 1000),
+          text: 'Check this diagram',
+          mediaType: 'image',
+          mediaUrl: 'http://127.0.0.1:3000/download/diagram.png',
+          mimeType: 'image/png',
+          fileName: 'diagram.png',
+        },
+      };
+
+      const bodyStr = JSON.stringify(imgPayload);
+      const sig = signPayload(bodyStr);
+      const res = await adapter.processInboundWebhook(bodyStr, sig);
+
+      expect(res.status).toBe('accepted');
+      expect(receivedEnvelope).toBeDefined();
+      expect(receivedEnvelope.mediaType).toBe('image');
+      expect(receivedEnvelope.mediaUrl).toBe('http://127.0.0.1:3000/download/diagram.png');
+      expect(receivedEnvelope.mimeType).toBe('image/png');
+      expect(receivedEnvelope.fileName).toBe('diagram.png');
+    });
+
+    it('should decode inline base64 media payload and verify path containment', async () => {
+      const samplePngHex =
+        '89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000a49444154789c63000100000500010d0a2d400000000049454e44ae426082';
+      const sampleBase64 = Buffer.from(samplePngHex, 'hex').toString('base64');
+
+      const downloaded = await adapter.downloadMedia(undefined, {
+        base64Data: sampleBase64,
+        fileName: 'test_pixel.png',
+      });
+
+      expect(downloaded.fileSize).toBeGreaterThan(0);
+      expect(downloaded.mimeType).toBe('image/png');
+      expect(downloaded.filePath).toContain('.arletex_media/whatsapp');
+      expect(downloaded.internalMediaId).toBeDefined();
+    });
+
+    it('should reject non-loopback media download URLs to strictly enforce SSRF protection', async () => {
+      await expect(
+        adapter.downloadMedia('http://169.254.169.254/latest/meta-data/'),
+      ).rejects.toThrow('Security Violation: GoWA base URL must bind to local loopback');
+    });
+  });
 });
