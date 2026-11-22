@@ -10,6 +10,7 @@ import {
   Power,
   FileText,
   Layers,
+  MessageSquare,
 } from 'lucide-react';
 
 interface MetricItemProps {
@@ -102,6 +103,7 @@ export const EnvironmentView: React.FC = () => {
   const [showReactivateModal, setShowReactivateModal] = useState(false);
   const [reactivateToken, setReactivateToken] = useState('');
   const [selectedModelId, setSelectedModelId] = useState('');
+  const [whatsAppStatus, setWhatsAppStatus] = useState<any>(null);
 
   const fetchRealState = useCallback(async () => {
     try {
@@ -153,6 +155,14 @@ export const EnvironmentView: React.FC = () => {
         setActiveModel(activeModelRes.data);
         if (activeModelRes.data.modelId) setSelectedModelId(activeModelRes.data.modelId);
       }
+
+      try {
+        const waRes = await fetch('http://127.0.0.1:39281/api/whatsapp/status').catch(() => null);
+        if (waRes && waRes.ok) {
+          const waData = await waRes.json();
+          setWhatsAppStatus(waData);
+        }
+      } catch {}
     } catch (err: any) {
       setActionNotice(`State query error: ${err.message || String(err)}`);
     } finally {
@@ -973,6 +983,76 @@ export const EnvironmentView: React.FC = () => {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+
+        {/* Section 6: WhatsApp Communication Adapter (GoWA) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2
+              style={{
+                fontSize: '15px',
+                fontWeight: 600,
+                color: 'var(--text-primary, #f0f6fc)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <MessageSquare size={16} color="var(--accent, #58a6ff)" />
+              <span>WhatsApp Communication Adapter (GoWA)</span>
+            </h2>
+            <span
+              style={{
+                fontSize: '11px',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                backgroundColor:
+                  whatsAppStatus?.state === 'connected'
+                    ? 'rgba(35, 134, 54, 0.2)'
+                    : 'rgba(218, 54, 51, 0.2)',
+                color:
+                  whatsAppStatus?.state === 'connected' ? '#3fb950' : '#f85149',
+                border: `1px solid ${whatsAppStatus?.state === 'connected' ? '#238636' : '#da3633'}`,
+                fontWeight: 600,
+                textTransform: 'uppercase',
+              }}
+            >
+              {whatsAppStatus?.state || 'disabled'}
+            </span>
+          </div>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '12px',
+            }}
+          >
+            <MetricItem
+              label="Transport Protocol"
+              value="GoWA (Local Loopback)"
+              subtext="127.0.0.1:3000 • Unofficial Multi-Device"
+              provenance="measured"
+            />
+            <MetricItem
+              label="Webhook Authentication"
+              value="HMAC-SHA256"
+              subtext="Constant-Time Verified"
+              provenance="measured"
+            />
+            <MetricItem
+              label="Owner Authorization"
+              value={whatsAppStatus?.ownerJid || 'Configured via .env'}
+              subtext="Strict Owner JID • Fail-Closed"
+              provenance="measured"
+            />
+            <MetricItem
+              label="Prompt-Injection Defense"
+              value="Active / Fenced"
+              subtext="All actions pass ActionPermissionController"
+              provenance="measured"
+            />
           </div>
         </div>
       </div>

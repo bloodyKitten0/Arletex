@@ -34,6 +34,8 @@ import {
   AuditoryPerceptionInputSchema,
   PerformOcrInputSchema,
   SpeechControllerInputSchema,
+  WhatsAppConfigSchema,
+  WhatsAppSendInputSchema,
 } from '@arletex/contracts';
 import {
   ActionPermissionController,
@@ -64,6 +66,7 @@ import {
   SpeechExpressionController,
   VerificationEngine,
   WebAgencyService,
+  WhatsAppAdapter,
 } from '@arletex/core';
 import { defaultVideoProcessor, ProcessedVideoResult } from './videoProcessor.js';
 import { syncHistoricalMemories } from './historicalMemorySync.js';
@@ -146,6 +149,7 @@ import {
   SqliteLongitudinalEvaluationRepository,
   SqliteFunctionalConsciousnessRepository,
   SqliteKnowledgeRepository,
+  WhatsAppRepository,
 } from '@arletex/database';
 import { InferenceGateway, ModelRegistryService } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
@@ -417,6 +421,8 @@ export class ArletexBackendServer {
   public readonly autonomyLevelService: AutonomyLevelService;
   public readonly speechController: SpeechExpressionController;
   public readonly ttsBackend: SpecialistTTSBackend;
+  public readonly whatsAppRepo: WhatsAppRepository;
+  public readonly whatsAppAdapter: WhatsAppAdapter;
 
   constructor(config: AppConfig, logger: ILogger = rootLogger) {
     this.config = config;
@@ -645,6 +651,41 @@ export class ArletexBackendServer {
       { serverUrl: process.env['ARLETEX_SPECIALISTS_URL'] || 'http://127.0.0.1:39282' },
       logger,
     );
+    this.whatsAppRepo = new WhatsAppRepository(db);
+    const waEnabled =
+      process.env['ARLE_WHATSAPP_ENABLED'] === 'true' ||
+      this.preferenceRepo.get('whatsapp_enabled') === 'true';
+    const waBaseUrl =
+      process.env['ARLE_WHATSAPP_BASE_URL'] ||
+      this.preferenceRepo.get('whatsapp_base_url') ||
+      'http://127.0.0.1:3000';
+    const waSecret =
+      process.env['ARLE_WHATSAPP_WEBHOOK_SECRET'] ||
+      this.preferenceRepo.get('whatsapp_webhook_secret') ||
+      '';
+    const waOwnerJid =
+      process.env['ARLE_WHATSAPP_OWNER_JID'] ||
+      this.preferenceRepo.get('whatsapp_owner_jid') ||
+      '';
+    const waAutoReply =
+      process.env['ARLE_WHATSAPP_AUTO_REPLY'] === 'true' ||
+      this.preferenceRepo.get('whatsapp_auto_reply') === 'true';
+
+    this.whatsAppAdapter = new WhatsAppAdapter(
+      {
+        enabled: waEnabled,
+        baseUrl: waBaseUrl,
+        webhookSecret: waSecret,
+        ownerJid: waOwnerJid,
+        autoReply: waAutoReply,
+      },
+      this.whatsAppRepo,
+      logger,
+    );
+
+    this.whatsAppAdapter.onMessage(async (envelope) => {
+      await this.handleInboundWhatsAppMessage(envelope);
+    });
   }
 
   public getIntentTaskManager(): IntentTaskManager {
@@ -1489,6 +1530,101 @@ export class ArletexBackendServer {
       }
     } catch (err: any) {
       this.logger.error('Error handling inbound Telegram message', err);
+    }
+  }
+
+  public async handleInboundWhatsAppMessage(envelope: any): Promise<void> {
+    try {
+      this.logger.info(
+        `Handling inbound WhatsApp message from ${envelope.senderName || envelope.senderJid}: "${envelope.text}"`,
+      );
+
+      if (this.autonomousAgency) {
+        this.autonomousAgency.notifyUserActivity();
+      }
+
+      if (this.continuityManager) {
+        this.continuityManager.registerChannelActivity(
+          'whatsapp',
+          `Inbound WhatsApp message from ${envelope.senderJid}`,
+        );
+      }
+
+      let conv = this.conversationRepo
+        .list()
+        .find(
+          (c) =>
+            c.title.toLowerCase().includes('whatsapp') ||
+            c.title.toLowerCase().includes('proof • whatsapp'),
+        );
+      if (!conv) {
+        conv = this.conversationRepo.create({
+          title: 'Proof • WhatsApp',
+          isPinned: true,
+        });
+      }
+
+      // Record message in persistent conversation history with untrustedInput metadata
+      this.messageRepo.create({
+        conversationId: conv.id,
+        role: 'user',
+        content: envelope.text,
+        metadata: {
+          source: 'whatsapp',
+          senderJid: envelope.senderJid,
+          messageId: envelope.id,
+          isOwner: envelope.isOwner,
+          untrustedInput: true,
+        },
+      });
+
+      // Emit canonical event through CognitiveControlBus & APE
+      try {
+        await this.cognitiveControlBus.dispatch({
+          type: 'whatsapp_message',
+          source: 'whatsapp',
+          actor: 'user',
+          idempotencyKey: `wa_ev_${envelope.id}`,
+          payload: {
+            senderJid: envelope.senderJid,
+            text: envelope.text,
+            isOwner: envelope.isOwner,
+            untrustedInput: true,
+          },
+        });
+      } catch {}
+
+      await this.apeService.processEvent({
+        category: 'user_interaction',
+        type: 'message_received',
+        source: 'whatsapp',
+        actor: 'user',
+        eventKind: 'external_stimulus',
+        payload: {
+          sender: envelope.senderName || envelope.senderJid,
+          text: envelope.text,
+        },
+      });
+
+      // Run inference and auto-reply if enabled and authorized
+      const waConfig = this.whatsAppAdapter.getConfig();
+      if (waConfig.autoReply && envelope.isOwner) {
+        const streamPrompt = `[WhatsApp message from Proof]:\n${envelope.text}`;
+        let replyText = '';
+        await this.runInferenceStream(conv.id, streamPrompt, (chunk) => {
+          replyText = chunk.fullContent;
+        });
+
+        if (replyText) {
+          await this.whatsAppAdapter.sendMessage({
+            recipientJid: envelope.senderJid,
+            text: replyText,
+            replyToMessageId: envelope.id,
+          });
+        }
+      }
+    } catch (err: any) {
+      this.logger.error('Error handling inbound WhatsApp message', err);
     }
   }
 
@@ -3957,6 +4093,86 @@ Rules:
           success: true,
           isEmergencyShutdownActive: initiative.getEmergencyShutdownStatus(),
         });
+        return;
+      }
+
+      // ==========================================
+      // Arle WhatsApp Communication Adapter (GoWA) Endpoints
+      // ==========================================
+      if (url.pathname === '/api/whatsapp/status' && method === 'GET') {
+        const status = await this.whatsAppAdapter.getStatus();
+        this.sendJson(res, 200, status);
+        return;
+      }
+
+      if (url.pathname === '/api/whatsapp/configure' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const validated = WhatsAppConfigSchema.partial().parse(body);
+        if (validated.enabled !== undefined) {
+          this.preferenceRepo.set('whatsapp_enabled', String(validated.enabled));
+        }
+        if (validated.baseUrl) {
+          this.preferenceRepo.set('whatsapp_base_url', validated.baseUrl.trim());
+        }
+        if (validated.webhookSecret !== undefined) {
+          this.preferenceRepo.set('whatsapp_webhook_secret', validated.webhookSecret.trim());
+        }
+        if (validated.ownerJid !== undefined) {
+          this.preferenceRepo.set('whatsapp_owner_jid', validated.ownerJid.trim());
+        }
+        if (validated.autoReply !== undefined) {
+          this.preferenceRepo.set('whatsapp_auto_reply', String(validated.autoReply));
+        }
+
+        this.whatsAppAdapter.updateConfig(validated);
+        const status = await this.whatsAppAdapter.getStatus();
+        this.sendJson(res, 200, { success: true, status, config: this.whatsAppAdapter.getConfig() });
+        return;
+      }
+
+      if (url.pathname === '/api/whatsapp/webhook' && method === 'POST') {
+        const rawBody = await this.readRawBody(req);
+        const sigHeader =
+          (req.headers['x-hub-signature-256'] as string) ||
+          (req.headers['x-gowa-signature'] as string) ||
+          (req.headers['authorization'] as string);
+        const result = await this.whatsAppAdapter.processInboundWebhook(rawBody, sigHeader);
+        this.sendJson(res, 200, result);
+        return;
+      }
+
+      if (url.pathname === '/api/whatsapp/send' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const input = WhatsAppSendInputSchema.parse(body);
+        const result = await this.whatsAppAdapter.sendMessage(input);
+        this.sendJson(res, 200, result);
+        return;
+      }
+
+      if (url.pathname === '/api/whatsapp/pair' && method === 'POST') {
+        const body = (await this.readJsonBody(req).catch(() => ({}))) as any;
+        if (body?.phone) {
+          const result = await this.whatsAppAdapter.getPairingCode(body.phone);
+          this.sendJson(res, 200, result);
+        } else {
+          const result = await this.whatsAppAdapter.getPairingQr();
+          this.sendJson(res, 200, result);
+        }
+        return;
+      }
+
+      if (url.pathname === '/api/whatsapp/disconnect' && method === 'POST') {
+        const ok = await this.whatsAppAdapter.disconnect();
+        this.sendJson(res, 200, { success: ok });
+        return;
+      }
+
+      if (url.pathname === '/api/whatsapp/toggle' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as { enabled: boolean };
+        this.whatsAppAdapter.toggleEnabled(body.enabled);
+        this.preferenceRepo.set('whatsapp_enabled', String(body.enabled));
+        const status = await this.whatsAppAdapter.getStatus();
+        this.sendJson(res, 200, { success: true, status });
         return;
       }
 
@@ -8283,6 +8499,29 @@ Rules:
         } catch (err) {
           reject(new Error('Malformed JSON body'));
         }
+      });
+
+      req.on('error', reject);
+    });
+  }
+
+  private async readRawBody(req: http.IncomingMessage): Promise<string> {
+    return new Promise((resolve, reject) => {
+      let body = '';
+      let receivedBytes = 0;
+
+      req.on('data', (chunk) => {
+        receivedBytes += chunk.length;
+        if (receivedBytes > MAX_BODY_SIZE) {
+          req.destroy(new Error('Payload too large'));
+          reject(new Error('Payload exceeds maximum allowed size of 250MB'));
+          return;
+        }
+        body += chunk;
+      });
+
+      req.on('end', () => {
+        resolve(body);
       });
 
       req.on('error', reject);

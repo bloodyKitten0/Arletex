@@ -27,6 +27,7 @@ export const CognitiveEventTypeSchema = z.enum([
   'social_interaction',
   'failure_recovery',
   'incoming_email',
+  'whatsapp_message',
 ]);
 
 export type CognitiveEventType = z.infer<typeof CognitiveEventTypeSchema>;
@@ -59,6 +60,7 @@ export const CognitiveEventSchema = z.object({
   source: z.enum([
     'user',
     'telegram',
+    'whatsapp',
     'agency',
     'timer',
     'internal',

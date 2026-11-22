@@ -3500,4 +3500,37 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('relationship_social_development_and_trust_lineage', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 66,
+    name: '066_whatsapp_deduplication_and_audit',
+    up: `
+      -- WhatsApp Webhook Deduplication (Persistent across restarts)
+      CREATE TABLE IF NOT EXISTS whatsapp_deduplication (
+        message_id TEXT PRIMARY KEY,
+        device_id TEXT NOT NULL,
+        sender_jid TEXT NOT NULL,
+        received_at TEXT NOT NULL,
+        processed_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_whatsapp_dedup_device ON whatsapp_deduplication (device_id);
+
+      -- WhatsApp Outbound Message Audit & Delivery State
+      CREATE TABLE IF NOT EXISTS whatsapp_outbound_audit (
+        id TEXT PRIMARY KEY,
+        message_id TEXT,
+        recipient_jid TEXT NOT NULL,
+        text TEXT NOT NULL,
+        delivery_status TEXT NOT NULL,
+        sent_at TEXT NOT NULL,
+        delivered_at TEXT,
+        error TEXT
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_whatsapp_audit_recipient ON whatsapp_outbound_audit (recipient_jid);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('whatsapp_deduplication_and_audit', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

@@ -113,3 +113,6 @@ export * from './evolution/autonomyLevelService.js';
 // Emotion-Aware Voice Subsystem
 export * from './voice/speechExpressionController.js';
 export * from './voice/ttsBackend.js';
+
+// WhatsApp Communication Subsystem (GoWA)
+export * from './communication/whatsAppAdapter.js';
