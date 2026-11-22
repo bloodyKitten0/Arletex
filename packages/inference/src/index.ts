@@ -5,6 +5,7 @@ export * from './adapters/ollamaAdapter.js';
 export * from './adapters/openAiCompatibleAdapter.js';
 export * from './hardware/hardwareProfileDetector.js';
 export * from './registry.js';
+export * from './modelRegistry.js';
 export * from './gateway.js';
 
 // Backwards compatibility alias

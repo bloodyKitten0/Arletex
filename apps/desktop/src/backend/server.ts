@@ -136,7 +136,7 @@ import {
   SqliteFunctionalConsciousnessRepository,
   SqliteKnowledgeRepository,
 } from '@arletex/database';
-import { InferenceGateway } from '@arletex/inference';
+import { InferenceGateway, ModelRegistryService, defaultModelRegistry } from '@arletex/inference';
 import { TelemetryService } from './telemetryService.js';
 
 const MAX_BODY_SIZE = 250 * 1024 * 1024; // 250MB limit to reliably support video uploads
@@ -375,6 +375,7 @@ export class ArletexBackendServer {
   private autonomousAgency: AutonomousAgencyService | null = null;
   private screenReading: ScreenReadingService = defaultScreenReadingService;
   public readonly ocrService: OcrService;
+  public readonly modelRegistry: ModelRegistryService;
 
   constructor(config: AppConfig, logger: ILogger = rootLogger) {
     this.config = config;
@@ -579,6 +580,7 @@ export class ArletexBackendServer {
       continuityBackupDir,
     );
     this.ocrService = new OcrService('http://127.0.0.1:39282', logger);
+    this.modelRegistry = new ModelRegistryService(logger);
   }
 
   public getIntentTaskManager(): IntentTaskManager {
@@ -2882,6 +2884,54 @@ Rules:
       if (url.pathname === '/api/telemetry' && method === 'GET') {
         const telemetry = this.getTelemetry();
         this.sendJson(res, 200, telemetry);
+        return;
+      }
+
+      // Model Registry & Benchmarks (P2.4)
+      if (url.pathname === '/api/models' && method === 'GET') {
+        const installedOnly = url.searchParams.get('installed') === 'true';
+        const models = this.modelRegistry.listModels(installedOnly);
+        this.sendJson(res, 200, { models });
+        return;
+      }
+
+      if (url.pathname === '/api/models/active' && method === 'GET') {
+        const activeModelId = this.preferenceRepo.get('active_model_name') || this.config.inference.defaultModelId;
+        const resolution = this.modelRegistry.resolveModel(
+          activeModelId,
+          this.config.inference.fallbackModelId,
+          this.config.inference.provider,
+        );
+        this.sendJson(res, 200, resolution);
+        return;
+      }
+
+      if (url.pathname === '/api/models/resolve' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const requested = body.modelId || this.config.inference.defaultModelId;
+        const fallback = body.fallbackModelId || this.config.inference.fallbackModelId;
+        const resolution = this.modelRegistry.resolveModel(requested, fallback, this.config.inference.provider);
+        this.sendJson(res, 200, resolution);
+        return;
+      }
+
+      if (url.pathname === '/api/models/benchmarks' && method === 'GET') {
+        const candA = url.searchParams.get('candidateA') || 'Qwen2.5-14B-Instruct-abliterated-v2.Q4_K_M';
+        const candB = url.searchParams.get('candidateB') || 'Qwen3.5-9B-Heretic-Q4_K_M';
+        try {
+          const comparison = this.modelRegistry.compareCandidates(candA, candB);
+          this.sendJson(res, 200, comparison);
+        } catch (err: any) {
+          this.sendJson(res, 400, { error: err.message });
+        }
+        return;
+      }
+
+      if (url.pathname === '/api/models/validate-vision' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const modelId = body.modelId || 'Qwen3.5-9B-Heretic-Q4_K_M';
+        const validation = this.modelRegistry.validateVisionProjector(modelId);
+        this.sendJson(res, 200, validation);
         return;
       }
 

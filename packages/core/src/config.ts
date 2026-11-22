@@ -116,12 +116,12 @@ export function createDefaultConfig(overrides?: AppConfigOverrides): AppConfig {
         'http://127.0.0.1:8080',
       fallbackModelId:
         overrides?.inference?.fallbackModelId ??
-        process.env['LLAMA_MODEL_ID'] ??
+        process.env['LLAMA_FALLBACK_MODEL_ID'] ??
         'Qwen3.5-9B-Heretic-Q4_K_M',
       specialistCoding: {
         enabled:
           overrides?.inference?.specialistCoding?.enabled ??
-          (process.env['SPECIALIST_CODING_ENABLED'] ? process.env['SPECIALIST_CODING_ENABLED'] !== 'false' : true),
+          (process.env['SPECIALIST_CODING_ENABLED'] === 'true'),
         provider:
           overrides?.inference?.specialistCoding?.provider ??
           (process.env['SPECIALIST_CODING_PROVIDER'] as any) ??
