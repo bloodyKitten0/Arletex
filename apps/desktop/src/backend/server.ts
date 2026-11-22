@@ -2161,6 +2161,45 @@ export class ArletexBackendServer {
     }
   }
 
+  public getTemporalGroundingHeader(): string {
+    const now = new Date();
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    const dayOfWeek = days[now.getDay()];
+    const month = months[now.getMonth()];
+    const day = now.getDate();
+    const year = now.getFullYear();
+    const hours = now.getHours();
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'local';
+    const localTimeStr = `${dayOfWeek}, ${month} ${day}, ${year} at ${displayHours}:${minutes} ${ampm} (${tz})`;
+
+    return `[Current Real-World Temporal & Schedule Grounding]:
+- Exact Current Time: Today is ${localTimeStr}.
+- Day of the Week: ${dayOfWeek}.
+- Calendar Date: ${month} ${day}, ${year}.
+- Local Clock Time: ${displayHours}:${minutes} ${ampm} (${tz}).
+- CRITICAL TRUTH & REALITY INVARIANT:
+  * You know the exact day, date, and hour. Proof is talking with you right now on ${dayOfWeek}.
+  * NEVER invent, guess, assume, or hallucinate personal plans, dates, appointments, or outings for Proof unless Proof explicitly told you about them.
+  * If Proof did not tell you he has a date, dinner, work, or plans, DO NOT fabricate them. Stick strictly to verified empirical facts and what Proof actually said.`;
+  }
+
   // ==========================================
   // Inference Streaming Pipeline
   // ==========================================
@@ -2663,8 +2702,11 @@ export class ArletexBackendServer {
       const perceptionBlock = ambientPerceptionNote
         ? `\n\n[Active Environmental Perception & Agency Grounding]:\n${ambientPerceptionNote.trim()}`
         : '';
+      const temporalHeader = this.getTemporalGroundingHeader();
       const systemPrompt =
         (systemPromptOverride || DEFAULT_ARLE_SYSTEM_PROMPT) +
+        '\n\n' +
+        temporalHeader +
         '\n\n' +
         apeStateBlock +
         perceptionBlock +
@@ -3106,11 +3148,7 @@ export class ArletexBackendServer {
           lowerUser.includes('forward')));
 
     if (isTelegramSendRequest || isWhatsAppSendRequest) {
-      let targetPath = tgFileMatch
-        ? tgFileMatch[1]
-        : waFileMatch
-          ? waFileMatch[1]
-          : candidatePath;
+      let targetPath = tgFileMatch ? tgFileMatch[1] : waFileMatch ? waFileMatch[1] : candidatePath;
       const caption =
         (tgFileMatch && tgFileMatch[2]) || (waFileMatch && waFileMatch[2]) || undefined;
 
@@ -3295,7 +3333,9 @@ export class ArletexBackendServer {
         downtimeMs,
         wasClosedSession: downtimeMs > 60000,
       });
-      const systemPrompt = DEFAULT_ARLE_SYSTEM_PROMPT + '\n\n' + apeStateBlock;
+      const temporalHeader = this.getTemporalGroundingHeader();
+      const systemPrompt =
+        DEFAULT_ARLE_SYSTEM_PROMPT + '\n\n' + temporalHeader + '\n\n' + apeStateBlock;
 
       const audioInfo = liveHostMedia?.title
         ? `Active media playing: "${liveHostMedia.title}" by ${liveHostMedia.artist || 'Unknown'}`

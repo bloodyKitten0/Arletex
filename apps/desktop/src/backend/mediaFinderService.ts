@@ -96,7 +96,23 @@ export class MediaFinderService {
     const queryKeywords = cleanQuery
       .replace(/[^\w\s]/g, ' ')
       .split(/\s+/)
-      .filter((k) => k.length > 1 && !['the', 'and', 'for', 'gif', 'meme', 'picture', 'video', 'clip', 'file', 'with', 'open'].includes(k));
+      .filter(
+        (k) =>
+          k.length > 1 &&
+          ![
+            'the',
+            'and',
+            'for',
+            'gif',
+            'meme',
+            'picture',
+            'video',
+            'clip',
+            'file',
+            'with',
+            'open',
+          ].includes(k),
+      );
 
     for (const [fPath, entry] of Object.entries(this.catalog)) {
       if (!fs.existsSync(fPath)) continue;
@@ -105,7 +121,10 @@ export class MediaFinderService {
       const lowerTags = entry.tags.map((t) => t.toLowerCase());
 
       // If whole phrase matches description or any tag
-      if (lowerDesc.includes(cleanQuery) || lowerTags.some((t) => t === cleanQuery || cleanQuery.includes(t))) {
+      if (
+        lowerDesc.includes(cleanQuery) ||
+        lowerTags.some((t) => t === cleanQuery || cleanQuery.includes(t))
+      ) {
         this.logger.info(`Catalog direct match for "${query}": ${fPath}`);
         return {
           filePath: fPath,
@@ -118,11 +137,13 @@ export class MediaFinderService {
 
       // If query keywords match at least 2 tags or key concepts (e.g. ['miwa', 'cat'])
       if (queryKeywords.length > 0) {
-        const matched = queryKeywords.filter((kw) =>
-          lowerTags.some((t) => t.includes(kw)) || lowerDesc.includes(kw),
+        const matched = queryKeywords.filter(
+          (kw) => lowerTags.some((t) => t.includes(kw)) || lowerDesc.includes(kw),
         );
         if (matched.length >= Math.min(2, queryKeywords.length)) {
-          this.logger.info(`Catalog keyword match (${matched.join(', ')}) for "${query}": ${fPath}`);
+          this.logger.info(
+            `Catalog keyword match (${matched.join(', ')}) for "${query}": ${fPath}`,
+          );
           return {
             filePath: fPath,
             source: 'local_catalog',
@@ -143,7 +164,17 @@ export class MediaFinderService {
       path.resolve(process.env.HOME || '/home/proof', '.arletex_media'),
     ];
 
-    const mediaExtensions = new Set(['.gif', '.mp4', '.mkv', '.webm', '.png', '.jpg', '.jpeg', '.webp', '.avi']);
+    const mediaExtensions = new Set([
+      '.gif',
+      '.mp4',
+      '.mkv',
+      '.webm',
+      '.png',
+      '.jpg',
+      '.jpeg',
+      '.webp',
+      '.avi',
+    ]);
 
     const allFiles: string[] = [];
     for (const root of searchRoots) {
@@ -184,7 +215,9 @@ export class MediaFinderService {
       }
 
       if (bestMatch) {
-        this.logger.info(`Filesystem multi-keyword match (${bestMatch.count} hits) for "${query}": ${bestMatch.path}`);
+        this.logger.info(
+          `Filesystem multi-keyword match (${bestMatch.count} hits) for "${query}": ${bestMatch.path}`,
+        );
         return {
           filePath: bestMatch.path,
           source: 'local_fs',
@@ -249,7 +282,9 @@ export class MediaFinderService {
       const targetPath = path.join(this.cacheDir, uniqueName);
 
       await fs.promises.writeFile(targetPath, buffer);
-      this.logger.info(`Saved downloaded media to ${targetPath} (${(buffer.length / 1024).toFixed(1)} KB)`);
+      this.logger.info(
+        `Saved downloaded media to ${targetPath} (${(buffer.length / 1024).toFixed(1)} KB)`,
+      );
 
       return {
         filePath: targetPath,
