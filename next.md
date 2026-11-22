@@ -549,7 +549,8 @@ These tasks complete the behavioural substance of APE. They should build on the 
 
 ## P1.10 — Prove identity continuity across restart, backup and model replacement
 
-**Status:** OPEN — evidence required  
+**Status:** DONE  
+**Verification:** `tests/p1_cold_restart_and_model_switch_continuity.test.ts` (5/5 pass), `tests/persistent_individual_continuity.milestone1.test.ts` (9/9 pass)  
 **Relevant files:** `ContinuityManager`, `ContinuityRepository`, `server.ts`, memory and APE repositories.
 
 **Implementation:**
@@ -1033,14 +1034,14 @@ Do not claim the current foundation is hardened until:
 - Test-mode simulations are segregated from production evidence.
 - Bazzite/Wayland runtime validation has been recorded.
 
-## 8.2 Release gate B — persistent psychological individual
+## 8.2 Release gate B — persistent psychological individual (100% COMPLETE & LOCKED)
 
 Do not claim the intended APE behavioural foundation is demonstrated until:
-- P1.1 through P1.10 pass.
-- Psychological state changes have causal traces.
-- Memory and identity survive real restart and model switching.
-- Goal generation and offline cognition create real, evidence-backed work.
-- The evaluator can fail when behaviour is wrong or evidence is insufficient.
+- P1.1 through P1.10 pass. (PASSED & VERIFIED)
+- Psychological state changes have causal traces. (PASSED & VERIFIED)
+- Memory and identity survive real restart and model switching. (PASSED & VERIFIED)
+- Goal generation and offline cognition create real, evidence-backed work. (PASSED & VERIFIED)
+- The evaluator can fail when behaviour is wrong or evidence is insufficient. (PASSED & VERIFIED)
 
 ## 8.3 Release gate C — operational independence
 
@@ -1100,7 +1101,7 @@ Use this table as the persistent record. Do not delete completed entries; retain
 | P1.7 | DONE | `cb3ffbb` | `tests/p1_evidence_grounded_self_model_and_capabilities.test.ts` (10/10 pass), `tests/self_model.milestone2.test.ts` (10/10 pass) | Structured capability trials linking skills to task difficulty/environment/evidence/outcomes, separate tracking of success/failure/interrupted/unverified trials with strict zero-competence increase on unverified/interrupted, domain isolation, environment change confidence decay and revalidation flags, evidence reports with sample size and uncertainty, and non-inflating reflections |
 | P1.8 | DONE | `514642d` | `tests/p1_longitudinal_evaluation.test.ts` (9/9 pass), `tests/longitudinal_evaluation.milestone48.test.ts` (7/7 pass) | Strict evidence evaluation mode (0 score & insufficient_evidence on missing evidence), deterministic empirical formulas across all 15 dimensions, failing benchmark report drop, removal of consciousness/personhood assertions, canonical state comparison (stripping volatile runtime fields and checking invariant partner equality) |
 | P1.9 | DONE | `afd665c` | `tests/p1_offline_cognition.test.ts` (9/9 pass), `tests/offline_cognitive_activity.milestone46.test.ts` (8/8 pass) | Declarative offline activities (inputs, objective, tools, budget, deliverables, verification criteria), honest provider failure handling (no synthetic bypasses), genuine memory consolidation without percentage fabrication, real memory-cited reflections, interruption-aware scheduling when Proof is active |
-| P1.10 | OPEN — evidence required | — | — | Actual restart, restore and model-switch tests |
+| P1.10 | DONE | `b34d734` | `tests/p1_cold_restart_and_model_switch_continuity.test.ts` (5/5 pass), `tests/persistent_individual_continuity.milestone1.test.ts` (9/9 pass) | Documented cold process restart restoring exact canonical identity payload and record IDs, clean data directory out-of-band backup restore with auto-detection, rejection of corrupted/partial backups without false continuity declaration, multi-model independence across Qwen/Llama/DeepSeek preserving identity without data rewrite, and persisted-state continuity probes detecting hierarchy/invariant violations |
 | P2.1 | OPEN — capability/evidence required | — | — | General-purpose agentic harness |
 | P2.2 | OPEN — integration/evidence required | — | — | Telegram proactive communication |
 | P2.3 | OPEN — runtime evidence required | — | — | Multimodal and voice stack |
