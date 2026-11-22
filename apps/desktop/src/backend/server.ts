@@ -766,15 +766,17 @@ export class ArletexBackendServer {
       });
 
       // Listen on loopback only (security requirement)
-      this.server.listen(desiredPort, '127.0.0.1', () => {
+      this.server.listen(desiredPort, '127.0.0.1', async () => {
         const addr = this.server?.address() as AddressInfo;
         this.port = addr.port;
         this.logger.info(`Arletex backend listening on 127.0.0.1:${this.port}`);
 
         // Automatically ensure historical memories are synthesized and embedded
-        void syncHistoricalMemories(this.config.databasePath).catch((err: any) => {
+        try {
+          await syncHistoricalMemories(this.config.databasePath);
+        } catch (err: any) {
           this.logger.warn(`Initial historical memory sync note: ${err.message}`);
-        });
+        }
 
         // 1. Initialize & start desktop / Google notifications monitor
         this.notificationListener = defaultNotificationListener;
