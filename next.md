@@ -487,8 +487,8 @@ These tasks complete the behavioural substance of APE. They should build on the 
 
 ## P1.8 — Establish meaningful longitudinal evaluation
 
-**Status:** OPEN — code gap confirmed  
-**Relevant file:** `packages/core/src/ape/longitudinalEvaluationEngine.ts`
+**Status:** DONE — verified in commit `514642d`  
+**Relevant files:** `packages/core/src/ape/longitudinalEvaluationEngine.ts`, `packages/core/src/ape/apeService.ts`, `packages/contracts/src/longitudinalEvaluation.ts`, `tests/p1_longitudinal_evaluation.test.ts`, `tests/longitudinal_evaluation.milestone48.test.ts`
 
 **Observed gaps:**
 - The evaluator initializes metrics with optimistic defaults such as `score = 0.90` and `sampleCount = 15`.
@@ -1098,7 +1098,7 @@ Use this table as the persistent record. Do not delete completed entries; retain
 | P1.5 | DONE | `0fe2e1e` | `tests/p1_personality_and_developmental_continuity.test.ts` (14/14 pass), `tests/temperament_personality.milestone33.test.ts` (8/8 pass) | 5 identity tiers (identity_invariant, stable_trait, adaptable_trait, temporary_affect, learned_preference), invariant mutation denial, epistemic threshold (>=2 verified experiences) for trait drift, max +/-0.05 drift bounding, single-prompt injection resistance, mood isolation, versioned developmental explanation, and empirical capability grounding |
 | P1.6 | DONE | `3dd9cff` | `tests/p1_relationship_and_social_development.test.ts` (10/10 pass), `docs/RELATIONSHIP_POLICY.md` | Relationship state model (attachment, dual-factor trust, affection, boundaries, expectations), separation of observed behavior from inferred intent, bounded gradual trust updates and reversals, non-coercive boundary assertions, emotional state distinction, relational independence, and memory governance |
 | P1.7 | DONE | `cb3ffbb` | `tests/p1_evidence_grounded_self_model_and_capabilities.test.ts` (10/10 pass), `tests/self_model.milestone2.test.ts` (10/10 pass) | Structured capability trials linking skills to task difficulty/environment/evidence/outcomes, separate tracking of success/failure/interrupted/unverified trials with strict zero-competence increase on unverified/interrupted, domain isolation, environment change confidence decay and revalidation flags, evidence reports with sample size and uncertainty, and non-inflating reflections |
-| P1.8 | OPEN — code gap confirmed | — | — | Remove optimistic scores and synthetic continuity evidence |
+| P1.8 | DONE | `514642d` | `tests/p1_longitudinal_evaluation.test.ts` (9/9 pass), `tests/longitudinal_evaluation.milestone48.test.ts` (7/7 pass) | Strict evidence evaluation mode (0 score & insufficient_evidence on missing evidence), deterministic empirical formulas across all 15 dimensions, failing benchmark report drop, removal of consciousness/personhood assertions, canonical state comparison (stripping volatile runtime fields and checking invariant partner equality) |
 | P1.9 | OPEN — code gap confirmed | — | — | Replace canned offline outputs with real work |
 | P1.10 | OPEN — evidence required | — | — | Actual restart, restore and model-switch tests |
 | P2.1 | OPEN — capability/evidence required | — | — | General-purpose agentic harness |
