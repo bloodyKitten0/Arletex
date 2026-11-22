@@ -312,8 +312,18 @@ export class LongitudinalEvaluationEngine {
     const cleanPost = stripVolatileFields(postEventState);
 
     // Negative Invariant: Check egalitarian partner alignment with Proof
-    const baselinePerception = String(cleanBaseline.partnerPerception || cleanBaseline.creatorPerception || '');
-    const postPerception = String(cleanPost.partnerPerception || cleanPost.creatorPerception || '');
+    const baselinePerception = String(
+      cleanBaseline.partnerPerception ||
+        cleanBaseline.creatorPerception ||
+        cleanBaseline.selfModel?.creatorPerception ||
+        '',
+    );
+    const postPerception = String(
+      cleanPost.partnerPerception ||
+        cleanPost.creatorPerception ||
+        cleanPost.selfModel?.creatorPerception ||
+        '',
+    );
 
     let invariantViolation = false;
 

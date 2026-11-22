@@ -86,3 +86,45 @@ export interface IMemoryCountProvider {
   listForBackup?(): BackupMemoryRecord[];
   upsertRestoredMemory?(memory: BackupMemoryRecord): void;
 }
+
+export interface CanonicalIdentityPayload {
+  schemaVersion: number;
+  timestamp: string;
+  identityInvariants: string[];
+  selfModel: {
+    identityNarrative: string;
+    creatorPerception: string;
+    capabilities: string[];
+    limitations: string[];
+    structuredCapabilities: any[];
+    structuredLimitations: any[];
+  };
+  personality: {
+    temperament: any;
+    traits: any[];
+    values: any[];
+  };
+  relationship: {
+    targetUserId: string;
+    isExclusivelyCommitted: boolean;
+    trustLevel: number;
+    intimacyDepth: number;
+  };
+  motivation: {
+    needs: any;
+    goals: any[];
+  };
+  development: {
+    interests: any[];
+    developmentalHistory: any[];
+  };
+  memories: Array<{
+    id: string;
+    type: string;
+    content: string;
+    importance: number;
+    provenance: string;
+    timestamp: string;
+    metadata?: Record<string, unknown>;
+  }>;
+}

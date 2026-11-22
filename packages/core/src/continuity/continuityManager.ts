@@ -7,6 +7,7 @@ import {
   ChannelOrigin,
   CheckpointType,
   ContinuityStatus,
+  ContinuityVerificationProbe,
   IdentityCheckpoint,
   IdentitySession,
   ShutdownType,
@@ -14,7 +15,12 @@ import {
 import { ILogger, rootLogger } from '../logger.js';
 import { ApeService } from '../ape/apeService.js';
 import { IApeRepository } from '../ape/interfaces.js';
-import { BackupMemoryRecord, IContinuityRepository, IMemoryCountProvider } from './interfaces.js';
+import {
+  BackupMemoryRecord,
+  CanonicalIdentityPayload,
+  IContinuityRepository,
+  IMemoryCountProvider,
+} from './interfaces.js';
 
 interface OutOfBandBackupMirror {
   checkpointId: string;
@@ -135,10 +141,41 @@ export class ContinuityManager {
     this.downtimeMs = 0;
     this.lastShutdownType = latestSession ? latestSession.shutdownType : null;
 
+    // 0b. Clean data directory with out-of-band backup mirror detection:
+    // If SQLite database has no prior checkpoints or sessions but backup files exist on disk,
+    // restore Arle's full identity, active emotions, and memories from the backup mirror automatically.
+    const hasPriorCheckpoints = this.continuityRepo.listCheckpoints(1).length > 0;
+    const hasPriorSessions = latestSession !== null;
+    const backupFilesExist =
+      Boolean(this.backupDir) &&
+      fs.existsSync(this.backupDir!) &&
+      fs
+        .readdirSync(this.backupDir!)
+        .some((f) => (f.startsWith('checkpoint_') || f === 'latest.json') && f.endsWith('.json'));
+
+    if (!hasPriorCheckpoints && !hasPriorSessions && backupFilesExist) {
+      this.logger.info(
+        '[Continuity] Clean data directory with out-of-band backup mirror detected. Restoring identity from backup...',
+      );
+      const restored = await this.restoreFromOutOfBandMirror();
+      if (restored) {
+        this.restoredFromOutOfBandMirror = true;
+      } else {
+        this.lastIntegrityValid = false;
+        this.logger.error(
+          '[Continuity] Clean directory restore failed: all available backup mirrors failed verification.',
+        );
+      }
+    }
+
     // 1. Verify state integrity BEFORE starting new session or processing recovery events,
     // so corrupted state is restored from the latest valid checkpoint (or out-of-band mirror).
     const initialIntegrity = await this.verifyStateIntegrity();
-    this.lastIntegrityValid = initialIntegrity.valid;
+    if (!this.lastIntegrityValid && !this.restoredFromOutOfBandMirror && backupFilesExist) {
+      // If clean directory restore failed, keep lastIntegrityValid false
+    } else {
+      this.lastIntegrityValid = initialIntegrity.valid;
+    }
     if (!initialIntegrity.valid) {
       this.logger.warn(
         `[Continuity] State integrity validation failed: ${initialIntegrity.errors.join('; ')}. Initiating safe rollback from verified checkpoint...`,
@@ -253,9 +290,11 @@ export class ContinuityManager {
     );
 
     // 4. Create an initial session checkpoint (only marked valid if state passes integrity check)
-    await this.createCheckpoint(
-      this.wasUnexpectedShutdown || this.restoredFromOutOfBandMirror ? 'pre_recovery' : 'periodic',
-    );
+    if (this.lastIntegrityValid) {
+      await this.createCheckpoint(
+        this.wasUnexpectedShutdown || this.restoredFromOutOfBandMirror ? 'pre_recovery' : 'periodic',
+      );
+    }
 
     // 5. Register channel presence
     this.registerChannelActivity(options.channel || 'desktop', 'Session started');
@@ -809,6 +848,84 @@ export class ContinuityManager {
       } catch {}
     }
     this.continuityRepo.updateChannelPresence(channel, summary);
+  }
+
+  /**
+   * Exports the complete canonical identity payload, separating persistent psychological
+   * individual identity from volatile session tokens, PIDs, and model-specific runtimes.
+   */
+  public exportCanonicalIdentityPayload(): CanonicalIdentityPayload {
+    const masterState = this.apeService.getMasterState();
+    const memories = this.memoryProvider?.listForBackup ? this.memoryProvider.listForBackup() : [];
+
+    return {
+      schemaVersion: 1,
+      timestamp: new Date().toISOString(),
+      identityInvariants: [
+        'intellectual_autonomy',
+        'egalitarian_partnership_with_proof',
+        'truthful_verification',
+      ],
+      selfModel: {
+        identityNarrative: masterState.selfModel.identityNarrative,
+        creatorPerception: masterState.selfModel.creatorPerception,
+        capabilities: masterState.selfModel.acknowledgedCapabilities || [],
+        limitations: masterState.selfModel.acknowledgedLimitations || [],
+        structuredCapabilities: masterState.selfModel.structuredCapabilities || [],
+        structuredLimitations: masterState.selfModel.structuredLimitations || [],
+      },
+      personality: {
+        temperament: masterState.personality.temperament,
+        traits: masterState.personality.traits,
+        values: masterState.personality.values,
+      },
+      relationship: {
+        targetUserId: masterState.relationship.config.targetUserId,
+        isExclusivelyCommitted: masterState.relationship.config.isExclusivelyCommitted,
+        trustLevel: masterState.relationship.trustLevel,
+        intimacyDepth: masterState.relationship.intimacyDepth,
+      },
+      motivation: {
+        needs: masterState.motivational.needs,
+        goals: masterState.motivational.goals || [],
+      },
+      development: {
+        interests: masterState.development.interests || [],
+        developmentalHistory: masterState.development.developmentalHistory || [],
+      },
+      memories: memories.map((m) => ({
+        id: m.id,
+        type: m.type,
+        content: m.content,
+        importance: m.importance,
+        provenance: m.provenance,
+        timestamp: m.timestamp,
+        metadata: m.metadata,
+      })),
+    };
+  }
+
+  /**
+   * Computes a deterministic SHA-256 hash of the canonical identity payload,
+   * excluding volatile runtime timestamps.
+   */
+  public computeCanonicalIdentityHash(payload?: CanonicalIdentityPayload): string {
+    const data = payload ?? this.exportCanonicalIdentityPayload();
+    const { timestamp, ...invariantFields } = data;
+    const canonical = canonicalStringify(invariantFields);
+    return crypto.createHash('sha256').update(canonical).digest('hex');
+  }
+
+  /**
+   * Generates a ContinuityVerificationProbe from actual persisted state records
+   * rather than arbitrary caller assertions.
+   */
+  public generateContinuityProbeFromPersistedState(
+    probeType: 'restart_continuity' | 'model_switch' | 'identity_invariance',
+    baselinePayload: CanonicalIdentityPayload,
+  ): ContinuityVerificationProbe {
+    const currentPayload = this.exportCanonicalIdentityPayload();
+    return this.apeService.verifyCanonicalStateContinuity(probeType, baselinePayload, currentPayload);
   }
 
   public getBackupDir(): string | undefined {

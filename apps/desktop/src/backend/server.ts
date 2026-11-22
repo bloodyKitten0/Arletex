@@ -3058,6 +3058,27 @@ Rules:
         return;
       }
 
+      if (url.pathname === '/api/continuity/canonical-identity' && method === 'GET') {
+        const payload = this.continuityManager.exportCanonicalIdentityPayload();
+        const hash = this.continuityManager.computeCanonicalIdentityHash(payload);
+        this.sendJson(res, 200, { success: true, payload, hash });
+        return;
+      }
+
+      if (url.pathname === '/api/continuity/canonical-probe' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        if (!body.probeType || !body.baselinePayload) {
+          this.sendJson(res, 400, { error: 'probeType and baselinePayload are required' });
+          return;
+        }
+        const probe = this.continuityManager.generateContinuityProbeFromPersistedState(
+          body.probeType,
+          body.baselinePayload,
+        );
+        this.sendJson(res, 200, { success: true, probe });
+        return;
+      }
+
       // ==========================================
       // Voice & Vision Specialist Endpoints
       // ==========================================
