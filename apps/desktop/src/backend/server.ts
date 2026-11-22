@@ -2345,10 +2345,50 @@ export class ArletexBackendServer {
           }
         } else if (type === 'file_open' && target) {
           try {
-            await this.desktopEnvironmentProvider.openFile(target);
-            ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Opened requested file "${target}" on desktop.\n`;
+            const localMedia = await defaultMediaFinder.findLocalMedia(target);
+            if (localMedia && localMedia.filePath && fs.existsSync(localMedia.filePath)) {
+              await this.desktopEnvironmentProvider.openFile(localMedia.filePath);
+              ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Verified on device and opened on screen: "${localMedia.filePath}" (${localMedia.title || path.basename(localMedia.filePath)}). Confirm casually to Proof that you opened it.\n`;
+            } else {
+              ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: Thoroughly scanned Proof's device storage (~/Videos, ~/Pictures, ~/Downloads, Desktop) and verified that "${target}" is NOT on his device. Inform Proof casually that it is not saved on his PC and offer to find it online.\n`;
+            }
           } catch (e: any) {
             this.logger.warn(`File open error: ${e.message}`);
+          }
+        }
+      }
+
+      // Check for file opening intent if not already captured by semantic classifier
+      const isNaturalFileOpen =
+        (!semanticResult.actionDetails || semanticResult.actionDetails.type !== 'file_open') &&
+        /\b(?:open|launch|play|show|display)\s+(?:the\s+)?(?:video|gif|meme|clip|picture|photo|file)\b/i.test(
+          userMessageContent,
+        );
+
+      if (isNaturalFileOpen) {
+        const rawTarget = userMessageContent
+          .replace(
+            /^(?:please\s+)?(?:can you\s+)?(?:open|launch|play|show|display)\s+(?:the\s+)?(?:video|gif|meme|clip|picture|photo|file)?(?:\s+of)?\s*/i,
+            '',
+          )
+          .replace(/(?:on|to|for)\s+(?:me|screen|desktop)[\s\S]*/i, '')
+          .trim();
+
+        if (rawTarget) {
+          try {
+            const localMedia = await defaultMediaFinder.findLocalMedia(rawTarget);
+            if (localMedia && localMedia.filePath && fs.existsSync(localMedia.filePath)) {
+              const openRes = await this.desktopEnvironmentProvider.openFile(localMedia.filePath);
+              if (openRes.success) {
+                ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: You verified that "${localMedia.title || path.basename(localMedia.filePath)}" is on Proof's device (${localMedia.filePath}) and you opened it on his desktop screen. Confirm warmly and casually that you opened it.\n`;
+              } else {
+                ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: File is on device (${localMedia.filePath}) but launch failed: ${openRes.error}.\n`;
+              }
+            } else {
+              ambientPerceptionNote += `\n[Digital Agency Reality Grounding]: You scanned Proof's device storage (~/Videos, ~/Pictures, ~/Downloads, Desktop) and verified that "${rawTarget}" is NOT on his device. Inform Proof casually that it is not saved on his PC, and offer to look it up on the web or YouTube.\n`;
+            }
+          } catch (err: any) {
+            this.logger.warn(`Natural file open resolution error: ${err.message}`);
           }
         }
       }

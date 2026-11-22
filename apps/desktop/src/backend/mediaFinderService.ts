@@ -4,35 +4,138 @@ import { rootLogger, ILogger } from '@arletex/core';
 
 export interface ResolvedMediaResult {
   filePath: string;
-  source: 'local' | 'web_tenor' | 'web_duckduckgo';
+  source: 'local_catalog' | 'local_fs' | 'web_tenor';
   fileName: string;
   title?: string;
+  tags?: string[];
+}
+
+interface CatalogEntry {
+  tags: string[];
+  description: string;
 }
 
 export class MediaFinderService {
   private cacheDir: string;
+  private catalogPath: string;
+  private catalog: Record<string, CatalogEntry> = {};
   private logger: ILogger;
 
   constructor(logger: ILogger = rootLogger) {
     this.logger = logger.child('MediaFinderService');
-    this.cacheDir = path.resolve(
-      process.env.HOME || '/home/proof',
-      '.arletex_media',
-      'cache',
-    );
+    const baseDir = path.resolve(process.env.HOME || '/home/proof', '.arletex_media');
+    this.cacheDir = path.join(baseDir, 'cache');
+    this.catalogPath = path.join(baseDir, 'catalog.json');
+
     if (!fs.existsSync(this.cacheDir)) {
       try {
         fs.mkdirSync(this.cacheDir, { recursive: true });
       } catch {}
     }
+
+    this.loadCatalog();
+  }
+
+  private loadCatalog(): void {
+    if (fs.existsSync(this.catalogPath)) {
+      try {
+        const raw = fs.readFileSync(this.catalogPath, 'utf8');
+        this.catalog = JSON.parse(raw);
+        this.logger.info(`Loaded ${Object.keys(this.catalog).length} entries from media catalog.`);
+      } catch (err: any) {
+        this.logger.warn(`Failed to parse media catalog: ${err.message}`);
+        this.catalog = {};
+      }
+    }
+  }
+
+  public saveCatalog(): void {
+    try {
+      fs.writeFileSync(this.catalogPath, JSON.stringify(this.catalog, null, 2), 'utf8');
+    } catch (err: any) {
+      this.logger.warn(`Failed to save media catalog: ${err.message}`);
+    }
+  }
+
+  public registerMediaTag(filePath: string, tags: string[], description: string): void {
+    this.catalog[filePath] = { tags, description };
+    this.saveCatalog();
   }
 
   /**
-   * Searches local folders (~/Downloads, ~/Pictures, ~/Desktop, ~/.arletex_media)
-   * for existing media matching the conceptual keywords.
+   * Recursively discovers all media files in the given directory up to maxDepth.
+   */
+  private async getLocalFiles(dir: string, currentDepth = 0, maxDepth = 2): Promise<string[]> {
+    if (currentDepth > maxDepth || !fs.existsSync(dir)) return [];
+    const results: string[] = [];
+    try {
+      const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isFile()) {
+          results.push(fullPath);
+        } else if (entry.isDirectory() && !entry.name.startsWith('.')) {
+          const subFiles = await this.getLocalFiles(fullPath, currentDepth + 1, maxDepth);
+          results.push(...subFiles);
+        }
+      }
+    } catch {}
+    return results;
+  }
+
+  /**
+   * Searches local device storage (~/Videos, ~/Pictures, ~/Downloads, Desktop, etc.)
+   * and the semantic media catalog to determine if a requested media item is on the device.
    */
   public async findLocalMedia(query: string): Promise<ResolvedMediaResult | null> {
-    const searchDirs = [
+    const cleanQuery = query.toLowerCase().trim();
+    if (!cleanQuery) return null;
+
+    // 1. Check Catalog First (Semantic match for generic filenames like tenor (1).gif)
+    this.loadCatalog();
+    const queryKeywords = cleanQuery
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter((k) => k.length > 1 && !['the', 'and', 'for', 'gif', 'meme', 'picture', 'video', 'clip', 'file', 'with', 'open'].includes(k));
+
+    for (const [fPath, entry] of Object.entries(this.catalog)) {
+      if (!fs.existsSync(fPath)) continue;
+
+      const lowerDesc = entry.description.toLowerCase();
+      const lowerTags = entry.tags.map((t) => t.toLowerCase());
+
+      // If whole phrase matches description or any tag
+      if (lowerDesc.includes(cleanQuery) || lowerTags.some((t) => t === cleanQuery || cleanQuery.includes(t))) {
+        this.logger.info(`Catalog direct match for "${query}": ${fPath}`);
+        return {
+          filePath: fPath,
+          source: 'local_catalog',
+          fileName: path.basename(fPath),
+          title: entry.description,
+          tags: entry.tags,
+        };
+      }
+
+      // If query keywords match at least 2 tags or key concepts (e.g. ['miwa', 'cat'])
+      if (queryKeywords.length > 0) {
+        const matched = queryKeywords.filter((kw) =>
+          lowerTags.some((t) => t.includes(kw)) || lowerDesc.includes(kw),
+        );
+        if (matched.length >= Math.min(2, queryKeywords.length)) {
+          this.logger.info(`Catalog keyword match (${matched.join(', ')}) for "${query}": ${fPath}`);
+          return {
+            filePath: fPath,
+            source: 'local_catalog',
+            fileName: path.basename(fPath),
+            title: entry.description,
+            tags: entry.tags,
+          };
+        }
+      }
+    }
+
+    // 2. Scan Local Filesystems
+    const searchRoots = [
       path.resolve(process.env.HOME || '/home/proof', 'Videos'),
       path.resolve(process.env.HOME || '/home/proof', 'Pictures'),
       path.resolve(process.env.HOME || '/home/proof', 'Downloads'),
@@ -40,66 +143,54 @@ export class MediaFinderService {
       path.resolve(process.env.HOME || '/home/proof', '.arletex_media'),
     ];
 
-    const cleanQuery = query.toLowerCase().trim();
-    if (!cleanQuery) return null;
+    const mediaExtensions = new Set(['.gif', '.mp4', '.mkv', '.webm', '.png', '.jpg', '.jpeg', '.webp', '.avi']);
 
-    // 1. Check for direct exact or substring filename match (e.g. "tenor (1).gif" or "tenor (1)")
-    for (const dir of searchDirs) {
-      if (!fs.existsSync(dir)) continue;
-      try {
-        const files = await fs.promises.readdir(dir, { withFileTypes: true });
-        for (const f of files) {
-          if (!f.isFile()) continue;
-          const lowerName = f.name.toLowerCase();
-          if (lowerName === cleanQuery || lowerName.includes(cleanQuery) || cleanQuery.includes(lowerName)) {
-            const fullPath = path.join(dir, f.name);
-            this.logger.info(`Found direct local filename match for "${query}": ${fullPath}`);
-            return {
-              filePath: fullPath,
-              source: 'local',
-              fileName: f.name,
-              title: f.name,
-            };
-          }
-        }
-      } catch (err: any) {
-        this.logger.debug(`Error reading dir ${dir}: ${err.message}`);
+    const allFiles: string[] = [];
+    for (const root of searchRoots) {
+      const files = await this.getLocalFiles(root, 0, 2);
+      allFiles.push(...files);
+    }
+
+    // 2a. Direct filename match (e.g. "tenor (1).gif" or "arlecchino-night-train")
+    for (const fPath of allFiles) {
+      const name = path.basename(fPath).toLowerCase();
+      if (name === cleanQuery || name.includes(cleanQuery) || cleanQuery.includes(name)) {
+        this.logger.info(`Direct filename match for "${query}": ${fPath}`);
+        return {
+          filePath: fPath,
+          source: 'local_fs',
+          fileName: path.basename(fPath),
+          title: path.basename(fPath, path.extname(fPath)),
+        };
       }
     }
 
-    const keywords = cleanQuery
-      .replace(/[^\w\s]/g, ' ')
-      .split(/\s+/)
-      .filter((k) => k.length > 2 && !['the', 'and', 'for', 'gif', 'meme', 'picture', 'video', 'send', 'me'].includes(k));
+    // 2b. Multi-keyword filename match (e.g. query "arlecchino on the train" -> matching ['arlecchino', 'train'])
+    if (queryKeywords.length > 0) {
+      let bestMatch: { path: string; count: number } | null = null;
+      for (const fPath of allFiles) {
+        const ext = path.extname(fPath).toLowerCase();
+        if (!mediaExtensions.has(ext)) continue;
 
-    if (keywords.length === 0) return null;
+        const lowerName = path.basename(fPath).toLowerCase();
+        const matchCount = queryKeywords.filter((kw) => lowerName.includes(kw)).length;
 
-    const mediaExtensions = new Set(['.gif', '.mp4', '.webm', '.png', '.jpg', '.jpeg', '.webp']);
-
-    for (const dir of searchDirs) {
-      if (!fs.existsSync(dir)) continue;
-      try {
-        const files = await fs.promises.readdir(dir, { withFileTypes: true });
-        for (const f of files) {
-          if (!f.isFile()) continue;
-          const ext = path.extname(f.name).toLowerCase();
-          if (!mediaExtensions.has(ext)) continue;
-
-          const lowerName = f.name.toLowerCase();
-          const matchCount = keywords.filter((kw) => lowerName.includes(kw)).length;
-          if (matchCount >= Math.min(2, keywords.length)) {
-            const fullPath = path.join(dir, f.name);
-            this.logger.info(`Found local media match for "${query}": ${fullPath}`);
-            return {
-              filePath: fullPath,
-              source: 'local',
-              fileName: f.name,
-              title: f.name,
-            };
+        // If all keywords match, or >= 2 keywords match
+        if (matchCount >= Math.min(2, queryKeywords.length)) {
+          if (!bestMatch || matchCount > bestMatch.count) {
+            bestMatch = { path: fPath, count: matchCount };
           }
         }
-      } catch (err: any) {
-        this.logger.debug(`Error reading dir ${dir}: ${err.message}`);
+      }
+
+      if (bestMatch) {
+        this.logger.info(`Filesystem multi-keyword match (${bestMatch.count} hits) for "${query}": ${bestMatch.path}`);
+        return {
+          filePath: bestMatch.path,
+          source: 'local_fs',
+          fileName: path.basename(bestMatch.path),
+          title: path.basename(bestMatch.path, path.extname(bestMatch.path)),
+        };
       }
     }
 
@@ -176,7 +267,7 @@ export class MediaFinderService {
    * High-level resolver: searches local PC first; if absent, fetches from web.
    */
   public async resolveMedia(query: string): Promise<ResolvedMediaResult | null> {
-    // 1. Check local PC files first
+    // 1. Check local PC files first (catalog + filesystem)
     const local = await this.findLocalMedia(query);
     if (local) return local;
 
