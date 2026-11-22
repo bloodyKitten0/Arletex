@@ -40,5 +40,8 @@ jobs:
       - name: Typecheck
         run: pnpm run typecheck
 
+      - name: Lint & Code Style
+        run: pnpm run lint
+
       - name: Run Test Suite
         run: xvfb-run -a pnpm test
