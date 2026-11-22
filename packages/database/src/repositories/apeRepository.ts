@@ -860,8 +860,8 @@ export class ApeRepository implements IApeRepository {
     stmt.run(
       appraisal.id,
       appraisal.eventId,
-      JSON.stringify(appraisal.dimensions),
-      appraisal.primaryInterpretation,
+      JSON.stringify(appraisal.dimensions ?? {}),
+      appraisal.primaryInterpretation ?? (appraisal as any).summary ?? '',
       JSON.stringify(appraisal.alternativeInterpretations || []),
       JSON.stringify(appraisal.supportingEvidence || []),
       JSON.stringify(appraisal.proposedTransitions || []),

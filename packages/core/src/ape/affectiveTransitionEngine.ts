@@ -132,7 +132,7 @@ export class AffectiveTransitionEngine {
           existing.intensity = newIntensity;
           existing.lastUpdatedAt = timestamp;
           existing.status = nextStatus;
-          existing.interpretation = appraisal.primaryInterpretation;
+          existing.interpretation = appraisal.primaryInterpretation ?? (appraisal as any).summary ?? '';
           if (appraisal.supportingEvidence?.length) {
             existing.supportingEvidence = Array.from(
               new Set([...existing.supportingEvidence, ...appraisal.supportingEvidence]),
@@ -158,19 +158,21 @@ export class AffectiveTransitionEngine {
           };
           this.repo.recordTransition(transition);
           transitionsRecorded.push(transition);
-        } else if (prop.targetIntensity > 0) {
+        } else if ((prop.targetIntensity !== undefined && prop.targetIntensity > 0) || (prop.intensityDelta !== undefined && prop.intensityDelta > 0)) {
           // Assistant verbal expression cannot activate brand new emotional states from thin air
           if (isAssistantExpression) {
             continue;
           }
 
+          const targetIntensity = prop.targetIntensity ?? prop.intensityDelta ?? 0.5;
+
           // Newly arising emotional episodes begin as 'emerging' unless immediate acute reaction (>= 0.75)
-          const initialStatus: ActiveEmotionStatus = prop.targetIntensity >= 0.75 ? 'active' : 'emerging';
-          const persistence: ActiveEmotionPersistence = taxonomyItem?.defaultPersistence || 'medium_term';
+          const initialStatus: ActiveEmotionStatus = targetIntensity >= 0.75 ? 'active' : 'emerging';
+          const persistence: ActiveEmotionPersistence = (prop as any).persistence || taxonomyItem?.defaultPersistence || 'medium_term';
           const newActiveState: ActiveEmotionState = {
             id: crypto.randomUUID(),
             emotionId: prop.emotionId,
-            intensity: Math.max(0.0, Math.min(1.0, prop.targetIntensity)),
+            intensity: Math.max(0.0, Math.min(1.0, targetIntensity)),
             confidence: 0.9,
             activatedAt: timestamp,
             lastUpdatedAt: timestamp,
@@ -179,7 +181,7 @@ export class AffectiveTransitionEngine {
             triggerEventId: event.id,
             target: prop.target || 'creator',
             context: event.type,
-            interpretation: appraisal.primaryInterpretation,
+            interpretation: appraisal.primaryInterpretation ?? (appraisal as any).summary ?? '',
             supportingEvidence: appraisal.supportingEvidence || [],
             relatedMemoryIds: [],
             relatedEmotionIds: [],
@@ -346,11 +348,14 @@ export class AffectiveTransitionEngine {
     // Coexisting conflicting emotions (e.g. love + anger) generate internal tension
     const emotionalConflictBonus = positiveCount > 0 && negativeCount > 0 ? 0.2 : 0.0;
     const textLower = String(event.payload?.text || '').toLowerCase();
+    const dims = appraisal.dimensions;
+    const socialMeaning = dims?.socialMeaning ? String(dims.socialMeaning).toLowerCase() : '';
+    const threat = typeof dims?.threat === 'number' ? dims.threat : 0;
     const interpersonalFriction =
       event.type.includes('criticism') ||
       event.type.includes('disagreement') ||
-      appraisal.dimensions.socialMeaning.toLowerCase().includes('criticism') ||
-      appraisal.dimensions.socialMeaning.toLowerCase().includes('disagreement') ||
+      socialMeaning.includes('criticism') ||
+      socialMeaning.includes('disagreement') ||
       /criticiz|disagree|abrasive|stubborn|harsh/i.test(textLower)
         ? 0.2
         : 0.0;
@@ -360,7 +365,7 @@ export class AffectiveTransitionEngine {
       Math.min(
         1.0,
         Number(
-          (0.1 + appraisal.dimensions.threat * 0.35 + stressSum * 0.2 + emotionalConflictBonus + interpersonalFriction).toFixed(2),
+          (0.1 + threat * 0.35 + stressSum * 0.2 + emotionalConflictBonus + interpersonalFriction).toFixed(2),
         ),
       ),
     );

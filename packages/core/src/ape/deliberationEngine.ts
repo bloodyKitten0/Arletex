@@ -82,6 +82,22 @@ export class InMemoryDeliberationRepository implements IDeliberationRepository {
   }
 }
 
+export interface AffectiveDecisionModifiers {
+  trustLevel?: number;
+  intimacyDepth?: number;
+  preferLongTermHorizon?: boolean;
+  stressLevel?: number;
+  fatigueLevel?: number;
+  activeEmotionIds?: string[];
+  pad?: {
+    valence?: number;
+    pleasure?: number;
+    arousal?: number;
+    dominance?: number;
+  };
+  threatAlert?: boolean;
+}
+
 export class DeliberationEngine {
   private readonly repo: IDeliberationRepository;
   private readonly logger: ILogger;
@@ -125,14 +141,11 @@ export class DeliberationEngine {
   /**
    * Evaluates competing motivations against Arle's actual internal state,
    * arbitrates trade-offs (immediate vs long-term, risk, ethics), and explains decision basis.
+   * Causally incorporates affective state (stress, fatigue, anxiety, curiosity, affection).
    */
   public deliberateAndResolve(
     conflictId: string,
-    currentMotivationalState?: {
-      trustLevel?: number;
-      intimacyDepth?: number;
-      preferLongTermHorizon?: boolean;
-    },
+    currentMotivationalState?: AffectiveDecisionModifiers,
   ): { resolvedConflict: InternalConflictRecord; explanation: string } {
     const conflict = this.repo.getConflictById(conflictId);
     if (!conflict) throw new Error(`Internal conflict ${conflictId} not found.`);
@@ -140,6 +153,21 @@ export class DeliberationEngine {
     const now = new Date().toISOString();
     const trust = currentMotivationalState?.trustLevel ?? 0.9;
     const preferLongTerm = currentMotivationalState?.preferLongTermHorizon ?? true;
+
+    const stress = currentMotivationalState?.stressLevel ?? 0.0;
+    const fatigue = currentMotivationalState?.fatigueLevel ?? 0.0;
+    const activeEmotions = currentMotivationalState?.activeEmotionIds ?? [];
+    const pad = currentMotivationalState?.pad;
+    const padValence = pad ? (pad.valence ?? pad.pleasure ?? 0.0) : 0.0;
+    const padArousal = pad?.arousal ?? 0.0;
+    const hasAnxiety = activeEmotions.includes('anxiety') || (pad && padValence < -0.2 && padArousal > 0.3);
+    const hasCuriosity = activeEmotions.includes('curiosity') || (pad && padValence > 0.1 && padArousal > 0.2);
+    const hasFatigue = activeEmotions.includes('fatigue') || fatigue > 0.5;
+    const hasAffection = activeEmotions.includes('affection') || activeEmotions.includes('gratitude') || (pad && padValence > 0.4);
+    const isThreatAlert = Boolean(currentMotivationalState?.threatAlert || activeEmotions.includes('protective_alert'));
+
+    // Risk Aversion: causally amplified by stress, anxiety, and threat alerts
+    const riskAversionMultiplier = 1.0 + stress * 0.8 + (hasAnxiety ? 0.6 : 0.0) + (isThreatAlert ? 1.0 : 0.0);
 
     // Weight factors
     const longTermWeight = preferLongTerm ? 0.6 : 0.4;
@@ -151,21 +179,44 @@ export class DeliberationEngine {
       const baseUtility =
         alt.immediateUtility * immediateWeight + alt.longTermUtility * longTermWeight;
 
-      // 2. Risk penalty
-      const riskPenalty = alt.riskAssessment.riskScore * 0.4;
+      // 2. Risk penalty modulated by affective state
+      const riskPenalty = alt.riskAssessment.riskScore * 0.4 * riskAversionMultiplier;
 
-      // 3. Ethical alignment multiplier
+      // 3. Curiosity exploration bonus
+      const isExploratory =
+        alt.title.toLowerCase().includes('explore') ||
+        alt.title.toLowerCase().includes('inquir') ||
+        alt.title.toLowerCase().includes('research') ||
+        alt.supportedDesireIds.some((dId) => {
+          const desire = conflict.competingDesires.find((d) => d.id === dId);
+          return desire?.source === 'curiosity';
+        });
+      const curiosityBonus = hasCuriosity && isExploratory ? 0.18 : 0.0;
+
+      // 4. Fatigue effort penalty
+      const effortScore =
+        (alt.riskAssessment as any).effortScore ??
+        (alt.title.toLowerCase().includes('heavy') || alt.title.toLowerCase().includes('intensive')
+          ? 0.9
+          : alt.riskAssessment.riskLevel === 'high'
+            ? 0.8
+            : alt.riskAssessment.riskLevel === 'medium'
+              ? 0.5
+              : 0.2);
+      const fatiguePenalty = (fatigue * 0.25 + (hasFatigue ? 0.15 : 0.0)) * effortScore;
+
+      // 5. Ethical alignment multiplier
       const ethicalMultiplier = Math.max(0.1, alt.ethicalAlignmentScore);
 
-      // 4. Partner alignment synergy (if alternative supports partner alignment desires)
+      // 6. Partner alignment synergy & affection bonus
       const supportsPartner = alt.supportedDesireIds.some((dId) => {
         const desire = conflict.competingDesires.find((d) => d.id === dId);
         return desire?.source === 'partner_alignment';
       });
-      const partnerSynergy = supportsPartner ? trust * 0.2 : 0.0;
+      const partnerSynergy = supportsPartner ? trust * 0.2 + (hasAffection ? 0.15 : 0.0) : 0.0;
 
       const computedScore = Number(
-        ((baseUtility - riskPenalty + partnerSynergy) * ethicalMultiplier).toFixed(4),
+        ((baseUtility - riskPenalty - fatiguePenalty + curiosityBonus + partnerSynergy) * ethicalMultiplier).toFixed(4),
       );
 
       return {
@@ -202,14 +253,21 @@ export class DeliberationEngine {
       return { resolvedConflict: indecisionConflict, explanation };
     }
 
-    // Resolve decisively
+    // Resolve decisively with affective causal explanation
+    const affectiveNotes: string[] = [];
+    if (stress > 0.3 || hasAnxiety) affectiveNotes.push(`elevated risk aversion (stress=${stress.toFixed(2)})`);
+    if (hasCuriosity) affectiveNotes.push('curiosity exploratory incentive');
+    if (hasFatigue) affectiveNotes.push(`fatigue effort mitigation (fatigue=${fatigue.toFixed(2)})`);
+    if (hasAffection) affectiveNotes.push('partner relational alignment priority');
+    const affectiveClause = affectiveNotes.length > 0 ? ` [Affective Modifiers: ${affectiveNotes.join(', ')}]` : '';
+
     const tradeOffAnalysis = {
       immediateGain: `Immediate utility rating of ${topAlt.immediateUtility} while keeping risk at ${topAlt.riskAssessment.riskScore} (${topAlt.riskAssessment.riskLevel}).`,
       longTermSacrifice: `Foregone potential benefits of '${secondAlt?.title || 'alternatives'}' to prioritize robust long-term utility of ${topAlt.longTermUtility}.`,
-      valueHierarchy: `Prioritized ethics (${topAlt.ethicalAlignmentScore}) and strategic partner alignment (trust=${trust}) over impulsive immediate reward.`,
+      valueHierarchy: `Prioritized ethics (${topAlt.ethicalAlignmentScore}) and strategic partner alignment (trust=${trust}) over impulsive immediate reward.${affectiveClause}`,
     };
 
-    const decisionJustification = `Chose '${topAlt.title}' [score=${topAlt.overallScore}] because it delivers positive long-term utility (${topAlt.longTermUtility}) with acceptable risk (${topAlt.riskAssessment.riskScore}) and strong ethical coherence (${topAlt.ethicalAlignmentScore}), successfully resolving competing desires.`;
+    const decisionJustification = `Chose '${topAlt.title}' [score=${topAlt.overallScore}] because it delivers positive long-term utility (${topAlt.longTermUtility}) with acceptable risk (${topAlt.riskAssessment.riskScore}) and strong ethical coherence (${topAlt.ethicalAlignmentScore}), successfully resolving competing desires.${affectiveClause}`;
 
     const resolvedConflict: InternalConflictRecord = {
       ...conflict,

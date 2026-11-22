@@ -2269,7 +2269,15 @@ export class ApeService {
     conflictId: string,
     motivationalState?: Parameters<DeliberationEngine['deliberateAndResolve']>[1],
   ) {
-    return this.deliberationEngine.deliberateAndResolve(conflictId, motivationalState);
+    const state = this.getState();
+    const effectiveModifiers = {
+      trustLevel: 0.9,
+      intimacyDepth: 0.85,
+      activeEmotionIds: state.activeEmotions.map((e) => e.emotionId),
+      pad: state.pad,
+      ...(motivationalState || {}),
+    };
+    return this.deliberationEngine.deliberateAndResolve(conflictId, effectiveModifiers);
   }
 
   public recordPostDecisionReassessment(

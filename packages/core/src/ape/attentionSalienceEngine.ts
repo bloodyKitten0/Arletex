@@ -39,6 +39,13 @@ export class AttentionSalienceEngine {
     'Systems programming',
   ];
 
+  private affectiveState: {
+    stressLevel?: number;
+    fatigueLevel?: number;
+    activeEmotionIds?: string[];
+    pad?: { pleasure: number; arousal: number; dominance: number };
+  } = {};
+
   constructor(options: AttentionEngineOptions) {
     this.repo = options.repository;
     this.logger = (options.logger || rootLogger).child('AttentionSalienceEngine');
@@ -48,7 +55,7 @@ export class AttentionSalienceEngine {
   }
 
   // ==========================================
-  // 1. Context Configuration (Goals & Interests)
+  // 1. Context Configuration (Goals, Interests & Affect)
   // ==========================================
 
   public setContext(goals?: string[], interests?: string[]): void {
@@ -57,6 +64,22 @@ export class AttentionSalienceEngine {
     this.logger.info(
       `Attention context updated: ${this.activeGoals.length} goals, ${this.activeInterests.length} interests`,
     );
+  }
+
+  public setAffectiveContext(affect: {
+    stressLevel?: number;
+    fatigueLevel?: number;
+    activeEmotionIds?: string[];
+    pad?: { pleasure: number; arousal: number; dominance: number };
+  }): void {
+    this.affectiveState = { ...affect };
+    this.logger.info(
+      `Attention affective context updated (stress=${affect.stressLevel ?? 0}, fatigue=${affect.fatigueLevel ?? 0}, activeEmotions=${(affect.activeEmotionIds || []).join(',')})`,
+    );
+  }
+
+  public getAffectiveContext() {
+    return { ...this.affectiveState };
   }
 
   public getContext(): { activeGoals: string[]; activeInterests: string[] } {
@@ -107,24 +130,57 @@ export class AttentionSalienceEngine {
     const novelty = Math.max(0, Math.min(1, stimulus.noveltyScore ?? 0.5));
     const urgency = Math.max(0, Math.min(1, stimulus.urgencyScore ?? 0.5));
 
-    // Composite weighted salience:
-    // Goal (25%) + Interest (25%) + Urgency (20%) + Emotional (15%) + Novelty (15%)
-    const compositeSalience = Number(
+    // Incorporate causal affective state modulation:
+    const stress = this.affectiveState.stressLevel ?? 0.0;
+    const fatigue = this.affectiveState.fatigueLevel ?? 0.0;
+    const activeEmotions = this.affectiveState.activeEmotionIds ?? [];
+    const hasAnxiety = activeEmotions.includes('anxiety') || stress > 0.4;
+    const hasCuriosity = activeEmotions.includes('curiosity') || (this.affectiveState.pad && this.affectiveState.pad.arousal > 0.2);
+    const hasAffection = activeEmotions.includes('affection') || (this.affectiveState.pad && this.affectiveState.pad.pleasure > 0.3);
+
+    // Anxiety/stress amplifies threat and security urgency
+    let modulatedUrgency = urgency;
+    if (hasAnxiety && (textToMatch.includes('error') || textToMatch.includes('security') || textToMatch.includes('fail') || textToMatch.includes('unauthorized'))) {
+      modulatedUrgency = Math.min(1.0, urgency + 0.35);
+    }
+
+    // Curiosity boosts novelty weighting
+    const noveltyWeight = hasCuriosity ? 0.30 : 0.15;
+    const goalWeight = hasCuriosity ? 0.20 : 0.25;
+
+    // Affection maximizes relational stimuli
+    let modulatedEmotionalValence = emotionalValence;
+    if (hasAffection && (textToMatch.includes('proof') || stimulus.type === 'message')) {
+      modulatedEmotionalValence = 1.0;
+    }
+
+    // Fatigue biases toward consolidation/rest
+    let fatigueModifier = 0.0;
+    if (fatigue > 0.5) {
+      if (textToMatch.includes('consolidat') || textToMatch.includes('rest') || textToMatch.includes('idle')) {
+        fatigueModifier = 0.25;
+      } else if (textToMatch.includes('heavy') || textToMatch.includes('compile') || textToMatch.includes('bench')) {
+        fatigueModifier = -0.20;
+      }
+    }
+
+    const compositeSalience = Math.max(0.0, Math.min(1.0, Number(
       (
-        goalRelevance * 0.25 +
-        interestRelevance * 0.25 +
-        urgency * 0.2 +
-        emotionalValence * 0.15 +
-        novelty * 0.15
+        goalRelevance * goalWeight +
+        interestRelevance * 0.20 +
+        modulatedUrgency * 0.25 +
+        modulatedEmotionalValence * 0.20 +
+        novelty * noveltyWeight +
+        fatigueModifier
       ).toFixed(3),
-    );
+    )));
 
     return {
       novelty,
       goalRelevance,
       interestRelevance,
-      emotionalValence,
-      urgency,
+      emotionalValence: modulatedEmotionalValence,
+      urgency: modulatedUrgency,
       compositeSalience,
     };
   }
@@ -143,8 +199,12 @@ export class AttentionSalienceEngine {
       salience: this.evaluateSalience(s),
     }));
 
-    // Identify low-salience noise (below noiseThreshold)
-    const effectiveNoiseThreshold = isOverloaded ? this.noiseThreshold + 0.15 : this.noiseThreshold;
+    // Stress/anxiety elevates noise threshold to discard distractions
+    const stress = this.affectiveState.stressLevel ?? 0.0;
+    const hasAnxiety = (this.affectiveState.activeEmotionIds ?? []).includes('anxiety') || stress > 0.4;
+    const affectiveNoiseBump = hasAnxiety ? 0.15 : 0.0;
+    const effectiveNoiseThreshold = (isOverloaded ? this.noiseThreshold + 0.15 : this.noiseThreshold) + affectiveNoiseBump;
+
     const qualified = evaluated.filter((e) => e.salience.compositeSalience >= effectiveNoiseThreshold);
     const discarded = evaluated.filter((e) => e.salience.compositeSalience < effectiveNoiseThreshold);
 
