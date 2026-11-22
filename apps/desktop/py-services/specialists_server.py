@@ -636,6 +636,51 @@ def get_rvc_converter():
             print(f"[Specialists] RVC init note: {e}")
     return rvc_converter
 
+def apply_rvc_pipeline(audio_numpy, sample_rate, envelope=0.25, consonant_protection=0.33, pitch_shift=-2.0):
+    """
+    Applies 1:1 Arlecchino RVC voice conversion using RMVPE pitch extraction
+    and the trained 500-epoch FAISS index. Preserves full emotional prosody,
+    inflection, and cadence while imprinting Arlecchino's authentic acoustic timbre.
+    """
+    rvc = get_rvc_converter()
+    if rvc is None:
+        return audio_numpy, sample_rate, False
+    temp_in = None
+    try:
+        import soundfile as sf
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+            temp_in = f.name
+        sf.write(temp_in, audio_numpy, sample_rate, format='WAV')
+        rvc.apply_conf(
+            tag="arlecchino",
+            file_model=RVC_MODEL_PATH,
+            pitch_algo="rmvpe",
+            file_index=RVC_INDEX_PATH if os.path.exists(RVC_INDEX_PATH) else "",
+            index_influence=0.70,
+            respiration_median_filtering=3,
+            envelope_ratio=envelope,
+            consonant_breath_protection=consonant_protection,
+            pitch_lvl=pitch_shift,
+        )
+        rvc_res = rvc([temp_in], ["arlecchino"], show_progress=False)
+        if rvc_res and len(rvc_res) > 0 and os.path.exists(rvc_res[0]):
+            converted_path = rvc_res[0]
+            data, sr = sf.read(converted_path, dtype='float32')
+            try:
+                os.remove(converted_path)
+            except Exception:
+                pass
+            return data, sr, True
+    except Exception as rvc_err:
+        print(f"[Specialists] RVC conversion fallback: {rvc_err}", file=sys.stderr)
+    finally:
+        if temp_in and os.path.exists(temp_in):
+            try:
+                os.remove(temp_in)
+            except Exception:
+                pass
+    return audio_numpy, sample_rate, False
+
 # 5. Lazy GLM-OCR Loader
 glm_ocr_processor = None
 glm_ocr_model = None
@@ -805,47 +850,18 @@ class SpecialistRequestHandler(BaseHTTPRequestHandler):
             return
 
         # ==========================================
-        # 3. Speech Synthesis Endpoint (Qwen3-TTS / Kokoro)
+        # 3. Speech Synthesis Endpoint (Qwen3-TTS / Kokoro + RVC)
         # ==========================================
         if self.path == "/synthesize":
             raw_text = body.get("text", "")
             voice = body.get("voice", "arlecchino")
             tone = body.get("tone", "composed")
-            engine = str(body.get("engine", os.getenv("ARLE_VOICE_ENGINE", "kokoro"))).lower()
+            engine = str(body.get("engine", os.getenv("ARLE_VOICE_ENGINE", "qwen3-tts"))).lower()
             lead_padding_ms = int(body.get("leadPaddingMs", 0))
             pad = body.get("pad", None)
             emotion = body.get("emotion", None)
-            use_rvc = bool(body.get("useRvc", os.getenv("ARLETEX_ENABLE_RVC", "0") == "1"))
-
-            # Optional Qwen3-TTS 1.7B VoiceDesign generation
-            if engine in ("qwen3-tts", "qwen3", "qwen") and os.path.exists(QWEN3_TTS_DIR):
-                qwen_model = get_qwen3_tts()
-                if qwen_model is not None and raw_text:
-                    try:
-                        base_timbre = "A mature feminine voice, low-to-mid pitch register, rich and slightly husky timbre, measured cadence, crisp aristocratic enunciation, composed authority"
-                        voice_instruct = f"{base_timbre}, delivered in a {tone} tone"
-                        wavs, sr = qwen_model.generate_voice_design(
-                            text=raw_text,
-                            instruct=voice_instruct,
-                            language="English",
-                        )
-                        if wavs and len(wavs) > 0:
-                            import soundfile as sf
-                            out_buf = io.BytesIO()
-                            sf.write(out_buf, wavs[0], sr, format='WAV')
-                            wav_bytes = out_buf.getvalue()
-                            b64_audio = base64.b64encode(wav_bytes).decode('utf-8')
-                            self.send_json(200, {
-                                "audio": b64_audio,
-                                "format": "wav",
-                                "sampleRate": sr,
-                                "engine": "qwen3-tts-1.7b-voicedesign",
-                                "tone": tone,
-                                "text": raw_text,
-                            })
-                            return
-                    except Exception as qerr:
-                        print(f"[Specialists] Qwen3-TTS synthesis error: {qerr}, falling back to Kokoro...", file=sys.stderr)
+            style_prompt = body.get("stylePrompt", "")
+            use_rvc = bool(body.get("useRvc", os.getenv("ARLETEX_ENABLE_RVC", "1") == "1"))
 
             profile = resolve_tone_profile(tone, pad=pad, emotion=emotion)
             speed = float(body.get("speed", profile["speed"]))
@@ -853,13 +869,69 @@ class SpecialistRequestHandler(BaseHTTPRequestHandler):
             envelope = float(profile["env"])
             consonant_protection = float(profile.get("consonant_protection", 0.33))
 
+            # 3A. Qwen3-TTS 1.7B VoiceDesign + 1:1 Arlecchino RVC Engine
+            if engine in ("qwen3-tts", "qwen3", "qwen", "specialist") and os.path.exists(QWEN3_TTS_DIR):
+                qwen_model = get_qwen3_tts()
+                if qwen_model is not None and raw_text:
+                    try:
+                        base_timbre = "A mature feminine voice, low-to-mid pitch register, rich and slightly husky timbre, measured cadence, crisp aristocratic enunciation, composed authority"
+                        if style_prompt:
+                            voice_instruct = f"{base_timbre}. {style_prompt}"
+                        else:
+                            tone_desc = profile.get("description", f"{tone} tone")
+                            voice_instruct = f"{base_timbre}, delivered with {tone_desc}"
+
+                        wavs, sr = qwen_model.generate_voice_design(
+                            text=raw_text,
+                            instruct=voice_instruct,
+                            language="English",
+                        )
+                        if wavs and len(wavs) > 0:
+                            import soundfile as sf
+                            import numpy as np
+                            audio_data = wavs[0]
+
+                            rvc_applied = False
+                            if use_rvc or voice == "arlecchino":
+                                audio_data, sr, rvc_applied = apply_rvc_pipeline(
+                                    audio_data, sr,
+                                    envelope=envelope,
+                                    consonant_protection=consonant_protection,
+                                    pitch_shift=pitch_shift,
+                                )
+
+                            if lead_padding_ms > 0:
+                                lead_samples = int(sr * (lead_padding_ms / 1000.0))
+                                audio_data = np.pad(audio_data, (lead_samples, 0), mode='constant')
+
+                            out_buf = io.BytesIO()
+                            sf.write(out_buf, audio_data, sr, format='WAV')
+                            wav_bytes = out_buf.getvalue()
+                            encoded = base64.b64encode(wav_bytes).decode('utf-8')
+
+                            self.send_json(200, {
+                                "audioBase64": f"data:audio/wav;base64,{encoded}",
+                                "format": "wav",
+                                "sampleRate": sr,
+                                "engine": "qwen3-tts-1.7b-voicedesign+rvc" if rvc_applied else "qwen3-tts-1.7b-voicedesign",
+                                "profileUsed": {
+                                    "tone": tone,
+                                    "speed": speed,
+                                    "pitch_lvl": pitch_shift,
+                                    "rvcApplied": rvc_applied,
+                                }
+                            })
+                            return
+                    except Exception as qerr:
+                        print(f"[Specialists] Qwen3-TTS synthesis error: {qerr}, falling back to Kokoro...", file=sys.stderr)
+
+            # 3B. Direct Kokoro 82M synthesis + dynamic Arlecchino voice tensor blending (+ RVC)
             text = prepare_text_for_kokoro(raw_text)
             if not text:
                 self.send_json(400, {"error": "text is required"})
                 return
 
             try:
-                # Direct Kokoro synthesis with dynamic Arlecchino voice tensor blending
                 pipeline = get_kokoro()
                 if pipeline is not None:
                     if voice == "arlecchino":
@@ -878,76 +950,38 @@ class SpecialistRequestHandler(BaseHTTPRequestHandler):
                         import soundfile as sf
                         combined = np.concatenate(all_audio)
 
-                        final_audio_bytes = None
-                        final_sample_rate = sample_rate
+                        rvc_applied = False
+                        if use_rvc or voice == "arlecchino":
+                            combined, sample_rate, rvc_applied = apply_rvc_pipeline(
+                                combined, sample_rate,
+                                envelope=envelope,
+                                consonant_protection=consonant_protection,
+                                pitch_shift=pitch_shift,
+                            )
 
-                        # Check for 1:1 Arlecchino RVC voice conversion if explicitly enabled
-                        if use_rvc:
-                            rvc = get_rvc_converter()
-                            if rvc is not None:
-                                temp_in = None
-                                try:
-                                    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
-                                        temp_in = f.name
-                                    sf.write(temp_in, combined, sample_rate, format='WAV')
-                                    rvc.apply_conf(
-                                        tag="arlecchino",
-                                        file_model=RVC_MODEL_PATH,
-                                        pitch_algo="rmvpe",
-                                        file_index=RVC_INDEX_PATH if os.path.exists(RVC_INDEX_PATH) else "",
-                                        index_influence=0.70,
-                                        respiration_median_filtering=3,
-                                        envelope_ratio=envelope,
-                                        consonant_breath_protection=consonant_protection,
-                                        pitch_lvl=pitch_shift,
-                                    )
-                                    rvc_res = rvc([temp_in], ["arlecchino"], show_progress=False)
-                                    if rvc_res and len(rvc_res) > 0 and os.path.exists(rvc_res[0]):
-                                        converted_path = rvc_res[0]
-                                        data, sr = sf.read(converted_path, dtype='float32')
-                                        if lead_padding_ms > 0:
-                                            lead_samples = int(sr * (lead_padding_ms / 1000.0))
-                                            data = np.pad(data, (lead_samples, 0), mode='constant')
-                                        out_buf = io.BytesIO()
-                                        sf.write(out_buf, data, sr, format='WAV')
-                                        final_audio_bytes = out_buf.getvalue()
-                                        final_sample_rate = sr
-                                        try:
-                                            os.remove(converted_path)
-                                        except Exception:
-                                            pass
-                                except Exception as rvc_err:
-                                    print(f"[Specialists] RVC conversion fallback: {rvc_err}")
-                                finally:
-                                    if temp_in and os.path.exists(temp_in):
-                                        try:
-                                            os.remove(temp_in)
-                                        except Exception:
-                                            pass
+                        if lead_padding_ms > 0:
+                            lead_samples = int(sample_rate * (lead_padding_ms / 1000.0))
+                            combined = np.pad(combined, (lead_samples, 0), mode='constant')
 
-                        if not final_audio_bytes:
-                            if lead_padding_ms > 0:
-                                lead_samples = int(sample_rate * (lead_padding_ms / 1000.0))
-                                combined = np.pad(combined, (lead_samples, 0), mode='constant')
-                            out_buf = io.BytesIO()
-                            sf.write(out_buf, combined, sample_rate, format='WAV')
-                            final_audio_bytes = out_buf.getvalue()
+                        out_buf = io.BytesIO()
+                        sf.write(out_buf, combined, sample_rate, format='WAV')
+                        final_audio_bytes = out_buf.getvalue()
 
                         encoded = base64.b64encode(final_audio_bytes).decode("utf-8")
                         self.send_json(200, {
                             "audioBase64": f"data:audio/wav;base64,{encoded}",
                             "format": "wav",
-                            "sampleRate": final_sample_rate,
+                            "sampleRate": sample_rate,
                             "profileUsed": {
                                 "tone": tone,
                                 "speed": speed,
                                 "pitch_lvl": pitch_shift,
-                                "rvcApplied": final_sample_rate != sample_rate
+                                "rvcApplied": rvc_applied,
                             }
                         })
                         return
 
-                self.send_json(503, {"error": "Kokoro synthesizer is offline or initializing"})
+                self.send_json(503, {"error": "Synthesizer is offline or initializing"})
             except Exception as e:
                 self.send_json(500, {"error": f"Synthesis error: {str(e)}"})
             return

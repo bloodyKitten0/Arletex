@@ -101,6 +101,7 @@ export class SpecialistTTSBackend implements ITTSBackend {
     const payload = {
       text: cleanText,
       voice: 'arlecchino',
+      engine: this.config.engine,
       tone: instructions.vocalRegister,
       speed: instructions.speedMultiplier,
       leadPaddingMs: instructions.leadPaddingMs,
