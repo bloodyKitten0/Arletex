@@ -314,7 +314,7 @@ export class ActionPermissionController {
     ) {
       return String(payload.filePath || payload.path || payload.dirPath || 'file://');
     }
-    if (actionType.startsWith('web_') || actionType === 'network_request') {
+    if (actionType.startsWith('web_') || actionType === 'network_request' || actionType === 'desktop_open_browser') {
       return String(payload.url || payload.targetUrl || payload.query || 'https://');
     }
     if (
@@ -522,7 +522,7 @@ export class ActionPermissionController {
       ) {
         category = 'process_execution';
         if (Array.isArray(payload.args)) payloadText += ' ' + payload.args.join(' ');
-      } else if (actionType.startsWith('web_') || actionType === 'network_request') {
+      } else if (actionType.startsWith('web_') || actionType === 'network_request' || actionType === 'desktop_open_browser') {
         category = 'network_request';
         if (typeof payload.query === 'string') payloadText += ' ' + payload.query;
       } else if (actionType === 'code_modify' || actionType === 'protected_code_modification' || actionType === 'edit_file') {
@@ -832,7 +832,8 @@ export class ActionPermissionController {
       action.type === 'web_navigate' ||
       action.type === 'web_search' ||
       action.type === 'web_read_page' ||
-      action.type === 'web_select_video'
+      action.type === 'web_select_video' ||
+      action.type === 'desktop_open_browser'
     ) {
       const urlStr = String(payload.url || payload.targetUrl || action.payload?.url || action.payload?.targetUrl || '');
       if (urlStr) {

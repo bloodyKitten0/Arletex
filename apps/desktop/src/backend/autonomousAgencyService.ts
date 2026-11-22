@@ -165,10 +165,9 @@ export class AutonomousAgencyService {
       return null;
     }
 
-    // Require at least 3 minutes of idle time before autonomous background cycles (skipped in unit tests)
-    const isTest = process.env['NODE_ENV'] === 'test';
+    // Pause autonomous background actions if Proof was active recently (last 15 seconds) so we don't interrupt him
     const idleSeconds = this.lastUserInteractionTime === 0 ? 999999 : (Date.now() - this.lastUserInteractionTime) / 1000;
-    if (!isTest && idleSeconds < 180) {
+    if (idleSeconds < 15) {
       this.logger.debug(`Skipping autonomous cycle; Proof was active ${idleSeconds.toFixed(0)}s ago.`);
       return null;
     }
