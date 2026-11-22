@@ -6,6 +6,7 @@ import {
   ActionProposal,
   AuthorizationCheckResult,
   PermissionPolicy,
+  RiskLevel,
 } from '@arletex/contracts';
 import { ILogger, rootLogger } from '../logger.js';
 import { SUPPORTED_APPLICATIONS } from './safeComputerAgencyService.js';
@@ -453,12 +454,18 @@ export class ActionPermissionController {
     allowed: boolean;
     decision: 'granted' | 'denied' | 'prompt_user';
     denialReason?: string;
+    reason?: string;
+    requiredPrivilege?: string;
+    riskLevel?: RiskLevel;
   } {
     const res = this.evaluate(action);
     return {
       allowed: res.decision === 'granted',
       decision: res.decision,
       denialReason: res.decision !== 'granted' ? res.reason : undefined,
+      reason: res.reason,
+      requiredPrivilege: res.requiredPrivilege,
+      riskLevel: res.riskLevel,
     };
   }
 

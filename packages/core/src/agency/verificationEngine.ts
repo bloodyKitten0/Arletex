@@ -405,12 +405,19 @@ export class VerificationEngine {
         (Array.isArray(observation.data?.candidates) ? observation.data.candidates.length : 0) ||
         (Array.isArray(observation.data?.results) ? observation.data.results.length : 0),
       );
-      const verified = candidatesCount > 0;
+      const hasResearchFindings = Boolean(
+        observation.data?.benchmarkSource ||
+        observation.data?.metrics ||
+        observation.data?.findings,
+      );
+      const verified = Boolean(observation.success && (candidatesCount > 0 || hasResearchFindings));
       return {
         actionId: action.id,
         expectedOutcome: action.expectedOutcome,
         observedOutcome: verified
-          ? `Discovered ${candidatesCount} relevant search candidate(s)`
+          ? (hasResearchFindings
+              ? `Retrieved empirical research findings from ${observation.data?.benchmarkSource || 'benchmark source'}`
+              : `Discovered ${candidatesCount} relevant search candidate(s)`)
           : 'Zero search results or candidates returned from source',
         verified,
         confidence: verified ? 0.95 : 0.9,
@@ -418,6 +425,30 @@ export class VerificationEngine {
         failureReason: verified ? null : 'No candidates or sources discovered for search query',
         isRecoverable: !verified,
         recommendedStrategy: verified ? undefined : 'switch_candidate',
+        evidence: observation.data || {},
+        timestamp,
+      };
+    }
+
+    // 4a. Web Read Page Verification
+    if (action.type === 'web_read_page') {
+      const verified = Boolean(
+        observation.success &&
+        (typeof observation.data?.textSnippet === 'string' ||
+         Array.isArray(observation.data?.headings) ||
+         observation.data?.title),
+      );
+      return {
+        actionId: action.id,
+        expectedOutcome: action.expectedOutcome || 'Page content and metadata extracted',
+        observedOutcome: verified
+          ? `Page read successfully (${String(observation.data?.textSnippet || observation.data?.title || '').slice(0, 60)}...)`
+          : (observation.error || 'Failed to read page content'),
+        verified,
+        confidence: verified ? 0.95 : 0.0,
+        status: verified ? 'verified_successful' : 'failed',
+        failureReason: verified ? null : (observation.error || 'Failed to extract page content'),
+        isRecoverable: !verified,
         evidence: observation.data || {},
         timestamp,
       };

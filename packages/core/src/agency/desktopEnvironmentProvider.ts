@@ -258,6 +258,9 @@ export class DesktopEnvironmentProvider {
         detached: true,
         stdio: 'ignore',
       });
+      child.on('error', (err) => {
+        this.logger.warn(`Failed to spawn ${command}: ${err.message}`);
+      });
       child.unref();
 
       return {
@@ -344,6 +347,9 @@ export class DesktopEnvironmentProvider {
           env: envVars,
         },
       );
+      child.on('error', (err) => {
+        this.logger.warn(`Failed to spawn flatpak chrome: ${err.message}`);
+      });
       child.unref();
       return {
         success: true,
@@ -365,6 +371,9 @@ export class DesktopEnvironmentProvider {
           env: envVars,
         },
       );
+      child.on('error', (err) => {
+        this.logger.warn(`Failed to spawn google-chrome: ${err.message}`);
+      });
       child.unref();
       return {
         success: true,
@@ -379,6 +388,9 @@ export class DesktopEnvironmentProvider {
     }
     try {
       const child = spawn('xdg-open', [targetUrl], { detached: true, stdio: 'ignore', env: envVars });
+      child.on('error', (err) => {
+        this.logger.warn(`Failed to spawn xdg-open browser: ${err.message}`);
+      });
       child.unref();
       return { success: true, pid: child.pid, message: `Opened via default browser: ${targetUrl}` };
     } catch (err: any) {
@@ -522,6 +534,9 @@ export class DesktopEnvironmentProvider {
         detached: true,
         stdio: 'ignore',
         env: envVars,
+      });
+      child.on('error', (err) => {
+        this.logger.warn(`Failed to spawn xdg-open for file: ${err.message}`);
       });
       child.unref();
 

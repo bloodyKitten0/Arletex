@@ -39,6 +39,18 @@ export const AgencyTaskSchema = z.object({
   maxRetries: z.number().int().min(0).default(3),
   error: z.string().nullable().default(null),
   metadata: z.record(z.string(), z.any()).default({}),
+  deadline: z.string().optional(),
+  resourceBudget: z
+    .object({
+      maxSteps: z.number().int().min(1).default(20).optional(),
+      maxDurationMs: z.number().int().min(1000).default(300000).optional(),
+      maxRetries: z.number().int().min(0).default(3).optional(),
+    })
+    .optional(),
+  requiredPermissions: z.array(z.string()).default([]).optional(),
+  successConditions: z.array(z.string()).default([]).optional(),
+  cancellationToken: z.string().optional(),
+  isCancelled: z.boolean().default(false).optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
   completedAt: z.string().nullable().optional(),
@@ -261,6 +273,8 @@ export const PlanStepSchema = z.object({
   retryCount: z.number().int().min(0).default(0),
   maxRetries: z.number().int().min(0).default(2),
   error: z.string().nullable().default(null),
+  dependsOnStepIndex: z.number().int().min(0).optional(),
+  condition: z.enum(['on_success', 'on_failure', 'always']).default('on_success').optional(),
 });
 export type PlanStep = z.infer<typeof PlanStepSchema>;
 
@@ -451,6 +465,61 @@ export const ActionLifecycleStageSchema = z.enum([
 ]);
 export type ActionLifecycleStage = z.infer<typeof ActionLifecycleStageSchema>;
 
+export const TaskTraceStepSchema = z.object({
+  stepIndex: z.number().int().min(0),
+  stepDescription: z.string(),
+  actionType: ActionTypeSchema,
+  actionPayload: z.record(z.string(), z.any()).default({}),
+  authorization: z.object({
+    decision: PermissionDecisionSchema,
+    reason: z.string(),
+    requiredPrivilege: z.string().optional(),
+    riskLevel: RiskLevelSchema.optional(),
+  }),
+  execution: z.object({
+    attempted: z.boolean(),
+    success: z.boolean(),
+    durationMs: z.number().default(0),
+    error: z.string().nullable().optional(),
+  }),
+  observation: z
+    .object({
+      source: ObservationSourceSchema.optional(),
+      success: z.boolean(),
+      data: z.record(z.string(), z.any()).default({}),
+      error: z.string().nullable().optional(),
+    })
+    .optional(),
+  verification: z
+    .object({
+      verified: z.boolean(),
+      confidence: z.number(),
+      status: ExecutionStatusSchema.optional(),
+      failureReason: z.string().nullable().optional(),
+    })
+    .optional(),
+  lifecycleState: ActionLifecycleStateSchema,
+  timestamp: z.string(),
+});
+export type TaskTraceStep = z.infer<typeof TaskTraceStepSchema>;
+
+export const TaskTraceSchema = z.object({
+  taskId: z.string().uuid(),
+  objective: z.string(),
+  initiator: TaskInitiatorSchema,
+  status: TaskStatusSchema,
+  planId: z.string().uuid().optional(),
+  totalSteps: z.number().int().min(0),
+  executedStepsCount: z.number().int().min(0),
+  steps: z.array(TaskTraceStepSchema).default([]),
+  clarificationPrompt: z.string().optional(),
+  approvalRequired: z.boolean().default(false),
+  blockedReason: z.string().nullable().optional(),
+  startedAt: z.string(),
+  completedAt: z.string().nullable().optional(),
+});
+export type TaskTrace = z.infer<typeof TaskTraceSchema>;
+
 export const ClosedLoopCycleResultSchema = z.object({
   id: z.string().uuid(),
   taskId: z.string().uuid(),
@@ -463,6 +532,8 @@ export const ClosedLoopCycleResultSchema = z.object({
   experience: DigitalExperienceSchema.optional(),
   reflection: z.string().optional(),
   switchedCandidates: z.boolean().default(false),
+  trace: TaskTraceSchema.optional(),
+  clarificationPrompt: z.string().optional(),
   timestamp: z.string(),
 });
 export type ClosedLoopCycleResult = z.infer<typeof ClosedLoopCycleResultSchema>;

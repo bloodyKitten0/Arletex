@@ -11,6 +11,7 @@ import {
   DigitalExperience,
   MemoryProvenance,
   PlanStep,
+  TaskTrace,
   VerificationResult,
 } from '@arletex/contracts';
 import { ILogger, rootLogger } from '../logger.js';
@@ -145,10 +146,15 @@ export class ClosedLoopAgencyService {
    * Observe -> Interpret -> Plan -> Authorize -> Execute -> Verify -> Learn
    */
   public async executeClosedLoop(
-    objective: string,
-    initiator: 'user' | 'arle' = 'user',
-    contextPayload: Record<string, unknown> = {},
+    objectiveOrTask: string | AgencyTask,
+    initiatorArg?: 'user' | 'arle',
+    contextPayloadArg: Record<string, unknown> = {},
   ): Promise<ClosedLoopCycleResult> {
+    const isTask = typeof objectiveOrTask === 'object' && objectiveOrTask !== null && 'objective' in objectiveOrTask;
+    const objective = isTask ? objectiveOrTask.objective : String(objectiveOrTask);
+    const initiator = isTask ? (objectiveOrTask.initiator || 'user') : (initiatorArg || 'user');
+    const contextPayload = isTask ? { ...(objectiveOrTask.metadata || {}), ...contextPayloadArg } : contextPayloadArg;
+
     const cycleId = crypto.randomUUID();
     this.logger.info(`Starting Closed-Loop Agency cycle [${cycleId}] for objective: "${objective}" (Initiator: ${initiator})`);
 
@@ -161,20 +167,29 @@ export class ClosedLoopAgencyService {
     // ==========================================
     // Phase 3: PLAN
     // ==========================================
-    const task = this.taskManager.createTask({
-      objective,
-      initiator,
-      status: 'authorized',
-      metadata: {
-        ...contextPayload,
-        cycleId,
-        preObservation,
-      },
-    });
+    const task: AgencyTask = isTask
+      ? (this.taskManager.getTask(objectiveOrTask.id) || objectiveOrTask)
+      : this.taskManager.createTask({
+          objective,
+          initiator,
+          status: 'authorized',
+          metadata: {
+            ...contextPayload,
+            cycleId,
+            preObservation,
+          },
+        });
 
     const plan = await this.planningInterface.formulatePlan(task);
     this.agencyRepo.savePlan(plan);
-    this.taskManager.transitionTask(task.id, 'running');
+    if (plan.steps.length > 0) {
+      this.taskManager.transitionTask(task.id, 'running');
+    }
+
+    const currentTask = this.taskManager.getTask(task.id) || task;
+    const clarificationPrompt =
+      (currentTask.metadata?.clarificationPrompt as string) ||
+      (task.metadata?.clarificationPrompt as string);
 
     const observations: AgencyObservation[] = [];
     const verifications: VerificationResult[] = [];
@@ -183,9 +198,30 @@ export class ClosedLoopAgencyService {
     let failureReason: string | null = null;
     let primaryActionType: ActionType = 'web_search';
 
+    // Durable Task Trace initialization
+    const taskTrace: TaskTrace = {
+      taskId: task.id,
+      objective,
+      initiator,
+      status: plan.steps.length === 0 ? (clarificationPrompt ? 'waiting' : 'failed') : 'running',
+      planId: plan.id,
+      totalSteps: plan.steps.length,
+      executedStepsCount: 0,
+      steps: [],
+      clarificationPrompt: clarificationPrompt || undefined,
+      approvalRequired: false,
+      startedAt: new Date().toISOString(),
+      completedAt: null,
+    };
+
     if (plan.steps.length === 0) {
       allStepsSucceeded = false;
-      failureReason = 'Plan formulated with zero steps; cannot execute empty plan';
+      failureReason =
+        clarificationPrompt ||
+        task.error ||
+        'Plan formulated with zero steps; cannot execute empty plan';
+      taskTrace.status = clarificationPrompt ? 'waiting' : 'failed';
+      taskTrace.blockedReason = failureReason;
       this.logger.warn(`Plan for task ${task.id} has 0 steps; failing closed.`);
     }
 
@@ -197,8 +233,66 @@ export class ClosedLoopAgencyService {
       const action = step.action;
       primaryActionType = action.type;
 
+      // Dependency check: if parent step failed, skip this dependent step
+      if (step.dependsOnStepIndex !== undefined) {
+        const parentStep = plan.steps[step.dependsOnStepIndex];
+        if (parentStep && (parentStep.status === 'failed' || parentStep.status === 'skipped')) {
+          step.status = 'skipped';
+          this.logger.warn(`Step ${step.index} skipped because dependent step ${step.dependsOnStepIndex} failed.`);
+          taskTrace.steps.push({
+            stepIndex: step.index,
+            stepDescription: step.description,
+            actionType: action.type,
+            actionPayload: action.payload || {},
+            authorization: { decision: 'denied', reason: `Blocked: parent step ${step.dependsOnStepIndex} failed` },
+            execution: { attempted: false, success: false, durationMs: 0, error: 'Dependent step skipped' },
+            lifecycleState: 'cancelled',
+            timestamp: new Date().toISOString(),
+          });
+          continue;
+        }
+      }
+
+      // Cancellation check
+      if (task.isCancelled) {
+        step.status = 'cancelled';
+        allStepsSucceeded = false;
+        failureReason = 'Task execution cancelled';
+        taskTrace.status = 'cancelled';
+        taskTrace.blockedReason = failureReason;
+        break;
+      }
+
       // 4. AUTHORIZE: Strict fail-closed policy evaluation
       const auth = this.permissionController.authorize(action);
+      const requiresToken = Boolean(action.requiresExplicitApproval);
+      const hasToken = Boolean((action as any).approvalToken || (action.payload as any)?.approvalToken);
+      if (auth.decision === 'prompt_user' || (requiresToken && !hasToken)) {
+        step.status = 'awaiting_authorization';
+        this.taskManager.transitionTask(task.id, 'awaiting_authorization', auth.reason);
+        allStepsSucceeded = false;
+        failureReason = auth.reason || 'Action requires explicit user approval';
+        taskTrace.approvalRequired = true;
+        taskTrace.blockedReason = failureReason;
+        taskTrace.status = 'awaiting_authorization';
+        taskTrace.steps.push({
+          stepIndex: step.index,
+          stepDescription: step.description,
+          actionType: action.type,
+          actionPayload: action.payload || {},
+          authorization: {
+            decision: 'prompt_user',
+            reason: auth.reason || 'User prompt required',
+            requiredPrivilege: auth.requiredPrivilege,
+            riskLevel: auth.riskLevel,
+          },
+          execution: { attempted: false, success: false, durationMs: 0 },
+          lifecycleState: 'proposed',
+          timestamp: new Date().toISOString(),
+        });
+        break;
+      }
+
       if (!auth.allowed) {
         this.logger.warn(`Action ${action.id} (${action.type}) denied by permission controller: ${auth.denialReason}`);
         const ver: VerificationResult = {
@@ -217,10 +311,28 @@ export class ClosedLoopAgencyService {
         verifications.push(ver);
         allStepsSucceeded = false;
         failureReason = auth.denialReason || 'Unauthorized action';
+        step.status = 'failed';
+        taskTrace.steps.push({
+          stepIndex: step.index,
+          stepDescription: step.description,
+          actionType: action.type,
+          actionPayload: action.payload || {},
+          authorization: {
+            decision: 'denied',
+            reason: auth.denialReason || 'Unauthorized action',
+            requiredPrivilege: auth.requiredPrivilege,
+            riskLevel: auth.riskLevel,
+          },
+          execution: { attempted: false, success: false, durationMs: 0, error: auth.denialReason },
+          verification: ver,
+          lifecycleState: 'denied',
+          timestamp: new Date().toISOString(),
+        });
         break;
       }
 
       // 5. EXECUTE: Dispatch to active subsystem
+      const startMs = Date.now();
       let obs: AgencyObservation;
       try {
         obs = await this.executeAction(action, task, observations, true);
@@ -238,6 +350,7 @@ export class ClosedLoopAgencyService {
           error: execErr.message || String(execErr),
         };
       }
+      const durationMs = Date.now() - startMs;
 
       this.agencyRepo.saveObservation(obs);
       observations.push(obs);
@@ -260,17 +373,71 @@ export class ClosedLoopAgencyService {
       this.agencyRepo.saveVerification(ver);
       verifications.push(ver);
 
+      taskTrace.executedStepsCount++;
+      taskTrace.steps.push({
+        stepIndex: step.index,
+        stepDescription: step.description,
+        actionType: action.type,
+        actionPayload: action.payload || {},
+        authorization: {
+          decision: 'granted',
+          reason: auth.reason || 'Authorized by policy',
+          requiredPrivilege: auth.requiredPrivilege,
+          riskLevel: auth.riskLevel,
+        },
+        execution: {
+          attempted: true,
+          success: obs.success,
+          durationMs,
+          error: obs.error,
+        },
+        observation: {
+          source: obs.source,
+          success: obs.success,
+          data: obs.data,
+          error: obs.error,
+        },
+        verification: ver,
+        lifecycleState: ver.verified ? 'verified' : 'failed',
+        timestamp: new Date().toISOString(),
+      });
+
       if (!ver.verified) {
         allStepsSucceeded = false;
         failureReason = ver.failureReason || 'Action failed verification';
+        step.status = 'failed';
         this.taskManager.handleFailure(task.id, failureReason);
+
+        for (let j = i + 1; j < plan.steps.length; j++) {
+          const remStep = plan.steps[j]!;
+          if (remStep.dependsOnStepIndex !== undefined) {
+            remStep.status = 'skipped';
+            taskTrace.steps.push({
+              stepIndex: remStep.index,
+              stepDescription: remStep.description,
+              actionType: remStep.action.type,
+              actionPayload: remStep.action.payload || {},
+              authorization: { decision: 'denied', reason: `Blocked: upstream step ${remStep.dependsOnStepIndex} failed` },
+              execution: { attempted: false, success: false, durationMs: 0, error: 'Dependent step skipped' },
+              lifecycleState: 'cancelled',
+              timestamp: new Date().toISOString(),
+            });
+          }
+        }
         break;
       }
 
+      step.status = 'verified_successful';
       this.taskManager.advanceStep(task.id);
     }
 
-    const finalStatus = allStepsSucceeded ? 'completed' : 'failed';
+    const finalStatus = allStepsSucceeded
+      ? 'completed'
+      : (taskTrace.approvalRequired ? 'awaiting_authorization' : (clarificationPrompt ? 'waiting' : 'failed'));
+    taskTrace.status = finalStatus;
+    taskTrace.completedAt = allStepsSucceeded ? new Date().toISOString() : null;
+    taskTrace.blockedReason = failureReason;
+
     const finalTask = this.taskManager.transitionTask(task.id, finalStatus, failureReason);
 
     // ==========================================
@@ -369,8 +536,43 @@ export class ClosedLoopAgencyService {
       experience: digitalExp,
       reflection: reflection || undefined,
       switchedCandidates,
+      trace: taskTrace,
+      clarificationPrompt: clarificationPrompt || undefined,
       timestamp: new Date().toISOString(),
     };
+  }
+
+  /**
+   * Resumes a task that was paused awaiting explicit user authorization.
+   */
+  public async resumeTaskWithApproval(
+    taskId: string,
+    approvalToken: string,
+  ): Promise<ClosedLoopCycleResult> {
+    const task = this.taskManager.getTask(taskId);
+    if (!task) {
+      throw new Error(`Task ${taskId} not found`);
+    }
+    const plan = this.agencyRepo.getPlanByTask(taskId);
+    if (!plan) {
+      throw new Error(`Plan for task ${taskId} not found`);
+    }
+
+    const pendingStep = plan.steps.find(
+      (s: PlanStep) => s.status === 'awaiting_authorization' || s.status === 'pending',
+    );
+    if (!pendingStep) {
+      throw new Error(`Task ${taskId} has no steps awaiting authorization`);
+    }
+
+    (pendingStep.action as any).approvalToken = approvalToken;
+    pendingStep.action.payload = {
+      ...(pendingStep.action.payload || {}),
+      approvalToken,
+    };
+
+    this.taskManager.transitionTask(taskId, 'running');
+    return this.executePlan(plan, task, pendingStep.index);
   }
 
   /**
@@ -379,6 +581,7 @@ export class ClosedLoopAgencyService {
   public async executePlan(
     plan: AgencyPlan,
     task?: AgencyTask,
+    startStepIndex = 0,
   ): Promise<ClosedLoopCycleResult & { allStepsSucceeded: boolean; failureReason: string | null }> {
     const cycleId = crypto.randomUUID();
     const actualTask: AgencyTask = task || (this.taskManager && plan.taskId ? this.taskManager.getTask(plan.taskId) : null) || {
@@ -390,7 +593,7 @@ export class ClosedLoopAgencyService {
       initiator: 'user',
       status: 'authorized',
       priority: 'normal',
-      currentStepIndex: 0,
+      currentStepIndex: startStepIndex,
       totalSteps: plan.steps?.length || 0,
       retryCount: 0,
       maxRetries: 3,
@@ -438,9 +641,30 @@ export class ClosedLoopAgencyService {
       try { this.taskManager.transitionTask(actualTask.id, 'running'); } catch {}
     }
 
-    for (let i = 0; i < plan.steps.length; i++) {
+    for (let i = startStepIndex; i < plan.steps.length; i++) {
       const step: PlanStep = plan.steps[i]!;
       const action = step.action;
+
+      // Dependency check: if parent step failed, skip this dependent step
+      if (step.dependsOnStepIndex !== undefined) {
+        const parentStep = plan.steps[step.dependsOnStepIndex];
+        if (parentStep && (parentStep.status === 'failed' || parentStep.status === 'skipped')) {
+          step.status = 'skipped';
+          this.logger.warn(`Step ${step.index} skipped because dependent step ${step.dependsOnStepIndex} failed.`);
+          continue;
+        }
+      }
+
+      // Explicit authorization check
+      if (action.requiresExplicitApproval && !(action as any).approvalToken) {
+        step.status = 'awaiting_authorization';
+        if (this.taskManager) {
+          try { this.taskManager.transitionTask(actualTask.id, 'awaiting_authorization'); } catch {}
+        }
+        allStepsSucceeded = false;
+        failureReason = 'Action requires explicit user approval';
+        break;
+      }
 
       // AUTHORIZE
       const auth = this.permissionController.authorize(action);
@@ -464,13 +688,20 @@ export class ClosedLoopAgencyService {
         verifications.push(ver);
         allStepsSucceeded = false;
         failureReason = auth.denialReason || 'Unauthorized action';
+        step.status = 'failed';
+        for (let j = i + 1; j < plan.steps.length; j++) {
+          const remStep = plan.steps[j]!;
+          if (remStep.dependsOnStepIndex !== undefined) {
+            remStep.status = 'skipped';
+          }
+        }
         break;
       }
 
       // EXECUTE
       let obs: AgencyObservation;
       try {
-        obs = await this.executeAction(action, actualTask, observations);
+        obs = await this.executeAction(action, actualTask, observations, true);
       } catch (execErr: any) {
         obs = {
           id: crypto.randomUUID(),
@@ -515,12 +746,14 @@ export class ClosedLoopAgencyService {
       if (!ver.verified) {
         allStepsSucceeded = false;
         failureReason = ver.failureReason || 'Action failed verification';
+        step.status = 'failed';
         if (this.taskManager) {
           try { this.taskManager.handleFailure(actualTask.id, failureReason); } catch {}
         }
         break;
       }
 
+      step.status = 'verified_successful';
       if (this.taskManager) {
         try { this.taskManager.advanceStep(actualTask.id); } catch {}
       }
@@ -658,16 +891,30 @@ export class ClosedLoopAgencyService {
       };
     }
 
-    // 2. Web Video Search
+    // 2. Web Search (Video & General)
     if (action.type === 'web_search') {
       const query = (params['query'] || params['topicQuery'] || taskObjective) as string;
+      const isGeneral = params['source'] === 'general' || !params['topicQuery'];
       let candidates: VideoCandidate[] = [];
+      let results: any[] = [];
 
-      if (this.webAgency) {
-        candidates = await this.webAgency.searchVideos(query);
-      } else if (this.browserProvider) {
-        candidates = await this.browserProvider.searchVideos(query);
+      let searchError: string | null = null;
+      if (isGeneral && this.browserProvider && typeof this.browserProvider.search === 'function') {
+        try {
+          results = await this.browserProvider.search(query, params['maxResults'] || 5);
+        } catch (err: any) {
+          searchError = err.message || String(err);
+        }
       } else {
+        if (this.webAgency) {
+          candidates = await this.webAgency.searchVideos(query);
+        } else if (this.browserProvider && typeof this.browserProvider.searchVideos === 'function') {
+          candidates = await this.browserProvider.searchVideos(query);
+        }
+      }
+
+      const totalFound = candidates.length + results.length;
+      if (totalFound === 0 && !this.webAgency && !this.browserProvider) {
         return {
           id: crypto.randomUUID(),
           taskId,
@@ -677,7 +924,7 @@ export class ClosedLoopAgencyService {
           success: false,
           confidence: 0.0,
           provenance: 'WebAgencyService.searchVideos',
-          data: { query, candidates: [] },
+          data: { query, candidates: [], results: [] },
           error: 'No webAgency or browserProvider available for web search',
         };
       }
@@ -688,16 +935,79 @@ export class ClosedLoopAgencyService {
         actionId: action.id,
         source: 'browser_metadata',
         timestamp,
-        success: candidates.length > 0,
+        success: totalFound > 0,
         confidence: 0.95,
-        provenance: 'WebAgencyService.searchVideos',
+        provenance: results.length > 0 ? 'BrowserProvider.search' : 'WebAgencyService.searchVideos',
         data: {
           query,
           candidatesCount: candidates.length,
           candidates,
+          results,
+          resultsCount: results.length,
         },
-        error: candidates.length === 0 ? 'No candidate videos discovered for search query' : null,
+        error: totalFound === 0 ? (searchError || 'No candidate results discovered for search query') : null,
       };
+    }
+
+    // 2b. Web Read Page (HTML/Text Content Extraction)
+    if (action.type === 'web_read_page') {
+      const url = String(params['url'] || params['targetUrl'] || '');
+      if (!this.browserProvider) {
+        return {
+          id: crypto.randomUUID(),
+          taskId,
+          actionId: action.id,
+          source: 'browser_metadata',
+          timestamp,
+          success: false,
+          confidence: 0.0,
+          provenance: 'BrowserProvider.getPageDetails',
+          data: { url },
+          error: 'No browserProvider available for web reading',
+        };
+      }
+      try {
+        let pageObs: any;
+        if (url && typeof this.browserProvider.navigate === 'function') {
+          pageObs = await this.browserProvider.navigate(url);
+        } else if (typeof this.browserProvider.getPageDetails === 'function') {
+          pageObs = await this.browserProvider.getPageDetails();
+        } else {
+          pageObs = { url, title: 'Web Page', textSnippet: '', headings: [], links: [] };
+        }
+        return {
+          id: crypto.randomUUID(),
+          taskId,
+          actionId: action.id,
+          source: 'browser_metadata',
+          timestamp,
+          success: true,
+          confidence: 0.95,
+          provenance: 'BrowserProvider.getPageDetails',
+          data: {
+            url: pageObs.url || url,
+            title: pageObs.title,
+            textSnippet: pageObs.textSnippet,
+            headings: pageObs.headings,
+            links: pageObs.links,
+            statusCode: pageObs.statusCode || 200,
+          },
+          error: null,
+        };
+      } catch (err: any) {
+        return {
+          id: crypto.randomUUID(),
+          taskId,
+          actionId: action.id,
+          source: 'browser_metadata',
+          timestamp,
+          success: false,
+          confidence: 0.0,
+          provenance: 'BrowserProvider.getPageDetails',
+          data: { url },
+          error: err.message || String(err),
+        };
+      }
     }
 
     // 3. Application Launch
@@ -798,6 +1108,9 @@ export class ClosedLoopAgencyService {
       } else {
         try {
           const child = spawn('xdg-open', [target], { detached: true, stdio: 'ignore' });
+          child.on('error', (err) => {
+            this.logger.warn(`Failed to spawn xdg-open: ${err.message}`);
+          });
           child.unref();
           opened = true;
         } catch (e: any) {
