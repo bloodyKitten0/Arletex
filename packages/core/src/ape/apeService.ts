@@ -559,6 +559,11 @@ export class ApeService {
       this.personalityEngine,
       this.developmentEngine,
       logger,
+      {
+        personalProjectService: this.personalProjectService,
+        predictiveEngine: this.predictiveEngine,
+        causalEngine: this.causalEngine,
+      },
     );
     this.perceptualAffect = new PerceptualAffectService();
 

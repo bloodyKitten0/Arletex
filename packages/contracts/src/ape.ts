@@ -439,12 +439,48 @@ export const ApeValueSchema = z.object({
 
 export type ApeValue = z.infer<typeof ApeValueSchema>;
 
+export const SourceQualityCategorySchema = z.enum([
+  'primary_empirical',
+  'official_documentation',
+  'peer_reviewed',
+  'secondary_explanation',
+  'opinion',
+  'speculation',
+  'unsupported_assertion',
+  'mixed',
+]);
+export type SourceQualityCategory = z.infer<typeof SourceQualityCategorySchema>;
+
+export const BeliefScopeSchema = z.enum([
+  'universal',
+  'domain_specific',
+  'contextual',
+  'provisional',
+]);
+export type BeliefScope = z.infer<typeof BeliefScopeSchema>;
+
+export const BeliefRevisionTypeSchema = z.enum([
+  'strengthened',
+  'weakened',
+  'refuted',
+  'reaffirmed',
+  'revised_proposition',
+  'insufficient_evidence',
+]);
+export type BeliefRevisionType = z.infer<typeof BeliefRevisionTypeSchema>;
+
 export const BeliefRevisionRecordSchema = z.object({
-  timestamp: z.string().datetime(),
+  id: z.string().optional(),
+  timestamp: z.string(),
   previousProposition: z.string(),
   previousConfidence: z.number(),
+  newProposition: z.string().optional(),
+  newConfidence: z.number().optional(),
   reason: z.string(),
   triggerEventId: z.string().optional(),
+  evidence: z.array(z.string()).optional().default([]),
+  sourceQuality: SourceQualityCategorySchema.optional(),
+  revisionType: BeliefRevisionTypeSchema.optional(),
 });
 
 export type BeliefRevisionRecord = z.infer<typeof BeliefRevisionRecordSchema>;
@@ -453,15 +489,19 @@ export const ApeBeliefSchema = z.object({
   id: z.string().uuid(),
   topic: z.string(),
   content: z.string(),
+  proposition: z.string().optional(),
   confidence: z.number().min(0.0).max(1.0),
   supportingEvidence: z.array(z.string()).default([]),
   opposingEvidence: z.array(z.string()).default([]),
+  counterEvidence: z.array(z.string()).default([]),
+  sourceQuality: SourceQualityCategorySchema.default('mixed'),
+  scope: BeliefScopeSchema.default('domain_specific'),
   revisionHistory: z.array(BeliefRevisionRecordSchema).default([]),
   revisionCount: z.number().default(0),
   origin: z.enum(['empirical_observation', 'research', 'reasoning', 'dialogue', 'reflection', 'experience']).default('experience'),
-  lastEvaluatedAt: z.string().datetime().optional(),
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime(),
+  lastEvaluatedAt: z.string().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
 });
 
 export type ApeBelief = z.infer<typeof ApeBeliefSchema>;
@@ -500,21 +540,43 @@ export const IntellectualQuestionSchema = z.object({
   priority: z.number().min(0.0).max(1.0).default(0.5),
   status: z.enum(['open', 'investigating', 'resolved', 'dismissed', 'insufficient_evidence', 'unresolved']).default('open'),
   resolutionSummary: z.string().optional(),
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
 });
 
 export type IntellectualQuestion = z.infer<typeof IntellectualQuestionSchema>;
+
+export const ResearchSourceTypeSchema = z.enum([
+  'primary',
+  'secondary',
+  'empirical',
+  'code',
+  'discussion',
+  'snippet',
+  'official_documentation',
+  'peer_reviewed',
+  'secondary_explanation',
+  'opinion',
+  'speculation',
+  'unsupported_assertion',
+]);
+export type ResearchSourceType = z.infer<typeof ResearchSourceTypeSchema>;
 
 export const ResearchSourceSchema = z.object({
   id: z.string().uuid(),
   title: z.string(),
   sourceUrl: z.string().optional(),
-  sourceType: z.enum(['primary', 'secondary', 'empirical', 'code', 'discussion', 'snippet']),
+  sourceType: ResearchSourceTypeSchema,
   reliabilityScore: z.number().min(0.0).max(1.0).default(0.7),
   extractedEvidence: z.array(z.string()).default([]),
+  extractedPassages: z.array(z.string()).default([]),
+  author: z.string().optional(),
+  publicationDate: z.string().optional(),
+  publisher: z.string().optional(),
+  contentHash: z.string().optional(),
   methodologicalNotes: z.string().optional(),
-  retrievedAt: z.string().datetime(),
+  qualityCategory: SourceQualityCategorySchema.optional(),
+  retrievedAt: z.string(),
 });
 
 export type ResearchSource = z.infer<typeof ResearchSourceSchema>;
