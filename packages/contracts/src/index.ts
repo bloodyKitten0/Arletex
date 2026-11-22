@@ -177,6 +177,8 @@ export const MemoryTypeSchema = z.enum([
   'emotional',
   'prospective',
   'developmental',
+  'working',
+  'perceptual',
 ]);
 export type MemoryType = z.infer<typeof MemoryTypeSchema>;
 
@@ -296,6 +298,54 @@ export const QueryMemoriesInputSchema = z.object({
 });
 
 export type QueryMemoriesInput = z.infer<typeof QueryMemoriesInputSchema>;
+
+export const RetrievalMatchStatusSchema = z.enum(['found', 'absent', 'refuted']);
+export type RetrievalMatchStatus = z.infer<typeof RetrievalMatchStatusSchema>;
+
+export const RetrievalModeSchema = z.enum(['hybrid_vector', 'lexical_fallback', 'contextual_multi_factor']);
+export type RetrievalMode = z.infer<typeof RetrievalModeSchema>;
+
+export const ContextualRetrievalQuerySchema = z.object({
+  query: z.string(),
+  people: z.array(z.string()).optional(),
+  project: z.string().optional(),
+  source: z.string().optional(),
+  category: MemoryTypeSchema.optional(),
+  timeRange: z.object({
+    start: z.string().optional(),
+    end: z.string().optional(),
+  }).optional(),
+  minImportance: z.number().min(0).max(1).optional(),
+  minConfidence: z.number().min(0).max(1).optional(),
+  limit: z.number().int().positive().optional().default(10),
+  embeddingFailed: z.boolean().optional().default(false),
+});
+export type ContextualRetrievalQuery = z.infer<typeof ContextualRetrievalQuerySchema>;
+
+export const ContextualMemoryMatchSchema = z.object({
+  memory: MemorySchema,
+  relevanceScore: z.number(),
+  scoreBreakdown: z.object({
+    similarity: z.number(),
+    recency: z.number(),
+    importance: z.number(),
+    peopleMatch: z.number(),
+    projectMatch: z.number(),
+    sourceReliability: z.number(),
+  }),
+  isRefuted: z.boolean().optional(),
+  contradictionReason: z.string().optional(),
+});
+export type ContextualMemoryMatch = z.infer<typeof ContextualMemoryMatchSchema>;
+
+export const ContextualRetrievalResultSchema = z.object({
+  status: RetrievalMatchStatusSchema,
+  retrievalMode: RetrievalModeSchema,
+  entries: z.array(ContextualMemoryMatchSchema),
+  explanation: z.string(),
+  hasInventedRecollection: z.literal(false),
+});
+export type ContextualRetrievalResult = z.infer<typeof ContextualRetrievalResultSchema>;
 
 // ==========================================
 // Activities Schemas & Types
