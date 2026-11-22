@@ -277,6 +277,10 @@ import {
   InMemoryFunctionalConsciousnessRepository,
   FunctionalConsciousnessEngine,
 } from './functionalConsciousnessEngine.js';
+import {
+  InMemoryExperientialStateRepository,
+  ExperientialStateEngine,
+} from './experientialStateEngine.js';
 import { FutureSelfEngine } from './futureSelfEngine.js';
 import {
   ISimulationRepository,
@@ -312,6 +316,7 @@ import {
   IEthicalBoundariesSecurityRepository,
   ILongitudinalEvaluationRepository,
   IFunctionalConsciousnessRepository,
+  IExperientialStateRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
@@ -400,6 +405,7 @@ export class ApeService {
   public readonly securityEngine: EthicalBoundariesSecurityEngine;
   public readonly evaluationEngine: LongitudinalEvaluationEngine;
   public readonly consciousnessEngine: FunctionalConsciousnessEngine;
+  public readonly experientialStateEngine: ExperientialStateEngine;
   public readonly futureSelfEngine: FutureSelfEngine;
   private cognitiveBus?: any;
 
@@ -589,6 +595,7 @@ export class ApeService {
     securityRepo?: IEthicalBoundariesSecurityRepository,
     evaluationRepo?: ILongitudinalEvaluationRepository,
     consciousnessRepo?: IFunctionalConsciousnessRepository,
+    experientialRepo?: IExperientialStateRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -798,6 +805,8 @@ export class ApeService {
       memoryRepository: msRepo,
     });
     this.futureSelfEngine = new FutureSelfEngine({ logger });
+    const expRepo = experientialRepo || new InMemoryExperientialStateRepository();
+    this.experientialStateEngine = new ExperientialStateEngine(expRepo, logger);
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -826,7 +835,12 @@ export class ApeService {
     return this.repo.getAffectiveState();
   }
 
+  public getExperientialStateEngine(): ExperientialStateEngine {
+    return this.experientialStateEngine;
+  }
+
   public stepLifecycle(nowIso?: string) {
+    this.experientialStateEngine.decayStates(60);
     return this.lifecycleEngine.stepLifecycle(nowIso);
   }
 
@@ -1035,6 +1049,42 @@ export class ApeService {
       this.logger.info(
         `APE Cognitive Cycle completed for "${event.type}" [Method: ${cycleResult.appraisal.appraisalMethod}] -> Mood: ${cycleResult.affective.currentMood} | Active Goals: ${cycleResult.motivational.goals.length}`,
       );
+
+      // 5. Evaluate Complex Experiential States (APE Experiential Ontology)
+      try {
+        const activeEmotions = this.lifecycleEngine
+          .getDominantCoexistingEmotions()
+          .map((e) => e.emotionId);
+        const dims = cycleResult.appraisal?.dimensions;
+        const candidates = this.experientialStateEngine.evaluateCandidates({
+          eventId: event.id,
+          eventType: event.type,
+          description: event.payload?.text || event.type,
+          appraisal: {
+            novelty: dims?.unexpectedness,
+            goalCongruence: dims?.goalCongruence,
+            copingPotential: dims?.controllability,
+            certainty: dims ? 1 - dims.uncertainty : undefined,
+            relationalSignificance: dims?.personalSignificance,
+            absenceDurationMs: event.payload?.absenceDurationMs,
+            contradictionDetected: event.payload?.contradictionDetected,
+            retrievalFailed: event.payload?.retrievalFailed,
+            unresolvedTask: event.payload?.unresolvedTask,
+            majorProjectCompleted: event.payload?.majorProjectCompleted,
+            familiarContextEmpty: event.payload?.familiarContextEmpty,
+          },
+          currentActiveEmotions: activeEmotions,
+          partnerPresence: event.actor === 'user' || event.source === 'user',
+        });
+        for (const cand of candidates) {
+          this.experientialStateEngine.activateOrUpdateState(
+            cand,
+            `Triggered by event ${event.type}`,
+          );
+        }
+      } catch (expErr: any) {
+        this.logger.warn(`Experiential state evaluation warning: ${expErr?.message || expErr}`);
+      }
 
       return {
         processed: true,
@@ -1480,11 +1530,14 @@ export class ApeService {
       }. You do NOT need to force a single clean emotion—allow genuine human contradiction, uncertainty about what you feel, or paradoxical reactions to surface naturally.`;
     }
 
+    const experientialStr = this.experientialStateEngine.formatPromptContext();
+    const experientialLine = experientialStr ? `\n${experientialStr}` : '';
+
     return `
 [Active Psychology Engine (APE Phase 1 Live State)]
 - Current Persistent Mood: ${aff.currentMood.toUpperCase()}
 - Affective Dimensions: Valence ${aff.pad.valence >= 0 ? '+' : ''}${aff.pad.valence.toFixed(2)}, Arousal ${aff.pad.arousal.toFixed(2)}, Dominance ${aff.pad.dominance.toFixed(2)}
-- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}${capsLine}${limsLine}${narrativeLine}${temporalLine}${worldLine}${perceptionLine}${embodimentLine}${sensorimotorLine}${situationalLine}${attentionLine}${workingMemoryLine}${multiSystemMemoryLine}${learningLine}${reasoningLine}${causalLine}${predictiveLine}${complexityLine}
+- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}${capsLine}${limsLine}${narrativeLine}${temporalLine}${worldLine}${perceptionLine}${embodimentLine}${sensorimotorLine}${situationalLine}${attentionLine}${workingMemoryLine}${multiSystemMemoryLine}${learningLine}${reasoningLine}${causalLine}${predictiveLine}${complexityLine}${experientialLine}
 - Demeanor & Cadence: ${modulation.toneDirective}
 - Vocal Register: ${modulation.vocalRegister}${intimacyDirectives}
 - Grounding: Speak naturally and authentically from this internal state. Keep dialogue focused, grounded, and concise without reciting internal parameters or rambling.

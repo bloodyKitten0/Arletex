@@ -33,6 +33,8 @@ import {
   DurationProfile,
   WorldEntity,
   WorldEntityType,
+  ExperientialStateInstance,
+  ExperientialStateLifecycle,
   WorldRelation,
   WorldRelationType,
   WorldEnvironmentalChange,
@@ -1018,3 +1020,29 @@ export interface IFunctionalConsciousnessRepository {
   saveDmnWandering(state: DefaultModeWanderingState): void;
   listDmnWanderings(limit?: number): DefaultModeWanderingState[];
 }
+
+export interface IExperientialStateRepository {
+  saveEpisode(episode: ExperientialStateInstance): void;
+  getEpisode(instanceId: string): ExperientialStateInstance | null;
+  listActiveEpisodes(): ExperientialStateInstance[];
+  listEpisodesByStateId(stateId: string): ExperientialStateInstance[];
+  recordTransition(
+    instanceId: string,
+    stateId: string,
+    fromLifecycle: ExperientialStateLifecycle,
+    toLifecycle: ExperientialStateLifecycle,
+    reason: string,
+  ): void;
+  listRecentTransitions(
+    limit?: number,
+  ): Array<{
+    id: string;
+    instanceId: string;
+    stateId: string;
+    fromLifecycle: ExperientialStateLifecycle;
+    toLifecycle: ExperientialStateLifecycle;
+    reason: string;
+    timestamp: string;
+  }>;
+}
+

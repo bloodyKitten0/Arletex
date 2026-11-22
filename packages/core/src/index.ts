@@ -68,6 +68,7 @@ export * from './ape/offlineCognitiveActivityEngine.js';
 export * from './ape/ethicalBoundariesSecurityEngine.js';
 export * from './ape/longitudinalEvaluationEngine.js';
 export * from './ape/functionalConsciousnessEngine.js';
+export * from './ape/experientialStateEngine.js';
 export * from './ape/apeService.js';
 
 // Digital Agency Subsystem

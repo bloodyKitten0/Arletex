@@ -3533,4 +3533,54 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('whatsapp_deduplication_and_audit', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 67,
+    name: '067_experiential_state_episodes',
+    up: `
+      -- Complex Experiential States (148 Catalogue Episodes & Transitions)
+      CREATE TABLE IF NOT EXISTS experiential_state_episodes (
+        instance_id TEXT PRIMARY KEY,
+        state_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        category TEXT NOT NULL,
+        intensity REAL NOT NULL,
+        confidence REAL NOT NULL,
+        valence REAL NOT NULL,
+        arousal REAL NOT NULL,
+        onset_at TEXT NOT NULL,
+        last_updated_at TEXT NOT NULL,
+        source_event_ids TEXT NOT NULL,
+        supporting_evidence TEXT NOT NULL,
+        counter_evidence TEXT NOT NULL,
+        associated_memory_ids TEXT NOT NULL,
+        related_state_ids TEXT NOT NULL,
+        appraisal_ids TEXT NOT NULL,
+        unresolved_tensions TEXT NOT NULL,
+        regulation_json TEXT,
+        lifecycle TEXT NOT NULL,
+        effects_json TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_exp_states_state_id ON experiential_state_episodes (state_id);
+      CREATE INDEX IF NOT EXISTS idx_exp_states_lifecycle ON experiential_state_episodes (lifecycle);
+      CREATE INDEX IF NOT EXISTS idx_exp_states_category ON experiential_state_episodes (category);
+
+      CREATE TABLE IF NOT EXISTS experiential_state_transitions (
+        id TEXT PRIMARY KEY,
+        instance_id TEXT NOT NULL,
+        state_id TEXT NOT NULL,
+        from_lifecycle TEXT NOT NULL,
+        to_lifecycle TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        timestamp TEXT NOT NULL,
+        FOREIGN KEY (instance_id) REFERENCES experiential_state_episodes(instance_id) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_exp_transitions_instance ON experiential_state_transitions (instance_id);
+
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('complex_experiential_states_148', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

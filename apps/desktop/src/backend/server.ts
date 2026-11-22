@@ -150,6 +150,7 @@ import {
   SqliteEthicalBoundariesSecurityRepository,
   SqliteLongitudinalEvaluationRepository,
   SqliteFunctionalConsciousnessRepository,
+  SqliteExperientialStateRepository,
   SqliteKnowledgeRepository,
   WhatsAppRepository,
 } from '@arletex/database';
@@ -399,6 +400,7 @@ export class ArletexBackendServer {
   public readonly securityRepo: SqliteEthicalBoundariesSecurityRepository;
   public readonly evaluationRepo: SqliteLongitudinalEvaluationRepository;
   public readonly consciousnessRepo: SqliteFunctionalConsciousnessRepository;
+  public readonly experientialStateRepo: SqliteExperientialStateRepository;
   public readonly knowledgeRepo: SqliteKnowledgeRepository;
   public readonly knowledgeBaseService: KnowledgeBaseService;
   public readonly adapterLifecycleManager: AdapterLifecycleManager;
@@ -493,6 +495,7 @@ export class ArletexBackendServer {
     this.securityRepo = new SqliteEthicalBoundariesSecurityRepository(db);
     this.evaluationRepo = new SqliteLongitudinalEvaluationRepository(db);
     this.consciousnessRepo = new SqliteFunctionalConsciousnessRepository(db);
+    this.experientialStateRepo = new SqliteExperientialStateRepository(db);
     this.knowledgeRepo = new SqliteKnowledgeRepository(db);
     this.knowledgeBaseService = new KnowledgeBaseService({ repo: this.knowledgeRepo, logger });
     this.adapterLifecycleManager = new AdapterLifecycleManager(this.knowledgeRepo, logger);
@@ -547,6 +550,7 @@ export class ArletexBackendServer {
       this.securityRepo,
       this.evaluationRepo,
       this.consciousnessRepo,
+      this.experientialStateRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
