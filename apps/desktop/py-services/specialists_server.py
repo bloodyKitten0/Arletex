@@ -190,7 +190,7 @@ def get_qwen3_tts():
     global qwen3_tts_model
     if qwen3_tts_model is None and os.path.exists(QWEN3_TTS_DIR):
         try:
-            from qwen_tts import Qwen3TTSModel
+            from qwen_tts import Qwen3TTSModel  # type: ignore
             import torch
             print(f"[Specialists] Initializing Qwen3-TTS 1.7B VoiceDesign from {QWEN3_TTS_DIR}...")
             device = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -618,7 +618,7 @@ def get_rvc_converter():
     global rvc_converter
     if rvc_converter is None and os.path.exists(RVC_MODEL_PATH):
         try:
-            from infer_rvc_python import BaseLoader
+            from infer_rvc_python import BaseLoader  # type: ignore
             print(f"[Specialists] Loading Arlecchino RVC Engine from {RVC_MODEL_PATH} (rmvpe: {RMVPE_PATH})...")
             converter = BaseLoader(only_cpu=True, rmvpe_path=RMVPE_PATH)
             converter.apply_conf(
@@ -1039,7 +1039,7 @@ class SpecialistRequestHandler(BaseHTTPRequestHandler):
                 inputs = processor.apply_chat_template(messages, tokenize=True, return_dict=True, return_tensors="pt")
                 max_tokens = int(body.get("maxTokens", 512))
                 with torch.no_grad():
-                    generated_ids = ocr_model.generate(**inputs, max_new_tokens=max_tokens)
+                    generated_ids = ocr_model.generate(**inputs, max_new_tokens=max_tokens)  # type: ignore
 
                 output_text = processor.decode(generated_ids[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True).strip()
 
