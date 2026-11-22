@@ -383,7 +383,7 @@ export class SqliteRelationshipsAttachmentRepository implements IRelationshipsAt
     try {
       const rows = this.db
         .prepare(
-          `SELECT * FROM relationship_trust_event_logs WHERE person_id = ? ORDER BY timestamp DESC LIMIT ?`,
+          `SELECT * FROM relationship_trust_event_logs WHERE person_id = ? ORDER BY timestamp DESC, rowid DESC LIMIT ?`,
         )
         .all(personId, limit) as any[];
       return rows.map((r) => ({
@@ -464,7 +464,7 @@ export class SqliteRelationshipsAttachmentRepository implements IRelationshipsAt
     try {
       const rows = this.db
         .prepare(
-          `SELECT * FROM relationship_behavior_intent_evaluations WHERE person_id = ? ORDER BY timestamp DESC LIMIT ?`,
+          `SELECT * FROM relationship_behavior_intent_evaluations WHERE person_id = ? ORDER BY timestamp DESC, rowid DESC LIMIT ?`,
         )
         .all(personId, limit) as any[];
       return rows.map((r) => ({
@@ -558,7 +558,7 @@ export class SqliteRelationshipsAttachmentRepository implements IRelationshipsAt
   public listMemoryControlRecords(personId: string): RelationalMemoryControl[] {
     try {
       const rows = this.db
-        .prepare(`SELECT * FROM relationship_memory_controls WHERE person_id = ? ORDER BY timestamp DESC`)
+        .prepare(`SELECT * FROM relationship_memory_controls WHERE person_id = ? ORDER BY timestamp DESC, rowid DESC`)
         .all(personId) as any[];
       return rows.map((r) => ({
         id: r.id,

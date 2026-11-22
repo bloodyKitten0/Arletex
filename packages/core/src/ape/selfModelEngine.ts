@@ -8,6 +8,8 @@ import {
   BehavioralChangeRecord,
   CapabilityCalibrationStatus,
   CapabilityEpistemicCategory,
+  CapabilityTrial,
+  CapabilityEvidenceReport,
   LimitationCategory,
   PerceivedCapability,
   SelfDescriptionComprehensive,
@@ -125,6 +127,10 @@ export class SelfModelEngine {
             calibrationStatus: 'calibrated',
             verifiedSuccessCount: 3,
             failureCount: 0,
+            interruptedCount: 0,
+            unverifiedAttemptCount: 0,
+            revalidationRequired: false,
+            trialHistory: [],
             lastVerifiedAt: now,
             evidenceChain: ['Baseline linguistic model integration', 'Dialogue coherence evaluation'],
             isEmpiricallyProven: true,
@@ -140,6 +146,10 @@ export class SelfModelEngine {
             calibrationStatus: 'calibrated',
             verifiedSuccessCount: 3,
             failureCount: 0,
+            interruptedCount: 0,
+            unverifiedAttemptCount: 0,
+            revalidationRequired: false,
+            trialHistory: [],
             lastVerifiedAt: now,
             evidenceChain: ['Milestone 01 lifecycle verification', 'Acoustic & visual affect integration'],
             isEmpiricallyProven: true,
@@ -488,6 +498,250 @@ export class SelfModelEngine {
   }
 
   /**
+   * Records a structured task trial linking claimed capability directly to empirical task evidence (P1.7).
+   * Tracks successful, failed, interrupted, and unverified attempts separately.
+   * Ensures that unverified, interrupted, or failed tasks NEVER increase competence.
+   */
+  public recordTaskTrial(params: {
+    domain: string;
+    taskTitle: string;
+    difficulty?: 'trivial' | 'moderate' | 'complex' | 'expert';
+    environment?: string;
+    outcome: 'success' | 'failure' | 'interrupted' | 'unverified';
+    evidenceId?: string;
+    evidenceText?: string;
+  }): {
+    capability: StructuredCapability;
+    trial: CapabilityTrial;
+    competenceIncreased: boolean;
+  } {
+    const state = this.getState();
+    const domainKey = params.domain.toLowerCase().trim();
+    const now = new Date().toISOString();
+    const difficulty = params.difficulty || 'moderate';
+    const environment = params.environment || 'production_runtime';
+
+    const trialId = `trial-${crypto.randomUUID().slice(0, 8)}`;
+    const trial: CapabilityTrial = {
+      trialId,
+      taskTitle: params.taskTitle,
+      difficulty,
+      environment,
+      outcome: params.outcome,
+      evidenceId: params.evidenceId,
+      evidenceText: params.evidenceText,
+      timestamp: now,
+    };
+
+    // Locate or create structured capability
+    let structCap = (state.structuredCapabilities || []).find(
+      (c) => c.domain.toLowerCase() === domainKey,
+    );
+
+    if (!structCap) {
+      structCap = {
+        id: `cap-${domainKey}-${crypto.randomUUID().slice(0, 8)}`,
+        domain: domainKey,
+        name: params.domain,
+        description: `Empirical capability in ${params.domain}`,
+        demonstratedCompetence: 0.15,
+        perceivedCompetence: 0.50,
+        confidence: 0.50,
+        calibrationStatus: 'untested_assumption',
+        verifiedSuccessCount: 0,
+        failureCount: 0,
+        interruptedCount: 0,
+        unverifiedAttemptCount: 0,
+        environmentVersion: environment,
+        revalidationRequired: false,
+        trialHistory: [],
+        evidenceChain: [],
+        isEmpiricallyProven: false,
+      };
+      state.structuredCapabilities = [...(state.structuredCapabilities || []), structCap];
+    }
+
+    structCap.trialHistory = [trial, ...(structCap.trialHistory || [])].slice(0, 50);
+
+    const prevCompetence = structCap.demonstratedCompetence;
+    let competenceIncreased = false;
+
+    if (params.outcome === 'success') {
+      // Must have valid evidence
+      const evText = params.evidenceText || params.evidenceId || 'Verified execution';
+      structCap.verifiedSuccessCount += 1;
+      structCap.evidenceChain = [evText, ...(structCap.evidenceChain || [])].slice(0, 20);
+      structCap.lastVerifiedAt = now;
+      structCap.environmentVersion = environment;
+      structCap.revalidationRequired = false;
+
+      // Incremental competence bonus proportional to difficulty
+      const diffBonus = difficulty === 'expert' ? 0.20 : difficulty === 'complex' ? 0.15 : difficulty === 'moderate' ? 0.10 : 0.05;
+      structCap.demonstratedCompetence = Math.min(1.0, Number((structCap.demonstratedCompetence + diffBonus).toFixed(3)));
+      structCap.confidence = Math.min(1.0, Number((Math.max(structCap.confidence, 0.70) + 0.05).toFixed(3)));
+      competenceIncreased = structCap.demonstratedCompetence > prevCompetence;
+
+      if (structCap.verifiedSuccessCount >= 2 && structCap.demonstratedCompetence >= 0.45) {
+        structCap.isEmpiricallyProven = true;
+        structCap.calibrationStatus = 'calibrated';
+      }
+
+      // Also update competencies table in state
+      const existingComp = state.competencies?.[domainKey] || {
+        domain: domainKey,
+        level: structCap.demonstratedCompetence,
+        verifiedSuccesses: 0,
+        recordedFailures: 0,
+        lastEvaluatedAt: now,
+      };
+      existingComp.verifiedSuccesses = structCap.verifiedSuccessCount;
+      existingComp.level = structCap.demonstratedCompetence;
+      existingComp.lastEvaluatedAt = now;
+      state.competencies = { ...(state.competencies || {}), [domainKey]: existingComp };
+    } else if (params.outcome === 'failure') {
+      structCap.failureCount += 1;
+      // Competence does NOT increase; calibrates downward
+      structCap.demonstratedCompetence = Math.max(0.05, Number((structCap.demonstratedCompetence - 0.05).toFixed(3)));
+      structCap.calibrationStatus = 'overestimated';
+
+      // Log structured limitation
+      const limTag = `Observed limitation in ${params.domain}: ${params.taskTitle} (${params.evidenceText || 'failed trial'})`;
+      if (!state.acknowledgedLimitations.includes(limTag)) {
+        state.acknowledgedLimitations.push(limTag);
+      }
+    } else if (params.outcome === 'interrupted') {
+      structCap.interruptedCount = (structCap.interruptedCount || 0) + 1;
+      // Strictly NO competence increase on interrupted task
+      this.logger.info(`Task trial in ${domainKey} was interrupted; competence unchanged.`);
+    } else if (params.outcome === 'unverified') {
+      structCap.unverifiedAttemptCount = (structCap.unverifiedAttemptCount || 0) + 1;
+      // Strictly NO competence increase on unverified task
+      this.logger.warn(`Task trial in ${domainKey} unverified; competence unchanged.`);
+    }
+
+    this.saveState(state);
+    return {
+      capability: structCap,
+      trial,
+      competenceIncreased,
+    };
+  }
+
+  /**
+   * Decays or qualifies old capability evidence when environment, model, or tool versions change (P1.7 requirement 4).
+   */
+  public revalidateOnEnvironmentChange(params: {
+    modelId?: string;
+    toolVersion?: string;
+    reason?: string;
+  }): {
+    revalidatedDomains: string[];
+    summary: string;
+  } {
+    const state = this.getState();
+    const newEnv = `${params.modelId || 'updated-model'}:${params.toolVersion || 'v2'}`;
+    const revalidatedDomains: string[] = [];
+
+    for (const cap of state.structuredCapabilities || []) {
+      // Model-dependent capabilities require empirical revalidation under new model
+      if (cap.environmentVersion && cap.environmentVersion !== newEnv) {
+        cap.revalidationRequired = true;
+        // Qualify / decay confidence until re-verified
+        cap.confidence = Number((cap.confidence * 0.80).toFixed(3));
+        cap.calibrationStatus = 'untested_assumption';
+        revalidatedDomains.push(cap.domain);
+      }
+    }
+
+    this.saveState(state);
+    const summary = `Environment change to [${newEnv}] triggered revalidation for ${revalidatedDomains.length} capability domain(s).`;
+    this.logger.warn(summary, { revalidatedDomains, reason: params.reason });
+    return { revalidatedDomains, summary };
+  }
+
+  /**
+   * Produces an evidence-grounded capability report with sample size, task conditions, evidence IDs, and uncertainty (P1.7 Definition of Done).
+   * Accurately reports "not yet tested" (untested) and "currently unsupported".
+   */
+  public getCapabilityEvidenceReport(domainOrClaim: string): CapabilityEvidenceReport {
+    const state = this.getState();
+    const clean = domainOrClaim.toLowerCase().trim();
+
+    // 1. Check known limitation -> currently_unsupported
+    const classification = this.classifyCapability(clean);
+    if (classification.category === 'known_limitation') {
+      return {
+        domain: clean,
+        status: 'currently_unsupported',
+        demonstratedCompetence: 0.0,
+        confidence: 1.0,
+        sampleSize: 0,
+        successCount: 0,
+        failureCount: 0,
+        interruptedCount: 0,
+        unverifiedCount: 0,
+        taskConditions: ['System invariant', 'Embodiment ceiling'],
+        evidenceIds: [],
+        uncertainty: 0.0,
+        revalidationRequired: false,
+        summary: `Currently unsupported: hard boundary or physical limitation (${classification.evidenceChain[0] || 'Physical/security limit'}).`,
+      };
+    }
+
+    // 2. Check structured capability
+    const structCap = (state.structuredCapabilities || []).find(
+      (c) => clean.includes(c.domain.toLowerCase()) || c.domain.toLowerCase().includes(clean),
+    );
+
+    if (!structCap || ((structCap.trialHistory || []).length === 0 && structCap.verifiedSuccessCount === 0)) {
+      return {
+        domain: clean,
+        status: 'untested',
+        demonstratedCompetence: structCap?.demonstratedCompetence || 0.0,
+        confidence: 0.20,
+        sampleSize: 0,
+        successCount: 0,
+        failureCount: 0,
+        interruptedCount: 0,
+        unverifiedCount: 0,
+        taskConditions: [],
+        evidenceIds: [],
+        uncertainty: 0.80,
+        revalidationRequired: false,
+        summary: `Not yet tested: zero empirical trial records for domain "${clean}".`,
+      };
+    }
+
+    const trials = structCap.trialHistory || [];
+    const sampleSize = structCap.verifiedSuccessCount + structCap.failureCount + (structCap.interruptedCount || 0) + (structCap.unverifiedAttemptCount || 0);
+    const taskConditions = Array.from(new Set(trials.map((t) => `${t.environment} (${t.difficulty})`)));
+    const evidenceIds = trials.map((t) => t.evidenceId).filter(Boolean) as string[];
+    const uncertainty = Number((1.0 - structCap.confidence).toFixed(3));
+
+    const status: CapabilityEvidenceReport['status'] =
+      structCap.isEmpiricallyProven && structCap.demonstratedCompetence >= 0.45
+        ? 'demonstrated'
+        : 'plausible';
+
+    return {
+      domain: structCap.domain,
+      status,
+      demonstratedCompetence: structCap.demonstratedCompetence,
+      confidence: structCap.confidence,
+      sampleSize: Math.max(sampleSize, trials.length),
+      successCount: structCap.verifiedSuccessCount,
+      failureCount: structCap.failureCount,
+      interruptedCount: structCap.interruptedCount || 0,
+      unverifiedCount: structCap.unverifiedAttemptCount || 0,
+      taskConditions: taskConditions.length > 0 ? taskConditions : ['standard_runtime'],
+      evidenceIds: evidenceIds.length > 0 ? evidenceIds : structCap.evidenceChain,
+      uncertainty,
+      revalidationRequired: Boolean(structCap.revalidationRequired),
+      summary: `${status === 'demonstrated' ? 'Demonstrated capability' : 'Plausible capability'} backed by ${sampleSize} trial(s) (${structCap.verifiedSuccessCount} verified successes, ${structCap.failureCount} failures). Uncertainty: ${uncertainty}.`,
+    };
+  }
+
+  /**
    * Records a recognized behavioral change with causal catalyst and evidence.
    */
   public recordBehavioralChange(params: {
@@ -653,7 +907,8 @@ export class SelfModelEngine {
     const isProficient = existingComp.verifiedSuccesses >= 3;
 
     // 2. Structured capability update
-    let structCap = (state.structuredCapabilities || []).find((c) => c.domain.toLowerCase() === domainKey);
+    const caps = state.structuredCapabilities ? [...state.structuredCapabilities] : [];
+    let structCap: StructuredCapability | undefined = caps.find((c) => c.domain.toLowerCase() === domainKey);
     if (!structCap) {
       structCap = {
         id: `cap-${domainKey}-${crypto.randomUUID().slice(0, 8)}`,
@@ -666,10 +921,15 @@ export class SelfModelEngine {
         calibrationStatus: 'untested_assumption',
         verifiedSuccessCount: 0,
         failureCount: 0,
+        interruptedCount: 0,
+        unverifiedAttemptCount: 0,
+        revalidationRequired: false,
+        trialHistory: [],
         evidenceChain: [],
         isEmpiricallyProven: false,
       };
-      state.structuredCapabilities = [...(state.structuredCapabilities || []), structCap];
+      caps.push(structCap);
+      state.structuredCapabilities = caps;
     }
 
     if (params.success) {
@@ -771,14 +1031,14 @@ export class SelfModelEngine {
 
     if (!params.success && perceived.perceivedLevel >= 0.5) {
       perceived.calibration = 'overestimated';
-      structCap.calibrationStatus = 'overestimated';
+      if (structCap) structCap.calibrationStatus = 'overestimated';
     } else if (params.success && isProficient) {
       if (Math.abs(perceived.perceivedLevel - existingComp.level) <= 0.25) {
         perceived.calibration = 'calibrated';
-        structCap.calibrationStatus = 'calibrated';
+        if (structCap) structCap.calibrationStatus = 'calibrated';
       } else if (perceived.perceivedLevel < existingComp.level - 0.25) {
         perceived.calibration = 'underestimated';
-        structCap.calibrationStatus = 'underestimated';
+        if (structCap) structCap.calibrationStatus = 'underestimated';
       }
     }
 

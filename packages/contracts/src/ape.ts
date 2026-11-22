@@ -810,6 +810,18 @@ export const CapabilityCalibrationStatusSchema = z.enum([
 ]);
 export type CapabilityCalibrationStatus = z.infer<typeof CapabilityCalibrationStatusSchema>;
 
+export const CapabilityTrialSchema = z.object({
+  trialId: z.string(),
+  taskTitle: z.string(),
+  difficulty: z.enum(['trivial', 'moderate', 'complex', 'expert']).default('moderate'),
+  environment: z.string().default('default'),
+  outcome: z.enum(['success', 'failure', 'interrupted', 'unverified']),
+  evidenceId: z.string().optional(),
+  evidenceText: z.string().optional(),
+  timestamp: z.string(),
+});
+export type CapabilityTrial = z.infer<typeof CapabilityTrialSchema>;
+
 export const StructuredCapabilitySchema = z.object({
   id: z.string(),
   domain: z.string(),
@@ -821,11 +833,34 @@ export const StructuredCapabilitySchema = z.object({
   calibrationStatus: CapabilityCalibrationStatusSchema.default('untested_assumption'),
   verifiedSuccessCount: z.number().int().default(0),
   failureCount: z.number().int().default(0),
+  interruptedCount: z.number().int().default(0),
+  unverifiedAttemptCount: z.number().int().default(0),
+  environmentVersion: z.string().optional(),
+  revalidationRequired: z.boolean().default(false),
+  trialHistory: z.array(CapabilityTrialSchema).default([]),
   lastVerifiedAt: z.string().datetime().optional(),
   evidenceChain: z.array(z.string()).default([]),
   isEmpiricallyProven: z.boolean().default(false), // requires >= 3 verified successes across distinct cycles
 });
 export type StructuredCapability = z.infer<typeof StructuredCapabilitySchema>;
+
+export const CapabilityEvidenceReportSchema = z.object({
+  domain: z.string(),
+  status: z.enum(['demonstrated', 'plausible', 'untested', 'currently_unsupported']),
+  demonstratedCompetence: z.number().min(0.0).max(1.0),
+  confidence: z.number().min(0.0).max(1.0),
+  sampleSize: z.number().int(),
+  successCount: z.number().int(),
+  failureCount: z.number().int(),
+  interruptedCount: z.number().int(),
+  unverifiedCount: z.number().int(),
+  taskConditions: z.array(z.string()),
+  evidenceIds: z.array(z.string()),
+  uncertainty: z.number().min(0.0).max(1.0),
+  revalidationRequired: z.boolean(),
+  summary: z.string(),
+});
+export type CapabilityEvidenceReport = z.infer<typeof CapabilityEvidenceReportSchema>;
 
 export const LimitationCategorySchema = z.enum([
   'embodiment_physical',
