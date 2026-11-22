@@ -529,7 +529,11 @@ export const MainView: React.FC<MainViewProps> = ({
           <button
             type="button"
             onClick={handleToggleVoice}
-            title={voiceEnabled ? 'Voice Output: Active (Kokoro 82M TTS)' : 'Voice Output: Muted'}
+            title={
+              voiceEnabled
+                ? 'Voice Output: Active (Arlecchino Voice Synthesis)'
+                : 'Voice Output: Muted'
+            }
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -876,7 +880,7 @@ export const MainView: React.FC<MainViewProps> = ({
                           void speakText(msg.content, msg.id);
                         }
                       }}
-                      title="Speak message with local Kokoro 82M voice"
+                      title="Speak message with local Arlecchino voice"
                       style={{
                         display: 'flex',
                         alignItems: 'center',

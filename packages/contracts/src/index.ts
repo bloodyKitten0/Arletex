@@ -466,6 +466,9 @@ export const DeviceTelemetrySchema = z.object({
     embeddingGemma: z.boolean(),
     whisper: z.boolean(),
     kokoro: z.boolean(),
+    qwen3Tts: z.boolean().optional(),
+    rvc: z.boolean().optional(),
+    voiceEngine: z.string().optional(),
   }),
 });
 

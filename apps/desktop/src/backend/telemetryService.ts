@@ -14,6 +14,9 @@ export class TelemetryService {
     embeddingGemma: false,
     whisper: false,
     kokoro: false,
+    qwen3Tts: false,
+    rvc: false,
+    voiceEngine: 'kokoro',
   };
   private llamaServerStatus = false;
   private lastSpecialistProbe = 0;
@@ -34,6 +37,11 @@ export class TelemetryService {
       clearTimeout(timeout);
       if (res.ok) {
         const data = (await res.json()) as any;
+        const activeEngine = (
+          process.env['ARLE_VOICE_ENGINE'] ||
+          data.voiceEngine ||
+          'kokoro'
+        ).toLowerCase();
         this.specialistStatus = {
           embeddingGemma: Boolean(
             data.embeddingGemma ??
@@ -44,11 +52,24 @@ export class TelemetryService {
             data.whisper ?? data.modelsInstalled?.whisper ?? data.modelsLoaded?.whisper,
           ),
           kokoro: Boolean(data.kokoro ?? data.modelsInstalled?.kokoro ?? data.modelsLoaded?.kokoro),
+          qwen3Tts: Boolean(
+            data.qwen3Tts ?? data.modelsInstalled?.qwen3Tts ?? data.modelsLoaded?.qwen3Tts,
+          ),
+          rvc: Boolean(data.rvc ?? data.modelsInstalled?.rvc ?? data.modelsLoaded?.rvc),
+          voiceEngine: activeEngine,
         };
       }
     } catch (err: any) {
       this.logger.debug(`Specialist services offline: ${err.message}`);
-      this.specialistStatus = { embeddingGemma: false, whisper: false, kokoro: false };
+      const activeEngine = (process.env['ARLE_VOICE_ENGINE'] || 'kokoro').toLowerCase();
+      this.specialistStatus = {
+        embeddingGemma: false,
+        whisper: false,
+        kokoro: false,
+        qwen3Tts: false,
+        rvc: false,
+        voiceEngine: activeEngine,
+      };
     }
 
     // Dynamic probe of llama-server on port 8080 (never hardcode true)
@@ -114,6 +135,9 @@ export class TelemetryService {
         embeddingGemma: this.specialistStatus.embeddingGemma,
         whisper: this.specialistStatus.whisper,
         kokoro: this.specialistStatus.kokoro,
+        qwen3Tts: this.specialistStatus.qwen3Tts,
+        rvc: this.specialistStatus.rvc,
+        voiceEngine: this.specialistStatus.voiceEngine,
       },
     };
 

@@ -520,7 +520,22 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
             telemetry?.services.embeddingGemma ?? false,
           )}
           {renderServicePill('Whisper Small STT (39282)', telemetry?.services.whisper ?? false)}
-          {renderServicePill('Kokoro 82M TTS (39282)', telemetry?.services.kokoro ?? false)}
+          {(() => {
+            const engine = (telemetry?.services.voiceEngine || 'kokoro').toLowerCase();
+            const hasRvc = telemetry?.services.rvc ?? false;
+            let label = 'Kokoro 82M TTS (39282)';
+            let isOk = telemetry?.services.kokoro ?? false;
+
+            if (engine.includes('qwen')) {
+              label = hasRvc ? 'Qwen3-TTS + RVC (39282)' : 'Qwen3-TTS 1.7B (39282)';
+              isOk = telemetry?.services.qwen3Tts ?? false;
+            } else {
+              label = hasRvc ? 'Kokoro 82M + RVC (39282)' : 'Kokoro 82M TTS (39282)';
+              isOk = telemetry?.services.kokoro ?? false;
+            }
+
+            return renderServicePill(label, isOk);
+          })()}
         </div>
       </div>
     </aside>
