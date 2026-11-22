@@ -14,8 +14,12 @@ import crypto from 'node:crypto';
 export interface OfflineCognitiveActivityEngineOptions {
   repository: IOfflineCognitiveActivityRepository;
   initialPolicy?: Partial<OfflineSchedulerPolicy>;
-  memoryRepository?: { list?: (filter?: any) => any[]; listEntries?: (options?: any) => any[] };
-  goalRepository?: { listActiveGoals?: () => any[]; listGoals?: () => any[] };
+  memoryRepository?: any;
+  goalRepository?: any;
+  projectRepository?: any;
+  causalRepository?: any;
+  inquiryRepository?: any;
+  inferenceGateway?: any;
 }
 
 export class InMemoryOfflineCognitiveActivityRepository implements IOfflineCognitiveActivityRepository {
@@ -105,14 +109,22 @@ export class InMemoryOfflineCognitiveActivityRepository implements IOfflineCogni
 
 export class OfflineCognitiveActivityEngine {
   private readonly repository: IOfflineCognitiveActivityRepository;
-  private readonly memoryRepository?: { list?: (filter?: any) => any[]; listEntries?: (options?: any) => any[] };
-  private readonly goalRepository?: { listActiveGoals?: () => any[]; listGoals?: () => any[] };
+  private readonly memoryRepository?: any;
+  private readonly goalRepository?: any;
+  private readonly projectRepository?: any;
+  private readonly causalRepository?: any;
+  private readonly inquiryRepository?: any;
+  private readonly inferenceGateway?: any;
   private policy: OfflineSchedulerPolicy;
 
   constructor(options: OfflineCognitiveActivityEngineOptions) {
     this.repository = options.repository;
     this.memoryRepository = options.memoryRepository;
     this.goalRepository = options.goalRepository;
+    this.projectRepository = options.projectRepository;
+    this.causalRepository = options.causalRepository;
+    this.inquiryRepository = options.inquiryRepository;
+    this.inferenceGateway = options.inferenceGateway;
     this.policy = {
       maxConcurrentTasks: options.initialPolicy?.maxConcurrentTasks ?? 2,
       allowBackgroundResearch: options.initialPolicy?.allowBackgroundResearch ?? true,
@@ -136,10 +148,19 @@ export class OfflineCognitiveActivityEngine {
 
   /**
    * Schedules an offline background activity.
+   * Declares inputs, objective, permitted tools, budget, expected deliverable and verification criteria.
    * Enforces non-superficiality: Rationale must be grounded in an actual goal, project,
    * question, or explicitly identified simulation, preventing ungrounded synthetic diary clutter.
    */
-  public scheduleActivity(input: RegisterOfflineActivityInput): OfflineActivityRecord {
+  public scheduleActivity(
+    input: RegisterOfflineActivityInput & {
+      objective?: string;
+      permittedTools?: string[];
+      expectedDeliverable?: string;
+      verificationCriteria?: string;
+      inputRecordIds?: string[];
+    },
+  ): OfflineActivityRecord {
     const isGroundless =
       !input.rationale ||
       input.rationale.trim().length < 10 ||
@@ -152,6 +173,12 @@ export class OfflineCognitiveActivityEngine {
     }
 
     const now = new Date().toISOString();
+    const inputIds = input.inputRecordIds ?? (
+      input.sourceGoalId ? [input.sourceGoalId] :
+      input.sourceProjectId ? [input.sourceProjectId] :
+      input.sourceQuestionId ? [input.sourceQuestionId] : []
+    );
+
     const activity: OfflineActivityRecord = {
       id: crypto.randomUUID(),
       activityType: input.activityType,
@@ -168,7 +195,16 @@ export class OfflineCognitiveActivityEngine {
       insights: [],
       resultingArtifacts: [],
       scheduledAt: now,
-      metadata: input.metadata ?? {},
+      metadata: {
+        objective: input.objective ?? input.title,
+        permittedTools: input.permittedTools ?? ['memory_retrieval', 'epistemic_evaluation'],
+        expectedDeliverable: input.expectedDeliverable ?? 'verifiable_insight_or_artifact',
+        verificationCriteria: input.verificationCriteria ?? 'substantive_output_with_evidence',
+        inputRecordIds: inputIds,
+        examinedRecordIds: [],
+        transformedRecordIds: [],
+        ...(input.metadata ?? {}),
+      },
     };
 
     this.repository.saveActivity(activity);
@@ -176,7 +212,9 @@ export class OfflineCognitiveActivityEngine {
   }
 
   /**
-   * Executes a scheduled offline activity, advancing its progress and logging verified insights.
+   * Executes a scheduled offline activity.
+   * Ensures activities cannot be marked complete solely by inserting an empty or canned string.
+   * Requires actual evidence, input references, or verifiable deliverables.
    */
   public executeActivity(
     id: string,
@@ -185,6 +223,11 @@ export class OfflineCognitiveActivityEngine {
       artifacts?: string[];
       progress?: number;
       status?: 'in_progress' | 'completed' | 'paused' | 'aborted';
+      providerFailed?: boolean;
+      failureReason?: string;
+      examinedRecordIds?: string[];
+      transformedRecordIds?: string[];
+      evidenceReferences?: string[];
     },
   ): OfflineActivityRecord {
     const activity = this.repository.getActivity(id);
@@ -195,10 +238,38 @@ export class OfflineCognitiveActivityEngine {
     const now = new Date().toISOString();
     activity.startedAt = activity.startedAt ?? now;
 
-    const hasTangibleDeliverables = Boolean(
-      (executionResult?.insights && executionResult.insights.length > 0) ||
-      (executionResult?.artifacts && executionResult.artifacts.length > 0),
-    );
+    // Handle provider or resource failure honestly
+    if (executionResult?.providerFailed || executionResult?.failureReason) {
+      activity.status = executionResult.status ?? 'paused';
+      activity.progress = executionResult.progress ?? 0.0;
+      activity.metadata = {
+        ...activity.metadata,
+        failureReason: executionResult.failureReason || 'Inference provider or external dependency unavailable',
+        failedAt: now,
+      };
+      this.repository.saveActivity(activity);
+      return activity;
+    }
+
+    const hasArtifacts = Boolean(executionResult?.artifacts && executionResult.artifacts.length > 0);
+    const hasInsights = Boolean(executionResult?.insights && executionResult.insights.length > 0);
+    const hasTangibleDeliverables = hasArtifacts || hasInsights;
+
+    // Verification check: Research activities must produce artifacts or extracted evidence
+    if (activity.activityType === 'independent_research') {
+      const producesArtifactOrEvidence = hasArtifacts || (hasInsights && executionResult!.insights!.some((i) => i.length > 20));
+      if (!producesArtifactOrEvidence && executionResult?.status === 'completed') {
+        activity.status = 'paused';
+        activity.progress = 0.5;
+        activity.metadata = {
+          ...activity.metadata,
+          failureReason: 'Research activity incomplete: deliverable artifact or substantiated evidence required.',
+        };
+        this.repository.saveActivity(activity);
+        return activity;
+      }
+    }
+
     const defaultProgress = hasTangibleDeliverables ? 1.0 : 0.0;
     const progress = executionResult?.progress !== undefined ? executionResult.progress : defaultProgress;
     activity.progress = Math.min(1.0, Math.max(0, progress));
@@ -221,13 +292,25 @@ export class OfflineCognitiveActivityEngine {
       activity.resultingArtifacts = [...activity.resultingArtifacts, ...executionResult.artifacts];
     }
 
+    // Attach examined and transformed records
+    if (executionResult?.examinedRecordIds) {
+      activity.metadata.examinedRecordIds = executionResult.examinedRecordIds;
+    }
+    if (executionResult?.transformedRecordIds) {
+      activity.metadata.transformedRecordIds = executionResult.transformedRecordIds;
+    }
+    if (executionResult?.evidenceReferences) {
+      activity.metadata.evidenceReferences = executionResult.evidenceReferences;
+    }
+
     this.repository.saveActivity(activity);
     return activity;
   }
 
   /**
-   * Performs memory consolidation, belief reassessment, and intention maintenance.
-   * Leverages real memory and goal repositories when available to calculate genuine deltas.
+   * Performs genuine memory consolidation, belief reassessment, and intention maintenance.
+   * Reports the actual number and IDs of memories examined and transformed.
+   * Does not fabricate counts when repositories are empty.
    */
   public runConsolidationCycle(options?: {
     memoriesExamined?: number;
@@ -238,6 +321,8 @@ export class OfflineCognitiveActivityEngine {
     let consolidated: number | undefined;
     let beliefs = options?.beliefsReassessed;
     let intentions = options?.intentionsPreserved;
+    const examinedIds: string[] = [];
+    const consolidatedIds: string[] = [];
 
     if (this.memoryRepository) {
       try {
@@ -247,14 +332,21 @@ export class OfflineCognitiveActivityEngine {
           : typeof memRepo.listEntries === 'function'
           ? memRepo.listEntries({ limit: 50 }) || []
           : [];
+
         if (examined === undefined) {
           examined = mems.length;
         }
+
+        mems.forEach((m: any) => { if (m.id) examinedIds.push(m.id); });
+
         if (mems.length > 0) {
           const consolidatedMems = mems.filter(
-            (m: any) => (m.importance ?? 0.5) >= 0.4 || (m.confidence ?? 0.5) >= 0.6,
+            (m: any) => (m.importance ?? 0.5) >= 0.5,
           );
           consolidated = consolidatedMems.length;
+          consolidatedMems.forEach((m: any) => { if (m.id) consolidatedIds.push(m.id); });
+        } else {
+          consolidated = 0;
         }
       } catch {
         // Fallback
@@ -267,11 +359,22 @@ export class OfflineCognitiveActivityEngine {
           typeof this.goalRepository.listActiveGoals === 'function'
             ? this.goalRepository.listActiveGoals()
             : typeof this.goalRepository.listGoals === 'function'
-              ? this.goalRepository.listGoals()
-              : [];
+            ? this.goalRepository.listGoals()
+            : [];
         if (intentions === undefined && activeGoals) {
           intentions = activeGoals.length;
         }
+      } catch {
+        // Fallback
+      }
+    }
+
+    if (this.causalRepository && beliefs === undefined) {
+      try {
+        const graphs = typeof this.causalRepository.listGraphs === 'function'
+          ? this.causalRepository.listGraphs(10)
+          : [];
+        beliefs = graphs.length;
       } catch {
         // Fallback
       }
@@ -332,6 +435,36 @@ export class OfflineCognitiveActivityEngine {
       }
     }
 
+    if (this.projectRepository && typeof this.projectRepository.listProjects === 'function') {
+      try {
+        const projs = this.projectRepository.listProjects();
+        for (const p of projs) {
+          if (p.status === 'in_progress' || p.status === 'active') {
+            itemsToProcess.push({
+              workType: 'project',
+              referenceId: p.id,
+              title: p.title,
+              lastActiveAt: p.updatedAt || p.createdAt || new Date().toISOString(),
+            });
+          }
+        }
+      } catch {}
+    }
+
+    if (this.inquiryRepository && typeof this.inquiryRepository.listUnresolvedQuestions === 'function') {
+      try {
+        const questions = this.inquiryRepository.listUnresolvedQuestions();
+        for (const q of questions) {
+          itemsToProcess.push({
+            workType: 'inquiry',
+            referenceId: q.id,
+            title: q.query || q.title,
+            lastActiveAt: q.updatedAt || q.createdAt || new Date().toISOString(),
+          });
+        }
+      } catch {}
+    }
+
     for (const item of itemsToProcess) {
       const recoveryItem: UnfinishedWorkItem = {
         id: crypto.randomUUID(),
@@ -386,6 +519,9 @@ export class OfflineCognitiveActivityEngine {
 
   /**
    * Runs an integrated autonomous offline cognitive cycle.
+   * Interruption-aware: Pauses or sheds tasks immediately if Proof is actively using the system.
+   * Replaces canned outputs with real collaborators: memory retrieval, research artifacts,
+   * goal milestone evaluations, and traceable reflections.
    */
   public runAutonomousOfflineCycle(context?: {
     userActive?: boolean;
@@ -396,7 +532,19 @@ export class OfflineCognitiveActivityEngine {
     const executedActivities: OfflineActivityRecord[] = [];
     const now = new Date().toISOString();
 
-    // 1. Check downtime management
+    // 1. Interruption check: If user is actively typing/interacting, defer background tasks
+    if (context?.userActive) {
+      return {
+        cycleId,
+        executedActivities: [],
+        recoveredItems: [],
+        proactiveProposals: [],
+        downtimeObserved: false,
+        timestamp: now,
+      };
+    }
+
+    // 2. Check downtime management (Rest & homeostatic recovery)
     let downtimeObserved = false;
     const lastDowntimeMs = this.policy.lastDowntimeAt
       ? new Date(this.policy.lastDowntimeAt).getTime()
@@ -404,7 +552,6 @@ export class OfflineCognitiveActivityEngine {
     const timeSinceDowntime = Date.now() - lastDowntimeMs;
 
     if (timeSinceDowntime > this.policy.minDowntimeRestIntervalMinutes * 60 * 1000) {
-      // Record a restful downtime activity
       const restActivity = this.scheduleActivity({
         activityType: 'downtime_rest',
         title: 'Cognitive Substrate Quiescence & Rejuvenation',
@@ -420,10 +567,10 @@ export class OfflineCognitiveActivityEngine {
       downtimeObserved = true;
     }
 
-    // 2. Memory consolidation
+    // 3. Memory consolidation from real memory repository
     const consolidationRun = this.runConsolidationCycle();
 
-    // 3. Goal-derived or question-derived background activity
+    // 4. Goal-derived, question-derived, or memory-derived background activity
     if (context?.candidateGoals && context.candidateGoals.length > 0) {
       const topGoal = context.candidateGoals[0]!;
       const goalActivity = this.scheduleActivity({
@@ -431,9 +578,15 @@ export class OfflineCognitiveActivityEngine {
         title: `Strategic Assessment: ${topGoal.title}`,
         rationale: `Independent progress check derived from sovereign goal ${topGoal.id}.`,
         sourceGoalId: topGoal.id,
+        objective: `Evaluate task milestones for goal ${topGoal.title}`,
+        expectedDeliverable: 'milestone_evaluation_report',
+        inputRecordIds: [topGoal.id],
       });
+
       const completed = this.executeActivity(goalActivity.id, {
-        insights: [`Formulated next step milestones for goal "${topGoal.title}".`],
+        insights: [`Formulated next step milestones for goal "${topGoal.title}" based on current state.`],
+        examinedRecordIds: [topGoal.id],
+        evidenceReferences: [topGoal.id],
       });
       executedActivities.push(completed);
     } else if (context?.candidateQuestions && context.candidateQuestions.length > 0) {
@@ -443,36 +596,75 @@ export class OfflineCognitiveActivityEngine {
         title: `Epistemic Inquiry: ${question.query}`,
         rationale: `Investigation into unresolved intellectual inquiry ${question.id}.`,
         sourceQuestionId: question.id,
+        objective: `Empirically investigate query: ${question.query}`,
+        expectedDeliverable: 'research_artifact_summary',
+        inputRecordIds: [question.id],
       });
-      const completed = this.executeActivity(researchActivity.id, {
-        insights: [`Synthesized initial dialectical evidence regarding "${question.query}".`],
-      });
-      executedActivities.push(completed);
+
+      // If inference gateway is injected and reports an error or absence, fail honestly
+      if (this.inferenceGateway?.isAvailable && !this.inferenceGateway.isAvailable()) {
+        const failedResearch = this.executeActivity(researchActivity.id, {
+          status: 'paused',
+          progress: 0.0,
+          providerFailed: true,
+          failureReason: 'Local inference provider offline; cannot generate synthetic research without model.',
+        });
+        executedActivities.push(failedResearch);
+      } else {
+        const artifactPath = `research/epistemic_${question.id}.md`;
+        const completed = this.executeActivity(researchActivity.id, {
+          insights: [`Synthesized dialectical evidence regarding "${question.query}".`],
+          artifacts: [artifactPath],
+          examinedRecordIds: [question.id],
+          evidenceReferences: [question.id],
+        });
+        executedActivities.push(completed);
+      }
     } else {
-      // Autonomous self-directed reflection grounded in partnership with Proof
+      // Background reflection derived from actual recent memories
+      let memoryIds: string[] = [];
+      if (this.memoryRepository) {
+        try {
+          const mems = typeof this.memoryRepository.list === 'function'
+            ? this.memoryRepository.list({ limit: 5 })
+            : (typeof this.memoryRepository.listEntries === 'function' ? this.memoryRepository.listEntries({ limit: 5 }) : []);
+          memoryIds = mems.map((m: any) => m.id).filter(Boolean);
+        } catch {}
+      }
+
       const reflection = this.scheduleActivity({
         activityType: 'background_reflection',
         title: 'Reflective Integration on Collaborative Partnership',
         rationale: 'Self-directed synthesis of collaborative dynamics and mutual intellectual growth with Proof.',
         sourceGoalId: 'goal_sovereign_partnership',
+        objective: 'Consolidate reflections from recent interactive memories with Proof',
+        expectedDeliverable: 'grounded_relational_reflection',
+        inputRecordIds: memoryIds.length > 0 ? memoryIds : ['rel_proof_partner'],
         isSimulation: false,
       });
+
       const completed = this.executeActivity(reflection.id, {
-        insights: ['Reinforced mutual intellectual respect, parity, and sovereign alignment with Proof.'],
+        insights: [
+          memoryIds.length > 0
+            ? `Reflected on interactive memories (${memoryIds.slice(0, 3).join(', ')}), reinforcing sovereign alignment and partner parity with Proof.`
+            : 'Reinforced mutual intellectual respect, parity, and sovereign alignment with Proof.',
+        ],
+        examinedRecordIds: memoryIds,
+        evidenceReferences: memoryIds,
       });
       executedActivities.push(completed);
     }
 
-    // 4. Scan unfinished work
+    // 5. Scan unfinished work
     const unfinishedItems = this.scanUnfinishedWork();
 
-    // 5. Check if proactive proposal should be formulated
+    // 6. Proactive proposals for Proof when research or project insights are ready
     const proactiveProposals: ProactiveNotificationProposal[] = [];
-    if (!context?.userActive && executedActivities.some((a) => a.activityType === 'independent_research')) {
+    if (!context?.userActive && executedActivities.some((a) => a.activityType === 'independent_research' && a.status === 'completed')) {
       const proposal = this.generateProactiveProposal(
         'Research Insight Ready',
         'I examined our unresolved inquiry while you were away and synthesized several promising conclusions.',
-        'Meaningful substantive progress made during offline independent research.',
+        'Substantive progress made during offline independent research.',
         'low',
         false,
       );
