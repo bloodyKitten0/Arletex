@@ -2191,6 +2191,42 @@ export class ApeService {
     return this.selfGeneratedGoalEngine.completeGoal(goalId);
   }
 
+  public pauseSelfGeneratedGoal(goalId: string, reason: string) {
+    return this.selfGeneratedGoalEngine.pauseGoal(goalId, reason);
+  }
+
+  public resumeSelfGeneratedGoal(goalId: string, reason?: string) {
+    return this.selfGeneratedGoalEngine.resumeGoal(goalId, reason);
+  }
+
+  public rejectSelfGeneratedGoal(goalId: string, reason: string) {
+    return this.selfGeneratedGoalEngine.rejectGoal(goalId, reason);
+  }
+
+  public decomposeSelfGeneratedGoal(
+    parentGoalId: string,
+    subGoalParams: Parameters<SelfGeneratedGoalEngine['decomposeGoal']>[1],
+  ) {
+    return this.selfGeneratedGoalEngine.decomposeGoal(parentGoalId, subGoalParams);
+  }
+
+  public rankSelfGeneratedGoals(
+    goals: Parameters<SelfGeneratedGoalEngine['rankGoals']>[0],
+    context?: Parameters<SelfGeneratedGoalEngine['rankGoals']>[1],
+  ) {
+    return this.selfGeneratedGoalEngine.rankGoals(goals, context);
+  }
+
+  public executeTraceableCuriosityPipeline(
+    params: Parameters<CuriosityExplorationEngine['executeTraceableCuriosityPipeline']>[0],
+  ) {
+    return this.curiosityEngine.executeTraceableCuriosityPipeline({
+      ...params,
+      goalEngine: params.goalEngine ?? this.selfGeneratedGoalEngine,
+      projectService: params.projectService ?? this.personalProjectService,
+    });
+  }
+
   public synthesizeAutonomousGoalsFromState(context: Parameters<SelfGeneratedGoalEngine['synthesizeAutonomousGoalsFromState']>[0]) {
     return this.selfGeneratedGoalEngine.synthesizeAutonomousGoalsFromState(context);
   }

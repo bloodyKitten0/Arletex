@@ -66,7 +66,7 @@ export class PersonalProjectService {
       category: input.category,
       status: input.status ?? 'proposed',
       progress: 0.0,
-      motivation: input.motivation,
+      motivation: input.motivation || input.description || 'Autonomous intrinsic motivation',
       associatedInterestTopic: input.associatedInterestTopic,
       milestones,
       deliverables,

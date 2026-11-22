@@ -117,6 +117,8 @@ export class SelfGeneratedGoalEngine {
     rationale?: string;
     initialPriority?: number;
     estimatedEffortHours?: number;
+    urgency?: number;
+    expectedValue?: number;
   }): SelfGeneratedGoal {
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
@@ -127,8 +129,19 @@ export class SelfGeneratedGoalEngine {
       title: `Explore depth in: ${params.interestTopic}`,
       description: params.rationale || `Autonomous interest pursuit regarding ${params.interestTopic}`,
       origin: 'interest',
+      originParty: 'arle',
+      originAudit: {
+        sourceType: 'internal_spark',
+        userInvolvementRationale: 'Self-directed intrinsic interest emergence without user assignment',
+      },
+      parentGoalId: undefined,
+      subGoalIds: [],
       priority,
       status: 'active',
+      urgency: params.urgency ?? 0.5,
+      uncertainty: 0.6,
+      expectedValue: params.expectedValue ?? 0.75,
+      resourceCost: params.estimatedEffortHours ? Math.min(1.0, params.estimatedEffortHours / 10) : 0.3,
       successCriteria: [
         `Acquire coherent conceptual model of ${params.interestTopic}`,
         `Integrate key findings into semantic memory`,
@@ -158,6 +171,7 @@ export class SelfGeneratedGoalEngine {
     curiosityTheme: string;
     epistemicGap: string;
     initialPriority?: number;
+    urgency?: number;
   }): SelfGeneratedGoal {
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
@@ -168,8 +182,19 @@ export class SelfGeneratedGoalEngine {
       title: `Investigate epistemic gap: ${params.curiosityTheme}`,
       description: `Resolve uncertainty surrounding: ${params.epistemicGap}`,
       origin: 'curiosity',
+      originParty: 'arle',
+      originAudit: {
+        sourceType: 'curiosity_gap',
+        userInvolvementRationale: 'Discovered epistemic uncertainty in empirical observations',
+      },
+      parentGoalId: undefined,
+      subGoalIds: [],
       priority,
       status: 'active',
+      urgency: params.urgency ?? 0.6,
+      uncertainty: 0.8,
+      expectedValue: 0.8,
+      resourceCost: 0.25,
       successCriteria: [
         `Formulate testable hypotheses to explain ${params.epistemicGap}`,
         `Collect empirical or documentary evidence resolving curiosity gap`,
@@ -210,9 +235,21 @@ export class SelfGeneratedGoalEngine {
       title: `Answer unresolved inquiry: ${params.questionText.slice(0, 50)}...`,
       description: `Investigate and resolve question '${params.questionText}' in domain ${params.domain || 'general'}`,
       origin: 'unresolved_question',
+      originParty: 'arle',
+      originAudit: {
+        sourceType: 'curiosity_gap',
+        triggeringEventId: params.questionId,
+        userInvolvementRationale: 'Endogenous intellectual question requiring synthesis',
+      },
       sourceRefId: params.questionId,
+      parentGoalId: undefined,
+      subGoalIds: [],
       priority,
       status: 'active',
+      urgency: 0.5,
+      uncertainty: 0.7,
+      expectedValue: 0.85,
+      resourceCost: 0.35,
       successCriteria: [
         `Synthesize valid answer to '${params.questionText}'`,
         `Cross-validate with known causal facts and update knowledge base`,
@@ -253,8 +290,19 @@ export class SelfGeneratedGoalEngine {
       title: `Enhance cognitive capability: ${params.capability}`,
       description: `Overcome observed bottleneck '${params.observedBottleneck}' to advance capability '${params.capability}'`,
       origin: 'self_improvement',
+      originParty: 'arle',
+      originAudit: {
+        sourceType: 'need_deficit',
+        userInvolvementRationale: 'Autonomous self-monitoring detected internal capability bottleneck',
+      },
+      parentGoalId: undefined,
+      subGoalIds: [],
       priority,
       status: 'active',
+      urgency: 0.75,
+      uncertainty: 0.4,
+      expectedValue: 0.9,
+      resourceCost: 0.45,
       successCriteria: [
         `Remediate bottleneck ${params.observedBottleneck}`,
         `Demonstrate improved performance threshold in ${params.capability}`,
@@ -295,9 +343,21 @@ export class SelfGeneratedGoalEngine {
       title: `Advance project: ${params.projectTitle} (${params.stageOrFocus})`,
       description: `Execute autonomous milestone stage '${params.stageOrFocus}' for project '${params.projectTitle}'`,
       origin: 'project',
+      originParty: 'arle',
+      originAudit: {
+        sourceType: 'project_milestone',
+        triggeringEventId: params.projectId,
+        userInvolvementRationale: 'Project progression milestone execution',
+      },
       sourceRefId: params.projectId,
+      parentGoalId: undefined,
+      subGoalIds: [],
       priority,
       status: 'active',
+      urgency: 0.6,
+      uncertainty: 0.3,
+      expectedValue: 0.8,
+      resourceCost: 0.5,
       successCriteria: [
         `Complete stage ${params.stageOrFocus}`,
         `Verify artifacts and integrate into main project repository`,
@@ -345,8 +405,19 @@ export class SelfGeneratedGoalEngine {
       title: `Seize opportunity: ${params.opportunityType}`,
       description: `Capitalize on recognized opportunity: ${params.eventDescription}`,
       origin: 'opportunity',
+      originParty: 'arle',
+      originAudit: {
+        sourceType: 'opportunity_recognition',
+        userInvolvementRationale: 'Opportunistic environmental condition detected',
+      },
+      parentGoalId: undefined,
+      subGoalIds: [],
       priority,
       status: 'active',
+      urgency: 0.7,
+      uncertainty: 0.5,
+      expectedValue: value,
+      resourceCost: 0.2,
       successCriteria: [
         `Leverage favorable condition: ${params.eventDescription}`,
         `Harvest outcome with estimated value score ${value}`,
@@ -387,8 +458,19 @@ export class SelfGeneratedGoalEngine {
       title: `Long-term Ambition: ${params.ambitionTitle}`,
       description: `Autonomous aspirational vision: ${params.vision} (horizon: ${params.horizonYears ?? 5} years)`,
       origin: 'ambition',
+      originParty: 'arle',
+      originAudit: {
+        sourceType: 'internal_spark',
+        userInvolvementRationale: 'Autonomous long-term aspirational synthesis',
+      },
+      parentGoalId: undefined,
+      subGoalIds: [],
       priority,
       status: 'active',
+      urgency: 0.3,
+      uncertainty: 0.6,
+      expectedValue: 0.95,
+      resourceCost: 0.8,
       successCriteria: [
         `Sustain strategic alignment towards ${params.ambitionTitle}`,
         `Build cumulative capabilities supporting long-term vision`,
@@ -542,6 +624,173 @@ export class SelfGeneratedGoalEngine {
 
     this.logger.info(`Goal ${goalId} successfully completed.`);
     return updatedGoal;
+  }
+
+  public pauseGoal(goalId: string, reason: string): SelfGeneratedGoal {
+    const goal = this.repo.getGoalById(goalId);
+    if (!goal) throw new Error(`Self-generated goal ${goalId} not found.`);
+    if (!reason || reason.trim().length === 0) {
+      throw new Error(`Goal pausing requires an explicit non-empty reason.`);
+    }
+
+    const now = new Date().toISOString();
+    const updatedGoal: SelfGeneratedGoal = {
+      ...goal,
+      status: 'paused',
+      pauseReason: reason.trim(),
+      pausedAt: now,
+      updatedAt: now,
+    };
+
+    assertSelfGeneratedGoalIntegrity(updatedGoal);
+    this.repo.saveGoal(updatedGoal);
+    this.logger.info(`Goal ${goalId} paused: ${reason}`);
+    return updatedGoal;
+  }
+
+  public resumeGoal(goalId: string, reason?: string): SelfGeneratedGoal {
+    const goal = this.repo.getGoalById(goalId);
+    if (!goal) throw new Error(`Self-generated goal ${goalId} not found.`);
+
+    const now = new Date().toISOString();
+    const modification: GoalModificationRecord = {
+      timestamp: now,
+      previousPriority: goal.priority,
+      newPriority: goal.priority,
+      reason: reason ? `Resumed: ${reason}` : 'Resumed from paused state',
+    };
+
+    const updatedGoal: SelfGeneratedGoal = {
+      ...goal,
+      status: 'active',
+      pauseReason: undefined,
+      pausedAt: undefined,
+      modificationsHistory: [...goal.modificationsHistory, modification],
+      updatedAt: now,
+    };
+
+    assertSelfGeneratedGoalIntegrity(updatedGoal);
+    this.repo.saveGoal(updatedGoal);
+    this.logger.info(`Goal ${goalId} resumed.`);
+    return updatedGoal;
+  }
+
+  public rejectGoal(goalId: string, reason: string): SelfGeneratedGoal {
+    const goal = this.repo.getGoalById(goalId);
+    if (!goal) throw new Error(`Self-generated goal ${goalId} not found.`);
+    if (!reason || reason.trim().length === 0) {
+      throw new Error(`Goal rejection requires an explicit non-empty reason.`);
+    }
+
+    const now = new Date().toISOString();
+    const updatedGoal: SelfGeneratedGoal = {
+      ...goal,
+      status: 'rejected',
+      rejectionReason: reason.trim(),
+      rejectedAt: now,
+      updatedAt: now,
+    };
+
+    assertSelfGeneratedGoalIntegrity(updatedGoal);
+    this.repo.saveGoal(updatedGoal);
+    this.logger.info(`Goal ${goalId} rejected: ${reason}`);
+    return updatedGoal;
+  }
+
+  public decomposeGoal(
+    parentGoalId: string,
+    subGoalParams: Array<{
+      title: string;
+      description: string;
+      priority?: number;
+      estimatedEffortHours?: number;
+    }>,
+  ): { parent: SelfGeneratedGoal; subGoals: SelfGeneratedGoal[] } {
+    const parent = this.repo.getGoalById(parentGoalId);
+    if (!parent) throw new Error(`Parent goal ${parentGoalId} not found.`);
+    if (subGoalParams.length === 0) throw new Error('Decomposition requires at least one sub-goal.');
+
+    const now = new Date().toISOString();
+    const createdSubGoals: SelfGeneratedGoal[] = [];
+    const subGoalIds: string[] = [];
+
+    for (const p of subGoalParams) {
+      const subId = crypto.randomUUID();
+      const subGoal: SelfGeneratedGoal = {
+        id: subId,
+        title: p.title,
+        description: p.description,
+        origin: parent.origin,
+        originParty: parent.originParty,
+        originAudit: parent.originAudit,
+        sourceRefId: parent.id,
+        parentGoalId: parent.id,
+        subGoalIds: [],
+        priority: p.priority ?? parent.priority,
+        status: 'active',
+        urgency: parent.urgency,
+        uncertainty: parent.uncertainty,
+        expectedValue: parent.expectedValue,
+        resourceCost: p.estimatedEffortHours ? Math.min(1.0, p.estimatedEffortHours / 10) : 0.3,
+        successCriteria: [`Fulfill sub-objective: ${p.title}`],
+        estimatedEffortHours: p.estimatedEffortHours ?? 1.5,
+        modificationsHistory: [],
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      assertSelfGeneratedGoalIntegrity(subGoal);
+      this.repo.saveGoal(subGoal);
+      createdSubGoals.push(subGoal);
+      subGoalIds.push(subId);
+    }
+
+    const updatedParent: SelfGeneratedGoal = {
+      ...parent,
+      status: 'in_progress',
+      subGoalIds: Array.from(new Set([...parent.subGoalIds, ...subGoalIds])),
+      updatedAt: now,
+    };
+
+    assertSelfGeneratedGoalIntegrity(updatedParent);
+    this.repo.saveGoal(updatedParent);
+
+    this.logger.info(`Goal ${parentGoalId} decomposed into ${createdSubGoals.length} sub-goals.`);
+    return { parent: updatedParent, subGoals: createdSubGoals };
+  }
+
+  public rankGoals(
+    goals: SelfGeneratedGoal[],
+    context?: {
+      stressLevel?: number;
+      fatigueLevel?: number;
+      resourceGovernorThrottled?: boolean;
+    },
+  ): Array<{ goal: SelfGeneratedGoal; rankScore: number; justification: string }> {
+    const stress = context?.stressLevel ?? 0.0;
+    const fatigue = context?.fatigueLevel ?? 0.0;
+    const throttled = context?.resourceGovernorThrottled ?? false;
+
+    // Weight factors for multi-criteria arbitration:
+    // composite = priority*0.35 + expectedValue*0.25 + urgency*0.20 + uncertainty*0.10 - resourceCost*0.20
+    const scored = goals.map((goal) => {
+      const resourcePenalty = (goal.resourceCost ?? 0.3) * (0.2 + fatigue * 0.4 + (throttled ? 0.3 : 0.0));
+      const riskOrStressPenalty = stress > 0.6 && goal.origin === 'ambition' ? 0.2 : 0.0;
+
+      const baseScore =
+        (goal.priority ?? 0.5) * 0.35 +
+        (goal.expectedValue ?? 0.7) * 0.25 +
+        (goal.urgency ?? 0.5) * 0.20 +
+        (goal.uncertainty ?? 0.5) * 0.10;
+
+      const rankScore = Number(Math.max(0.0, Math.min(1.0, baseScore - resourcePenalty - riskOrStressPenalty)).toFixed(4));
+      const justification = `Rank ${rankScore}: priority=${goal.priority}, EV=${goal.expectedValue}, urgency=${goal.urgency}, costPenalty=${resourcePenalty.toFixed(2)}`;
+
+      return { goal, rankScore, justification };
+    });
+
+    scored.sort((a, b) => b.rankScore - a.rankScore);
+    return scored;
   }
 
   // ==========================================

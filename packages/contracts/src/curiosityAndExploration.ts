@@ -72,6 +72,10 @@ export const DiscoveredInterestSchema = z.object({
   maturity: InterestMaturityLevelSchema,
   curiosityIntensity: z.number().min(0.0).max(1.0),
   investigationCount: z.number().int().nonnegative(),
+  sessionIds: z.array(z.string()).default([]),
+  distinctExplorationDays: z.number().int().nonnegative().default(1),
+  noveltyType: z.enum(['temporary_novelty', 'durable_interest']).default('durable_interest'),
+  decayResistance: z.number().min(0.0).max(1.0).default(0.5),
   isUserAssigned: z.literal(false), // Acceptance invariant: must not be explicitly assigned by user
   discoveredRationale: z.string().min(1),
   keyFindings: z.array(z.string()).default([]),
