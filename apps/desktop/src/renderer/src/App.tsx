@@ -487,7 +487,7 @@ export const App: React.FC = () => {
         overflow: 'hidden',
         backgroundColor: 'var(--dev-bg-base, #080a0d)',
         color: 'var(--dev-text-primary, #e6edf3)',
-        fontFamily: 'var(--font-mono, monospace)',
+        fontFamily: 'var(--font-human)',
       }}
     >
       {/* Primary Left Navigation */}

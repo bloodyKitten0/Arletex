@@ -77,7 +77,7 @@ export const MainView: React.FC<MainViewProps> = ({ onNavigateSection }) => {
         height: '100%',
         backgroundColor: 'var(--dev-bg-base)',
         color: 'var(--dev-text-primary)',
-        fontFamily: 'var(--font-mono)',
+        fontFamily: 'var(--font-human)',
         overflowY: 'auto',
         padding: '24px 32px',
         display: 'flex',
@@ -326,7 +326,7 @@ export const MainView: React.FC<MainViewProps> = ({ onNavigateSection }) => {
             </div>
             {onNavigateSection && (
               <button
-                onClick={() => onNavigateSection('memories')}
+                onClick={() => onNavigateSection('memory')}
                 style={{ fontSize: '11px', color: 'var(--dev-accent-cyan)' }}
               >
                 Inspect Knowledge →
@@ -389,35 +389,50 @@ export const MainView: React.FC<MainViewProps> = ({ onNavigateSection }) => {
             {
               id: 'emo',
               title: 'APE Emotional Repertoire',
-              desc: '148 Experiential States & appraisal graphs',
+              sentences: [
+                '148 Experiential States across 11 domains.',
+                'Inspect real-time cognitive appraisal graphs and decay dynamics.',
+              ],
               icon: Activity,
               color: 'var(--dev-accent-cyan)',
             },
             {
-              id: 'memories',
-              title: 'Memory & Knowledge',
-              desc: 'Autobiographical memories & RAG vectors',
+              id: 'memory',
+              title: 'Memory & Knowledge Ledger',
+              sentences: [
+                'Autobiographical memory store and RAG vector indices.',
+                'Persisted knowledge decoupled from ephemeral model weights.',
+              ],
               icon: Database,
               color: 'var(--dev-accent-purple)',
             },
             {
               id: 'history',
               title: 'Cognitive Event Stream',
-              desc: 'State transition ledger & audit trail',
+              sentences: [
+                'State transition ledger and audit trail.',
+                'Chronological session logs and reasoning trajectory inspection.',
+              ],
               icon: Terminal,
               color: 'var(--dev-accent-emerald)',
             },
             {
               id: 'environment',
-              title: 'Perception & Sensors',
-              desc: 'Screen OCR & acoustic frequency monitor',
+              title: 'Perception & Hardware Matrix',
+              sentences: [
+                'Screen OCR and acoustic frequency monitor.',
+                'Vulkan compute shaders, hardware boundaries, and device sandboxing.',
+              ],
               icon: Eye,
               color: 'var(--dev-accent-amber)',
             },
             {
               id: 'activities',
               title: 'Autonomous Agency',
-              desc: 'Autonomous loops & device action logs',
+              sentences: [
+                'Autonomous agency loops and pursuit queue.',
+                'Background task execution, goal evaluation, and tool calling.',
+              ],
               icon: Zap,
               color: '#f43f5e',
             },
@@ -435,7 +450,7 @@ export const MainView: React.FC<MainViewProps> = ({ onNavigateSection }) => {
                   textAlign: 'left',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '8px',
+                  gap: '10px',
                   cursor: 'pointer',
                   transition: 'border-color 0.15s ease',
                 }}
@@ -446,9 +461,20 @@ export const MainView: React.FC<MainViewProps> = ({ onNavigateSection }) => {
                   <IconComponent size={16} />
                   <span style={{ fontSize: '13px', fontWeight: 600 }}>{item.title}</span>
                 </div>
-                <p style={{ fontSize: '11px', color: 'var(--dev-text-muted)', lineHeight: '1.4' }}>
-                  {item.desc}
-                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {item.sentences.map((sentence, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        fontSize: '12px',
+                        color: 'var(--dev-text-secondary)',
+                        lineHeight: '1.55',
+                      }}
+                    >
+                      {sentence}
+                    </div>
+                  ))}
+                </div>
               </button>
             );
           })}
@@ -470,7 +496,7 @@ export const MainView: React.FC<MainViewProps> = ({ onNavigateSection }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginBottom: '12px',
+            marginBottom: '14px',
           }}
         >
           <div
@@ -482,30 +508,67 @@ export const MainView: React.FC<MainViewProps> = ({ onNavigateSection }) => {
             }}
           >
             <ShieldCheck size={16} />
-            <span style={{ fontSize: '12px', fontWeight: 600 }}>SYSTEM INTEGRITY & INVARIANTS</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.5px' }}>
+              SYSTEM INTEGRITY & ARCHITECTURAL INVARIANTS
+            </span>
           </div>
-          <span style={{ fontSize: '11px', color: 'var(--dev-text-muted)' }}>
-            Zero Fake Mocks • Real PyTorch Weights • Strict Clean UI Separation
+          <span
+            style={{
+              fontSize: '11px',
+              color: 'var(--dev-text-muted)',
+              fontFamily: 'var(--font-mono)',
+            }}
+          >
+            Zero Fake Mocks • PyTorch Weights • Pure UI Separation
           </span>
         </div>
 
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-            gap: '12px',
-            fontSize: '11px',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+            gap: '14px',
+            fontSize: '12px',
+            lineHeight: '1.6',
             color: 'var(--dev-text-secondary)',
           }}
         >
-          <div>
-            • Human Experience: Clean companion dialogue at <code>npm run arle</code>.
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+            <span style={{ color: 'var(--dev-accent-cyan)', fontWeight: 700, fontSize: '14px' }}>
+              •
+            </span>
+            <div>
+              <strong style={{ color: 'var(--dev-text-primary)' }}>Human Experience:</strong> Clean
+              companion dialogue at <code>npm run arle</code>.
+            </div>
           </div>
-          <div>
-            • Cognitive OS Laboratory: Pure developer toolbox at <code>npm run arletex</code>.
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+            <span style={{ color: 'var(--dev-accent-emerald)', fontWeight: 700, fontSize: '14px' }}>
+              •
+            </span>
+            <div>
+              <strong style={{ color: 'var(--dev-text-primary)' }}>Cognitive OS Laboratory:</strong>{' '}
+              Pure developer toolbox at <code>npm run arletex</code>.
+            </div>
           </div>
-          <div>• Database: SQLite with 68 canonical migrations applied.</div>
-          <div>• Hardware Target: ASUS ROG Ally X (24GB Unified LPDDR5X).</div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+            <span style={{ color: 'var(--dev-accent-purple)', fontWeight: 700, fontSize: '14px' }}>
+              •
+            </span>
+            <div>
+              <strong style={{ color: 'var(--dev-text-primary)' }}>Knowledge Ledger:</strong> SQLite
+              with 68 canonical migrations applied.
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+            <span style={{ color: 'var(--dev-accent-amber)', fontWeight: 700, fontSize: '14px' }}>
+              •
+            </span>
+            <div>
+              <strong style={{ color: 'var(--dev-text-primary)' }}>Hardware Target:</strong> ASUS
+              ROG Ally X (24GB Unified LPDDR5X).
+            </div>
+          </div>
         </div>
       </div>
     </div>

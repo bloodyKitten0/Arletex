@@ -444,7 +444,9 @@ export const MemoryView: React.FC = () => {
                 <div
                   style={{
                     fontSize: '13px',
-                    lineHeight: '1.6',
+                    fontFamily: 'var(--font-human)',
+                    lineHeight: '1.65',
+                    letterSpacing: '-0.01em',
                     color: 'var(--text-primary)',
                     whiteSpace: 'pre-wrap',
                   }}

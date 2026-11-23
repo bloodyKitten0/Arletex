@@ -164,3 +164,36 @@ input, textarea {
   font-family: var(--font-mono);
   font-feature-settings: 'tnum', 'zero';
 }
+
+/* ============================================================================
+   Developer Tool Readability & Sentence Delimiters
+   ============================================================================ */
+.dev-prose {
+  font-family: var(--font-human);
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--dev-text-secondary);
+  letter-spacing: -0.01em;
+  word-spacing: 0.05em;
+}
+
+.dev-prose p {
+  margin-bottom: 8px;
+}
+
+.dev-sentence-break {
+  display: block;
+  margin-bottom: 6px;
+  line-height: 1.65;
+}
+
+.dev-bullet-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.6;
+}
+
+.dev-bullet-item + .dev-bullet-item {
+  margin-top: 6px;
+}

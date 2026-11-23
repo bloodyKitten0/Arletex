@@ -13,6 +13,8 @@ import {
   Clock,
   Sparkles,
   Terminal,
+  Mic,
+  Loader2,
 } from 'lucide-react';
 import { splitIntoSpeechChunks, playSpeechQueue, stopCurrentAudio } from '../../utils/mediaUtils';
 import { GenerationStats } from '../../types';
@@ -70,10 +72,28 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
   const [showHistoryDrawer, setShowHistoryDrawer] = useState(false);
   const [memorySavedId, setMemorySavedId] = useState<string | null>(null);
   const [activeMood, setActiveMood] = useState('Present & Attuned');
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [micNotice, setMicNotice] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+
+  // Clean up recording tracks & timer on unmount
+  useEffect(() => {
+    return () => {
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, []);
 
   // Auto-scroll to bottom
   const scrollToBottom = useCallback(() => {
@@ -164,6 +184,123 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  // Microphone audio recording & Whisper transcription
+  const startRecording = async () => {
+    setMicNotice(null);
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setMicNotice('Microphone access is not supported in this environment.');
+        return;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+
+      let mimeType = 'audio/webm;codecs=opus';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
+      }
+
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        if (recordingTimerRef.current) {
+          clearInterval(recordingTimerRef.current);
+          recordingTimerRef.current = null;
+        }
+        if (mediaStreamRef.current) {
+          mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+          mediaStreamRef.current = null;
+        }
+
+        const chunks = audioChunksRef.current;
+        if (chunks.length === 0) return;
+
+        const effectiveType = mimeType || 'audio/webm';
+        const audioBlob = new Blob(chunks, { type: effectiveType });
+        if (audioBlob.size < 100) return;
+
+        setIsTranscribing(true);
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64Data = reader.result as string;
+          try {
+            if (window.arletexApi?.transcribeAudio) {
+              const res = await window.arletexApi.transcribeAudio(base64Data, 'webm');
+              if (res.success) {
+                if (res.data?.transcript?.trim()) {
+                  const transcribed = res.data.transcript.trim();
+                  setInputText((prev) => (prev ? `${prev} ${transcribed}` : transcribed));
+                } else {
+                  setMicNotice('No speech detected by Whisper.');
+                  setTimeout(() => setMicNotice(null), 3000);
+                }
+              } else {
+                setMicNotice(res.error || 'Whisper transcription failed');
+                setTimeout(() => setMicNotice(null), 4000);
+              }
+            } else {
+              setMicNotice('Whisper speech transcription service is unavailable.');
+              setTimeout(() => setMicNotice(null), 4000);
+            }
+          } catch (err: any) {
+            setMicNotice(err.message || 'Voice transcription error');
+            setTimeout(() => setMicNotice(null), 4000);
+          } finally {
+            setIsTranscribing(false);
+          }
+        };
+        reader.readAsDataURL(audioBlob);
+      };
+
+      recorder.start(250);
+      setIsRecording(true);
+      setRecordingDuration(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingDuration((prev) => prev + 1);
+      }, 1000);
+    } catch (err: any) {
+      console.warn('Microphone permission or access error:', err);
+      setMicNotice(
+        err.message?.includes('Permission')
+          ? 'Microphone permission denied'
+          : 'Could not initialize microphone',
+      );
+      setTimeout(() => setMicNotice(null), 4000);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
+  };
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      void startRecording();
+    }
+  };
+
+  const formatDuration = (sec: number) => {
+    const mins = Math.floor(sec / 60);
+    const secs = sec % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   // Save reflection to memory
@@ -655,17 +792,47 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
             </div>
           )}
 
+          {/* Microphone notification */}
+          {micNotice && (
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '6px 12px',
+                backgroundColor: 'rgba(233, 162, 99, 0.12)',
+                border: '1px solid rgba(233, 162, 99, 0.3)',
+                borderRadius: '8px',
+                marginBottom: '10px',
+                fontSize: '12px',
+                color: 'var(--human-accent-amber)',
+              }}
+            >
+              <span>{micNotice}</span>
+              <button
+                onClick={() => setMicNotice(null)}
+                style={{ color: 'var(--human-text-muted)' }}
+              >
+                <X size={13} />
+              </button>
+            </div>
+          )}
+
           <div
             style={{
               backgroundColor: 'var(--human-bg-surface)',
-              border: '1px solid var(--human-border-subtle)',
+              border: isRecording
+                ? '1px solid rgba(239, 68, 68, 0.6)'
+                : '1px solid var(--human-border-subtle)',
               borderRadius: '16px',
               padding: '12px 16px',
               display: 'flex',
               alignItems: 'flex-end',
               gap: '12px',
-              boxShadow: '0 8px 30px rgba(0, 0, 0, 0.25)',
-              transition: 'border-color 0.2s ease',
+              boxShadow: isRecording
+                ? '0 0 20px rgba(239, 68, 68, 0.2)'
+                : '0 8px 30px rgba(0, 0, 0, 0.25)',
+              transition: 'all 0.2s ease',
             }}
           >
             {/* Hidden file input */}
@@ -687,6 +854,64 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
               }}
             >
               <Paperclip size={18} />
+            </button>
+
+            {/* Microphone Voice Input Button */}
+            <button
+              type="button"
+              onClick={toggleRecording}
+              disabled={isGenerating || isTranscribing}
+              title={
+                isRecording
+                  ? 'Listening... Click to finish and transcribe with Whisper'
+                  : isTranscribing
+                    ? 'Transcribing speech with Whisper...'
+                    : 'Speak to Arle (Whisper STT)'
+              }
+              style={{
+                color: isRecording
+                  ? '#ffffff'
+                  : isTranscribing
+                    ? 'var(--human-accent-amber)'
+                    : 'var(--human-text-muted)',
+                backgroundColor: isRecording
+                  ? 'rgba(239, 68, 68, 0.85)'
+                  : isTranscribing
+                    ? 'rgba(233, 162, 99, 0.15)'
+                    : 'transparent',
+                padding: isRecording ? '6px 12px' : '6px',
+                borderRadius: isRecording ? '20px' : '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '12px',
+                fontWeight: 600,
+                boxShadow: isRecording ? '0 0 12px rgba(239, 68, 68, 0.45)' : 'none',
+                transition: 'all 0.18s ease',
+                cursor: isGenerating || isTranscribing ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {isTranscribing ? (
+                <>
+                  <Loader2 size={16} className="spin" />
+                  <span style={{ fontSize: '11px' }}>Transcribing...</span>
+                </>
+              ) : isRecording ? (
+                <>
+                  <span
+                    style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: '#ffffff',
+                      animation: 'humanPulseGlow 1s infinite',
+                    }}
+                  />
+                  <span>{formatDuration(recordingDuration)}</span>
+                </>
+              ) : (
+                <Mic size={18} />
+              )}
             </button>
 
             <textarea

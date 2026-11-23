@@ -2108,7 +2108,7 @@ export const EmoView: React.FC = () => {
                       id: 'playful_tease',
                       name: 'Playful Teasing',
                       score: 0.8,
-                      description: 'Provocative flirtation and affectionate wit',
+                      description: 'Playful intellect, bantering humor, and quick wit',
                       evidenceCount: 1,
                     },
                   ]
