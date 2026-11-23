@@ -36,6 +36,9 @@ import {
   DesktopCompanionState,
   ExperientialStateDefinition,
   ExperientialStateInstance,
+  LearnTopicInput,
+  LearnProgressChunk,
+  KnowledgeDocument,
 } from '@arletex/contracts';
 
 export interface ArletexApi {
@@ -63,6 +66,14 @@ export interface ArletexApi {
   updateMemory: (input: UpdateMemoryInput) => Promise<IPCResponse<Memory>>;
   deleteMemory: (id: string) => Promise<IPCResponse<boolean>>;
   mergeMemories: (primaryId: string, secondaryId: string) => Promise<IPCResponse<Memory>>;
+
+  // Learning & Knowledge Ingestion APIs
+  learnTopic: (
+    input: LearnTopicInput,
+  ) => Promise<
+    IPCResponse<{ success: boolean; document?: KnowledgeDocument; chunksCount?: number }>
+  >;
+  onLearnProgress: (callback: (progress: LearnProgressChunk) => void) => () => void;
 
   // Activities APIs
   listActivities: (
@@ -243,6 +254,16 @@ const api: ArletexApi = {
   deleteMemory: (id) => ipcRenderer.invoke(IPC_CHANNELS.MEMORIES_DELETE, id),
   mergeMemories: (primaryId, secondaryId) =>
     ipcRenderer.invoke(IPC_CHANNELS.MEMORIES_QUERY, { primaryId, secondaryId }),
+
+  // Learning & Knowledge Ingestion
+  learnTopic: (input) => ipcRenderer.invoke(IPC_CHANNELS.KNOWLEDGE_LEARN, input),
+  onLearnProgress: (callback) => {
+    const handler = (_event: IpcRendererEvent, progress: LearnProgressChunk) => callback(progress);
+    ipcRenderer.on(IPC_CHANNELS.KNOWLEDGE_LEARN_PROGRESS, handler);
+    return () => {
+      ipcRenderer.removeListener(IPC_CHANNELS.KNOWLEDGE_LEARN_PROGRESS, handler);
+    };
+  },
 
   listActivities: (status, origin) =>
     ipcRenderer.invoke(IPC_CHANNELS.ACTIVITIES_LIST, status, origin),

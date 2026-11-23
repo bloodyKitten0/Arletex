@@ -118,6 +118,10 @@ export const IPC_CHANNELS = {
   COMPANION_STATE_CHANGED: 'arletex:companion:state:changed',
   COMPANION_MOVE: 'arletex:companion:move',
   COMPANION_FOCUS_MAIN: 'arletex:companion:focus_main',
+
+  // Knowledge & Learning Channels
+  KNOWLEDGE_LEARN: 'arletex:knowledge:learn',
+  KNOWLEDGE_LEARN_PROGRESS: 'arletex:knowledge:learn:progress',
 } as const;
 
 export type IPCChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];
@@ -689,7 +693,7 @@ export const StreamChunkSchema = z.object({
   error: z.string().nullable().default(null),
   finishReason: z.string().nullable().default(null),
   specialistStage: z
-    .enum(['central', 'coding_specialist', 'synthesis', 'watching_video'])
+    .enum(['central', 'coding_specialist', 'synthesis', 'watching_video', 'learning'])
     .optional(),
   specialistModel: z.string().optional(),
   ttftMs: z.number().optional(),

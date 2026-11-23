@@ -4,5 +4,11 @@ export interface GenerationStats {
   tokenCount: number;
   tokensPerSecond: number;
   elapsedSeconds: number;
-  stage: 'central' | 'coding_specialist' | 'synthesis' | 'thinking' | 'watching_video';
+  stage:
+    | 'central'
+    | 'coding_specialist'
+    | 'synthesis'
+    | 'thinking'
+    | 'watching_video'
+    | 'learning';
 }

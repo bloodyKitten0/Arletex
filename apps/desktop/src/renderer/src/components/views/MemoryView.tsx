@@ -1,6 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Brain, Search, Plus, Edit3, Trash2, Combine, Tag, X, AlertCircle } from 'lucide-react';
-import { Memory, MemoryType } from '@arletex/contracts';
+import {
+  Brain,
+  Search,
+  Plus,
+  Edit3,
+  Trash2,
+  Combine,
+  Tag,
+  X,
+  AlertCircle,
+  GraduationCap,
+  Loader2,
+  CheckCircle2,
+} from 'lucide-react';
+import { Memory, MemoryType, LearnProgressChunk } from '@arletex/contracts';
 
 const MEMORY_TYPES: { id: MemoryType | 'all'; label: string }[] = [
   { id: 'all', label: 'All Records' },
@@ -33,7 +46,28 @@ export const MemoryView: React.FC = () => {
   const [formConfidence, setFormConfidence] = useState(1.0);
   const [formProvenance, setFormProvenance] = useState('user_interaction');
 
+  // Learning Modal State
+  const [showLearnModal, setShowLearnModal] = useState(false);
+  const [learnTopic, setLearnTopic] = useState('');
+  const [learnDomain, setLearnDomain] = useState('general');
+  const [learnContent, setLearnContent] = useState('');
+  const [isLearning, setIsLearning] = useState(false);
+  const [learnProgress, setLearnProgress] = useState<LearnProgressChunk | null>(null);
+  const [learnResult, setLearnResult] = useState<{
+    success: boolean;
+    chunksCount?: number;
+    error?: string;
+  } | null>(null);
+
   const api = window.arletexApi;
+
+  useEffect(() => {
+    if (!api?.onLearnProgress) return;
+    const unsub = api.onLearnProgress((chunk) => {
+      setLearnProgress(chunk);
+    });
+    return () => unsub();
+  }, [api]);
 
   // Fetch memories
   const loadMemories = useCallback(async () => {
@@ -173,6 +207,47 @@ export const MemoryView: React.FC = () => {
     }
   };
 
+  const handleLearnSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!api || !learnTopic.trim() || isLearning) return;
+    setIsLearning(true);
+    setLearnResult(null);
+    setLearnProgress({
+      topic: learnTopic.trim(),
+      stage: 'analyzing',
+      progress: 10,
+      message: `Analyzing topic "${learnTopic.trim()}"...`,
+    });
+
+    try {
+      const res = await api.learnTopic({
+        topic: learnTopic.trim(),
+        domain: learnDomain,
+        content: learnContent.trim() || undefined,
+      });
+
+      if (res.success && res.data) {
+        setLearnResult({
+          success: true,
+          chunksCount: res.data.chunksCount || 1,
+        });
+        void loadMemories();
+      } else {
+        setLearnResult({
+          success: false,
+          error: !res.success ? res.error : 'Knowledge ingestion failed',
+        });
+      }
+    } catch (err: any) {
+      setLearnResult({
+        success: false,
+        error: err.message,
+      });
+    } finally {
+      setIsLearning(false);
+    }
+  };
+
   const openEditModal = (mem: Memory) => {
     setEditingMemory(mem);
     setFormType(mem.type);
@@ -225,32 +300,63 @@ export const MemoryView: React.FC = () => {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              setFormType('episodic');
-              setFormContent('');
-              setFormTags('');
-              setFormImportance(0.8);
-              setFormConfidence(1.0);
-              setFormProvenance('user_interaction');
-              setShowCreateModal(true);
-            }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 14px',
-              backgroundColor: 'var(--accent)',
-              color: '#000',
-              fontWeight: 600,
-              fontSize: '13px',
-              borderRadius: '6px',
-            }}
-          >
-            <Plus size={16} />
-            <span>New Memory</span>
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={() => {
+                setLearnTopic('');
+                setLearnDomain('general');
+                setLearnContent('');
+                setLearnResult(null);
+                setLearnProgress(null);
+                setShowLearnModal(true);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 14px',
+                backgroundColor: 'rgba(224, 122, 95, 0.15)',
+                color: '#e07a5f',
+                border: '1px solid rgba(224, 122, 95, 0.35)',
+                fontWeight: 600,
+                fontSize: '13px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+              }}
+            >
+              <GraduationCap size={16} />
+              <span>Ingest & Learn Topic</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setFormType('episodic');
+                setFormContent('');
+                setFormTags('');
+                setFormImportance(0.8);
+                setFormConfidence(1.0);
+                setFormProvenance('user_interaction');
+                setShowCreateModal(true);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 14px',
+                backgroundColor: 'var(--accent)',
+                color: '#000',
+                fontWeight: 600,
+                fontSize: '13px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+              }}
+            >
+              <Plus size={16} />
+              <span>New Memory</span>
+            </button>
+          </div>
         </div>
 
         {/* Error notification if any */}
@@ -988,6 +1094,356 @@ export const MemoryView: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Ingest & Learn Topic Modal */}
+      {showLearnModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100,
+            padding: '20px',
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isLearning) {
+              setShowLearnModal(false);
+              setLearnResult(null);
+            }
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '12px',
+              width: '100%',
+              maxWidth: '560px',
+              padding: '24px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '18px',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <GraduationCap size={20} color="#e07a5f" />
+                <h3
+                  style={{
+                    fontSize: '16px',
+                    fontWeight: 600,
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  Ingest & Learn Topic
+                </h3>
+              </div>
+              {!isLearning && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowLearnModal(false);
+                    setLearnResult(null);
+                  }}
+                  style={{
+                    color: 'var(--text-muted)',
+                    padding: '4px',
+                    borderRadius: '4px',
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+
+            {/* In Progress Stage with Loading Bar */}
+            {isLearning && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <span style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 600 }}>
+                    Assimilating: {learnTopic}
+                  </span>
+                  <span style={{ fontSize: '13px', color: '#e07a5f', fontWeight: 700 }}>
+                    {learnProgress?.progress || 10}%
+                  </span>
+                </div>
+
+                {/* Progress Bar */}
+                <div
+                  style={{
+                    width: '100%',
+                    height: '8px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                    borderRadius: '4px',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    className="learning-shimmer"
+                    style={{
+                      width: `${learnProgress?.progress || 10}%`,
+                      height: '100%',
+                      borderRadius: '4px',
+                      transition: 'width 0.4s ease',
+                    }}
+                  />
+                </div>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontSize: '12px',
+                    color: '#e07a5f',
+                    backgroundColor: 'rgba(224, 122, 95, 0.1)',
+                    padding: '10px 14px',
+                    borderRadius: '6px',
+                  }}
+                >
+                  <Loader2 size={14} className="spin" />
+                  <span>{learnProgress?.message || 'Processing and chunking...'}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Result State */}
+            {!isLearning && learnResult && (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  textAlign: 'center',
+                  padding: '12px 0',
+                  gap: '12px',
+                }}
+              >
+                {learnResult.success ? (
+                  <>
+                    <CheckCircle2 size={36} color="#81b29a" />
+                    <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      Topic Successfully Ingested
+                    </div>
+                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                      Indexed {learnResult.chunksCount} chunks into SQLite external knowledge and created
+                      a persistent semantic memory.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowLearnModal(false);
+                        setLearnResult(null);
+                      }}
+                      style={{
+                        marginTop: '8px',
+                        padding: '8px 18px',
+                        backgroundColor: 'var(--accent)',
+                        color: '#000',
+                        fontWeight: 600,
+                        fontSize: '13px',
+                        borderRadius: '6px',
+                      }}
+                    >
+                      Done
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle size={36} color="#f87171" />
+                    <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      Ingestion Error
+                    </div>
+                    <p style={{ fontSize: '13px', color: '#fca5a5' }}>
+                      {learnResult.error || 'Failed to ingest topic'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setLearnResult(null)}
+                      style={{
+                        marginTop: '8px',
+                        padding: '8px 16px',
+                        backgroundColor: 'var(--bg-tertiary)',
+                        color: 'var(--text-primary)',
+                        fontSize: '13px',
+                        borderRadius: '6px',
+                      }}
+                    >
+                      Try Again
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Input Form */}
+            {!isLearning && !learnResult && (
+              <form
+                onSubmit={handleLearnSubmit}
+                style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
+              >
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      color: 'var(--text-secondary)',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Topic / Concept *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={learnTopic}
+                    onChange={(e) => setLearnTopic(e.target.value)}
+                    placeholder="e.g. Memory Safety in Rust, CRISPR Cas9, Quantum Teleportation"
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      backgroundColor: 'var(--bg-tertiary)',
+                      border: '1px solid var(--border-subtle)',
+                      color: 'var(--text-primary)',
+                      fontSize: '13px',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      color: 'var(--text-secondary)',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Domain
+                  </label>
+                  <select
+                    value={learnDomain}
+                    onChange={(e) => setLearnDomain(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      backgroundColor: 'var(--bg-tertiary)',
+                      border: '1px solid var(--border-subtle)',
+                      color: 'var(--text-primary)',
+                      fontSize: '13px',
+                      outline: 'none',
+                    }}
+                  >
+                    <option value="general">General Knowledge</option>
+                    <option value="tech">Technology & Computer Science</option>
+                    <option value="science">Physics & Hard Sciences</option>
+                    <option value="medicine">Medicine & Life Sciences</option>
+                    <option value="philosophy">Philosophy & Ethics</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      color: 'var(--text-secondary)',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Raw Notes / Source Text (Optional)
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={learnContent}
+                    onChange={(e) => setLearnContent(e.target.value)}
+                    placeholder="Optional: Paste content or papers. If empty, local LLM synthesizes structured knowledge."
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      backgroundColor: 'var(--bg-tertiary)',
+                      border: '1px solid var(--border-subtle)',
+                      color: 'var(--text-primary)',
+                      fontSize: '13px',
+                      outline: 'none',
+                      resize: 'vertical',
+                    }}
+                  />
+                </div>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    gap: '10px',
+                    marginTop: '8px',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowLearnModal(false);
+                      setLearnResult(null);
+                    }}
+                    style={{
+                      padding: '8px 14px',
+                      borderRadius: '6px',
+                      backgroundColor: 'var(--bg-tertiary)',
+                      color: 'var(--text-secondary)',
+                      fontSize: '13px',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!learnTopic.trim()}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '6px',
+                      backgroundColor: '#e07a5f',
+                      color: '#ffffff',
+                      fontWeight: 600,
+                      fontSize: '13px',
+                      cursor: learnTopic.trim() ? 'pointer' : 'not-allowed',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <GraduationCap size={15} />
+                    <span>Assimilate Knowledge</span>
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

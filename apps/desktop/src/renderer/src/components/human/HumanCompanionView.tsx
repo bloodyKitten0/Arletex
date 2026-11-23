@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Conversation, CreateMemoryInput, Message } from '@arletex/contracts';
+import {
+  Conversation,
+  CreateMemoryInput,
+  Message,
+  KnowledgeDocument,
+  LearnProgressChunk,
+} from '@arletex/contracts';
 import {
   Volume2,
   VolumeX,
@@ -15,6 +21,12 @@ import {
   Terminal,
   Mic,
   Loader2,
+  GraduationCap,
+  BookOpen,
+  CheckCircle2,
+  Zap,
+  Cpu,
+  Brain,
 } from 'lucide-react';
 import { splitIntoSpeechChunks, playSpeechQueue, stopCurrentAudio } from '../../utils/mediaUtils';
 import { GenerationStats } from '../../types';
@@ -60,6 +72,7 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
   isGenerating,
   error,
   onClearError,
+  generationStats,
   onSendMessage,
   onCancelGeneration,
   onCreateMemory,
@@ -76,6 +89,104 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [micNotice, setMicNotice] = useState<string | null>(null);
+
+  // Teach Arle & Learning Hub State
+  const [showTeachModal, setShowTeachModal] = useState(false);
+  const [learnTopicInput, setLearnTopicInput] = useState('');
+  const [learnDomainInput, setLearnDomainInput] = useState('general');
+  const [learnContentInput, setLearnContentInput] = useState('');
+  const [isLearning, setIsLearning] = useState(false);
+  const [learnProgress, setLearnProgress] = useState<LearnProgressChunk | null>(null);
+  const [learnResult, setLearnResult] = useState<{
+    success: boolean;
+    chunksCount?: number;
+    error?: string;
+  } | null>(null);
+  const [recentDocuments, setRecentDocuments] = useState<KnowledgeDocument[]>([]);
+
+  const fetchRecentDocuments = useCallback(async () => {
+    try {
+      const res = await fetch('http://127.0.0.1:39281/api/knowledge/documents');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.documents && Array.isArray(data.documents)) {
+          setRecentDocuments(data.documents.slice(0, 10));
+        }
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (!window.arletexApi?.onLearnProgress) return;
+    const unsub = window.arletexApi.onLearnProgress((progress) => {
+      setLearnProgress(progress);
+    });
+    return () => unsub();
+  }, []);
+
+  const handleStartLearning = async () => {
+    const topic = learnTopicInput.trim();
+    if (!topic || isLearning) return;
+    setIsLearning(true);
+    setLearnResult(null);
+    setLearnProgress({
+      topic,
+      stage: 'analyzing',
+      progress: 10,
+      message: `Analyzing topic "${topic}" and mapping semantic domain...`,
+    });
+
+    try {
+      if (window.arletexApi?.learnTopic) {
+        const res = await window.arletexApi.learnTopic({
+          topic,
+          domain: learnDomainInput,
+          content: learnContentInput.trim() || undefined,
+        });
+        if (res.success && res.data) {
+          setLearnResult({
+            success: true,
+            chunksCount: res.data.chunksCount || 1,
+          });
+        } else {
+          setLearnResult({
+            success: false,
+            error: !res.success ? res.error : 'Failed to assimilate knowledge',
+          });
+        }
+      } else {
+        const res = await fetch('http://127.0.0.1:39281/api/knowledge/learn', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            topic,
+            domain: learnDomainInput,
+            content: learnContentInput.trim() || undefined,
+          }),
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          setLearnResult({
+            success: true,
+            chunksCount: data.chunksCount || 1,
+          });
+        } else {
+          setLearnResult({
+            success: false,
+            error: data.error || 'Learning error',
+          });
+        }
+      }
+    } catch (err: any) {
+      setLearnResult({
+        success: false,
+        error: err.message || 'Connection error',
+      });
+    } finally {
+      setIsLearning(false);
+      void fetchRecentDocuments();
+    }
+  };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -687,7 +798,124 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
             );
           })}
 
-          {/* Streaming Response Bubble */}
+          {/* Cognitive Reflection Loading Bar (while thinking / prefill) */}
+          {isGenerating && !streamingText && (
+            <div
+              className="human-fade-in"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                width: '100%',
+                marginBottom: '16px',
+              }}
+            >
+              <div
+                style={{
+                  maxWidth: '85%',
+                  minWidth: '320px',
+                  backgroundColor: 'var(--human-bg-card)',
+                  border: '1px solid var(--human-border-warm)',
+                  borderRadius: '16px 16px 16px 4px',
+                  padding: '16px 20px',
+                  boxShadow: '0 4px 20px var(--human-accent-glow)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '50%',
+                        backgroundColor: 'rgba(224, 122, 95, 0.15)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--human-accent-warm)',
+                        animation: 'humanPulseGlow 1.8s infinite ease-in-out',
+                      }}
+                    >
+                      {generationStats.stage === 'learning' ? (
+                        <GraduationCap size={15} />
+                      ) : (
+                        <Brain size={15} />
+                      )}
+                    </div>
+                    <div>
+                      <div
+                        style={{
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          color: 'var(--human-text-primary)',
+                        }}
+                      >
+                        {generationStats.stage === 'learning'
+                          ? 'Arle is assimilating knowledge...'
+                          : generationStats.stage === 'synthesis'
+                            ? 'Arle is synthesizing reasoning...'
+                            : 'Arle is reflecting & composing...'}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--human-text-muted)' }}>
+                        Cognitive synthesis stage // {generationStats.elapsedSeconds}s elapsed
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={onCancelGeneration}
+                    title="Stop generation"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                      border: '1px solid rgba(239, 68, 68, 0.25)',
+                      color: '#f87171',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <StopCircle size={13} />
+                    <span>Stop</span>
+                  </button>
+                </div>
+
+                {/* Animated Cognitive Progress Track */}
+                <div
+                  style={{
+                    width: '100%',
+                    height: '6px',
+                    borderRadius: '3px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    overflow: 'hidden',
+                    position: 'relative',
+                  }}
+                >
+                  <div
+                    className="cognitive-shimmer"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: '3px',
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Streaming Response Bubble with Live Throughput & Progress Strip */}
           {streamingText && (
             <div
               className="human-fade-in"
@@ -696,11 +924,13 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
                 flexDirection: 'column',
                 alignItems: 'flex-start',
                 width: '100%',
+                marginBottom: '16px',
               }}
             >
               <div
                 style={{
-                  maxWidth: '82%',
+                  maxWidth: '85%',
+                  minWidth: '320px',
                   backgroundColor: 'var(--human-bg-card)',
                   border: '1px solid var(--human-border-warm)',
                   borderRadius: '16px 16px 16px 4px',
@@ -716,6 +946,7 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
                     color: '#ede9e3',
                     whiteSpace: 'pre-wrap',
                     wordBreak: 'break-word',
+                    marginBottom: '14px',
                   }}
                 >
                   {streamingText}
@@ -730,6 +961,85 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
                       animation: 'humanPulseGlow 0.9s infinite ease-in-out',
                     }}
                   />
+                </div>
+
+                {/* Live Generation Progress Strip */}
+                <div
+                  style={{
+                    paddingTop: '10px',
+                    borderTop: '1px solid rgba(255, 255, 255, 0.07)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '8px',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      fontSize: '11px',
+                      color: 'var(--human-text-muted)',
+                    }}
+                  >
+                    {/* Animated Mini Progress Track */}
+                    <div
+                      style={{
+                        width: '60px',
+                        height: '4px',
+                        borderRadius: '2px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <div className="learning-shimmer" style={{ width: '100%', height: '100%' }} />
+                    </div>
+
+                    <span
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        color: 'var(--human-accent-warm)',
+                        fontWeight: 600,
+                      }}
+                    >
+                      <Zap size={11} />
+                      {generationStats.tokensPerSecond || 0} tok/s
+                    </span>
+
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Cpu size={11} />
+                      {generationStats.tokenCount} tokens
+                    </span>
+
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Clock size={11} />
+                      {generationStats.elapsedSeconds}s
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={onCancelGeneration}
+                    title="Stop response"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '3px 7px',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                      border: '1px solid rgba(239, 68, 68, 0.2)',
+                      color: '#f87171',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <StopCircle size={12} />
+                    <span>Stop</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -914,6 +1224,33 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
               )}
             </button>
 
+            {/* Teach Arle Knowledge Hub Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setShowTeachModal(true);
+                void fetchRecentDocuments();
+              }}
+              title="Teach Arle: Impart knowledge, papers, or topics directly"
+              style={{
+                color: 'var(--human-accent-warm)',
+                backgroundColor: 'rgba(224, 122, 95, 0.12)',
+                border: '1px solid rgba(224, 122, 95, 0.28)',
+                padding: '6px 11px',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <GraduationCap size={15} />
+              <span>Teach</span>
+            </button>
+
             <textarea
               ref={textareaRef}
               rows={1}
@@ -1092,6 +1429,669 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Teach Arle Knowledge Hub Modal */}
+      {showTeachModal && (
+        <div
+          className="human-fade-in"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 100,
+            backgroundColor: 'rgba(0, 0, 0, 0.72)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isLearning) {
+              setShowTeachModal(false);
+              setLearnResult(null);
+            }
+          }}
+        >
+          <div
+            style={{
+              width: '580px',
+              maxWidth: '96vw',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              backgroundColor: 'var(--human-bg-elevated)',
+              border: '1px solid var(--human-border-warm)',
+              borderRadius: '20px',
+              padding: '28px 32px',
+              boxShadow: '0 24px 64px rgba(0, 0, 0, 0.65)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px',
+            }}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '10px',
+                    backgroundColor: 'rgba(224, 122, 95, 0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--human-accent-warm)',
+                  }}
+                >
+                  <GraduationCap size={20} />
+                </div>
+                <div>
+                  <h3
+                    style={{
+                      fontSize: '17px',
+                      fontWeight: 600,
+                      color: 'var(--human-text-primary)',
+                      marginBottom: '3px',
+                      letterSpacing: '-0.2px',
+                    }}
+                  >
+                    Teach Arle
+                  </h3>
+                  <div style={{ fontSize: '12px', color: 'var(--human-text-secondary)' }}>
+                    Impart new concepts, papers, or domains directly into permanent semantic memory
+                  </div>
+                </div>
+              </div>
+              {!isLearning && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowTeachModal(false);
+                    setLearnResult(null);
+                  }}
+                  style={{
+                    color: 'var(--human-text-muted)',
+                    padding: '6px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+
+            {/* Modal Content: Learning In Progress */}
+            {isLearning && (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '18px',
+                  padding: '12px 0',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      color: 'var(--human-text-primary)',
+                    }}
+                  >
+                    Assimilating "{learnTopicInput}"
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '14px',
+                      fontWeight: 700,
+                      color: 'var(--human-accent-warm)',
+                    }}
+                  >
+                    {learnProgress?.progress || 10}%
+                  </span>
+                </div>
+
+                {/* Animated Multi-Stage Progress Bar */}
+                <div
+                  style={{
+                    width: '100%',
+                    height: '10px',
+                    borderRadius: '5px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    className="learning-shimmer"
+                    style={{
+                      width: `${learnProgress?.progress || 10}%`,
+                      height: '100%',
+                      borderRadius: '5px',
+                      transition: 'width 0.4s ease',
+                    }}
+                  />
+                </div>
+
+                {/* Progress Status Message */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontSize: '12px',
+                    color: 'var(--human-accent-warm)',
+                    backgroundColor: 'rgba(224, 122, 95, 0.08)',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(224, 122, 95, 0.18)',
+                  }}
+                >
+                  <Loader2 size={14} className="spin" />
+                  <span>
+                    {learnProgress?.message || 'Processing and synthesizing knowledge...'}
+                  </span>
+                </div>
+
+                {/* Pipeline Stages Checklist */}
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                    padding: '8px 4px',
+                    fontSize: '12px',
+                    color: 'var(--human-text-muted)',
+                  }}
+                >
+                  {[
+                    { threshold: 15, label: '1. Semantic Domain Taxonomy & Structure' },
+                    { threshold: 35, label: '2. Autonomous Synthesis & Conceptual Depth' },
+                    { threshold: 65, label: '3. Vector Embeddings via EmbeddingGemma' },
+                    { threshold: 88, label: '4. Indexing into SQLite Long-Term Repository' },
+                    { threshold: 100, label: '5. Semantic Memory Store Integration' },
+                  ].map((stage, idx) => {
+                    const currentProg = learnProgress?.progress || 10;
+                    const isDone = currentProg >= stage.threshold;
+                    const stageThresholds = [15, 35, 65, 88, 100];
+                    const prevThreshold = idx > 0 ? (stageThresholds[idx - 1] ?? 0) : 0;
+                    const isCurrent =
+                      currentProg < stage.threshold && (idx === 0 || currentProg >= prevThreshold);
+
+                    return (
+                      <div
+                        key={idx}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          color: isDone
+                            ? 'var(--human-accent-sage)'
+                            : isCurrent
+                              ? 'var(--human-accent-warm)'
+                              : 'var(--human-text-muted)',
+                          fontWeight: isCurrent || isDone ? 500 : 400,
+                        }}
+                      >
+                        {isDone ? (
+                          <CheckCircle2 size={13} color="var(--human-accent-sage)" />
+                        ) : isCurrent ? (
+                          <span
+                            style={{
+                              width: '6px',
+                              height: '6px',
+                              borderRadius: '50%',
+                              backgroundColor: 'var(--human-accent-warm)',
+                              animation: 'humanPulseGlow 1s infinite',
+                            }}
+                          />
+                        ) : (
+                          <span
+                            style={{
+                              width: '6px',
+                              height: '6px',
+                              borderRadius: '50%',
+                              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                            }}
+                          />
+                        )}
+                        <span>{stage.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Modal Content: Result State */}
+            {!isLearning && learnResult && (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  textAlign: 'center',
+                  padding: '16px 0',
+                  gap: '14px',
+                }}
+              >
+                {learnResult.success ? (
+                  <>
+                    <div
+                      style={{
+                        width: '56px',
+                        height: '56px',
+                        borderRadius: '50%',
+                        backgroundColor: 'rgba(129, 178, 154, 0.15)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--human-accent-sage)',
+                      }}
+                    >
+                      <CheckCircle2 size={32} />
+                    </div>
+                    <div>
+                      <h4
+                        style={{
+                          fontSize: '16px',
+                          fontWeight: 600,
+                          color: 'var(--human-text-primary)',
+                          marginBottom: '6px',
+                        }}
+                      >
+                        Knowledge Permanently Assimilated
+                      </h4>
+                      <p
+                        style={{
+                          fontSize: '13px',
+                          color: 'var(--human-text-secondary)',
+                          lineHeight: '1.6',
+                          maxWidth: '420px',
+                        }}
+                      >
+                        Arle has indexed {learnResult.chunksCount} chunks into her permanent
+                        knowledge repository and created a long-term semantic memory record.
+                      </p>
+                    </div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: '10px',
+                        marginTop: '10px',
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const topic = learnTopicInput;
+                          setShowTeachModal(false);
+                          setLearnResult(null);
+                          setLearnTopicInput('');
+                          setLearnContentInput('');
+                          onSendMessage(`Can you tell me about what you learned on ${topic}?`);
+                        }}
+                        style={{
+                          padding: '10px 18px',
+                          borderRadius: '10px',
+                          backgroundColor: 'var(--human-accent-warm)',
+                          color: '#ffffff',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        <Sparkles size={14} />
+                        <span>Discuss with Arle</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowTeachModal(false);
+                          setLearnResult(null);
+                          setLearnTopicInput('');
+                          setLearnContentInput('');
+                        }}
+                        style={{
+                          padding: '10px 16px',
+                          borderRadius: '10px',
+                          backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                          color: 'var(--human-text-secondary)',
+                          fontSize: '13px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Done
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div
+                      style={{
+                        width: '56px',
+                        height: '56px',
+                        borderRadius: '50%',
+                        backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#f87171',
+                      }}
+                    >
+                      <X size={28} />
+                    </div>
+                    <div>
+                      <h4
+                        style={{
+                          fontSize: '16px',
+                          fontWeight: 600,
+                          color: 'var(--human-text-primary)',
+                          marginBottom: '6px',
+                        }}
+                      >
+                        Assimilation Encountered an Error
+                      </h4>
+                      <p
+                        style={{
+                          fontSize: '13px',
+                          color: '#fca5a5',
+                          lineHeight: '1.6',
+                        }}
+                      >
+                        {learnResult.error || 'Unknown error occurred while indexing knowledge.'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setLearnResult(null)}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: '8px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        color: 'var(--human-text-primary)',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Try Again
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Modal Content: Input Form */}
+            {!isLearning && !learnResult && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void handleStartLearning();
+                }}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '18px',
+                }}
+              >
+                {/* Topic Name */}
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      color: 'var(--human-text-secondary)',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Topic or Concept Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={learnTopicInput}
+                    onChange={(e) => setLearnTopicInput(e.target.value)}
+                    placeholder="e.g. Quantum Error Correction, Epigenetics, Rust Async, Stoicism"
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      backgroundColor: 'var(--human-bg-card)',
+                      border: '1px solid var(--human-border-warm)',
+                      color: 'var(--human-text-primary)',
+                      fontSize: '13px',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+
+                {/* Domain Category Selector */}
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      color: 'var(--human-text-secondary)',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    Domain Taxonomy
+                  </label>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '8px',
+                    }}
+                  >
+                    {[
+                      { id: 'general', label: 'General Knowledge' },
+                      { id: 'tech', label: 'Tech & Engineering' },
+                      { id: 'science', label: 'Physics & Science' },
+                      { id: 'medicine', label: 'Medicine & Biology' },
+                      { id: 'philosophy', label: 'Philosophy & Ethics' },
+                    ].map((d) => (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => setLearnDomainInput(d.id)}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: learnDomainInput === d.id ? 600 : 400,
+                          backgroundColor:
+                            learnDomainInput === d.id
+                              ? 'rgba(224, 122, 95, 0.2)'
+                              : 'rgba(255, 255, 255, 0.05)',
+                          border: `1px solid ${
+                            learnDomainInput === d.id
+                              ? 'var(--human-accent-warm)'
+                              : 'rgba(255, 255, 255, 0.08)'
+                          }`,
+                          color:
+                            learnDomainInput === d.id
+                              ? 'var(--human-accent-warm)'
+                              : 'var(--human-text-secondary)',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {d.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Optional Source Content / Notes */}
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      color: 'var(--human-text-secondary)',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Source Material / Notes (Optional)
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={learnContentInput}
+                    onChange={(e) => setLearnContentInput(e.target.value)}
+                    placeholder="Paste notes, articles, or documentation here. If left empty, Arle will autonomously research and synthesize deep domain knowledge using local reasoning."
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      backgroundColor: 'var(--human-bg-card)',
+                      border: '1px solid var(--human-border-warm)',
+                      color: 'var(--human-text-primary)',
+                      fontSize: '13px',
+                      lineHeight: '1.5',
+                      outline: 'none',
+                      resize: 'vertical',
+                    }}
+                  />
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      color: 'var(--human-text-muted)',
+                      marginTop: '4px',
+                    }}
+                  >
+                    No file editing needed. Indexed chunks are stored in SQLite and linked to
+                    autobiographical memory.
+                  </div>
+                </div>
+
+                {/* Form Buttons */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    gap: '10px',
+                    marginTop: '6px',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowTeachModal(false);
+                      setLearnResult(null);
+                    }}
+                    style={{
+                      padding: '9px 16px',
+                      borderRadius: '8px',
+                      backgroundColor: 'transparent',
+                      color: 'var(--human-text-muted)',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!learnTopicInput.trim()}
+                    style={{
+                      padding: '9px 18px',
+                      borderRadius: '8px',
+                      backgroundColor: learnTopicInput.trim()
+                        ? 'var(--human-accent-warm)'
+                        : 'rgba(255, 255, 255, 0.1)',
+                      color: learnTopicInput.trim() ? '#ffffff' : 'var(--human-text-muted)',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: learnTopicInput.trim() ? 'pointer' : 'not-allowed',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <GraduationCap size={15} />
+                    <span>Teach Arle</span>
+                  </button>
+                </div>
+
+                {/* Recently Learned Topics Chips */}
+                {recentDocuments.length > 0 && (
+                  <div
+                    style={{
+                      marginTop: '12px',
+                      paddingTop: '16px',
+                      borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        color: 'var(--human-text-muted)',
+                        marginBottom: '8px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.4px',
+                      }}
+                    >
+                      Recently Assimilated Knowledge
+                    </div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '6px',
+                      }}
+                    >
+                      {recentDocuments.slice(0, 6).map((doc) => (
+                        <div
+                          key={doc.id}
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: '6px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                            border: '1px solid rgba(255, 255, 255, 0.08)',
+                            fontSize: '11px',
+                            color: 'var(--human-text-secondary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
+                        >
+                          <BookOpen size={11} color="var(--human-accent-warm)" />
+                          <span>{doc.title}</span>
+                          <span style={{ fontSize: '9px', color: 'var(--human-text-muted)' }}>
+                            ({doc.domain})
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </form>
+            )}
           </div>
         </div>
       )}

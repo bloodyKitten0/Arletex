@@ -91,3 +91,29 @@ export const LoRAAdapterRecordSchema = z.object({
   updatedAt: z.string(),
 });
 export type LoRAAdapterRecord = z.infer<typeof LoRAAdapterRecordSchema>;
+
+export const LearnTopicInputSchema = z.object({
+  topic: z.string().min(1).max(500),
+  content: z.string().optional(),
+  domain: z.string().optional().default('general'),
+  sourceUri: z.string().optional(),
+});
+export type LearnTopicInput = z.infer<typeof LearnTopicInputSchema>;
+
+export const LearnProgressChunkSchema = z.object({
+  topic: z.string(),
+  stage: z.enum([
+    'analyzing',
+    'synthesizing',
+    'embedding',
+    'indexing',
+    'completed',
+    'failed',
+  ]),
+  progress: z.number().min(0).max(100),
+  message: z.string(),
+  documentId: z.string().optional(),
+  chunkCount: z.number().optional(),
+  error: z.string().optional(),
+});
+export type LearnProgressChunk = z.infer<typeof LearnProgressChunkSchema>;

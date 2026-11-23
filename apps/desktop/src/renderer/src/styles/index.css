@@ -159,6 +159,37 @@ input, textarea {
   animation: fadeInGentle 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+@keyframes shimmerTrack {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.cognitive-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(224, 122, 95, 0.15) 0%,
+    rgba(242, 204, 143, 0.5) 50%,
+    rgba(224, 122, 95, 0.15) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmerTrack 2s infinite ease-in-out;
+}
+
+.learning-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(224, 122, 95, 0.85) 0%,
+    rgba(242, 204, 143, 1) 50%,
+    rgba(224, 122, 95, 0.85) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmerTrack 1.8s infinite linear;
+}
+
 /* Monospace technical helpers for developer mode */
 .dev-code-text {
   font-family: var(--font-mono);

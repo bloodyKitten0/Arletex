@@ -11,6 +11,8 @@ import {
   IPCResponse,
   StartInferenceStreamInput,
   StreamChunk,
+  LearnTopicInput,
+  LearnProgressChunk,
 } from '@arletex/contracts';
 import { rootLogger } from '@arletex/core';
 import {
@@ -547,6 +549,99 @@ function registerIpcHandlers() {
       });
     }
     return callBackend('/api/memories/query', 'POST', input);
+  });
+
+  // Knowledge & Learning Handlers
+  handleSecure(IPC_CHANNELS.KNOWLEDGE_LEARN, async (event, input: LearnTopicInput) => {
+    try {
+      const reqBody = JSON.stringify(input);
+      return new Promise<IPCResponse<any>>((resolve) => {
+        const req = http.request(
+          {
+            hostname: '127.0.0.1',
+            port: backendPort,
+            path: '/api/knowledge/learn',
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'text/event-stream',
+              'x-arletex-auth': backendAuthToken,
+              'Content-Length': Buffer.byteLength(reqBody),
+            },
+          },
+          (res) => {
+            if (res.statusCode && res.statusCode >= 400) {
+              let errText = '';
+              res.on('data', (d) => (errText += d.toString()));
+              res.on('end', () => {
+                resolve({
+                  success: false,
+                  error: errText || res.statusMessage || 'Knowledge learning failed',
+                });
+              });
+              return;
+            }
+
+            let buffer = '';
+            let finalResult: any = null;
+
+            res.on('data', (chunkBuffer: Buffer) => {
+              buffer += chunkBuffer.toString();
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || '';
+
+              for (const line of lines) {
+                const trimmed = line.trim();
+                if (trimmed.startsWith('data: ')) {
+                  try {
+                    const chunk: LearnProgressChunk = JSON.parse(trimmed.slice(6));
+                    if (!event.sender.isDestroyed()) {
+                      event.sender.send(IPC_CHANNELS.KNOWLEDGE_LEARN_PROGRESS, chunk);
+                    }
+                    if (chunk.stage === 'completed' || chunk.stage === 'failed') {
+                      finalResult = chunk;
+                    }
+                  } catch {}
+                }
+              }
+            });
+
+            res.on('end', () => {
+              if (buffer.trim().startsWith('data: ')) {
+                try {
+                  const chunk: LearnProgressChunk = JSON.parse(buffer.trim().slice(6));
+                  if (!event.sender.isDestroyed()) {
+                    event.sender.send(IPC_CHANNELS.KNOWLEDGE_LEARN_PROGRESS, chunk);
+                  }
+                  if (chunk.stage === 'completed' || chunk.stage === 'failed') {
+                    finalResult = chunk;
+                  }
+                } catch {}
+              }
+
+              if (finalResult && finalResult.stage === 'failed') {
+                resolve({ success: false, error: finalResult.error || 'Learning failed' });
+              } else {
+                resolve({ success: true, data: finalResult });
+              }
+            });
+
+            res.on('error', (err) => {
+              resolve({ success: false, error: err.message });
+            });
+          },
+        );
+
+        req.on('error', (err) => {
+          resolve({ success: false, error: err.message });
+        });
+
+        req.write(reqBody);
+        req.end();
+      });
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
   });
 
   // Activities Handlers
