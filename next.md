@@ -1,5 +1,17 @@
-# WHEN DOING COMMITS USE SHORT HUMANIZED NAMES NOT AI
-# use an uncensored models for everything 
+# ==============================================================================
+# MANDATORY OPERATING RULES & SCIENTIFIC INVARIANTS
+# ==============================================================================
+# 1. WHEN DOING COMMITS USE SHORT HUMANIZED NAMES NOT AI
+# 2. USE UNCENSORED MODELS FOR EVERYTHING
+# 3. UNIVERSITY RESEARCH MANDATE (ZERO GUESSWORK / HIGHEST SCIENTIFIC TIER):
+#    Every single component—from UI colors, typography, luminance contrast, emotional warmth,
+#    and visual hierarchy, to desktop embodiment, affective computing, cognitive appraisal,
+#    associative memory consolidation, and LoRA fine-tuning—MUST be rigorously researched
+#    from peer-reviewed university research papers (MIT Media Lab, Stanford HCI, CMU HCII,
+#    Oxford/Cambridge Cognitive Science, Norman's Affective Design, Scherer/Russell Appraisal Theory,
+#    and PubMed/MedQA clinical frameworks). No arbitrary guesses; every design decision and
+#    algorithmic mechanism must be anchored in top-tier peer-reviewed academic evidence.
+# ==============================================================================
 
 # ==============================================================================
 # IMMEDIATE MANDATORY GOALS — THE RECONSTRUCTION BACKLOG (ZERO COMPROMISE / "BY THE MM")
@@ -23,7 +35,7 @@
 * **What Went Wrong:** Instead of creating two genuinely distinct applications, a lazy toggle button ("Switch to Human Mode") was added to the header of the developer app. The resulting "human mode" was still a clunky dark developer wireframe.
 * **The Exact Millimeter Standard (Definition of Done):**
   1. **Two Distinct Frontends/Entry Points:**
-     - `npm run arle`: Launches the **Human Companion Experience**. Inspired directly by Capri AI, Rose, and Jarvis. Warm, intimate, fluid, visually stunning, and alive. Completely stripped of debug panels, raw numbers, valence/arousal coordinates, and database tabs. Her presence, expressions, voice, and thoughts are front and center with organic ambiance, breathing typography, and smooth transitions.
+     - `npm run arle`: Launches the **Human Companion Experience**. Grounded in peer-reviewed university HCI and affective computing research (Stanford HCI on Social Presence, MIT Media Lab Affective Interfaces, Don Norman's Emotional Design, and empirical studies on color-emotion psychology). Color palette engineered using scientifically proven chromatic warmth (warm rose-quartz/amber/deep velvet obsidian tones, non-glare luminance ratios, circadian-adaptive softness), breathing typography, organic fluid transitions, and alive presence. Completely stripped of debug panels, raw numbers, valence/arousal coordinates, and database tabs. Her presence, expressions, voice, and thoughts are front and center.
      - `npm run arletex`: Launches the **Cognitive Host OS & Subsystem Laboratory**. Full diagnostic suite with all tabs (Emo, History, Memory, Specialist Router, Telemetry, Database Explorer) for comprehensive architectural inspection of all 148 experiential states.
   2. **Zero Leaked Dev Artifacts in Human Mode:** In `npm run arle`, not a single raw metric, debug badge, or diagnostic card is visible.
   3. **Completion Gate:** If `npm run arle` contains developer debug panels, looks like a basic wireframe, or relies on a top-bar toggle inside the developer OS, **IT IS NOT DONE**.
