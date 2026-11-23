@@ -115,6 +115,11 @@ export interface ArletexApi {
   getApeTaxonomy: () => Promise<
     IPCResponse<{ emotions: EmotionTaxonomyItem[]; moods: MoodTaxonomyItem[] }>
   >;
+  activateEmotion: (input: {
+    emotionId: string;
+    intensity?: number;
+    reason?: string;
+  }) => Promise<IPCResponse<{ success: boolean; emotion: any }>>;
   getExperientialStates: () => Promise<
     IPCResponse<{
       catalogue: ExperientialStateDefinition[];
@@ -294,6 +299,8 @@ const api: ArletexApi = {
   getApeState: () => ipcRenderer.invoke(IPC_CHANNELS.APE_STATE_GET),
   getApeHistory: () => ipcRenderer.invoke(IPC_CHANNELS.APE_HISTORY_GET),
   getApeTaxonomy: () => ipcRenderer.invoke(IPC_CHANNELS.APE_TAXONOMY_GET),
+  activateEmotion: (input: { emotionId: string; intensity?: number; reason?: string }) =>
+    ipcRenderer.invoke(IPC_CHANNELS.APE_EMOTION_ACTIVATE, input),
   getExperientialStates: () => ipcRenderer.invoke(IPC_CHANNELS.APE_EXPERIENTIAL_STATES_GET),
   activateExperientialState: (input: { stateId: string; intensity?: number }) =>
     ipcRenderer.invoke(IPC_CHANNELS.APE_EXPERIENTIAL_STATE_ACTIVATE, input),

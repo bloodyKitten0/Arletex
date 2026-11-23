@@ -216,9 +216,7 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({
               key={item.id}
               type="button"
               onClick={() => onSelectSection(item.id)}
-              title={
-                collapsed ? `[${item.tag}] ${item.label} — ${item.description}` : item.description
-              }
+              title={collapsed ? `[${item.tag}] ${item.label}` : undefined}
               style={{
                 position: 'relative',
                 display: 'flex',

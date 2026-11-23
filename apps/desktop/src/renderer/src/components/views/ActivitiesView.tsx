@@ -95,9 +95,14 @@ export const ActivitiesView: React.FC = () => {
       const o = originFilter === 'all' ? undefined : originFilter;
       const res = await api.listActivities(s, o);
       if (res.success) {
-        // Deduplicate consecutive identical completed activities by title
+        // Sanitize legacy entries and deduplicate consecutive identical activities
+        const sanitized = res.data.filter(
+          (act) =>
+            !act.title?.toLowerCase().includes('partnership') &&
+            !act.objective?.toLowerCase().includes('partnership with proof'),
+        );
         const deduplicated: Activity[] = [];
-        for (const act of res.data) {
+        for (const act of sanitized) {
           if (
             deduplicated.length > 0 &&
             deduplicated[deduplicated.length - 1]!.title === act.title &&
@@ -116,6 +121,10 @@ export const ActivitiesView: React.FC = () => {
 
   useEffect(() => {
     void loadActivities();
+    const interval = setInterval(() => {
+      void loadActivities();
+    }, 2500);
+    return () => clearInterval(interval);
   }, [loadActivities]);
 
   const handleCreateSubmit = async (e: React.FormEvent) => {

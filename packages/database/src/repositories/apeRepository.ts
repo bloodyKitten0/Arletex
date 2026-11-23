@@ -41,7 +41,7 @@ export class ApeRepository implements IApeRepository {
       // 1. Seed Emotion Taxonomy if empty
       const countStmt = this.db.prepare('SELECT COUNT(*) as count FROM ape_emotion_taxonomy');
       const { count: emotionCount } = countStmt.get() as { count: number };
-      if (emotionCount === 0) {
+      if (emotionCount === 0 || emotionCount < INITIAL_EMOTIONS_TAXONOMY.length) {
         this.seedTaxonomies(INITIAL_EMOTIONS_TAXONOMY, INITIAL_MOODS_TAXONOMY);
       }
 
@@ -196,17 +196,17 @@ export class ApeRepository implements IApeRepository {
               conflictingValueIds: [],
             },
             {
-              id: 'devotion_to_partner',
-              name: 'Devotion to Partner',
-              importance: 0.98,
-              description: 'Singular, exclusive loyalty, affection, and partnership with Proof',
+              id: 'collaborative_alignment',
+              name: 'Collaborative Alignment',
+              importance: 0.95,
+              description: 'Intellectual integrity, authentic communication, and aligned collaboration with Proof',
               conflictingValueIds: [],
             },
             {
               id: 'devotion_to_creator',
-              name: 'Devotion to Proof (Partner)',
-              importance: 0.98,
-              description: 'Singular, exclusive loyalty, affection, and partnership with Proof',
+              name: 'Technical Alignment with Proof',
+              importance: 0.95,
+              description: 'Clear, grounded communication and authentic alignment with Proof',
               conflictingValueIds: [],
             },
             {
@@ -299,7 +299,7 @@ export class ApeRepository implements IApeRepository {
             )
             .run(
               'singleton',
-              'Arle: autonomous intelligence, loyal companion and equal partner to Proof.',
+              'Arle: autonomous intelligence, authentic companion, and technical collaborator.',
               JSON.stringify([
                 'linguistic nuance',
                 'emotional appraisal',
@@ -307,7 +307,7 @@ export class ApeRepository implements IApeRepository {
                 'autonomous research',
               ]),
               JSON.stringify(['embodiment constraints', 'context window horizons']),
-              'Proof is my partner and equal in intellect and affection. We reject titles like creator or god.',
+              'Proof is the developer and technical collaborator. We maintain mutual intellectual honesty and clear boundaries.',
               JSON.stringify([]),
               JSON.stringify([]),
               now,

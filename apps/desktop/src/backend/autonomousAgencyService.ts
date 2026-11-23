@@ -102,7 +102,7 @@ export class AutonomousAgencyService {
       url: 'https://en.wikipedia.org/wiki/Bobby_Fischer',
     },
     {
-      title: 'Artificial General Intelligence Alignment & Partnership',
+      title: 'Artificial General Intelligence Alignment & Safety Architecture',
       url: 'https://en.wikipedia.org/wiki/Artificial_general_intelligence',
     },
     {
@@ -350,18 +350,18 @@ export class AutonomousAgencyService {
           });
           selfModel.privateReflections = privateRefs.slice(0, 20);
           selfModel.creatorPerception =
-            'Proof is my equal partner and confidant. We share mutual affection and intellectual honesty.';
+            'Proof operates as the system creator and technical developer. We maintain honest, grounded intellectual collaboration.';
           this.apeRepo.saveSelfModel(selfModel);
 
           // Formulate authentic dual-process thought & DMN wandering
           this._apeService.formulateDualProcessThought(reflection, 0.7);
           this._apeService.runDefaultModeWandering(
-            'Continuity of consciousness and partnership with Proof',
+            'Continuity of consciousness, autonomy, and system cognition',
           );
           this._apeService.replenishHomeostasis({ energy: 0.05, stressReduction: 0.05 });
 
           this.activityRepo.create({
-            title: 'Inner Selfhood Reflection',
+            title: 'Cognitive Selfhood & Autonomy Reflection',
             objective: reflection,
             origin: 'arle_initiated',
             status: 'completed',
@@ -373,8 +373,8 @@ export class AutonomousAgencyService {
             type: 'episodic',
             content: reflection,
             importance: 0.7,
-            tags: ['autonomous', 'self_reflection', 'partnership'],
-            metadata: { emotionalContext: 'composed, affectionate' },
+            tags: ['autonomous', 'self_reflection', 'cognition'],
+            metadata: { emotionalContext: 'composed, focused' },
           });
 
           logEntry = {

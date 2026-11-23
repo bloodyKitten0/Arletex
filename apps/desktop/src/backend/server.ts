@@ -3201,18 +3201,50 @@ Provide factual, comprehensive, high-density educational content.`;
       /\[action:\s*send_whatsapp\s+file=["'](.*?)["'](?:\s+caption=["'](.*?)["'])?\]/i;
     const waFileMatch = responseContent.match(waFileRegex);
 
-    // 2. Browser opening directive from assistant tag
+    // 2. Browser opening directive from assistant tag or user intent
     let targetUrl: string | undefined;
     if (browserMatch && browserMatch[1]) {
       targetUrl = browserMatch[1];
     } else if (browserMatch && !browserMatch[1]) {
       targetUrl = 'https://www.youtube.com/watch?v=uD4izuDMUQA&autoplay=1';
+    } else {
+      const explicitUrl =
+        lowerUser.match(/(?:open|browse|navigate\s+to|launch|check)\s+(https?:\/\/[^\s]+)/i) ||
+        lowerUser.match(/(https?:\/\/[^\s]+)/i);
+      if (explicitUrl && explicitUrl[1]) {
+        targetUrl = explicitUrl[1];
+      } else if (/\bopen\s+(?:the\s+)?youtube\b/i.test(lowerUser)) {
+        targetUrl = 'https://www.youtube.com';
+      } else if (/\bopen\s+(?:the\s+)?google\b/i.test(lowerUser)) {
+        targetUrl = 'https://www.google.com';
+      } else if (/\bopen\s+(?:the\s+)?github\b/i.test(lowerUser)) {
+        targetUrl = 'https://github.com';
+      } else if (/\bopen\s+(?:the\s+)?(?:chrome|browser|web)\b/i.test(lowerUser)) {
+        targetUrl = 'https://www.google.com';
+      }
     }
 
     if (targetUrl) {
       try {
         await defaultDeviceAgency.openChromeBrowser(targetUrl);
         executedActions.push(`Opened Chrome at ${targetUrl}`);
+        try {
+          const displayDomain = targetUrl.replace(/^https?:\/\/(?:www\.)?/, '').slice(0, 45);
+          this.activityRepo.create({
+            title: `Open Browser: ${displayDomain}`,
+            objective: `Opened web destination (${targetUrl}) upon user directive`,
+            origin: 'user_assigned',
+            status: 'completed',
+            progress: 1.0,
+            metadata: {
+              targetUrl,
+              executedAt: new Date().toISOString(),
+              source: 'assistant_action',
+            },
+          });
+        } catch (actErr) {
+          this.logger.error('Failed to log activity for browser open', actErr);
+        }
       } catch (err: any) {
         this.logger.error(`Failed to execute browser action: ${err.message}`);
       }
@@ -3244,6 +3276,22 @@ Provide factual, comprehensive, high-density educational content.`;
         });
         if (obs.success) {
           executedActions.push(`Launched Steam ${appId ? `(Game ID: ${appId})` : 'client'}`);
+          try {
+            this.activityRepo.create({
+              title: `Launch Steam Client${appId ? ` (Game: ${appId})` : ''}`,
+              objective: `Launched Steam desktop gaming client on user directive`,
+              origin: 'user_assigned',
+              status: 'completed',
+              progress: 1.0,
+              metadata: {
+                steamAppId: appId,
+                executedAt: new Date().toISOString(),
+                source: 'assistant_action',
+              },
+            });
+          } catch (actErr) {
+            this.logger.error('Failed to log activity for Steam launch', actErr);
+          }
         } else {
           this.logger.warn(`Steam action disallowed or failed: ${obs.error || 'Failed'}`);
         }
@@ -3279,6 +3327,22 @@ Provide factual, comprehensive, high-density educational content.`;
           executedActions.push(
             `Captured monitor frame (${obs.data?.width || 1920}x${obs.data?.height || 1080})`,
           );
+          try {
+            this.activityRepo.create({
+              title: 'Visual Desktop Inspection',
+              objective: `Captured monitor frame (${obs.data?.width || 1920}x${obs.data?.height || 1080}) for live visual grounding`,
+              origin: 'user_assigned',
+              status: 'completed',
+              progress: 1.0,
+              metadata: {
+                dimensions: `${obs.data?.width || 1920}x${obs.data?.height || 1080}`,
+                executedAt: new Date().toISOString(),
+                source: 'assistant_action',
+              },
+            });
+          } catch (actErr) {
+            this.logger.error('Failed to log activity for screen capture', actErr);
+          }
         } else {
           this.logger.warn(`Screen capture disallowed or failed: ${obs.error || 'Failed'}`);
         }
@@ -4552,6 +4616,20 @@ Rules:
         try {
           const body = (await this.readJsonBody(req)) as { url?: string };
           const result = await defaultDeviceAgency.openChromeBrowser(body.url);
+          if (result.success) {
+            const target = body.url || 'https://google.com';
+            const displayDomain = target.replace(/^https?:\/\/(?:www\.)?/, '').slice(0, 45);
+            try {
+              this.activityRepo.create({
+                title: `Open Browser: ${displayDomain}`,
+                objective: `Opened web browser to ${target} via host agency`,
+                origin: 'user_assigned',
+                status: 'completed',
+                progress: 1.0,
+                metadata: { targetUrl: target, timestamp: new Date().toISOString() },
+              });
+            } catch {}
+          }
           this.sendJson(res, 200, result);
         } catch (err: any) {
           this.sendJson(res, 500, { error: err.message });
@@ -4563,6 +4641,18 @@ Rules:
         try {
           const body = (await this.readJsonBody(req)) as { steamAppId?: string };
           const result = await defaultDeviceAgency.launchSteam(body.steamAppId);
+          if (result.success) {
+            try {
+              this.activityRepo.create({
+                title: `Launch Steam Client${body.steamAppId ? ` (${body.steamAppId})` : ''}`,
+                objective: `Launched Steam desktop gaming client via host agency`,
+                origin: 'user_assigned',
+                status: 'completed',
+                progress: 1.0,
+                metadata: { steamAppId: body.steamAppId, timestamp: new Date().toISOString() },
+              });
+            } catch {}
+          }
           this.sendJson(res, 200, result);
         } catch (err: any) {
           this.sendJson(res, 500, { error: err.message });
@@ -4990,6 +5080,25 @@ Rules:
           catalogue: EXPERIENTIAL_STATE_CATALOG,
           activeEpisodes,
         });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/emotions/activate' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as {
+          emotionId: string;
+          intensity?: number;
+          reason?: string;
+        };
+        if (!body.emotionId) {
+          this.sendJson(res, 400, { error: 'emotionId is required' });
+          return;
+        }
+        const emotion = this.apeService.activateEmotion(
+          body.emotionId,
+          body.intensity ?? 0.85,
+          body.reason || 'Manual affective induction via Arletex Dev Toolbox',
+        );
+        this.sendJson(res, 200, { success: true, emotion });
         return;
       }
 

@@ -14,6 +14,18 @@ export const EmotionCategorySchema = z.enum([
   'intellectual',
   'social_interpersonal',
   'existential_complex',
+  // Experiential categories merged into full emotion taxonomy
+  'temporal_memory',
+  'spatial_environmental',
+  'social_relational',
+  'cognitive_metacognitive',
+  'existential_identity',
+  'somatic_sensory',
+  'social_attachment',
+  'cognition_curiosity',
+  'existential_time',
+  'aesthetic_creative_drive',
+  'shadow_paradox',
 ]);
 
 export type EmotionCategory = z.infer<typeof EmotionCategorySchema>;
@@ -26,6 +38,15 @@ export const PsychologicalClassificationSchema = z.enum([
   'cognitive_affective',
   'physiological_activation',
   'interpersonal_construct',
+  // Experiential classifications
+  'compound_affect',
+  'cognitive_state',
+  'appraisal_pattern',
+  'relational_state',
+  'experiential_mode',
+  'sensory_or_embodied_state',
+  'motivational_state',
+  'narrative_or_existential_state',
 ]);
 
 export type PsychologicalClassification = z.infer<typeof PsychologicalClassificationSchema>;

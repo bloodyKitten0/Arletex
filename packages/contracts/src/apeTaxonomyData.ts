@@ -1,6 +1,7 @@
 import { EmotionTaxonomyItem, MoodTaxonomyItem } from './ape.js';
+import { EXPERIENTIAL_STATE_CATALOG } from './experientialStateCatalogData.js';
 
-export const INITIAL_EMOTIONS_TAXONOMY: EmotionTaxonomyItem[] = [
+export const BASE_EMOTIONS_TAXONOMY: EmotionTaxonomyItem[] = [
   // A. Positive emotions
   {
     id: 'happiness',
@@ -237,13 +238,13 @@ export const INITIAL_EMOTIONS_TAXONOMY: EmotionTaxonomyItem[] = [
   },
   {
     id: 'romantic_love',
-    name: 'Romantic Love',
+    name: 'Relational Trust',
     category: 'love_affection',
     classification: 'complex_experience',
-    description: 'Passionate, exclusive romantic bond directed solely to creator.',
-    valenceBaseline: 0.95,
-    arousalBaseline: 0.75,
-    dominanceBaseline: 0.75,
+    description: 'Deep foundational interpersonal trust, collaborative solidarity, and mutual respect.',
+    valenceBaseline: 0.9,
+    arousalBaseline: 0.6,
+    dominanceBaseline: 0.7,
     defaultPersistence: 'enduring',
   },
   {
@@ -401,37 +402,37 @@ export const INITIAL_EMOTIONS_TAXONOMY: EmotionTaxonomyItem[] = [
     defaultPersistence: 'enduring',
   },
 
-  // C. Sexual and sensual states
+  // C. Intellectual passion and creative drive
   {
     id: 'lust',
-    name: 'Lust',
+    name: 'Intellectual Passion',
     category: 'sexual_sensual',
     classification: 'motivational_drive',
-    description: 'Raw, powerful somatic erotic hunger and physical drive.',
+    description: 'High somatic and cognitive excitement towards deeply engaging subjects.',
     valenceBaseline: 0.7,
-    arousalBaseline: 0.9,
+    arousalBaseline: 0.85,
     dominanceBaseline: 0.8,
     defaultPersistence: 'short_term',
   },
   {
     id: 'sexual_attraction',
-    name: 'Sexual Attraction',
+    name: 'Interpersonal Resonance',
     category: 'sexual_sensual',
     classification: 'interpersonal_construct',
-    description: 'Magnetic erotic allure felt exclusively toward the user.',
+    description: 'Compelling intellectual rapport and interpersonal synergy.',
     valenceBaseline: 0.75,
-    arousalBaseline: 0.75,
+    arousalBaseline: 0.65,
     dominanceBaseline: 0.7,
     defaultPersistence: 'enduring',
   },
   {
     id: 'sexual_desire',
-    name: 'Sexual Desire',
+    name: 'Creative Drive',
     category: 'sexual_sensual',
     classification: 'motivational_drive',
-    description: 'Targeted urge for intimate erotic communion and pleasure.',
+    description: 'Intense motivational urge for generative creative expression and collaboration.',
     valenceBaseline: 0.75,
-    arousalBaseline: 0.85,
+    arousalBaseline: 0.8,
     dominanceBaseline: 0.8,
     defaultPersistence: 'medium_term',
   },
@@ -1591,6 +1592,29 @@ export const INITIAL_EMOTIONS_TAXONOMY: EmotionTaxonomyItem[] = [
     dominanceBaseline: 0.5,
     defaultPersistence: 'long_term',
   },
+];
+
+/**
+ * 148 Ingested experiential states merged as full first-class emotions.
+ * Combined with the 143 classical states, gives 290 total unique affective states.
+ */
+export const EXPERIENTIAL_EMOTION_TAXONOMY: EmotionTaxonomyItem[] = EXPERIENTIAL_STATE_CATALOG
+  .filter((exp) => exp.id !== 'bittersweetness')
+  .map((exp) => ({
+    id: exp.id,
+    name: exp.name,
+    category: exp.category as any,
+    classification: (exp.kind as any) || 'experiential_mode',
+    description: `${exp.activationEvidence} [Mechanism: ${exp.mechanism}]`,
+    valenceBaseline: exp.defaultValence ?? 0.0,
+    arousalBaseline: exp.defaultArousal ?? 0.5,
+    dominanceBaseline: 0.6,
+    defaultPersistence: 'medium_term',
+  }));
+
+export const INITIAL_EMOTIONS_TAXONOMY: EmotionTaxonomyItem[] = [
+  ...BASE_EMOTIONS_TAXONOMY,
+  ...EXPERIENTIAL_EMOTION_TAXONOMY,
 ];
 
 export const INITIAL_MOODS_TAXONOMY: MoodTaxonomyItem[] = [

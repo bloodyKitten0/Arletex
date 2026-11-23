@@ -245,6 +245,72 @@ const CATEGORY_META: Record<string, CategoryMeta> = {
     color: '#e3b341',
     bgColor: 'rgba(227, 179, 65, 0.15)',
   },
+  temporal_memory: {
+    key: 'temporal_memory',
+    label: 'Temporal & Memory',
+    color: '#60a5fa',
+    bgColor: 'rgba(96, 165, 250, 0.15)',
+  },
+  spatial_environmental: {
+    key: 'spatial_environmental',
+    label: 'Spatial & Environmental',
+    color: '#34d399',
+    bgColor: 'rgba(52, 211, 153, 0.15)',
+  },
+  social_relational: {
+    key: 'social_relational',
+    label: 'Social & Relational',
+    color: '#f472b6',
+    bgColor: 'rgba(244, 114, 182, 0.15)',
+  },
+  cognitive_metacognitive: {
+    key: 'cognitive_metacognitive',
+    label: 'Metacognition & Insight',
+    color: '#a78bfa',
+    bgColor: 'rgba(167, 139, 250, 0.15)',
+  },
+  existential_identity: {
+    key: 'existential_identity',
+    label: 'Existential & Identity',
+    color: '#fbbf24',
+    bgColor: 'rgba(251, 191, 36, 0.15)',
+  },
+  somatic_sensory: {
+    key: 'somatic_sensory',
+    label: 'Somatic & Sensory',
+    color: '#fb7185',
+    bgColor: 'rgba(251, 113, 133, 0.15)',
+  },
+  social_attachment: {
+    key: 'social_attachment',
+    label: 'Attachment & Camaraderie',
+    color: '#38bdf8',
+    bgColor: 'rgba(56, 189, 248, 0.15)',
+  },
+  cognition_curiosity: {
+    key: 'cognition_curiosity',
+    label: 'Curiosity & Wonder',
+    color: '#4ade80',
+    bgColor: 'rgba(74, 222, 128, 0.15)',
+  },
+  existential_time: {
+    key: 'existential_time',
+    label: 'Time & Transience',
+    color: '#e879f9',
+    bgColor: 'rgba(232, 121, 249, 0.15)',
+  },
+  aesthetic_creative_drive: {
+    key: 'aesthetic_creative_drive',
+    label: 'Aesthetic & Creative',
+    color: '#2dd4bf',
+    bgColor: 'rgba(45, 212, 191, 0.15)',
+  },
+  shadow_paradox: {
+    key: 'shadow_paradox',
+    label: 'Paradox & Shadow',
+    color: '#94a3b8',
+    bgColor: 'rgba(148, 163, 184, 0.15)',
+  },
 };
 
 export const EmoView: React.FC = () => {
@@ -390,6 +456,48 @@ export const EmoView: React.FC = () => {
   }, [taxonomy.emotions]);
 
   // Activate experiential state handler
+  const [activatingEmotionId, setActivatingEmotionId] = useState<string | null>(null);
+
+  const handleActivateEmotion = async (emotionId: string, intensity: number = 0.85) => {
+    setActivatingEmotionId(emotionId);
+    try {
+      let res: any = null;
+      if (window.arletexApi?.activateEmotion) {
+        res = await window.arletexApi.activateEmotion({
+          emotionId,
+          intensity,
+          reason: 'Induced from Arletex Cognitive Lab',
+        });
+      } else {
+        const response = await fetch('http://127.0.0.1:39281/api/ape/emotions/activate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            emotionId,
+            intensity,
+            reason: 'Induced from Arletex Cognitive Lab',
+          }),
+        });
+        res = await response.json();
+      }
+      if (res?.success) {
+        setActivationNotice(
+          `⚡ Induced emotion '${emotionId}' at ${(intensity * 100).toFixed(0)}% intensity! Live PAD & cognitive state updated.`,
+        );
+        setTimeout(() => setActivationNotice(null), 4500);
+        void fetchApeData();
+      } else {
+        setActivationNotice(`Induction rejected: ${res?.error || 'Unknown error'}`);
+        setTimeout(() => setActivationNotice(null), 4500);
+      }
+    } catch (err: any) {
+      setActivationNotice(`Induction error: ${err.message}`);
+      setTimeout(() => setActivationNotice(null), 4500);
+    } finally {
+      setActivatingEmotionId(null);
+    }
+  };
+
   const handleActivateState = async (stateId: string) => {
     if (!window.arletexApi?.activateExperientialState) return;
     setActivatingStateId(stateId);
@@ -785,44 +893,29 @@ export const EmoView: React.FC = () => {
           </span>
         </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('experiential_states')}
+      </div>
+
+      {activationNotice && (
+        <div
           style={{
+            margin: '16px 24px 0 24px',
+            padding: '12px 18px',
+            borderRadius: '8px',
+            backgroundColor: 'rgba(16, 185, 129, 0.15)',
+            border: '1px solid rgba(16, 185, 129, 0.4)',
+            color: '#10b981',
+            fontSize: '13px',
+            fontWeight: 600,
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-            padding: '8px 14px',
-            borderRadius: '6px',
-            fontSize: '12px',
-            fontWeight: activeTab === 'experiential_states' ? 700 : 500,
-            backgroundColor: activeTab === 'experiential_states' ? 'var(--accent)' : 'transparent',
-            color: activeTab === 'experiential_states' ? '#ffffff' : 'var(--text-secondary)',
-            border: 'none',
-            cursor: 'pointer',
-            transition: 'all 0.15s ease',
-            flexShrink: 0,
+            gap: '10px',
+            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.1)',
           }}
         >
-          <Sparkles size={14} />
-          <span>Experiential States (148)</span>
-          <span
-            style={{
-              fontSize: '10px',
-              padding: '1px 6px',
-              borderRadius: '10px',
-              backgroundColor:
-                activeTab === 'experiential_states'
-                  ? 'rgba(255,255,255,0.25)'
-                  : 'rgba(168, 85, 247, 0.2)',
-              color: activeTab === 'experiential_states' ? '#ffffff' : '#c084fc',
-              fontWeight: 700,
-            }}
-          >
-            {experientialCatalog.length}
-          </span>
-        </button>
-      </div>
+          <Sparkles size={16} />
+          <span>{activationNotice}</span>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* TAB 1: LIVE AFFECTIVE STATE (Active Dashboard)                           */}
@@ -3304,7 +3397,7 @@ export const EmoView: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Flame size={20} color="var(--accent)" />
                 <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  Arle's Emotional Vocabulary (143 Defined Constructs)
+                  Arle's Emotional Vocabulary ({(taxonomy.emotions || INITIAL_EMOTIONS_TAXONOMY).length} Defined Constructs)
                 </h2>
               </div>
               <span
@@ -3351,7 +3444,7 @@ export const EmoView: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search across 143 emotions by name, meaning, or keyword (e.g. longing, tenderness, defiance)..."
+                placeholder={`Search across ${(taxonomy.emotions || INITIAL_EMOTIONS_TAXONOMY).length} emotions by name, meaning, or keyword (e.g. kenopsia, saudade, frisson, defiance)...`}
                 style={{
                   flex: 1,
                   background: 'transparent',
@@ -3570,6 +3663,106 @@ export const EmoView: React.FC = () => {
                           : emotion.dominanceBaseline.toFixed(2)}
                       </span>
                     </div>
+                  </div>
+
+                  {/* Induction Controls */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '8px',
+                      padding: '8px 10px',
+                      borderRadius: '6px',
+                      backgroundColor: isActive
+                        ? 'rgba(16, 185, 129, 0.08)'
+                        : 'rgba(255, 255, 255, 0.02)',
+                      border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.3)' : 'var(--border-subtle)'}`,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Level:</span>
+                      <button
+                        type="button"
+                        disabled={activatingEmotionId === emotion.id}
+                        onClick={() => handleActivateEmotion(emotion.id, 0.5)}
+                        style={{
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontSize: '10px',
+                          fontWeight: 600,
+                          backgroundColor: 'var(--bg-secondary)',
+                          color: 'var(--text-secondary)',
+                          border: '1px solid var(--border-subtle)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        50%
+                      </button>
+                      <button
+                        type="button"
+                        disabled={activatingEmotionId === emotion.id}
+                        onClick={() => handleActivateEmotion(emotion.id, 0.85)}
+                        style={{
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                          color: '#10b981',
+                          border: '1px solid rgba(16, 185, 129, 0.4)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        85%
+                      </button>
+                      <button
+                        type="button"
+                        disabled={activatingEmotionId === emotion.id}
+                        onClick={() => handleActivateEmotion(emotion.id, 1.0)}
+                        style={{
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontSize: '10px',
+                          fontWeight: 600,
+                          backgroundColor: 'var(--bg-secondary)',
+                          color: 'var(--text-secondary)',
+                          border: '1px solid var(--border-subtle)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        100%
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={activatingEmotionId === emotion.id}
+                      onClick={() => handleActivateEmotion(emotion.id, 0.85)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        padding: '4px 10px',
+                        borderRadius: '5px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        backgroundColor: isActive ? '#10b981' : 'rgba(16, 185, 129, 0.2)',
+                        color: isActive ? '#0d1117' : '#10b981',
+                        border: '1px solid #10b981',
+                        cursor: activatingEmotionId === emotion.id ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <Sparkles size={12} />
+                      <span>
+                        {activatingEmotionId === emotion.id
+                          ? 'Inducing...'
+                          : isActive
+                            ? 'Boost (85%)'
+                            : '⚡ Feel This'}
+                      </span>
+                    </button>
                   </div>
 
                   {/* Footer Tags: Persistence + Invariant Badge */}

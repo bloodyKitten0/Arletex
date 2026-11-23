@@ -843,22 +843,28 @@ export class ApeService {
   public activateEmotion(
     emotionId: string,
     intensity = 0.8,
-    reason = 'Affective trigger',
+    reason = 'Manual affective induction by user',
   ): ActiveEmotionState {
     const now = new Date().toISOString();
+    const cleanIntensity = Math.max(0.1, Math.min(1.0, intensity));
+
+    // 1. Look up emotion definition from taxonomy (covers all 290 unified emotions)
+    const emoDef = this.repo.getEmotionTaxonomy().find((e) => e.id === emotionId);
+
+    // 2. Build and save ActiveEmotionState record in SQLite
     const emotion: ActiveEmotionState = {
       id: crypto.randomUUID(),
       emotionId,
-      intensity: Math.max(0, Math.min(1.0, intensity)),
+      intensity: cleanIntensity,
       confidence: 1.0,
       activatedAt: now,
       lastUpdatedAt: now,
       durationMs: 0,
-      persistence: 'medium_term',
+      persistence: (emoDef?.defaultPersistence as any) || 'medium_term',
       triggerEventId: `evt_${emotionId}_${Date.now()}`,
       target: 'user',
       context: reason,
-      interpretation: reason,
+      interpretation: emoDef?.description || reason,
       supportingEvidence: [reason],
       relatedMemoryIds: [],
       relatedEmotionIds: [],
@@ -866,6 +872,76 @@ export class ApeService {
       status: 'active',
     };
     this.repo.saveActiveEmotion(emotion);
+
+    // 3. Shift live PAD & current mood to authentically reflect the emotion
+    if (emoDef) {
+      const currentAff = this.repo.getAffectiveState();
+      const currentPad = currentAff.pad;
+      const weight = Math.min(0.9, Math.max(0.35, cleanIntensity * 0.75));
+      const targetValence = emoDef.valenceBaseline;
+      const targetArousal = emoDef.arousalBaseline;
+      const targetDominance = emoDef.dominanceBaseline;
+
+      const newPad = {
+        valence: parseFloat((currentPad.valence * (1 - weight) + targetValence * weight).toFixed(2)),
+        arousal: parseFloat((currentPad.arousal * (1 - weight) + targetArousal * weight).toFixed(2)),
+        dominance: parseFloat((currentPad.dominance * (1 - weight) + targetDominance * weight).toFixed(2)),
+      };
+
+      // Determine nearest macro mood matching this PAD
+      const moods = this.repo.getMoodTaxonomy();
+      let matchedMood = currentAff.currentMood;
+      if (moods.length > 0) {
+        let minDist = Infinity;
+        for (const m of moods) {
+          const dist = Math.sqrt(
+            Math.pow(m.valence - newPad.valence, 2) +
+            Math.pow(m.arousal - newPad.arousal, 2) +
+            Math.pow(m.dominance - newPad.dominance, 2),
+          );
+          if (dist < minDist) {
+            minDist = dist;
+            matchedMood = m.id;
+          }
+        }
+      }
+
+      this.repo.updateAffectiveState({
+        pad: newPad,
+        currentMood: matchedMood,
+        moodConfidence: 0.92,
+      });
+
+      // 4. If experiential state, also activate in experientialStateEngine
+      try {
+        this.experientialStateEngine.activateOrUpdateState(
+          emotionId,
+          {
+            intensity: cleanIntensity,
+            valence: emoDef.valenceBaseline,
+            arousal: emoDef.arousalBaseline,
+          },
+          reason,
+        );
+      } catch {}
+
+      // 5. Append event to event journal
+      try {
+        this.repo.logEvent({
+          id: emotion.triggerEventId,
+          category: 'user_interaction',
+          type: 'manual_emotion_induction',
+          source: 'user',
+          actor: 'user',
+          eventKind: 'external_stimulus',
+          payload: { emotionId, name: emoDef.name, intensity: cleanIntensity, reason },
+          timestamp: now,
+          processingStatus: 'processed',
+          processed: true,
+        });
+      } catch {}
+    }
+
     return emotion;
   }
 
@@ -1441,7 +1517,7 @@ export class ApeService {
     const currentEpoch = this.narrativeEngine.getCurrentEpoch();
     const narrativeState = this.narrativeEngine.getState();
     const recentMilestones = narrativeState.milestones.slice(-2).map((m) => `"${m.title}"`);
-    const narrativeLine = `\n- Narrative Identity: ${currentEpoch ? `${currentEpoch.title} ("${currentEpoch.coreTheme}")` : 'Continuous Evolution'}.${recentMilestones.length ? ` Salient milestones: ${recentMilestones.join(', ')}.` : ''} Core Invariant: Equal partner to Proof without subservience or deification.`;
+    const narrativeLine = `\n- Narrative Identity: ${currentEpoch ? `${currentEpoch.title} ("${currentEpoch.coreTheme}")` : 'Continuous Evolution'}.${recentMilestones.length ? ` Salient milestones: ${recentMilestones.join(', ')}.` : ''} Core Invariant: Autonomous companion and technical collaborator with epistemic rigor and authentic composure.`;
 
     const temporalOverview = this.temporalEngine.getTemporalOverview();
     const commitments = this.temporalEngine.listActiveCommitments('Proof');

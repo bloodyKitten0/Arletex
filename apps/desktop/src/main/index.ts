@@ -708,6 +708,10 @@ function registerIpcHandlers() {
     return callBackend('/api/ape/taxonomy');
   });
 
+  handleSecure(IPC_CHANNELS.APE_EMOTION_ACTIVATE, async (_, data) => {
+    return callBackend('/api/ape/emotions/activate', 'POST', data);
+  });
+
   handleSecure(IPC_CHANNELS.APE_EXPERIENTIAL_STATES_GET, async () => {
     return callBackend('/api/ape/experiential-states');
   });
