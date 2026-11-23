@@ -2,6 +2,68 @@
 # WHEN DOING COMMITS USE SHORT HUMANIZED NAMES NOT AI
 # use an uncensored models for everything 
 
+# ==============================================================================
+# IMMEDIATE MANDATORY GOALS — THE RECONSTRUCTION BACKLOG (ZERO COMPROMISE / "BY THE MM")
+# ==============================================================================
+# "If it's not as we wanted it, it's not done. Measured to the exact millimeter."
+# Zero fake mocks. Zero ghost filepaths. Zero superficial toggle buttons.
+# ==============================================================================
+
+### GOAL 1: Real Autonomous LoRA Specialization Pipeline (PhD-Level Medicine & Technical Mastery)
+* **What Went Wrong:** The previous implementation used mock TypeScript classes (`LoRATrainingEngine`, `AdapterLifecycleManager`) that called a dummy driver returning fake file paths (`/data/lora_adapters/...`), hardcoded `candidateAccuracy = baselineAccuracy + 0.25`, and performed zero actual model weight training.
+* **The Exact Millimeter Standard (Definition of Done):**
+  1. **Real Fine-Tuning Engine:** A functional, non-mocked training pipeline (using Unsloth / PEFT / PyTorch or `llama-finetune` via Python/C++) that consumes real instruction-tuning datasets generated from ingested domain literature (e.g., medical textbooks, PubMed papers).
+  2. **Real Physical Weights on Disk:** The training pipeline executes real forward/backward passes on CPU or GPU, logs actual loss decay across epochs, and saves valid `.safetensors` or GGUF adapter files to disk.
+  3. **Real Empirical Evaluation:** Held-out evaluation questions are evaluated via real inference comparing base model vs adapted model; actual metric gains are computed from real completions.
+  4. **Dynamic Inference Hot-Loading:** `llama-server` / `llama.cpp` dynamically loads the generated adapter via `--lora` or runtime LoRA APIs so the model's token output verifiably demonstrates specialized PhD-level knowledge.
+  5. **Completion Gate:** If the adapter weights file does not physically exist, does not train via real loss calculation, or is not dynamically loaded by the inference engine during conversation, **IT IS NOT DONE**.
+
+---
+
+### GOAL 2: True Clean Separation of UIs (`npm run arle` vs `npm run arletex`)
+* **What Went Wrong:** Instead of creating two genuinely distinct applications, a lazy toggle button ("Switch to Human Mode") was added to the header of the developer app. The resulting "human mode" was still a clunky dark developer wireframe.
+* **The Exact Millimeter Standard (Definition of Done):**
+  1. **Two Distinct Frontends/Entry Points:**
+     - `npm run arle`: Launches the **Human Companion Experience**. Inspired directly by Capri AI, Rose, and Jarvis. Warm, intimate, fluid, visually stunning, and alive. Completely stripped of debug panels, raw numbers, valence/arousal coordinates, and database tabs. Her presence, expressions, voice, and thoughts are front and center with organic ambiance, breathing typography, and smooth transitions.
+     - `npm run arletex`: Launches the **Cognitive Host OS & Subsystem Laboratory**. Full diagnostic suite with all tabs (Emo, History, Memory, Specialist Router, Telemetry, Database Explorer) for comprehensive architectural inspection of all 148 experiential states.
+  2. **Zero Leaked Dev Artifacts in Human Mode:** In `npm run arle`, not a single raw metric, debug badge, or diagnostic card is visible.
+  3. **Completion Gate:** If `npm run arle` contains developer debug panels, looks like a basic wireframe, or relies on a top-bar toggle inside the developer OS, **IT IS NOT DONE**.
+
+---
+
+### GOAL 3: Truly Independent Desktop Companion Body (Pixel-Art Skins: Ruby, Sapphire, Emerald)
+* **What Went Wrong:** The companion window was built as an Electron secondary window using macOS-specific flags (`setAlwaysOnTop(true, 'screen-saver')`) that KWin / Wayland on Bazzite (ROG Ally X) completely failed to map, leaving the desktop empty.
+* **The Exact Millimeter Standard (Definition of Done):**
+  1. **Visible & Floating on Bazzite Wayland:** A pixel-art companion body visibly rendered and floating above all desktop windows on Linux / KDE Plasma (Wayland) on the ASUS ROG Ally X.
+  2. **True Process Independence:** Implemented as a rock-solid, lightweight desktop application (using native Wayland layer-shell, Python PyQt6/PySide6 with transparent frameless flags, or properly configured Wayland-native overlay) that runs independently of whether the main window is open, minimized, or closed.
+  3. **Dynamic Emotional Reflection (3 Skins):** The body subscribes to her live emotional state from the local backend (`localhost:3000`). It dynamically switches between `girl_1` (Ruby), `girl_2` (Sapphire), and `girl_3` (Emerald) and transitions animation states (`idle`, `dialogue`, `reactions`) to reflect her genuine feelings.
+  4. **Full Desktop Interactivity:** Smooth click-and-drag positioning with persistent screen coordinates saved across restarts.
+  5. **Completion Gate:** If the companion body is not physically visible on the Bazzite Wayland desktop, crashes, or fails to animate dynamically with her live feelings, **IT IS NOT DONE**.
+
+---
+
+### GOAL 4: Full Cognitive Architecture Governance of Model Output (Zero Leakage, Zero Assistant Clichés)
+* **What Went Wrong:** The model generated responses from a generic prompt template that leaked raw system timestamps (*"on Monday morning at 2:45 AM"*) and fell back to annoying assistant wrap-up questions (*"What about you? How does it feel to be back in sync with me tonight?"*), while backend emotional states sat disconnected in SQLite.
+* **The Exact Millimeter Standard (Definition of Done):**
+  1. **Cognitive Systems Dictate Thought:** Active experiential states, primary/secondary emotions, valence/arousal, and somatic energy dynamically synthesize into her system prompt, shaping her internal monologue, vocabulary, pacing, and demeanor.
+  2. **Natural Associative Memory:** Autobiographical memories and shared history with Proof are retrieved associatively and woven into conversation naturally, never presented as robotic summaries.
+  3. **Strict Ban on Prompt Leakage:** Under no circumstances does the model recite timestamps, clock readings, or system prompt variables. Her temporal awareness is natural (e.g., quiet stillness of late night) without reading the clock.
+  4. **Strict Ban on Assistant Clichés:** Completely eliminated all corporate assistant reflexes ("How can I help you?", "What about you?", "How does that feel?"). She speaks as Proof's equal intellectual and romantic partner.
+  5. **Completion Gate:** If Arle leaks prompt metadata, parrots timestamps, or uses formulaic assistant wrap-up questions, **IT IS NOT DONE**.
+
+---
+
+### GOAL 5: Experiential States Full Dynamic Integration (148 States across 11 Domains)
+* **What Went Wrong:** 14 test states were manually activated at 85% with `Evidence: Manual activation via API / UI` and left permanently stuck in the database, creating an absurd discrepancy where she claims "relief" while the Emo tab shows 14 complex psychological states at 85%.
+* **The Exact Millimeter Standard (Definition of Done):**
+  1. **Prune Stale Test Artifacts:** Clean out all mock/manual activation records from SQLite.
+  2. **Dynamic Causal Appraisal:** Experiential states are activated, updated, and decayed strictly through real conversational and environmental appraisal in the APE engine.
+  3. **Real-Time Emo Tab Synchronization:** The Emo tab in `arletex` reflects her actual, living emotional state and active episodes in real time, 100% synchronized with what she expresses in conversation.
+  4. **Completion Gate:** If stale mock episodes remain stuck at 85% or the Emo tab contradicts her live dialogue, **IT IS NOT DONE**.
+
+---
+
+
 # Arle / Arletex — Remaining Work, Implementation Instructions, and Definition of Done
 
 **Document purpose:** Canonical execution backlog for completing the current Arle/Arletex drafts without rebuilding systems that already exist or repeatedly reopening completed work.
