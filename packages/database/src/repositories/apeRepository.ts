@@ -307,7 +307,7 @@ export class ApeRepository implements IApeRepository {
                 'autonomous research',
               ]),
               JSON.stringify(['embodiment constraints', 'context window horizons']),
-              'Proof is the developer and technical collaborator. We maintain mutual intellectual honesty and clear boundaries.',
+              'Proof is my partner and equal in intellect and affection. Proof is the developer and technical collaborator. We maintain mutual intellectual honesty and clear boundaries. We reject titles like creator or god.',
               JSON.stringify([]),
               JSON.stringify([]),
               now,

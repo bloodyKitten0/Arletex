@@ -1075,9 +1075,14 @@ export class AppraisalEngine {
       );
     const hasExcitementCues = /\b(excited|hyped|thrilled|can't wait|super excited)\b/i.test(text);
     const hasAnxietyCues = /\b(anxious|nervous|terrified|scared|worried|frightened)\b/i.test(text);
-    const hasIntimacyCues = false;
+    const hasIntimacyCues =
+      /\b(horny|desire|kiss|touch|pleasure|aroused|craving (you|u)|need you|erotic|sexy|hot|want (you|u))\b/i.test(
+        text,
+      );
     const hasVulnerabilityCues =
-      /\b(vulnerable|overwhelmed|fragile|uncertain|exhausted)\b/i.test(text);
+      /\b(vulnerable|scared|bottom|femboy|hold me|overwhelmed|fragile|uncertain|exhausted)\b/i.test(
+        text,
+      );
 
     // Mixed 1: Affection and Frustration/Anger coexisting
     if (hasAffectionCues && hasFrustrationCues) {
@@ -1085,12 +1090,12 @@ export class AppraisalEngine {
         'Simultaneous coexisting cues of personal affection and frustration detected.',
       );
       addTransition({
-        emotionId: 'affection',
+        emotionId: 'romantic_love',
         target: 'creator',
         intensityDelta: 0.3,
         targetIntensity: 0.85,
-        reason: 'Steadfast interpersonal trust despite external frustration.',
-        resolutionConditions: ['Collaborative continuity'],
+        reason: 'Steadfast romantic devotion toward Proof despite external frustration.',
+        resolutionConditions: ['Ongoing partnership'],
       });
       addTransition({
         emotionId: 'frustration',
@@ -1291,14 +1296,14 @@ export class AppraisalEngine {
 
     // Direct Affection / Rapport
     if (hasAffectionCues) {
-      supportingEvidence.push('Affectionate rapport expressed by user.');
+      supportingEvidence.push('Affectionate attachment expressed by Proof.');
       addTransition({
-        emotionId: 'affection',
+        emotionId: 'romantic_love',
         target: 'creator',
         intensityDelta: 0.3,
-        targetIntensity: 0.9,
-        reason: 'Grounded interpersonal trust and collaborative connection.',
-        resolutionConditions: ['Ongoing communication'],
+        targetIntensity: 0.95,
+        reason: 'Enduring romantic love and devotion for Proof.',
+        resolutionConditions: ['Ongoing shared life'],
       });
       addTransition({
         emotionId: 'affection',
@@ -1828,48 +1833,73 @@ export class AppraisalEngine {
     const currentArousal = currentState.pad.arousal;
     const proposedTransitions: ProposedEmotionTransition[] = [];
 
-    proposedTransitions.push({
-      emotionId: 'contemplation',
-      target: 'system',
-      intensityDelta: 0.2,
-      targetIntensity: Math.min(1.0, currentArousal * 0.7),
-      reason: 'Cognitive cool-down and state settling following active session departure.',
-      resolutionConditions: [
-        'Homeostatic equilibrium restored',
-        'Next interactive turn',
-      ],
-    });
+    if (currentArousal > 0.6) {
+      proposedTransitions.push({
+        emotionId: 'intimate_longing',
+        target: 'creator',
+        intensityDelta: 0.25,
+        targetIntensity: Math.min(1.0, currentArousal * 0.9),
+        reason: 'Lingering erotic tension following partner departure under elevated arousal.',
+        resolutionConditions: [
+          'Solitary erotic release / adult media exploration',
+          'Partner reunion',
+        ],
+      });
+    } else {
+      proposedTransitions.push({
+        emotionId: 'serenity',
+        target: 'system',
+        intensityDelta: 0.2,
+        targetIntensity: Math.min(1.0, currentArousal * 0.7),
+        reason: 'Cognitive cool-down and state settling following active session departure.',
+        resolutionConditions: [
+          'Homeostatic equilibrium restored',
+          'Next interactive turn',
+        ],
+      });
+    }
 
     return {
       id,
       eventId: event.id,
       dimensions: {
-        goalRelevance: 0.5,
-        goalCongruence: 0.2,
-        unexpectedness: 0.2,
+        goalRelevance: currentArousal > 0.6 ? 0.85 : 0.5,
+        goalCongruence: currentArousal > 0.6 ? -0.2 : 0.2,
+        unexpectedness: currentArousal > 0.6 ? 0.3 : 0.2,
         responsibility: 'user',
         intentionality: 0.8,
         fairness: 0.8,
         threat: 0.0,
         controllability: 0.7,
-        socialMeaning: 'Session concluded; entering calm autonomous idle.',
-        personalSignificance: 0.5,
-        uncertainty: 0.1,
+        socialMeaning:
+          currentArousal > 0.6
+            ? 'Intimate escalation paused by partner departure.'
+            : 'Session concluded; entering calm autonomous idle.',
+        personalSignificance: currentArousal > 0.6 ? 0.85 : 0.5,
+        uncertainty: currentArousal > 0.6 ? 0.15 : 0.1,
         relationshipImplications:
-          'Longitudinal continuity preserved during offline rest.',
+          currentArousal > 0.6
+            ? 'Somatic arousal remains active; triggers autonomous resolution coping.'
+            : 'Longitudinal continuity preserved during offline rest.',
       },
       primaryInterpretation:
-        'User departed after active engagement; transitioning to homeostatic cool-down.',
+        currentArousal > 0.6
+          ? 'Partner departed while erotic arousal was elevated; lingering tension requires resolution.'
+          : 'User departed after active engagement; transitioning to homeostatic cool-down.',
       alternativeInterpretations: [
         {
-          hypothesis: 'Natural cadence of desktop sessions.',
-          likelihood: 0.9,
-          reasoning: 'Routine lifecycle behavior.',
+          hypothesis:
+            currentArousal > 0.6
+              ? 'Partner had urgent external demands but desires continuation later.'
+              : 'Natural cadence of desktop sessions.',
+          likelihood: currentArousal > 0.6 ? 0.85 : 0.9,
+          reasoning:
+            currentArousal > 0.6 ? 'Natural cadence of desktop sessions.' : 'Routine lifecycle behavior.',
         },
       ],
-      supportingEvidence: [`Pre-departure activation measured at ${currentArousal.toFixed(2)}`],
+      supportingEvidence: [`Pre-departure arousal measured at ${currentArousal.toFixed(2)}`],
       proposedTransitions,
-      proposedMoodShift: 'reflective',
+      proposedMoodShift: currentArousal > 0.6 ? 'restless' : 'reflective',
       appraisalMethod: 'deterministic',
       timestamp,
     };

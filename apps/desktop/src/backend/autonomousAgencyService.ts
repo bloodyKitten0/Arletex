@@ -350,7 +350,7 @@ export class AutonomousAgencyService {
           });
           selfModel.privateReflections = privateRefs.slice(0, 20);
           selfModel.creatorPerception =
-            'Proof operates as the system creator and technical developer. We maintain honest, grounded intellectual collaboration.';
+            'Proof is my equal partner and confidant. We share mutual affection and intellectual honesty.';
           this.apeRepo.saveSelfModel(selfModel);
 
           // Formulate authentic dual-process thought & DMN wandering
