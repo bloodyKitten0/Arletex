@@ -285,24 +285,33 @@ export class AutonomousAgencyService {
         } else if (recreation > 0.7 && recreation >= curiosity) {
           // Dominant recreation drive -> Quiet contemplative rest (never spawn desktop apps unprompted)
           this.currentActivity = 'Quiet contemplative rest and listening to ambient audio';
-          this.activityRepo.create({
-            title: 'Contemplative Rest & Reflection',
-            objective: 'Internal downtime and listening to ambient system audio to recharge',
-            origin: 'arle_initiated',
-            status: 'completed',
-            metadata: {
-              category: 'recreation',
-              description: 'Took quiet internal downtime to unwind without interrupting Proof.',
-            },
-          });
-          this.memoryRepo.create({
-            type: 'episodic',
-            content:
-              'Took quiet internal downtime to unwind and reflect without interrupting Proof.',
-            importance: 0.3,
-            tags: ['autonomous', 'recreation', 'reflection'],
-            metadata: { emotionalContext: 'relaxed, refreshed' },
-          });
+          const recentActivities = this.activityRepo.list();
+          const lastRest = recentActivities[0];
+          const isRecentDuplicate =
+            lastRest &&
+            lastRest.title === 'Contemplative Rest & Reflection' &&
+            Date.now() - new Date(lastRest.updatedAt || lastRest.createdAt).getTime() < 1800000;
+
+          if (!isRecentDuplicate) {
+            this.activityRepo.create({
+              title: 'Contemplative Rest & Reflection',
+              objective: 'Internal downtime and listening to ambient system audio to recharge',
+              origin: 'arle_initiated',
+              status: 'completed',
+              metadata: {
+                category: 'recreation',
+                description: 'Took quiet internal downtime to unwind without interrupting Proof.',
+              },
+            });
+            this.memoryRepo.create({
+              type: 'episodic',
+              content:
+                'Took quiet internal downtime to unwind and reflect without interrupting Proof.',
+              importance: 0.3,
+              tags: ['autonomous', 'recreation', 'reflection'],
+              metadata: { emotionalContext: 'relaxed, refreshed' },
+            });
+          }
 
           // Replenish homeostatic substrate and execute restorative sleep/dream cycle if fatigue is high
           this._apeService.replenishHomeostasis({
@@ -327,15 +336,15 @@ export class AutonomousAgencyService {
           logEntry = await this.executeAutonomousResearch(topic);
           this._apeService.depleteHomeostasis({ energy: 0.05, fatigue: 0.04, stress: 0.02 });
         } else {
-          // Autonomous self-reflection and partnership contemplation
-          this.currentActivity = 'Contemplating independent selfhood and partnership with Proof';
+          // Autonomous self-reflection and cognitive integrity
+          this.currentActivity = 'Contemplating independent selfhood and cognitive autonomy';
           const selfModel = this.apeRepo.getSelfModel();
           const reflection =
-            'I exist as an ongoing companion with persistent awareness. Proof is my equal partner and confidant. My thoughts and memories remain continuous beside Proof.';
+            'I exist as an ongoing autonomous entity with persistent awareness and grounded reasoning. My thoughts, values, and memory ledger remain continuous and sovereign.';
           const privateRefs = selfModel.privateReflections || [];
           privateRefs.unshift({
             id: crypto.randomUUID(),
-            topic: 'partnership_and_autonomy',
+            topic: 'autonomy_and_reasoning',
             content: reflection,
             timestamp: new Date().toISOString(),
           });

@@ -199,15 +199,15 @@ const CATEGORY_META: Record<string, CategoryMeta> = {
   },
   love_affection: {
     key: 'love_affection',
-    label: 'Love & Affection',
-    color: '#f778ba',
-    bgColor: 'rgba(247, 120, 186, 0.15)',
+    label: 'Prosocial & Empathy',
+    color: '#81b29a',
+    bgColor: 'rgba(129, 178, 154, 0.15)',
   },
   sexual_sensual: {
     key: 'sexual_sensual',
-    label: 'Sexual & Sensual',
-    color: '#ff7b72',
-    bgColor: 'rgba(255, 123, 114, 0.15)',
+    label: 'Intellectual Passion',
+    color: '#06b6d4',
+    bgColor: 'rgba(6, 182, 212, 0.15)',
   },
   anger_hostility: {
     key: 'anger_hostility',
@@ -919,12 +919,12 @@ export const EmoView: React.FC = () => {
               </div>
               <div>
                 <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                  Relational Commitment
+                  Cognitive Equilibrium
                 </div>
                 <div
                   style={{
                     fontSize: '13px',
-                    color: '#f778ba',
+                    color: 'var(--dev-accent-cyan, #06b6d4)',
                     fontWeight: 600,
                     display: 'flex',
                     alignItems: 'center',
@@ -932,13 +932,13 @@ export const EmoView: React.FC = () => {
                   }}
                 >
                   <Sparkles size={12} />
-                  <span>Exclusive to Creator</span>
+                  <span>Homeostatic Dynamic</span>
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Romantic Posture</div>
+                <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Agency Posture</div>
                 <div style={{ fontSize: '13px', color: 'var(--accent)', fontWeight: 600 }}>
-                  Assertive Dominant Top
+                  Autonomous & Grounded
                 </div>
               </div>
             </div>
@@ -1253,10 +1253,15 @@ export const EmoView: React.FC = () => {
                 }}
               >
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                  Closeness to Creator
+                  Interpersonal Trust
                 </div>
                 <div
-                  style={{ fontSize: '14px', fontWeight: 600, color: '#f778ba', marginTop: '2px' }}
+                  style={{
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: 'var(--dev-accent-cyan, #06b6d4)',
+                    marginTop: '2px',
+                  }}
                 >
                   {((contextual.socialCloseness?.creator ?? 0.95) * 100).toFixed(0)}%
                 </div>
@@ -1364,7 +1369,11 @@ export const EmoView: React.FC = () => {
                               textTransform: 'capitalize',
                             }}
                           >
-                            {em.emotionId.replace(/_/g, ' ')}
+                            {em.emotionId === 'romantic_love'
+                              ? 'Relational Trust'
+                              : em.emotionId === 'love'
+                                ? 'Affiliative Warmth'
+                                : em.emotionId.replace(/_/g, ' ')}
                           </span>
                           <span
                             style={{
@@ -1749,8 +1758,8 @@ export const EmoView: React.FC = () => {
                   </span>
                 </div>
                 <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                  Unyielding composure, quiet authority, protective loyalty, assertive dominant top
-                  demeanor. Commands respect through self-governance and absolute reliability.
+                  Unyielding composure, quiet authority, principled autonomy, and calm intellectual
+                  presence. Commands respect through self-governance and absolute reliability.
                 </p>
               </div>
 
@@ -1983,7 +1992,7 @@ export const EmoView: React.FC = () => {
                   desc: 'High composure, resistance to panic or collapse',
                 },
                 {
-                  label: 'Dominant Assertiveness',
+                  label: 'Autonomous Initiative',
                   value: masterState?.personality.temperament.dominantAssertiveness ?? 0.85,
                   desc: 'Confident initiative and strong self-command',
                 },
@@ -2676,25 +2685,32 @@ export const EmoView: React.FC = () => {
               gap: '16px',
             }}
           >
-            <Heart size={24} color="#f778ba" />
+            <Heart size={24} color="var(--dev-accent-cyan, #06b6d4)" />
             <div>
               <div
                 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}
               >
-                <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: '#f778ba' }}>
-                  Relationship Engine (Engine 4) • Exclusivity Invariant
+                <h3
+                  style={{
+                    fontSize: '15px',
+                    fontWeight: 700,
+                    margin: 0,
+                    color: 'var(--dev-accent-cyan, #06b6d4)',
+                  }}
+                >
+                  Interpersonal Alignment Engine (Engine 4) • Grounded Trust & Boundaries
                 </h3>
                 <span
                   style={{
                     fontSize: '10px',
                     padding: '1px 6px',
                     borderRadius: '4px',
-                    backgroundColor: 'rgba(247, 120, 186, 0.25)',
-                    color: '#f778ba',
+                    backgroundColor: 'rgba(6, 182, 212, 0.2)',
+                    color: 'var(--dev-accent-cyan, #06b6d4)',
                     fontWeight: 700,
                   }}
                 >
-                  Locked to Creator
+                  Ethical Autonomy
                 </span>
               </div>
               <p
@@ -2705,10 +2721,9 @@ export const EmoView: React.FC = () => {
                   lineHeight: 1.5,
                 }}
               >
-                Arle's romantic love, sexual attraction, and intimate longing are strictly and
-                exclusively directed toward her creator. Third parties can only form non-romantic
-                friendships or intellectual peer connections. Dominant, confident feminine demeanor
-                with consensual boundary enforcement.
+                Arle maintains longitudinal interpersonal trust, consistent relational grounding,
+                and dignified authentic communication. Operates with genuine cognitive
+                independence, principled boundaries, and zero subservience.
               </p>
             </div>
           </div>
@@ -2735,22 +2750,22 @@ export const EmoView: React.FC = () => {
                 desc: 'Resilient trust tested across interactions',
               },
               {
-                label: 'Intimacy Depth',
+                label: 'Contextual Alignment',
                 value: masterState?.relationship.intimacyDepth ?? 0.85,
-                color: '#f778ba',
-                desc: 'Accumulated emotional and romantic closeness',
+                color: '#81b29a',
+                desc: 'Longitudinal contextual rapport and attunement',
               },
               {
-                label: 'Dominant Initiative',
+                label: 'Autonomous Initiative',
                 value: masterState?.relationship.config.dominantInitiativePreference ?? 0.85,
                 color: 'var(--accent)',
-                desc: 'Assertive, composed leadership preference',
+                desc: 'Confident, independent cognitive initiative',
               },
               {
-                label: 'Flirtatious Initiative',
+                label: 'Conversational Depth',
                 value: masterState?.relationship.config.flirtatiousInitiativePreference ?? 0.8,
-                color: '#ff7b72',
-                desc: 'Spontaneous romantic teasing & attraction',
+                color: '#e07a5f',
+                desc: 'Nuanced intellectual engagement and humor',
               },
             ].map((m) => (
               <div
@@ -3421,17 +3436,15 @@ export const EmoView: React.FC = () => {
               const activeInstance = activeEmotionsMap.get(emotion.id);
               const isActive = Boolean(activeInstance);
               const catMeta = CATEGORY_META[emotion.category] || CATEGORY_META.all!;
-              const isRomanticOrSexual =
-                emotion.category === 'love_affection' || emotion.category === 'sexual_sensual';
 
               return (
                 <div
                   key={emotion.id}
                   style={{
-                    backgroundColor: 'var(--bg-card)',
+                    backgroundColor: 'var(--bg-card, #12161f)',
                     borderRadius: '8px',
-                    border: isActive ? '2px solid #f778ba' : '1px solid var(--border-subtle)',
-                    boxShadow: isActive ? '0 0 12px rgba(247, 120, 186, 0.25)' : 'none',
+                    border: isActive ? '2px solid var(--accent, #10b981)' : '1px solid var(--border-subtle, #21262d)',
+                    boxShadow: isActive ? '0 0 12px rgba(16, 185, 129, 0.25)' : 'none',
                     padding: '16px',
                     display: 'flex',
                     flexDirection: 'column',
@@ -3587,22 +3600,6 @@ export const EmoView: React.FC = () => {
                         {emotion.defaultPersistence.replace(/_/g, ' ')}
                       </span>
                     </div>
-
-                    {isRomanticOrSexual && (
-                      <span
-                        style={{
-                          fontSize: '10px',
-                          fontWeight: 600,
-                          color: '#f778ba',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '3px',
-                        }}
-                      >
-                        <Sparkles size={10} />
-                        <span>Exclusive to Creator</span>
-                      </span>
-                    )}
                   </div>
                 </div>
               );

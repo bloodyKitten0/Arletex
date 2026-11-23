@@ -99,9 +99,9 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '12px 16px',
-          backgroundColor: isActive ? 'var(--accent-muted)' : 'var(--bg-card)',
+          backgroundColor: isActive ? 'rgba(16, 185, 129, 0.12)' : 'var(--bg-card, #12161f)',
           borderRadius: '8px',
-          border: `1px solid ${isActive ? 'var(--border-active)' : 'var(--border-subtle)'}`,
+          border: `1px solid ${isActive ? 'var(--accent, #10b981)' : 'var(--border-subtle, #21262d)'}`,
           transition: 'all 0.15s ease',
         }}
       >
@@ -274,11 +274,14 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
               alignItems: 'center',
               gap: '6px',
               padding: '8px 14px',
-              backgroundColor: 'var(--accent)',
-              color: '#000',
-              fontWeight: 600,
+              backgroundColor: '#10b981',
+              color: '#050a07',
+              fontWeight: 700,
               fontSize: '13px',
               borderRadius: '6px',
+              border: '1px solid #10b981',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.25)',
             }}
           >
             <Plus size={16} />

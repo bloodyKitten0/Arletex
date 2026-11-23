@@ -95,7 +95,19 @@ export const ActivitiesView: React.FC = () => {
       const o = originFilter === 'all' ? undefined : originFilter;
       const res = await api.listActivities(s, o);
       if (res.success) {
-        setActivities(res.data);
+        // Deduplicate consecutive identical completed activities by title
+        const deduplicated: Activity[] = [];
+        for (const act of res.data) {
+          if (
+            deduplicated.length > 0 &&
+            deduplicated[deduplicated.length - 1]!.title === act.title &&
+            deduplicated[deduplicated.length - 1]!.status === act.status
+          ) {
+            continue;
+          }
+          deduplicated.push(act);
+        }
+        setActivities(deduplicated);
       }
     } catch (err: any) {
       console.warn('Load activities error:', err);
@@ -476,11 +488,14 @@ export const ActivitiesView: React.FC = () => {
               alignItems: 'center',
               gap: '6px',
               padding: '8px 14px',
-              backgroundColor: 'var(--accent)',
-              color: '#000',
-              fontWeight: 600,
+              backgroundColor: '#10b981',
+              color: '#050a07',
+              fontWeight: 700,
               fontSize: '13px',
               borderRadius: '6px',
+              border: '1px solid #10b981',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.25)',
             }}
           >
             <Plus size={16} />
@@ -834,8 +849,8 @@ export const ActivitiesView: React.FC = () => {
                 <div
                   key={act.id}
                   style={{
-                    backgroundColor: 'var(--bg-card)',
-                    border: '1px solid var(--border-subtle)',
+                    backgroundColor: 'var(--bg-card, #12161f)',
+                    border: '1px solid var(--border-subtle, #21262d)',
                     borderRadius: '10px',
                     padding: '16px',
                     display: 'flex',
@@ -1240,10 +1255,12 @@ export const ActivitiesView: React.FC = () => {
                   style={{
                     padding: '8px 16px',
                     borderRadius: '6px',
-                    backgroundColor: 'var(--accent)',
-                    color: '#000',
-                    fontWeight: 600,
+                    backgroundColor: '#10b981',
+                    color: '#050a07',
+                    fontWeight: 700,
                     fontSize: '13px',
+                    border: '1px solid #10b981',
+                    cursor: 'pointer',
                   }}
                 >
                   Save Activity
@@ -1456,11 +1473,11 @@ export const ActivitiesView: React.FC = () => {
                       gap: '6px',
                       padding: '6px 12px',
                       borderRadius: '6px',
-                      backgroundColor: 'var(--accent)',
-                      color: '#000',
-                      fontWeight: 600,
+                      backgroundColor: '#10b981',
+                      color: '#050a07',
+                      fontWeight: 700,
                       fontSize: '12px',
-                      border: 'none',
+                      border: '1px solid #10b981',
                       cursor: isAnalyzingScreen ? 'not-allowed' : 'pointer',
                       opacity: isAnalyzingScreen ? 0.7 : 1,
                     }}
@@ -1674,10 +1691,10 @@ export const ActivitiesView: React.FC = () => {
                           padding: '7px 14px',
                           borderRadius: '6px',
                           backgroundColor: '#06b6d4',
-                          color: '#000',
-                          fontWeight: 600,
+                          color: '#040d09',
+                          fontWeight: 700,
                           fontSize: '12px',
-                          border: 'none',
+                          border: '1px solid #06b6d4',
                           cursor: typeText.trim() ? 'pointer' : 'not-allowed',
                           opacity: typeText.trim() ? 1 : 0.6,
                         }}

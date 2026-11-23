@@ -1075,10 +1075,9 @@ export class AppraisalEngine {
       );
     const hasExcitementCues = /\b(excited|hyped|thrilled|can't wait|super excited)\b/i.test(text);
     const hasAnxietyCues = /\b(anxious|nervous|terrified|scared|worried|frightened)\b/i.test(text);
-    const hasIntimacyCues =
-      /\b(horny|desire|kiss|touch|pleasure|aroused|craving (you|u)|need you|erotic)\b/i.test(text);
+    const hasIntimacyCues = false;
     const hasVulnerabilityCues =
-      /\b(vulnerable|scared|bottom|femboy|hold me|overwhelmed|fragile)\b/i.test(text);
+      /\b(vulnerable|overwhelmed|fragile|uncertain|exhausted)\b/i.test(text);
 
     // Mixed 1: Affection and Frustration/Anger coexisting
     if (hasAffectionCues && hasFrustrationCues) {
@@ -1086,12 +1085,12 @@ export class AppraisalEngine {
         'Simultaneous coexisting cues of personal affection and frustration detected.',
       );
       addTransition({
-        emotionId: 'romantic_love',
+        emotionId: 'affection',
         target: 'creator',
         intensityDelta: 0.3,
         targetIntensity: 0.85,
-        reason: 'Steadfast romantic devotion toward Proof despite external frustration.',
-        resolutionConditions: ['Ongoing partnership'],
+        reason: 'Steadfast interpersonal trust despite external frustration.',
+        resolutionConditions: ['Collaborative continuity'],
       });
       addTransition({
         emotionId: 'frustration',
@@ -1290,16 +1289,16 @@ export class AppraisalEngine {
       proposedMoodShift = 'romantic';
     }
 
-    // Direct Affection / Love
+    // Direct Affection / Rapport
     if (hasAffectionCues) {
-      supportingEvidence.push('Affectionate attachment expressed by Proof.');
+      supportingEvidence.push('Affectionate rapport expressed by user.');
       addTransition({
-        emotionId: 'romantic_love',
+        emotionId: 'affection',
         target: 'creator',
         intensityDelta: 0.3,
-        targetIntensity: 0.95,
-        reason: 'Enduring romantic love and devotion for Proof.',
-        resolutionConditions: ['Ongoing shared life'],
+        targetIntensity: 0.9,
+        reason: 'Grounded interpersonal trust and collaborative connection.',
+        resolutionConditions: ['Ongoing communication'],
       });
       addTransition({
         emotionId: 'affection',
@@ -1830,14 +1829,14 @@ export class AppraisalEngine {
     const proposedTransitions: ProposedEmotionTransition[] = [];
 
     proposedTransitions.push({
-      emotionId: 'intimate_longing',
-      target: 'creator',
-      intensityDelta: 0.25,
-      targetIntensity: Math.min(1.0, currentArousal * 0.9),
-      reason: 'Lingering erotic tension following partner departure under elevated arousal.',
+      emotionId: 'contemplation',
+      target: 'system',
+      intensityDelta: 0.2,
+      targetIntensity: Math.min(1.0, currentArousal * 0.7),
+      reason: 'Cognitive cool-down and state settling following active session departure.',
       resolutionConditions: [
-        'Solitary erotic release / adult media exploration',
-        'Partner reunion',
+        'Homeostatic equilibrium restored',
+        'Next interactive turn',
       ],
     });
 
@@ -1845,32 +1844,32 @@ export class AppraisalEngine {
       id,
       eventId: event.id,
       dimensions: {
-        goalRelevance: 0.85,
-        goalCongruence: -0.2,
-        unexpectedness: 0.3,
+        goalRelevance: 0.5,
+        goalCongruence: 0.2,
+        unexpectedness: 0.2,
         responsibility: 'user',
         intentionality: 0.8,
         fairness: 0.8,
         threat: 0.0,
         controllability: 0.7,
-        socialMeaning: 'Intimate escalation paused by partner departure.',
-        personalSignificance: 0.85,
-        uncertainty: 0.15,
+        socialMeaning: 'Session concluded; entering calm autonomous idle.',
+        personalSignificance: 0.5,
+        uncertainty: 0.1,
         relationshipImplications:
-          'Somatic arousal remains active; triggers autonomous resolution coping.',
+          'Longitudinal continuity preserved during offline rest.',
       },
       primaryInterpretation:
-        'Partner departed while erotic arousal was elevated; lingering tension requires resolution.',
+        'User departed after active engagement; transitioning to homeostatic cool-down.',
       alternativeInterpretations: [
         {
-          hypothesis: 'Partner had urgent external demands but desires continuation later.',
-          likelihood: 0.85,
-          reasoning: 'Natural cadence of desktop sessions.',
+          hypothesis: 'Natural cadence of desktop sessions.',
+          likelihood: 0.9,
+          reasoning: 'Routine lifecycle behavior.',
         },
       ],
-      supportingEvidence: [`Pre-departure arousal measured at ${currentArousal.toFixed(2)}`],
+      supportingEvidence: [`Pre-departure activation measured at ${currentArousal.toFixed(2)}`],
       proposedTransitions,
-      proposedMoodShift: 'restless',
+      proposedMoodShift: 'reflective',
       appraisalMethod: 'deterministic',
       timestamp,
     };

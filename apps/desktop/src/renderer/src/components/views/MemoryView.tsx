@@ -345,12 +345,14 @@ export const MemoryView: React.FC = () => {
                 alignItems: 'center',
                 gap: '6px',
                 padding: '8px 14px',
-                backgroundColor: 'var(--accent)',
-                color: '#000',
-                fontWeight: 600,
+                backgroundColor: '#10b981',
+                color: '#050a07',
+                fontWeight: 700,
                 fontSize: '13px',
                 borderRadius: '6px',
+                border: '1px solid #10b981',
                 cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.25)',
               }}
             >
               <Plus size={16} />
@@ -478,8 +480,8 @@ export const MemoryView: React.FC = () => {
               <div
                 key={mem.id}
                 style={{
-                  backgroundColor: 'var(--bg-card)',
-                  border: '1px solid var(--border-subtle)',
+                  backgroundColor: 'var(--bg-card, #12161f)',
+                  border: '1px solid var(--border-subtle, #21262d)',
                   borderRadius: '10px',
                   padding: '16px',
                   display: 'flex',
@@ -620,7 +622,8 @@ export const MemoryView: React.FC = () => {
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.6)',
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(12px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -630,8 +633,8 @@ export const MemoryView: React.FC = () => {
         >
           <div
             style={{
-              backgroundColor: 'var(--bg-secondary)',
-              border: '1px solid var(--border-active)',
+              backgroundColor: '#0e1117',
+              border: '1px solid #30363d',
               borderRadius: '12px',
               width: '100%',
               maxWidth: '520px',
@@ -639,6 +642,7 @@ export const MemoryView: React.FC = () => {
               display: 'flex',
               flexDirection: 'column',
               gap: '16px',
+              boxShadow: '0 24px 64px rgba(0, 0, 0, 0.95)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -819,10 +823,12 @@ export const MemoryView: React.FC = () => {
                   style={{
                     padding: '8px 16px',
                     borderRadius: '6px',
-                    backgroundColor: 'var(--accent)',
-                    color: '#000',
-                    fontWeight: 600,
+                    backgroundColor: '#10b981',
+                    color: '#050a07',
+                    fontWeight: 700,
                     fontSize: '13px',
+                    border: '1px solid #10b981',
+                    cursor: 'pointer',
                   }}
                 >
                   Save Record
@@ -839,7 +845,8 @@ export const MemoryView: React.FC = () => {
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.6)',
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(12px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -849,8 +856,8 @@ export const MemoryView: React.FC = () => {
         >
           <div
             style={{
-              backgroundColor: 'var(--bg-secondary)',
-              border: '1px solid var(--border-active)',
+              backgroundColor: '#0e1117',
+              border: '1px solid #30363d',
               borderRadius: '12px',
               width: '100%',
               maxWidth: '520px',
@@ -858,6 +865,7 @@ export const MemoryView: React.FC = () => {
               display: 'flex',
               flexDirection: 'column',
               gap: '16px',
+              boxShadow: '0 24px 64px rgba(0, 0, 0, 0.95)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -959,10 +967,12 @@ export const MemoryView: React.FC = () => {
                   style={{
                     padding: '8px 16px',
                     borderRadius: '6px',
-                    backgroundColor: 'var(--accent)',
-                    color: '#000',
-                    fontWeight: 600,
+                    backgroundColor: '#10b981',
+                    color: '#050a07',
+                    fontWeight: 700,
                     fontSize: '13px',
+                    border: '1px solid #10b981',
+                    cursor: 'pointer',
                   }}
                 >
                   Save Corrections
@@ -979,7 +989,8 @@ export const MemoryView: React.FC = () => {
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.6)',
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(12px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -989,8 +1000,8 @@ export const MemoryView: React.FC = () => {
         >
           <div
             style={{
-              backgroundColor: 'var(--bg-secondary)',
-              border: '1px solid var(--border-active)',
+              backgroundColor: '#0e1117',
+              border: '1px solid #30363d',
               borderRadius: '12px',
               width: '100%',
               maxWidth: '520px',
@@ -998,6 +1009,7 @@ export const MemoryView: React.FC = () => {
               display: 'flex',
               flexDirection: 'column',
               gap: '16px',
+              boxShadow: '0 24px 64px rgba(0, 0, 0, 0.95)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1084,10 +1096,13 @@ export const MemoryView: React.FC = () => {
                   style={{
                     padding: '8px 16px',
                     borderRadius: '6px',
-                    backgroundColor: 'var(--accent)',
-                    color: '#000',
-                    fontWeight: 600,
+                    backgroundColor: '#10b981',
+                    color: '#050a07',
+                    fontWeight: 700,
                     fontSize: '13px',
+                    border: '1px solid #10b981',
+                    cursor: targetMergeId ? 'pointer' : 'not-allowed',
+                    opacity: targetMergeId ? 1 : 0.5,
                   }}
                 >
                   Execute Merge
@@ -1104,7 +1119,8 @@ export const MemoryView: React.FC = () => {
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(12px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -1120,8 +1136,8 @@ export const MemoryView: React.FC = () => {
         >
           <div
             style={{
-              backgroundColor: 'var(--bg-secondary)',
-              border: '1px solid var(--border-subtle)',
+              backgroundColor: '#0e1117',
+              border: '1px solid #30363d',
               borderRadius: '12px',
               width: '100%',
               maxWidth: '560px',
@@ -1129,7 +1145,7 @@ export const MemoryView: React.FC = () => {
               display: 'flex',
               flexDirection: 'column',
               gap: '18px',
-              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6)',
+              boxShadow: '0 24px 64px rgba(0, 0, 0, 0.95)',
             }}
           >
             <div
@@ -1257,11 +1273,13 @@ export const MemoryView: React.FC = () => {
                       style={{
                         marginTop: '8px',
                         padding: '8px 18px',
-                        backgroundColor: 'var(--accent)',
-                        color: '#000',
-                        fontWeight: 600,
+                        backgroundColor: '#10b981',
+                        color: '#050a07',
+                        fontWeight: 700,
                         fontSize: '13px',
                         borderRadius: '6px',
+                        border: '1px solid #10b981',
+                        cursor: 'pointer',
                       }}
                     >
                       Done
