@@ -1,4 +1,28 @@
 import crypto from 'node:crypto';
+import fs from 'fs';
+import path from 'path';
+
+// ── Persistent self-model state (trait scores + utterance log) ───────────────
+interface PersistentSelfState {
+  traitScores: Record<string, number>;
+  recentUtterances: string[];
+}
+
+const PERSIST_PATH = path.resolve(__dirname, '../../../data/self_model_state.json');
+
+function loadPersistentState(): PersistentSelfState {
+  try {
+    return JSON.parse(fs.readFileSync(PERSIST_PATH, 'utf-8'));
+  } catch {
+    return { traitScores: {}, recentUtterances: [] };
+  }
+}
+
+function savePersistentState(s: PersistentSelfState): void {
+  const dir = path.dirname(PERSIST_PATH);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(PERSIST_PATH, JSON.stringify(s, null, 2), 'utf-8');
+}
 import {
   ApeAppraisal,
   ApeEvent,
@@ -1563,5 +1587,33 @@ export class SelfModelEngine {
 
     this.recordPrivateReflection(params.event.type || 'causal_reflection', fullReflection);
     return fullReflection;
+  }
+
+  // ── Human-like additions: persistent trait scores & utterance log ──────────
+
+  private _persistState = loadPersistentState();
+
+  /** Adjust a trait score after each interaction (simple RL placeholder). */
+  public adjustTraitScore(trait: string, delta: number): void {
+    const prev = this._persistState.traitScores[trait] ?? 0;
+    this._persistState.traitScores[trait] = prev + delta;
+    savePersistentState(this._persistState);
+  }
+
+  public getTraitScore(trait: string): number {
+    return this._persistState.traitScores[trait] ?? 0;
+  }
+
+  /** Record a recent utterance (kept rolling: last 50). */
+  public addUtterance(utterance: string): void {
+    this._persistState.recentUtterances.push(utterance);
+    if (this._persistState.recentUtterances.length > 50) {
+      this._persistState.recentUtterances.shift();
+    }
+    savePersistentState(this._persistState);
+  }
+
+  public getRecentUtterances(): string[] {
+    return [...this._persistState.recentUtterances];
   }
 }

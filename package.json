@@ -36,7 +36,8 @@
     "test:watch": "vitest",
     "dev": "pnpm --filter @arletex/desktop dev",
     "start": "pnpm --filter @arletex/desktop start",
-    "clean": "pnpm -r --parallel exec rimraf dist out node_modules"
+    "clean": "pnpm -r --parallel exec rimraf dist out node_modules",
+    "test:human": "MOCK_LLAMA_PORT=8081 vitest run"
   },
   "devDependencies": {
     "@electron/rebuild": "^4.2.1",
