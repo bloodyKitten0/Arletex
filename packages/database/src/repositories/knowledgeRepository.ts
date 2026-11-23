@@ -1,8 +1,8 @@
 import Database from 'better-sqlite3';
-import { KnowledgeDocument, KnowledgeChunk, LoRAAdapterRecord } from '@arletex/contracts';
-import { IKnowledgeRepository } from '@arletex/core';
+import type { KnowledgeDocument, KnowledgeChunk, LoRAAdapterRecord } from '@arletex/contracts';
+import type { IKnowledgeRepository } from '@arletex/core';
 
-export { IKnowledgeRepository };
+export type { IKnowledgeRepository };
 
 export class SqliteKnowledgeRepository implements IKnowledgeRepository {
   constructor(private readonly db: Database.Database) {}

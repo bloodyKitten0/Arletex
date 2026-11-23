@@ -1,9 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {
-  Conversation,
-  CreateMemoryInput,
-  Message,
-} from '@arletex/contracts';
+import { Conversation, CreateMemoryInput, Message } from '@arletex/contracts';
 import {
   Volume2,
   VolumeX,
@@ -17,11 +13,7 @@ import {
   X,
   StopCircle,
 } from 'lucide-react';
-import {
-  splitIntoSpeechChunks,
-  playSpeechQueue,
-  stopCurrentAudio,
-} from '../../utils/mediaUtils';
+import { splitIntoSpeechChunks, playSpeechQueue, stopCurrentAudio } from '../../utils/mediaUtils';
 import { GenerationStats } from '../ChatView';
 
 interface HumanCompanionViewProps {
@@ -40,7 +32,13 @@ interface HumanCompanionViewProps {
   onSendMessage: (
     content: string,
     imageBase64?: string,
-    videoData?: { type: 'video'; base64: string; videoPath?: string; fileName?: string; mimeType?: string }
+    videoData?: {
+      type: 'video';
+      base64: string;
+      videoPath?: string;
+      fileName?: string;
+      mimeType?: string;
+    },
   ) => void;
   onCancelGeneration: () => void;
   onCreateMemory: (input: CreateMemoryInput) => Promise<boolean>;
@@ -142,17 +140,7 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
           // Draw single frame from sprite sheet
           const frameWidth = 128;
           const frameHeight = 128;
-          ctx.drawImage(
-            img,
-            currentFrame * frameWidth,
-            0,
-            frameWidth,
-            frameHeight,
-            0,
-            0,
-            56,
-            56
-          );
+          ctx.drawImage(img, currentFrame * frameWidth, 0, frameWidth, frameHeight, 0, 0, 56, 56);
         }
       }
     }, 120);
@@ -268,7 +256,8 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
           transform: 'translateX(-50%)',
           width: '700px',
           height: '400px',
-          background: 'radial-gradient(circle, rgba(244, 63, 94, 0.12) 0%, rgba(15, 23, 42, 0) 70%)',
+          background:
+            'radial-gradient(circle, rgba(244, 63, 94, 0.12) 0%, rgba(15, 23, 42, 0) 70%)',
           pointerEvents: 'none',
           zIndex: 0,
         }}
@@ -338,7 +327,14 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
 
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '17px', fontWeight: 700, letterSpacing: '-0.3px', color: '#f8fafc' }}>
+                <span
+                  style={{
+                    fontSize: '17px',
+                    fontWeight: 700,
+                    letterSpacing: '-0.3px',
+                    color: '#f8fafc',
+                  }}
+                >
                   Arle
                 </span>
                 <span
@@ -354,7 +350,16 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
                   Partner
                 </span>
               </div>
-              <div style={{ fontSize: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+              <div
+                style={{
+                  fontSize: '12px',
+                  color: '#94a3b8',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  marginTop: '2px',
+                }}
+              >
                 <Sparkles size={12} color="#fb7185" />
                 <span>{activeFeeling}</span>
               </div>
@@ -376,7 +381,9 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
                 borderRadius: '20px',
                 fontSize: '12px',
                 fontWeight: 600,
-                backgroundColor: voiceEnabled ? 'rgba(244, 63, 94, 0.18)' : 'rgba(255, 255, 255, 0.05)',
+                backgroundColor: voiceEnabled
+                  ? 'rgba(244, 63, 94, 0.18)'
+                  : 'rgba(255, 255, 255, 0.05)',
                 color: voiceEnabled ? '#fb7185' : '#64748b',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
                 cursor: 'pointer',
@@ -490,7 +497,9 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
               >
                 <Sparkles size={28} color="#fb7185" />
               </div>
-              <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#f8fafc', marginBottom: '8px' }}>
+              <h3
+                style={{ fontSize: '18px', fontWeight: 600, color: '#f8fafc', marginBottom: '8px' }}
+              >
                 Here with you, Proof.
               </h3>
               <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: '1.6' }}>
@@ -527,8 +536,12 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
                       padding: '14px 18px',
                       borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                       backgroundColor: isUser ? '#232942' : '#141622',
-                      border: isUser ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(244, 63, 94, 0.22)',
-                      borderLeft: isUser ? '1px solid rgba(255, 255, 255, 0.08)' : '3px solid #f43f5e',
+                      border: isUser
+                        ? '1px solid rgba(255, 255, 255, 0.08)'
+                        : '1px solid rgba(244, 63, 94, 0.22)',
+                      borderLeft: isUser
+                        ? '1px solid rgba(255, 255, 255, 0.08)'
+                        : '3px solid #f43f5e',
                       boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)',
                       fontSize: '15px',
                       lineHeight: '1.65',
@@ -539,11 +552,18 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
                   >
                     {/* Attached Image Preview */}
                     {Boolean(msg.metadata && typeof msg.metadata.imageBase64 === 'string') && (
-                      <div style={{ marginBottom: '10px', borderRadius: '8px', overflow: 'hidden' }}>
+                      <div
+                        style={{ marginBottom: '10px', borderRadius: '8px', overflow: 'hidden' }}
+                      >
                         <img
                           src={msg.metadata!.imageBase64 as string}
                           alt="Attachment"
-                          style={{ maxHeight: '240px', maxWidth: '100%', objectFit: 'contain', borderRadius: '8px' }}
+                          style={{
+                            maxHeight: '240px',
+                            maxWidth: '100%',
+                            objectFit: 'contain',
+                            borderRadius: '8px',
+                          }}
                         />
                       </div>
                     )}
@@ -652,7 +672,15 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
 
           {/* Thinking Indicator */}
           {isGenerating && !streamingText && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8', fontSize: '13px' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                color: '#94a3b8',
+                fontSize: '13px',
+              }}
+            >
               <Sparkles size={14} color="#fb7185" />
               <span>Arle is thinking...</span>
             </div>
@@ -836,7 +864,9 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
               borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
             }}
           >
-            <span style={{ fontSize: '15px', fontWeight: 600, color: '#f8fafc' }}>Past Conversations</span>
+            <span style={{ fontSize: '15px', fontWeight: 600, color: '#f8fafc' }}>
+              Past Conversations
+            </span>
             <button
               onClick={() => setShowHistoryDrawer(false)}
               style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
@@ -857,15 +887,27 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
                   padding: '12px 14px',
                   borderRadius: '10px',
                   marginBottom: '8px',
-                  backgroundColor: c.id === activeConversationId ? 'rgba(244, 63, 94, 0.15)' : '#161824',
-                  border: c.id === activeConversationId ? '1px solid rgba(244, 63, 94, 0.3)' : '1px solid rgba(255, 255, 255, 0.04)',
+                  backgroundColor:
+                    c.id === activeConversationId ? 'rgba(244, 63, 94, 0.15)' : '#161824',
+                  border:
+                    c.id === activeConversationId
+                      ? '1px solid rgba(244, 63, 94, 0.3)'
+                      : '1px solid rgba(255, 255, 255, 0.04)',
                   cursor: 'pointer',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
                 }}
               >
-                <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '13px', color: '#f1f5f9' }}>
+                <div
+                  style={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    fontSize: '13px',
+                    color: '#f1f5f9',
+                  }}
+                >
                   {c.title || 'Untitled Session'}
                 </div>
                 {onDeleteConversation && (
@@ -874,7 +916,13 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
                       e.stopPropagation();
                       onDeleteConversation(c.id);
                     }}
-                    style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '2px' }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#64748b',
+                      cursor: 'pointer',
+                      padding: '2px',
+                    }}
                   >
                     <Trash2 size={13} />
                   </button>

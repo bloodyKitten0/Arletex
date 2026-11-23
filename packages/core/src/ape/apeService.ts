@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import {
+  ActiveEmotionState,
   ApeAppraisal,
   ApeDevelopmentState,
   ApeEvent,
@@ -837,6 +838,35 @@ export class ApeService {
 
   public getExperientialStateEngine(): ExperientialStateEngine {
     return this.experientialStateEngine;
+  }
+
+  public activateEmotion(
+    emotionId: string,
+    intensity = 0.8,
+    reason = 'Affective trigger',
+  ): ActiveEmotionState {
+    const now = new Date().toISOString();
+    const emotion: ActiveEmotionState = {
+      id: crypto.randomUUID(),
+      emotionId,
+      intensity: Math.max(0, Math.min(1.0, intensity)),
+      confidence: 1.0,
+      activatedAt: now,
+      lastUpdatedAt: now,
+      durationMs: 0,
+      persistence: 'medium_term',
+      triggerEventId: `evt_${emotionId}_${Date.now()}`,
+      target: 'user',
+      context: reason,
+      interpretation: reason,
+      supportingEvidence: [reason],
+      relatedMemoryIds: [],
+      relatedEmotionIds: [],
+      resolutionConditions: [],
+      status: 'active',
+    };
+    this.repo.saveActiveEmotion(emotion);
+    return emotion;
   }
 
   public stepLifecycle(nowIso?: string) {

@@ -117,6 +117,35 @@ export class LlamaServerAdapter implements IInferenceProvider {
     }
   }
 
+  public async getLoraAdapters(): Promise<Array<{ id: number; path?: string; scale: number }>> {
+    try {
+      const res = await fetch(`${this.config.serverUrl}/lora-adapters`, {
+        signal: AbortSignal.timeout(2000),
+      });
+      if (res.ok) {
+        return (await res.json()) as Array<{ id: number; path?: string; scale: number }>;
+      }
+    } catch (err: any) {
+      this.logger.debug(`Failed to fetch lora-adapters from llama-server: ${err.message}`);
+    }
+    return [];
+  }
+
+  public async setLoraAdapters(adapters: Array<{ id: number; scale: number }>): Promise<boolean> {
+    try {
+      const res = await fetch(`${this.config.serverUrl}/lora-adapters`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(adapters),
+        signal: AbortSignal.timeout(2000),
+      });
+      return res.ok;
+    } catch (err: any) {
+      this.logger.warn(`Failed to set lora-adapters on llama-server: ${err.message}`);
+      return false;
+    }
+  }
+
   public async streamChat(options: ChatStreamOptions): Promise<string> {
     const { conversationId, requestId, messages, configOverride, signal, onChunk } = options;
     const safeOnChunk = typeof onChunk === 'function' ? onChunk : () => {};

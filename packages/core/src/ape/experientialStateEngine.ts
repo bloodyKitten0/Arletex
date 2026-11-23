@@ -322,9 +322,59 @@ export class ExperientialStateEngine {
    * Activates or updates an experiential state episode.
    */
   public activateOrUpdateState(
-    candidate: ExperientialStateInstance,
-    reason: string,
+    candidateOrId: ExperientialStateInstance | string,
+    reasonOrParams?:
+      | string
+      | {
+          intensity?: number;
+          confidence?: number;
+          valence?: number;
+          arousal?: number;
+          supportingEvidence?: string[];
+          counterEvidence?: string[];
+          sourceEventIds?: string[];
+          memoryIds?: string[];
+          effects?: ExperientialStateEffect[];
+        },
+    optionalReason?: string,
   ): ExperientialStateInstance {
+    let candidate: ExperientialStateInstance;
+    let reason: string;
+
+    if (typeof candidateOrId === 'string') {
+      const def = this.catalog.get(candidateOrId);
+      if (!def) {
+        throw new Error(`Experiential state definition "${candidateOrId}" not found in catalog.`);
+      }
+      const p = typeof reasonOrParams === 'object' ? reasonOrParams : {};
+      reason =
+        typeof reasonOrParams === 'string' ? reasonOrParams : optionalReason || 'Manual activation';
+      candidate = this.createCandidateInstance(def, {
+        intensity: p.intensity ?? 0.8,
+        confidence: p.confidence ?? 0.85,
+        valence: p.valence ?? def.defaultValence ?? 0.0,
+        arousal: p.arousal ?? def.defaultArousal ?? 0.5,
+        supporting: p.supportingEvidence || [`Activation of ${def.name}`],
+        counter: p.counterEvidence || [],
+        sourceEventIds: p.sourceEventIds || [],
+        memoryIds: p.memoryIds,
+        effects: p.effects || [
+          {
+            type: 'attention_bias',
+            target: def.id,
+            magnitude: 0.5,
+            description: def.downstreamEffects || 'Active experiential focus.',
+          },
+        ],
+      });
+    } else {
+      candidate = candidateOrId;
+      reason =
+        typeof reasonOrParams === 'string'
+          ? reasonOrParams
+          : optionalReason || 'Candidate promotion';
+    }
+
     const existing = this.activeInstances.get(candidate.id);
     const now = new Date().toISOString();
 

@@ -100,6 +100,18 @@ export class InferenceGateway implements IInferenceProvider {
     return this.codingSpecialistAdapter;
   }
 
+  public getLlamaAdapter(): LlamaServerAdapter {
+    return this.llamaAdapter;
+  }
+
+  public async getLoraAdapters(): Promise<Array<{ id: number; path?: string; scale: number }>> {
+    return this.llamaAdapter.getLoraAdapters();
+  }
+
+  public async setLoraAdapters(adapters: Array<{ id: number; scale: number }>): Promise<boolean> {
+    return this.llamaAdapter.setLoraAdapters(adapters);
+  }
+
   public updateConfig(newConfig: Partial<InferenceConfig>): void {
     const targetProvider = newConfig.provider ?? this.config.provider;
 
