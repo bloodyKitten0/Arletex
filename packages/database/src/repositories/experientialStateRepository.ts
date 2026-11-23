@@ -126,6 +126,13 @@ export class SqliteExperientialStateRepository implements IExperientialStateRepo
     }));
   }
 
+  public pruneStaleManualEpisodes(): number {
+    const res = this.db
+      .prepare("DELETE FROM experiential_state_episodes WHERE supporting_evidence LIKE '%Manual activation%'")
+      .run();
+    return res.changes;
+  }
+
   private mapRow(row: any): ExperientialStateInstance {
     return {
       instanceId: row.instance_id,

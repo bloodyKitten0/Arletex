@@ -1429,30 +1429,7 @@ export class ApeService {
         : '';
 
     const now = new Date();
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    const dayOfWeek = days[now.getDay()];
-    const month = months[now.getMonth()];
-    const day = now.getDate();
-    const year = now.getFullYear();
     const hours = now.getHours();
-    const minutes = now.getMinutes().toString().padStart(2, '0');
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = hours % 12 || 12;
-    const localTimeStr = `${dayOfWeek}, ${month} ${day}, ${year} at ${displayHours}:${minutes} ${ampm}`;
 
     let circadianPhase = 'Day';
     if (hours >= 5 && hours < 12) circadianPhase = 'Morning';
@@ -1473,7 +1450,7 @@ export class ApeService {
       }
     }
 
-    const temporalLine = `\n- Temporal Awareness: Currently ${localTimeStr} (${circadianPhase}).${absenceStr} Active commitments to Proof: ${commitmentsStr}.${deadlineStr}`;
+    const temporalLine = `\n- Temporal Awareness: Natural circadian phase is ${circadianPhase}.${absenceStr} (Internal grounding: Do not recite clock digits or timestamps). Active commitments to Proof: ${commitmentsStr}.${deadlineStr}`;
 
     const worldOverview = this.worldModelEngine.getWorldOverview();
     const worldLine = `\n- World Grounding: ${worldOverview.worldSummary} ${worldOverview.epistemicAnalysis.epistemicFrontierDescription}`;

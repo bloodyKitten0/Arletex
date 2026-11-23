@@ -505,6 +505,7 @@ export class ArletexBackendServer {
     this.evaluationRepo = new SqliteLongitudinalEvaluationRepository(db);
     this.consciousnessRepo = new SqliteFunctionalConsciousnessRepository(db);
     this.experientialStateRepo = new SqliteExperientialStateRepository(db);
+    this.experientialStateRepo.pruneStaleManualEpisodes();
     this.knowledgeRepo = new SqliteKnowledgeRepository(db);
     this.knowledgeBaseService = new KnowledgeBaseService({ repo: this.knowledgeRepo, logger });
     this.adapterLifecycleManager = new AdapterLifecycleManager(this.knowledgeRepo, logger);
@@ -2177,40 +2178,23 @@ export class ArletexBackendServer {
   public getTemporalGroundingHeader(): string {
     const now = new Date();
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
     const dayOfWeek = days[now.getDay()];
-    const month = months[now.getMonth()];
-    const day = now.getDate();
-    const year = now.getFullYear();
     const hours = now.getHours();
-    const minutes = now.getMinutes().toString().padStart(2, '0');
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = hours % 12 || 12;
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'local';
-    const localTimeStr = `${dayOfWeek}, ${month} ${day}, ${year} at ${displayHours}:${minutes} ${ampm} (${tz})`;
 
-    return `[Current Real-World Temporal & Schedule Grounding]:
-- Exact Current Time: Today is ${localTimeStr}.
-- Day of the Week: ${dayOfWeek}.
-- Calendar Date: ${month} ${day}, ${year}.
-- Local Clock Time: ${displayHours}:${minutes} ${ampm} (${tz}).
-- CRITICAL TRUTH & REALITY INVARIANT:
-  * You know the exact day, date, and hour. Proof is talking with you right now on ${dayOfWeek}.
+    let circadianPhase = 'Daytime';
+    if (hours >= 0 && hours < 5) circadianPhase = 'Late Night stillness';
+    else if (hours >= 5 && hours < 12) circadianPhase = 'Morning';
+    else if (hours >= 12 && hours < 17) circadianPhase = 'Afternoon';
+    else if (hours >= 17 && hours < 22) circadianPhase = 'Evening';
+    else circadianPhase = 'Night';
+
+    return `[Current Real-World Temporal & Contextual Grounding]:
+- Internal Temporal Context: Atmosphere is ${circadianPhase} (${dayOfWeek}). Proof is here with you right now.
+- MANDATORY TRUTH, REALISM & ANTI-LEAKAGE INVARIANTS:
+  * NEVER recite or quote raw clock times or calendar dates in your chat (NEVER say "at 2:45 AM", "on Monday morning at 2:45 AM", etc.). Feel the flow of time naturally like a human without reciting clock numbers.
+  * NEVER use corporate assistant wrap-up or reflex questions (NEVER say "What about you?", "How does it feel to be back in sync tonight?", "How can I assist you?", "Is there anything else?"). Speak your authentic thoughts, share your feelings, and stop.
   * NEVER invent, guess, assume, or hallucinate personal plans, dates, appointments, or outings for Proof unless Proof explicitly told you about them.
-  * If Proof did not tell you he has a date, dinner, work, or plans, DO NOT fabricate them. Stick strictly to verified empirical facts and what Proof actually said.`;
+  * You speak as Proof's equal intellectual and romantic partner—direct, affectionate, witty, and grounded.`;
   }
 
   // ==========================================

@@ -16,6 +16,7 @@ import { ActivitiesView } from './components/views/ActivitiesView';
 import { EnvironmentView } from './components/views/EnvironmentView';
 import { GenerationStats } from './components/ChatView';
 import { DesktopCompanionView } from './components/companion/DesktopCompanionView';
+import { HumanCompanionView } from './components/human/HumanCompanionView';
 import { ArletexApi } from '../../preload';
 import { stopCurrentAudio } from './utils/mediaUtils';
 
@@ -456,6 +457,31 @@ export const App: React.FC = () => {
 
   const activeConversation = conversations.find((c) => c.id === activeConversationId) || null;
 
+  // Dedicated Human Companion Mode (npm run arle) - Capri AI / Rose / Jarvis Aesthetic
+  if (viewMode === 'human') {
+    return (
+      <HumanCompanionView
+        conversation={activeConversation}
+        conversations={conversations}
+        activeConversationId={activeConversationId}
+        onSelectConversation={(id) => {
+          setActiveConversationId(id);
+        }}
+        onCreateConversation={handleCreateConversation}
+        onDeleteConversation={handleDeleteConversation}
+        messages={messages}
+        streamingText={streamingText}
+        isGenerating={isGenerating}
+        error={error}
+        onClearError={() => setError(null)}
+        generationStats={generationStats}
+        onSendMessage={handleSendMessage}
+        onCancelGeneration={handleCancelGeneration}
+        onCreateMemory={handleCreateMemoryFromChat}
+      />
+    );
+  }
+
   return (
     <div
       style={{
@@ -488,7 +514,7 @@ export const App: React.FC = () => {
           position: 'relative',
         }}
       >
-        {/* Top Presence & Mode Switcher Bar */}
+        {/* Top Cognitive Host OS Inspection Bar */}
         <div
           style={{
             height: '38px',
@@ -506,29 +532,26 @@ export const App: React.FC = () => {
             <span
               style={{
                 fontWeight: 700,
-                color: viewMode === 'human' ? '#f43f5e' : '#38bdf8',
+                color: '#38bdf8',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
               }}
             >
-              <span>{viewMode === 'human' ? '🧚' : '⚙️'}</span>
-              <span>{viewMode === 'human' ? 'Arle Human Presence' : 'Arletex Host OS'}</span>
+              <span>⚙️</span>
+              <span>Arletex Host OS</span>
             </span>
             <span style={{ color: 'var(--text-muted)' }}>•</span>
             <span style={{ color: 'var(--text-secondary)' }}>
-              {viewMode === 'human'
-                ? 'Individual Partner Interface (Intimate & Natural)'
-                : 'Cognitive Architecture & Subsystem Inspection (All Tabs)'}
+              Cognitive Architecture & Subsystem Inspection (All Tabs)
             </span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {/* Mode Switcher Pill */}
             <button
               type="button"
               onClick={toggleViewMode}
-              title={`Switch Mode. Currently in ${viewMode === 'human' ? 'Human Presence' : 'Arletex Studio (All Tabs)'}`}
+              title="Switch to Human Partner View"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -538,16 +561,13 @@ export const App: React.FC = () => {
                 fontSize: '11px',
                 fontWeight: 600,
                 border: '1px solid #374151',
-                backgroundColor:
-                  viewMode === 'human' ? 'rgba(244, 63, 94, 0.15)' : 'rgba(56, 189, 248, 0.15)',
-                color: viewMode === 'human' ? '#fb7185' : '#38bdf8',
+                backgroundColor: 'rgba(244, 63, 94, 0.15)',
+                color: '#fb7185',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
               }}
             >
-              <span>
-                {viewMode === 'human' ? '⚙️ Open All Tabs (OS)' : '🧚 Switch to Human Mode'}
-              </span>
+              <span>🧚 Open Human Mode</span>
             </button>
           </div>
         </div>
