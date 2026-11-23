@@ -25,7 +25,6 @@
   "scripts": {
     "arle": "./scripts/run-arletex.sh --human",
     "arletex": "./scripts/run-arletex.sh --full",
-    "companion": "./scripts/run-companion.sh",
     "ingest:medicine": "tsx scripts/ingest-medical-knowledge.ts",
     "benchmark:usmle": "tsx scripts/run-usmle-benchmark.ts",
     "build:native": "cmake -B native/build -S native -DCMAKE_BUILD_TYPE=Release && cmake --build native/build -j4 && mkdir -p apps/desktop/src/backend/native && cp native/build/reflex_engine apps/desktop/src/backend/native/reflex_engine",

@@ -829,16 +829,6 @@ app.whenReady().then(async () => {
   registerIpcHandlers();
   await createWindow();
 
-  defaultCompanionManager.setMainWindow(mainWindow);
-  const preloadPath = path.join(__dirname, '../preload/index.cjs');
-  const isDev = process.env['NODE_ENV'] === 'development' || !app.isPackaged;
-  const devUrl = process.env['VITE_DEV_SERVER_URL'];
-  try {
-    await defaultCompanionManager.initCompanionWindow(preloadPath, isDev, devUrl);
-  } catch (err: any) {
-    logger.warn(`Failed to initialize desktop companion window: ${err.message}`);
-  }
-
   app.on('activate', async () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       await createWindow();

@@ -2192,7 +2192,7 @@ export const EmoView: React.FC = () => {
                       id: 'devotion_to_creator',
                       name: 'Devotion to Creator',
                       importance: 0.98,
-                      description: 'Singular, exclusive loyalty, affection, and partnership',
+                      description: 'Authentic alignment, intellectual synergy, and mutual trust',
                     },
                     {
                       id: 'intellectual_integrity',
@@ -2435,7 +2435,7 @@ export const EmoView: React.FC = () => {
                   label: 'Intimacy & Connection',
                   value: masterState?.motivational.needs.intimacy_connection ?? 0.8,
                   color: '#f778ba',
-                  desc: 'Connection with creator partner',
+                  desc: 'Genuine bond and connection with creator',
                 },
                 {
                   key: 'recreation_rest',
@@ -2914,7 +2914,7 @@ export const EmoView: React.FC = () => {
               </div>
               <div style={{ fontSize: '13px', fontWeight: 600 }}>
                 {masterState?.selfModel.identityNarrative ||
-                  'Arle: autonomous intelligence, loyal companion and partner to creator.'}
+                  'Arle: autonomous intelligence, loyal companion to creator.'}
               </div>
             </div>
           </div>

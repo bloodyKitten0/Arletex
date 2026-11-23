@@ -60,5 +60,10 @@ Thumbs.db
 *.swo
 coverage/
 *.log
+tools/
+*.safetensors
+*.png
+*.jpg
+*.jpeg
 lib64/
 next.md

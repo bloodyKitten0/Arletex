@@ -53,32 +53,36 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
     return (
       <aside
         style={{
-          width: '40px',
-          backgroundColor: 'var(--bg-secondary)',
-          borderLeft: '1px solid var(--border-subtle)',
+          width: '36px',
+          backgroundColor: 'var(--dev-bg-surface, #0d1117)',
+          borderLeft: '1px solid var(--dev-border, #21262d)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          padding: '12px 0',
+          padding: '10px 0',
           gap: '12px',
           userSelect: 'none',
           zIndex: 10,
+          fontFamily: 'var(--font-mono, monospace)',
         }}
       >
         <button
           type="button"
           onClick={onToggleCollapse}
-          title="Expand Device Telemetry"
+          title="Expand Hardware Telemetry"
           style={{
-            padding: '6px',
-            color: 'var(--text-secondary)',
-            borderRadius: '4px',
+            padding: '4px',
+            color: 'var(--dev-text-secondary, #8b949e)',
+            borderRadius: '3px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
+          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--dev-text-primary, #e6edf3)')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--dev-text-secondary, #8b949e)')}
         >
           <ChevronLeft size={16} />
         </button>
@@ -87,27 +91,24 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
           style={{
             writingMode: 'vertical-rl',
             transform: 'rotate(180deg)',
-            fontSize: '11px',
-            letterSpacing: '1px',
-            fontWeight: 600,
-            color: 'var(--text-muted)',
-            fontFamily: 'var(--font-mono)',
+            fontSize: '9px',
+            letterSpacing: '1.2px',
+            fontWeight: 700,
+            color: 'var(--dev-text-muted, #6e7681)',
             marginTop: '8px',
           }}
         >
-          TELEMETRY
+          TELEMETRY // VULKAN
         </div>
 
-        {/* Live TPS mini indicator */}
         {speedTps > 0 && (
           <div
             style={{
-              fontSize: '10px',
-              fontFamily: 'var(--font-mono)',
-              color: 'var(--accent)',
+              fontSize: '9px',
+              color: 'var(--dev-accent-emerald, #10b981)',
               fontWeight: 700,
               marginTop: 'auto',
-              marginBottom: '8px',
+              marginBottom: '6px',
               textAlign: 'center',
             }}
           >
@@ -118,12 +119,15 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
     );
   }
 
-  // Helper for progress meters
-  const renderMeter = (percent: number | null, color = 'var(--accent)') => {
+  const renderMeter = (percent: number | null, color = 'var(--dev-accent-emerald, #10b981)') => {
     if (percent === null) {
       return (
         <span
-          style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}
+          style={{
+            fontSize: '10px',
+            color: 'var(--dev-text-muted, #6e7681)',
+            fontFamily: 'var(--font-mono)',
+          }}
         >
           N/A
         </span>
@@ -135,9 +139,9 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
         <div
           style={{
             flex: 1,
-            height: '6px',
-            backgroundColor: 'var(--bg-tertiary)',
-            borderRadius: '3px',
+            height: '4px',
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            borderRadius: '2px',
             overflow: 'hidden',
           }}
         >
@@ -145,18 +149,18 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
             style={{
               width: `${clamped}%`,
               height: '100%',
-              backgroundColor: clamped > 85 ? 'var(--danger)' : color,
-              borderRadius: '3px',
+              backgroundColor: clamped > 88 ? 'var(--dev-accent-red, #ef4444)' : color,
+              borderRadius: '2px',
               transition: 'width 0.3s ease',
             }}
           />
         </div>
         <span
           style={{
-            fontSize: '11px',
+            fontSize: '10px',
             fontFamily: 'var(--font-mono)',
-            color: 'var(--text-primary)',
-            minWidth: '34px',
+            color: 'var(--dev-text-primary, #e6edf3)',
+            minWidth: '32px',
             textAlign: 'right',
           }}
         >
@@ -168,33 +172,44 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
 
   const renderServicePill = (label: string, isHealthy: boolean) => (
     <div
+      key={label}
       style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '3px 0',
-        fontSize: '11px',
+        padding: '2px 0',
+        fontSize: '10px',
+        fontFamily: 'var(--font-mono)',
       }}
     >
-      <span style={{ color: 'var(--text-secondary)' }}>{label}</span>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <span
+        style={{
+          color: 'var(--dev-text-secondary, #8b949e)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {label}
+      </span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
         <div
           style={{
-            width: '7px',
-            height: '7px',
+            width: '6px',
+            height: '6px',
             borderRadius: '50%',
-            backgroundColor: isHealthy ? 'var(--success)' : 'var(--danger)',
-            boxShadow: isHealthy ? '0 0 4px var(--success)' : '0 0 4px var(--danger)',
+            backgroundColor: isHealthy ? '#10b981' : '#ef4444',
+            boxShadow: isHealthy ? '0 0 4px #10b981' : '0 0 4px #ef4444',
           }}
         />
         <span
           style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '10px',
-            color: isHealthy ? 'var(--success)' : 'var(--danger)',
+            fontSize: '9px',
+            fontWeight: 700,
+            color: isHealthy ? '#10b981' : '#ef4444',
           }}
         >
-          {isHealthy ? 'OK' : 'OFF'}
+          {isHealthy ? 'LIVE' : 'DOWN'}
         </span>
       </div>
     </div>
@@ -203,33 +218,42 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
   return (
     <aside
       style={{
-        width: '280px',
-        minWidth: '280px',
-        backgroundColor: 'var(--bg-secondary)',
-        borderLeft: '1px solid var(--border-subtle)',
+        width: '270px',
+        minWidth: '270px',
+        backgroundColor: 'var(--dev-bg-surface, #0d1117)',
+        borderLeft: '1px solid var(--dev-border, #21262d)',
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
         userSelect: 'none',
         overflowY: 'auto',
         zIndex: 10,
+        fontFamily: 'var(--font-mono, monospace)',
       }}
     >
       {/* Header */}
       <div
         style={{
-          height: '56px',
-          padding: '0 16px',
-          borderBottom: '1px solid var(--border-subtle)',
+          height: '48px',
+          padding: '0 14px',
+          borderBottom: '1px solid var(--dev-border, #21262d)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          backgroundColor: 'rgba(0, 0, 0, 0.25)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Gauge size={16} color="var(--accent)" />
-          <span style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '0.5px' }}>
-            DEVICE TELEMETRY
+          <Gauge size={14} color="#10b981" />
+          <span
+            style={{
+              fontSize: '11px',
+              fontWeight: 700,
+              letterSpacing: '0.8px',
+              color: 'var(--dev-text-primary, #e6edf3)',
+            }}
+          >
+            HARDWARE TELEMETRY
           </span>
         </div>
         <button
@@ -238,56 +262,59 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
           title="Collapse Telemetry"
           style={{
             padding: '4px',
-            color: 'var(--text-secondary)',
-            borderRadius: '4px',
+            color: 'var(--dev-text-secondary, #8b949e)',
+            borderRadius: '3px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
+          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--dev-text-primary, #e6edf3)')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--dev-text-secondary, #8b949e)')}
         >
           <ChevronRight size={16} />
         </button>
       </div>
 
-      <div style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {/* Hardware Architecture Badge */}
+      <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        {/* Device Profile */}
         <div
           style={{
-            padding: '8px 10px',
-            backgroundColor: 'var(--bg-tertiary)',
-            borderRadius: '6px',
-            border: '1px solid var(--border-subtle)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '2px',
+            padding: '7px 9px',
+            backgroundColor: 'rgba(0, 0, 0, 0.35)',
+            borderRadius: '4px',
+            border: '1px solid var(--dev-border, #21262d)',
           }}
         >
-          <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)' }}>
-            ASUS ROG Ally X
+          <div
+            style={{ fontSize: '10px', fontWeight: 700, color: 'var(--dev-accent-cyan, #06b6d4)' }}
+          >
+            LOCAL INFERENCE ENGINE
           </div>
           <div
-            style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}
+            style={{ fontSize: '9px', color: 'var(--dev-text-muted, #6e7681)', marginTop: '2px' }}
           >
-            Ryzen Z1 Extreme • Radeon 780M • 24GB Unified
+            Ryzen Z1 Extreme • Radeon 780M (Vulkan) • 24GB Unified
           </div>
         </div>
 
-        {/* CPU Section */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        {/* CPU Monitor */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                fontSize: '12px',
+                fontSize: '11px',
                 fontWeight: 600,
+                color: 'var(--dev-text-primary, #e6edf3)',
               }}
             >
-              <Cpu size={14} color="var(--accent)" />
-              <span>CPU (Z1 Extreme)</span>
+              <Cpu size={13} color="#10b981" />
+              <span>CPU Utilization</span>
             </div>
             {telemetry?.cpu.temperatureC !== null && telemetry?.cpu.temperatureC !== undefined && (
               <div
@@ -295,177 +322,160 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '3px',
-                  fontSize: '11px',
-                  fontFamily: 'var(--font-mono)',
-                  color: 'var(--text-secondary)',
+                  fontSize: '10px',
+                  color: 'var(--dev-text-secondary, #8b949e)',
                 }}
               >
-                <Thermometer size={12} />
+                <Thermometer size={11} />
                 <span>{telemetry.cpu.temperatureC}°C</span>
               </div>
             )}
           </div>
-          {renderMeter(telemetry?.cpu.usagePercent ?? null)}
+          {renderMeter(telemetry?.cpu.usagePercent ?? null, '#10b981')}
           {telemetry?.cpu.frequencyMhz && (
-            <div
-              style={{
-                fontSize: '10px',
-                color: 'var(--text-muted)',
-                fontFamily: 'var(--font-mono)',
-              }}
-            >
+            <div style={{ fontSize: '9px', color: 'var(--dev-text-muted, #6e7681)' }}>
               Clock: {(telemetry.cpu.frequencyMhz / 1000).toFixed(2)} GHz
             </div>
           )}
         </div>
 
-        {/* Unified Memory Section */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        {/* Unified Memory Monitor */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                fontSize: '12px',
-                fontWeight: 600,
-              }}
-            >
-              <Activity size={14} color="#a371f7" />
-              <span>Unified Memory</span>
-            </div>
-            <span
-              style={{
                 fontSize: '11px',
-                fontFamily: 'var(--font-mono)',
-                color: 'var(--text-secondary)',
+                fontWeight: 600,
+                color: 'var(--dev-text-primary, #e6edf3)',
               }}
             >
+              <Activity size={13} color="#06b6d4" />
+              <span>Unified RAM (VRAM Pool)</span>
+            </div>
+            <span style={{ fontSize: '10px', color: 'var(--dev-text-secondary, #8b949e)' }}>
               {telemetry
                 ? `${(telemetry.memory.usedBytes / 1024 ** 3).toFixed(1)} / ${(telemetry.memory.totalBytes / 1024 ** 3).toFixed(1)} GB`
                 : '--'}
             </span>
           </div>
-          {renderMeter(telemetry?.memory.usagePercent ?? null, '#a371f7')}
+          {renderMeter(telemetry?.memory.usagePercent ?? null, '#06b6d4')}
         </div>
 
-        {/* GPU Section */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        {/* GPU / Vulkan Monitor */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                fontSize: '12px',
+                fontSize: '11px',
                 fontWeight: 600,
+                color: 'var(--dev-text-primary, #e6edf3)',
               }}
             >
-              <Zap size={14} color="var(--warning)" />
-              <span>Radeon 780M (Vulkan)</span>
+              <Zap size={13} color="#f59e0b" />
+              <span>Vulkan Shader Pipeline</span>
             </div>
             {telemetry?.gpu.temperatureC !== null && telemetry?.gpu.temperatureC !== undefined && (
-              <span
-                style={{
-                  fontSize: '11px',
-                  fontFamily: 'var(--font-mono)',
-                  color: 'var(--text-secondary)',
-                }}
-              >
+              <span style={{ fontSize: '10px', color: 'var(--dev-text-secondary, #8b949e)' }}>
                 {telemetry.gpu.temperatureC}°C
               </span>
             )}
           </div>
-          {renderMeter(telemetry?.gpu.usagePercent ?? null, 'var(--warning)')}
+          {renderMeter(telemetry?.gpu.usagePercent ?? null, '#f59e0b')}
         </div>
 
-        {/* Battery & Power */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        {/* Battery / Power */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                fontSize: '12px',
-                fontWeight: 600,
-              }}
-            >
-              <Battery size={14} color="var(--success)" />
-              <span>Battery</span>
-            </div>
-            <span
-              style={{
                 fontSize: '11px',
-                fontFamily: 'var(--font-mono)',
-                color: 'var(--text-secondary)',
+                fontWeight: 600,
+                color: 'var(--dev-text-primary, #e6edf3)',
               }}
             >
+              <Battery size={13} color="#10b981" />
+              <span>Power Source</span>
+            </div>
+            <span style={{ fontSize: '10px', color: 'var(--dev-text-secondary, #8b949e)' }}>
               {telemetry?.battery.isCharging ? 'AC Powered' : 'Discharging'}
             </span>
           </div>
-          {renderMeter(telemetry?.battery.percent ?? null, 'var(--success)')}
+          {renderMeter(telemetry?.battery.percent ?? null, '#10b981')}
         </div>
 
-        {/* Storage */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        {/* NVMe Storage */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                fontSize: '12px',
-                fontWeight: 600,
-              }}
-            >
-              <HardDrive size={14} color="#79c0ff" />
-              <span>Storage (NVMe)</span>
-            </div>
-            <span
-              style={{
                 fontSize: '11px',
-                fontFamily: 'var(--font-mono)',
-                color: 'var(--text-secondary)',
+                fontWeight: 600,
+                color: 'var(--dev-text-primary, #e6edf3)',
               }}
             >
+              <HardDrive size={13} color="#6366f1" />
+              <span>NVMe Storage</span>
+            </div>
+            <span style={{ fontSize: '10px', color: 'var(--dev-text-secondary, #8b949e)' }}>
               {telemetry
                 ? `${(telemetry.storage.usedBytes / 1024 ** 3).toFixed(0)} / ${(telemetry.storage.totalBytes / 1024 ** 3).toFixed(0)} GB`
                 : '--'}
             </span>
           </div>
-          {renderMeter(telemetry?.storage.usagePercent ?? null, '#79c0ff')}
+          {renderMeter(telemetry?.storage.usagePercent ?? null, '#6366f1')}
         </div>
 
-        {/* Inference Telemetry */}
+        {/* Inference Telemetry Card */}
         <div
           style={{
-            padding: '10px',
-            backgroundColor: 'var(--bg-card)',
-            borderRadius: '6px',
-            border: '1px solid var(--border-subtle)',
+            padding: '8px 10px',
+            backgroundColor: 'rgba(0, 0, 0, 0.3)',
+            borderRadius: '4px',
+            border: '1px solid var(--dev-border, #21262d)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '8px',
+            gap: '6px',
           }}
         >
           <div
             style={{
-              fontSize: '11px',
-              fontWeight: 600,
-              color: 'var(--text-secondary)',
-              textTransform: 'uppercase',
+              fontSize: '9px',
+              fontWeight: 700,
+              color: 'var(--dev-text-muted, #6e7681)',
+              letterSpacing: '0.8px',
             }}
           >
-            Cognitive Inference
+            INFERENCE GATEWAY TELEMETRY
           </div>
-          <div style={{ fontSize: '11px', color: 'var(--text-primary)', wordBreak: 'break-all' }}>
+          <div
+            style={{
+              fontSize: '10px',
+              color: 'var(--dev-accent-cyan, #06b6d4)',
+              wordBreak: 'break-all',
+              fontWeight: 600,
+            }}
+          >
             {telemetry?.inference.activeModel || 'Qwen2.5-14B-Uncensored-Q4_K_M'}
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
-            <span style={{ color: 'var(--text-muted)' }}>Throughput:</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
+            <span style={{ color: 'var(--dev-text-muted, #6e7681)' }}>Decode Speed:</span>
             <span
-              style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--accent)' }}
+              style={{
+                fontWeight: 700,
+                color: speedTps > 0 ? '#10b981' : 'var(--dev-text-primary, #e6edf3)',
+              }}
             >
               {speedTps > 0
                 ? `${speedTps.toFixed(1)} tok/s`
@@ -474,21 +484,21 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
                   : 'Idle'}
             </span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
-            <span style={{ color: 'var(--text-muted)' }}>First Token (TTFT):</span>
-            <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
+            <span style={{ color: 'var(--dev-text-muted, #6e7681)' }}>TTFT Latency:</span>
+            <span style={{ color: 'var(--dev-text-secondary, #8b949e)' }}>
               {telemetry?.inference.lastTtftMs ? `${telemetry.inference.lastTtftMs} ms` : '--'}
             </span>
           </div>
         </div>
 
-        {/* Services Status */}
+        {/* Subsystems Matrix */}
         <div
           style={{
-            padding: '10px',
-            backgroundColor: 'var(--bg-card)',
-            borderRadius: '6px',
-            border: '1px solid var(--border-subtle)',
+            padding: '8px 10px',
+            backgroundColor: 'rgba(0, 0, 0, 0.3)',
+            borderRadius: '4px',
+            border: '1px solid var(--dev-border, #21262d)',
             display: 'flex',
             flexDirection: 'column',
             gap: '4px',
@@ -496,41 +506,38 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
         >
           <div
             style={{
-              fontSize: '11px',
-              fontWeight: 600,
-              color: 'var(--text-secondary)',
-              textTransform: 'uppercase',
+              fontSize: '9px',
+              fontWeight: 700,
+              color: 'var(--dev-text-muted, #6e7681)',
+              letterSpacing: '0.8px',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
-              marginBottom: '4px',
+              gap: '5px',
+              marginBottom: '3px',
             }}
           >
-            <Server size={12} />
-            <span>Infrastructure Health</span>
+            <Server size={11} />
+            <span>SUB-DAEMON STATUS MATRIX</span>
           </div>
-          {renderServicePill('Host Backend (39281)', telemetry?.services.backend ?? false)}
-          {renderServicePill('SQLite / WAL Engine', telemetry?.services.database ?? false)}
+          {renderServicePill('Host Backend (:39281)', telemetry?.services.backend ?? false)}
+          {renderServicePill('SQLite WAL Engine', telemetry?.services.database ?? false)}
           {renderServicePill(
-            'llama-server Vulkan (8080)',
+            'Vulkan llama-server (:8080)',
             telemetry?.services.llamaServer ?? false,
           )}
-          {renderServicePill(
-            'EmbeddingGemma 300M (39282)',
-            telemetry?.services.embeddingGemma ?? false,
-          )}
-          {renderServicePill('Whisper Small STT (39282)', telemetry?.services.whisper ?? false)}
+          {renderServicePill('EmbeddingGemma 300M', telemetry?.services.embeddingGemma ?? false)}
+          {renderServicePill('Whisper Small STT', telemetry?.services.whisper ?? false)}
           {(() => {
             const engine = (telemetry?.services.voiceEngine || 'kokoro').toLowerCase();
             const hasRvc = telemetry?.services.rvc ?? false;
-            let label = 'Kokoro 82M TTS (39282)';
+            let label = 'Kokoro 82M TTS';
             let isOk = telemetry?.services.kokoro ?? false;
 
             if (engine.includes('qwen')) {
-              label = hasRvc ? 'Qwen3-TTS + RVC (39282)' : 'Qwen3-TTS 1.7B (39282)';
+              label = hasRvc ? 'Qwen3-TTS + RVC' : 'Qwen3-TTS 1.7B';
               isOk = telemetry?.services.qwen3Tts ?? false;
             } else {
-              label = hasRvc ? 'Kokoro 82M + RVC (39282)' : 'Kokoro 82M TTS (39282)';
+              label = hasRvc ? 'Kokoro 82M + RVC' : 'Kokoro 82M TTS';
               isOk = telemetry?.services.kokoro ?? false;
             }
 

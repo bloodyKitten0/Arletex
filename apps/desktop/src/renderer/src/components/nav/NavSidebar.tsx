@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
-  MessageSquare,
-  Brain,
-  Heart,
-  Clock,
-  Target,
-  Shield,
+  Terminal,
+  Database,
+  Layers,
+  Activity,
   ChevronLeft,
   ChevronRight,
   LucideIcon,
+  HardDrive,
+  Workflow,
 } from 'lucide-react';
 
 export type NavSection = 'main' | 'memory' | 'emo' | 'history' | 'activities' | 'environment';
@@ -24,6 +24,7 @@ interface NavSidebarProps {
 interface NavItem {
   id: NavSection;
   label: string;
+  tag: string;
   icon: LucideIcon;
   description: string;
 }
@@ -31,39 +32,45 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   {
     id: 'main',
-    label: 'Main',
-    icon: MessageSquare,
-    description: 'Presence & Conversation',
-  },
-  {
-    id: 'memory',
-    label: 'Memory',
-    icon: Brain,
-    description: 'Autobiographical Knowledge',
+    label: 'Command Center',
+    tag: 'SYS_ORCH',
+    icon: Terminal,
+    description: 'Gateway, Hardware Telemetry & Model Routing',
   },
   {
     id: 'emo',
-    label: 'Emo',
-    icon: Heart,
-    description: 'Psychological State (APE)',
+    label: 'Affective Engine',
+    tag: 'APE_148',
+    icon: Activity,
+    description: 'Valence, Arousal, Dominance & 148-State Lattice',
+  },
+  {
+    id: 'memory',
+    label: 'Knowledge Ledger',
+    tag: 'MEM_KV',
+    icon: Database,
+    description: 'Episodic, Semantic & Associative Memory Store',
   },
   {
     id: 'history',
-    label: 'History',
-    icon: Clock,
-    description: 'Conversation Archives',
+    label: 'Session Ledger',
+    tag: 'AUDIT',
+    icon: Layers,
+    description: 'Inference Trajectories & Conversation Logs',
   },
   {
     id: 'activities',
-    label: 'Activities',
-    icon: Target,
-    description: 'Pursuits & Active Tasks',
+    label: 'Autonomous Agency',
+    tag: 'AGENT',
+    icon: Workflow,
+    description: 'Task Queue, Goal Dispatcher & Tooling',
   },
   {
     id: 'environment',
-    label: 'Environment',
-    icon: Shield,
-    description: 'Digital Access & Sandbox',
+    label: 'Hardware & Vulkan',
+    tag: 'DEVICE',
+    icon: HardDrive,
+    description: 'Vulkan VRAM, Compute Shaders & Local Sandbox',
   },
 ];
 
@@ -74,96 +81,73 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({
   onToggleCollapse,
   isGenerating = false,
 }) => {
-  const [companionCharacter, setCompanionCharacter] = useState<'girl_1' | 'girl_2' | 'girl_3'>(
-    'girl_1',
-  );
-  const [companionVisible, setCompanionVisible] = useState<boolean>(true);
-
-  useEffect(() => {
-    if (window.arletexApi?.getCompanionState) {
-      window.arletexApi.getCompanionState().then((res) => {
-        if (res.success && res.data) {
-          setCompanionCharacter((res.data.character as any) || 'girl_1');
-          setCompanionVisible(res.data.visible !== false);
-        }
-      });
-    }
-
-    if (window.arletexApi?.onCompanionStateChange) {
-      const unsub = window.arletexApi.onCompanionStateChange((s) => {
-        if (s.character) setCompanionCharacter(s.character as any);
-        if (s.visible !== undefined) setCompanionVisible(s.visible);
-      });
-      return unsub;
-    }
-    return undefined;
-  }, []);
   return (
     <aside
       style={{
-        width: collapsed ? '68px' : '220px',
-        minWidth: collapsed ? '68px' : '220px',
-        backgroundColor: 'var(--bg-secondary)',
-        borderRight: '1px solid var(--border-subtle)',
+        width: collapsed ? '60px' : '230px',
+        minWidth: collapsed ? '60px' : '230px',
+        backgroundColor: 'var(--dev-bg-surface, #0d1117)',
+        borderRight: '1px solid var(--dev-border, #21262d)',
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
         transition:
-          'width 0.2s cubic-bezier(0.16, 1, 0.3, 1), min-width 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+          'width 0.18s cubic-bezier(0.16, 1, 0.3, 1), min-width 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
         userSelect: 'none',
         zIndex: 20,
+        fontFamily: 'var(--font-mono, monospace)',
       }}
     >
-      {/* Brand Header */}
+      {/* Dev Brand Header */}
       <div
         style={{
-          height: '56px',
-          padding: collapsed ? '0 12px' : '0 16px',
-          borderBottom: '1px solid var(--border-subtle)',
+          height: '48px',
+          padding: collapsed ? '0 8px' : '0 14px',
+          borderBottom: '1px solid var(--dev-border, #21262d)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: collapsed ? 'center' : 'space-between',
+          backgroundColor: 'rgba(0, 0, 0, 0.25)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
           <div
             style={{
-              width: '28px',
-              height: '28px',
-              borderRadius: '6px',
-              backgroundColor: 'var(--accent)',
+              width: '26px',
+              height: '26px',
+              borderRadius: '3px',
+              backgroundColor: '#10b981',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#000',
+              color: '#080a0d',
               fontWeight: 800,
-              fontSize: '14px',
-              fontFamily: 'var(--font-mono)',
+              fontSize: '13px',
               flexShrink: 0,
             }}
           >
-            A
+            λ
           </div>
           {!collapsed && (
             <div style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>
               <div
                 style={{
                   fontWeight: 700,
-                  fontSize: '13px',
-                  letterSpacing: '0.8px',
-                  color: 'var(--text-primary)',
+                  fontSize: '12px',
+                  letterSpacing: '1px',
+                  color: 'var(--dev-text-primary, #e6edf3)',
                 }}
               >
-                ARLETEX
+                ARLETEX_DEV
               </div>
               <div
                 style={{
                   fontSize: '9px',
-                  color: 'var(--text-muted)',
-                  fontFamily: 'var(--font-mono)',
+                  color: 'var(--dev-text-muted, #6e7681)',
+                  letterSpacing: '0.4px',
                 }}
               >
-                HOST OS v0.2
+                LABORATORY OS // v2.0
               </div>
             </div>
           )}
@@ -173,24 +157,23 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({
           <button
             type="button"
             onClick={onToggleCollapse}
-            title="Collapse Navigation"
+            title="Collapse Sidebar"
             style={{
-              padding: '6px',
-              color: 'var(--text-secondary)',
-              borderRadius: '4px',
+              padding: '4px',
+              color: 'var(--dev-text-secondary, #8b949e)',
+              borderRadius: '3px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               background: 'transparent',
-              transition: 'background 0.15s, color 0.15s',
+              border: 'none',
+              cursor: 'pointer',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
-              e.currentTarget.style.color = 'var(--text-primary)';
+              e.currentTarget.style.color = 'var(--dev-text-primary, #e6edf3)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = 'var(--text-secondary)';
+              e.currentTarget.style.color = 'var(--dev-text-secondary, #8b949e)';
             }}
           >
             <ChevronLeft size={16} />
@@ -198,16 +181,32 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({
         )}
       </div>
 
-      {/* Nav Items */}
+      {/* Navigation Subsystem Nodes */}
       <nav
         style={{
           flex: 1,
-          padding: '12px 8px',
+          padding: '8px 6px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '4px',
+          gap: '3px',
+          overflowY: 'auto',
         }}
       >
+        {!collapsed && (
+          <div
+            style={{
+              padding: '6px 8px 3px 8px',
+              fontSize: '9px',
+              fontWeight: 700,
+              letterSpacing: '1.2px',
+              color: 'var(--dev-text-muted, #6e7681)',
+              textTransform: 'uppercase',
+            }}
+          >
+            Diagnostic Subsystems
+          </div>
+        )}
+
         {NAV_ITEMS.map((item) => {
           const isActive = activeSection === item.id;
           const Icon = item.icon;
@@ -217,62 +216,77 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({
               key={item.id}
               type="button"
               onClick={() => onSelectSection(item.id)}
-              title={collapsed ? `${item.label} — ${item.description}` : undefined}
+              title={
+                collapsed ? `[${item.tag}] ${item.label} — ${item.description}` : item.description
+              }
               style={{
                 position: 'relative',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '12px',
-                padding: collapsed ? '10px 0' : '10px 12px',
+                gap: '10px',
+                padding: collapsed ? '9px 0' : '8px 10px',
                 justifyContent: collapsed ? 'center' : 'flex-start',
                 width: '100%',
-                borderRadius: '8px',
-                backgroundColor: isActive ? 'var(--accent-muted)' : 'transparent',
-                color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
-                fontWeight: isActive ? 600 : 500,
-                fontSize: '13px',
-                transition: 'all 0.15s ease',
+                borderRadius: '4px',
+                backgroundColor: isActive ? 'rgba(16, 185, 129, 0.12)' : 'transparent',
+                border: isActive ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid transparent',
+                color: isActive ? '#10b981' : 'var(--dev-text-secondary, #8b949e)',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.12s ease',
               }}
               onMouseEnter={(e) => {
                 if (!isActive) {
-                  e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
-                  e.currentTarget.style.color = 'var(--text-primary)';
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.04)';
+                  e.currentTarget.style.color = 'var(--dev-text-primary, #e6edf3)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isActive) {
                   e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.color = 'var(--text-secondary)';
+                  e.currentTarget.style.color = 'var(--dev-text-secondary, #8b949e)';
                 }
               }}
             >
-              {/* Active Indicator Bar */}
-              {isActive && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: '6px',
-                    bottom: '6px',
-                    width: '3px',
-                    backgroundColor: 'var(--accent)',
-                    borderRadius: '0 3px 3px 0',
-                  }}
-                />
-              )}
-
-              <Icon size={18} />
+              <Icon size={16} style={{ flexShrink: 0 }} />
 
               {!collapsed && (
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-start',
-                    minWidth: 0,
-                  }}
-                >
-                  <span style={{ lineHeight: 1.2 }}>{item.label}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: isActive ? 700 : 500,
+                        lineHeight: 1.3,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {item.label}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '8px',
+                        fontWeight: 600,
+                        padding: '1px 3px',
+                        borderRadius: '2px',
+                        backgroundColor: isActive
+                          ? 'rgba(16, 185, 129, 0.2)'
+                          : 'rgba(255, 255, 255, 0.05)',
+                        color: isActive ? '#10b981' : 'var(--dev-text-muted, #6e7681)',
+                        letterSpacing: '0.4px',
+                      }}
+                    >
+                      {item.tag}
+                    </span>
+                  </div>
                 </div>
               )}
             </button>
@@ -282,27 +296,27 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({
 
       {/* Collapse Toggle when collapsed */}
       {collapsed && (
-        <div style={{ padding: '8px', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ padding: '6px', display: 'flex', justifyContent: 'center' }}>
           <button
             type="button"
             onClick={onToggleCollapse}
             title="Expand Navigation"
             style={{
-              padding: '8px',
-              color: 'var(--text-secondary)',
-              borderRadius: '6px',
+              padding: '6px',
+              color: 'var(--dev-text-secondary, #8b949e)',
+              borderRadius: '4px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
-              e.currentTarget.style.color = 'var(--text-primary)';
+              e.currentTarget.style.color = 'var(--dev-text-primary, #e6edf3)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = 'var(--text-secondary)';
+              e.currentTarget.style.color = 'var(--dev-text-secondary, #8b949e)';
             }}
           >
             <ChevronRight size={16} />
@@ -310,140 +324,69 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({
         </div>
       )}
 
-      {/* Individual Status Footer */}
+      {/* Telemetry Status Footer */}
       <div
         style={{
-          padding: collapsed ? '12px 6px' : '12px 14px',
-          borderTop: '1px solid var(--border-subtle)',
-          backgroundColor: 'rgba(0, 0, 0, 0.15)',
+          padding: collapsed ? '10px 4px' : '10px 12px',
+          borderTop: '1px solid var(--dev-border, #21262d)',
+          backgroundColor: 'rgba(0, 0, 0, 0.3)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px',
         }}
       >
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '10px',
+            gap: '8px',
             justifyContent: collapsed ? 'center' : 'flex-start',
           }}
         >
-          <div style={{ position: 'relative' }}>
-            <div
-              style={{
-                width: '10px',
-                height: '10px',
-                borderRadius: '50%',
-                backgroundColor: isGenerating ? 'var(--warning)' : 'var(--success)',
-                boxShadow: isGenerating ? '0 0 8px var(--warning)' : '0 0 8px var(--success)',
-              }}
-            />
-          </div>
+          <div
+            style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: isGenerating
+                ? 'var(--dev-accent-amber, #f59e0b)'
+                : 'var(--dev-accent-emerald, #10b981)',
+              boxShadow: isGenerating ? '0 0 6px #f59e0b' : '0 0 6px #10b981',
+              flexShrink: 0,
+            }}
+          />
           {!collapsed && (
             <div style={{ overflow: 'hidden', flex: 1 }}>
-              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                Arle
+              <div
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color: 'var(--dev-text-primary, #e6edf3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <span>SYS_RUNTIME</span>
+                <span
+                  style={{
+                    fontSize: '9px',
+                    color: isGenerating ? '#f59e0b' : '#10b981',
+                    fontWeight: 700,
+                  }}
+                >
+                  {isGenerating ? 'PROCESSING' : 'IDLE / READY'}
+                </span>
               </div>
-              <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                {isGenerating ? 'Active Cognition' : 'Online / Present'}
+              <div
+                style={{
+                  fontSize: '9px',
+                  color: 'var(--dev-text-muted, #6e7681)',
+                  letterSpacing: '0.4px',
+                }}
+              >
+                Vulkan Compute Core
               </div>
-            </div>
-          )}
-        </div>
-
-        {/* Desktop Companion Quick Launcher & Skin Selector */}
-        <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <button
-            type="button"
-            onClick={() => {
-              window.arletexApi?.toggleCompanion?.();
-            }}
-            title={companionVisible ? 'Hide Desktop Companion Body' : 'Show Desktop Companion Body'}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              padding: collapsed ? '6px 0' : '6px 8px',
-              fontSize: '11px',
-              fontWeight: 500,
-              borderRadius: '6px',
-              border: '1px solid #374151',
-              background: companionVisible
-                ? 'linear-gradient(135deg, rgba(37, 99, 235, 0.25), rgba(147, 51, 234, 0.25))'
-                : 'rgba(31, 41, 55, 0.5)',
-              color: companionVisible ? '#93c5fd' : '#9ca3af',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#60a5fa';
-              e.currentTarget.style.color = '#ffffff';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#374151';
-              e.currentTarget.style.color = companionVisible ? '#93c5fd' : '#9ca3af';
-            }}
-          >
-            <span>🧚</span>
-            {!collapsed && <span>Desktop Body {companionVisible ? '●' : '○'}</span>}
-          </button>
-
-          {!collapsed && companionVisible && (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: '3px',
-                marginTop: '2px',
-              }}
-            >
-              {(
-                [
-                  { id: 'girl_1', label: 'Ruby', icon: '🎀', title: 'Ruby (Original Arle)' },
-                  {
-                    id: 'girl_2',
-                    label: 'Sapphire',
-                    icon: '🌸',
-                    title: 'Sapphire (Casual Uniform)',
-                  },
-                  {
-                    id: 'girl_3',
-                    label: 'Emerald',
-                    icon: '❄️',
-                    title: 'Emerald (Elegant Uniform)',
-                  },
-                ] as const
-              ).map((skin) => {
-                const isActive = companionCharacter === skin.id;
-                return (
-                  <button
-                    key={skin.id}
-                    type="button"
-                    onClick={() => {
-                      setCompanionCharacter(skin.id);
-                      window.arletexApi?.updateCompanionState?.({ character: skin.id });
-                    }}
-                    title={skin.title}
-                    style={{
-                      padding: '3px 2px',
-                      fontSize: '9px',
-                      fontWeight: isActive ? 700 : 500,
-                      borderRadius: '4px',
-                      border: isActive ? '1px solid #60a5fa' : '1px solid #2d3748',
-                      backgroundColor: isActive ? 'rgba(59, 130, 246, 0.25)' : 'transparent',
-                      color: isActive ? '#93c5fd' : '#9ca3af',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '1px',
-                    }}
-                  >
-                    <span>{skin.icon}</span>
-                    <span>{skin.label}</span>
-                  </button>
-                );
-              })}
             </div>
           )}
         </div>

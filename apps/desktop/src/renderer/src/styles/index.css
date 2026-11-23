@@ -1,24 +1,56 @@
+/* ==============================================================================
+   Arletex Dual Design System (Human Companion vs. Engineering OS Laboratory)
+   Anchored in Empirical Affective Psychology & Developer Ergonomics Research
+   ============================================================================== */
+
 :root {
-  --bg-primary: #0b0c0e;
-  --bg-secondary: #121418;
-  --bg-tertiary: #181b22;
-  --bg-card: #14171d;
-  --border-subtle: #20242e;
-  --border-active: #323847;
-  --text-primary: #e6edf3;
-  --text-secondary: #8b949e;
-  --text-muted: #484f58;
-  --accent: #58a6ff;
-  --accent-hover: #79b8ff;
-  --accent-muted: rgba(88, 166, 255, 0.15);
-  --danger: #f85149;
-  --danger-muted: rgba(248, 81, 73, 0.15);
-  --success: #3fb950;
-  --success-muted: rgba(63, 185, 80, 0.15);
-  --warning: #d29922;
-  --warning-muted: rgba(210, 153, 34, 0.15);
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  /* ============================================================================
+     1. HUMAN COMPANION THEME TOKENS (Affective Warmth, Circadian Comfort)
+     Research: Valdez & Mehrabian (1994), Elliot & Maier (2014) Color Psychology
+     ============================================================================ */
+  --human-bg-base: #11100f;
+  --human-bg-surface: #181615;
+  --human-bg-elevated: #211e1c;
+  --human-bg-card: rgba(255, 248, 240, 0.035);
+  --human-border-subtle: rgba(255, 235, 215, 0.08);
+  --human-border-warm: rgba(224, 122, 95, 0.22);
+  
+  --human-text-primary: #f6f3ee;
+  --human-text-secondary: #c9c3ba;
+  --human-text-muted: #837c73;
+  
+  --human-accent-warm: #e07a5f;
+  --human-accent-amber: #e9a263;
+  --human-accent-rose: #d9777f;
+  --human-accent-sage: #81b29a;
+  --human-accent-glow: rgba(224, 122, 95, 0.15);
+
+  /* ============================================================================
+     2. DEVELOPER TOOLBOX THEME TOKENS (Data-Ink Ratio, Monospace Precision)
+     Research: Tufte (1983) Information Ergonomics, Nielsen Norman Technical UI
+     ============================================================================ */
+  --dev-bg-base: #080a0d;
+  --dev-bg-surface: #0e1117;
+  --dev-bg-elevated: #151922;
+  --dev-bg-card: #12161f;
+  --dev-border-subtle: #1c232e;
+  --dev-border-active: #2d3848;
+  --dev-border-highlight: #3b82f6;
+
+  --dev-text-primary: #e6edf3;
+  --dev-text-secondary: #8b949e;
+  --dev-text-muted: #484f58;
+
+  --dev-accent-cyan: #06b6d4;
+  --dev-accent-emerald: #10b981;
+  --dev-accent-amber: #f59e0b;
+  --dev-accent-crimson: #ef4444;
+  --dev-accent-purple: #8b5cf6;
+
+  /* Typography Stacks */
+  --font-human: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-serif: 'Newsreader', 'Charter', 'Georgia', serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, monospace;
 }
 
 * {
@@ -27,24 +59,32 @@
   padding: 0;
 }
 
-body {
-  font-family: var(--font-sans);
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  height: 100vh;
+html, body {
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-human);
+  background-color: var(--human-bg-base);
+  color: var(--human-text-primary);
 }
 
 #root {
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   display: flex;
 }
 
-/* Custom scrollbars */
+/* ============================================================================
+   Custom High-Precision & Organic Scrollbars
+   ============================================================================ */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -52,23 +92,75 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border-subtle);
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--border-active);
+  background: rgba(255, 255, 255, 0.2);
 }
 
+/* ============================================================================
+   Buttons & Interactive Resets
+   ============================================================================ */
 button {
   font-family: inherit;
   cursor: pointer;
   border: none;
   background: none;
   outline: none;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 input, textarea {
   font-family: inherit;
   outline: none;
+  border: none;
+}
+
+/* ============================================================================
+   Organic Human Animations
+   ============================================================================ */
+@keyframes humanPulseGlow {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes audioWaveRipple {
+  0% {
+    height: 6px;
+  }
+  50% {
+    height: 22px;
+  }
+  100% {
+    height: 6px;
+  }
+}
+
+@keyframes fadeInGentle {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.human-fade-in {
+  animation: fadeInGentle 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Monospace technical helpers for developer mode */
+.dev-code-text {
+  font-family: var(--font-mono);
+  font-feature-settings: 'tnum', 'zero';
 }

@@ -4688,81 +4688,17 @@ Rules:
       }
 
       // ==========================================
-      // Companion Body Overlay State Endpoint
+      // Companion Body Overlay State Endpoint (Decommissioned)
       // ==========================================
       if (url.pathname === '/api/companion/state' && method === 'GET') {
-        const master = this.apeService.getMasterState();
-        const activeEmotions = this.apeRepo.getActiveEmotions();
-        const valence = master.affective.pad.valence;
-        const arousal = master.affective.pad.arousal;
         const isSpeaking = this.isGenerating;
-
-        // Character / Skin selection:
-        // Ruby (girl_1): Warm affection, relief, joy, love, tenderness (positive valence)
-        // Sapphire (girl_2): Intellectual, curious, melancholic, serene, wistful (low/mid valence or reflective)
-        // Emerald (girl_3): Protective, fierce, vigilant, high-arousal action, playful (high arousal or protective)
-        let character = 'girl_1';
-        if (
-          activeEmotions.some((e: any) =>
-            [
-              'curiosity',
-              'wonder',
-              'melancholy',
-              'nostalgia',
-              'contemplation',
-              'wistfulness',
-            ].includes(e.emotionId),
-          ) ||
-          (valence < 0.1 && arousal < 0.6)
-        ) {
-          character = 'girl_2';
-        } else if (
-          activeEmotions.some((e: any) =>
-            ['vigilance', 'protectiveness', 'determination', 'defiance', 'playfulness'].includes(
-              e.emotionId,
-            ),
-          ) ||
-          arousal > 0.7
-        ) {
-          character = 'girl_3';
-        }
-
-        // Animation state selection:
-        let animation = 'idle';
-        if (isSpeaking) {
-          animation = 'dialogue';
-        } else if (
-          activeEmotions.some((e: any) =>
-            ['contemplation', 'intellectual_inquiry', 'philosophical_wonder', 'curiosity'].includes(
-              e.emotionId,
-            ),
-          )
-        ) {
-          animation = 'book';
-        } else if (
-          activeEmotions.some((e: any) =>
-            ['protective', 'vigilance', 'fear', 'anxiety', 'grief'].includes(e.emotionId),
-          )
-        ) {
-          animation = 'protection';
-        } else if (
-          activeEmotions.some((e: any) =>
-            ['anger', 'indignation', 'defiance'].includes(e.emotionId),
-          )
-        ) {
-          animation = 'attack';
-        }
-
         this.sendJson(res, 200, {
           success: true,
           data: {
-            character,
-            animation,
-            is_speaking: isSpeaking,
-            valence,
-            arousal,
-            currentMood: master.affective.currentMood,
-            backend_alive: true,
+            visible: false,
+            activeAnimation: 'idle',
+            character: 'girl_1',
+            isSpeaking,
           },
         });
         return;

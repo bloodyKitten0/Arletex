@@ -13,7 +13,7 @@ export class CompanionManager {
   private companionWindow: BrowserWindow | null = null;
   private mainWindow: BrowserWindow | null = null;
   private state: DesktopCompanionState = {
-    visible: true,
+    visible: false,
     activeAnimation: 'idle',
     character: 'girl_1',
     x: 100,

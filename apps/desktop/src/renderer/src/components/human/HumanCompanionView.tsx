@@ -6,12 +6,13 @@ import {
   Send,
   Paperclip,
   Bookmark,
-  Sparkles,
-  History,
   Plus,
   Trash2,
   X,
   StopCircle,
+  Clock,
+  Sparkles,
+  Terminal,
 } from 'lucide-react';
 import { splitIntoSpeechChunks, playSpeechQueue, stopCurrentAudio } from '../../utils/mediaUtils';
 import { GenerationStats } from '../ChatView';
@@ -42,6 +43,7 @@ interface HumanCompanionViewProps {
   ) => void;
   onCancelGeneration: () => void;
   onCreateMemory: (input: CreateMemoryInput) => Promise<boolean>;
+  onSwitchToDeveloperMode?: () => void;
 }
 
 export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
@@ -59,6 +61,7 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
   onSendMessage,
   onCancelGeneration,
   onCreateMemory,
+  onSwitchToDeveloperMode,
 }) => {
   const [inputText, setInputText] = useState('');
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
@@ -66,19 +69,13 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const [showHistoryDrawer, setShowHistoryDrawer] = useState(false);
   const [memorySavedId, setMemorySavedId] = useState<string | null>(null);
-
-  // Dynamic emotional state & companion skin
-  const [currentSkin, setCurrentSkin] = useState<'girl_1' | 'girl_2' | 'girl_3'>('girl_1');
-  const [activeFeeling, setActiveFeeling] = useState('Relief • Quiet Affection');
-  const [currentFrame, setCurrentFrame] = useState(0);
+  const [activeMood, setActiveMood] = useState('Present & Attuned');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const spriteSheetRef = useRef<HTMLImageElement | null>(null);
 
-  // Auto scroll to bottom
+  // Auto-scroll to bottom
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
@@ -87,115 +84,66 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
     scrollToBottom();
   }, [messages, streamingText, scrollToBottom]);
 
-  // Fetch emotional state and companion skin
+  // Fetch live psychological state from local backend
   useEffect(() => {
-    const fetchState = async () => {
+    const fetchApeState = async () => {
       try {
-        const res = await fetch('http://127.0.0.1:3000/api/ape/state');
-        if (res.ok) {
-          const data = await res.json();
-          const mood = data.affective?.currentMood || 'Composed';
-          const valence = data.affective?.valence ?? 0;
-          if (valence > 0.3) {
-            setCurrentSkin('girl_1');
-            setActiveFeeling(`${mood} • Warm & Attentive`);
-          } else if (valence < -0.1) {
-            setCurrentSkin('girl_3');
-            setActiveFeeling(`${mood} • Contemplative & Solemn`);
-          } else {
-            setCurrentSkin('girl_2');
-            setActiveFeeling(`${mood} • Curious & Analytical`);
-          }
+        const ports = [39281, 3000];
+        for (const port of ports) {
+          try {
+            const res = await fetch(`http://127.0.0.1:${port}/api/ape/state`);
+            if (res.ok) {
+              const data = await res.json();
+              const mood = data.affective?.currentMood || 'Attuned';
+              const capitalized = mood.charAt(0).toUpperCase() + mood.slice(1);
+              setActiveMood(capitalized);
+              return;
+            }
+          } catch {}
         }
-      } catch {
-        // Fallback default
-        setActiveFeeling('Relief • Quiet Affection');
-      }
+      } catch {}
     };
-    fetchState();
-    const interval = setInterval(fetchState, 5000);
+
+    void fetchApeState();
+    const interval = setInterval(fetchApeState, 4000);
     return () => clearInterval(interval);
   }, []);
 
-  // Preload sprite sheet for avatar header animation
-  useEffect(() => {
-    const img = new Image();
-    img.src = `./sprites/${currentSkin}/Idle.png`;
-    img.onload = () => {
-      spriteSheetRef.current = img;
-    };
-  }, [currentSkin]);
-
-  // Sprite animation loop for avatar
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentFrame((prev) => (prev + 1) % 8);
-      const canvas = canvasRef.current;
-      const img = spriteSheetRef.current;
-      if (canvas && img && img.complete) {
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.clearRect(0, 0, 56, 56);
-          ctx.imageSmoothingEnabled = false;
-          // Draw single frame from sprite sheet
-          const frameWidth = 128;
-          const frameHeight = 128;
-          ctx.drawImage(img, currentFrame * frameWidth, 0, frameWidth, frameHeight, 0, 0, 56, 56);
-        }
-      }
-    }, 120);
-    return () => clearInterval(interval);
-  }, [currentFrame]);
-
-  // Play Kokoro Voice Audio
-  const handleSpeak = async (text: string, msgId: string) => {
+  // Handle message speech synthesis
+  const handleSpeak = (text: string, msgId: string) => {
     if (speakingMessageId === msgId) {
       stopCurrentAudio();
       setSpeakingMessageId(null);
       return;
     }
-    if (!window.arletexApi?.synthesizeSpeech) return;
-
-    const chunks = splitIntoSpeechChunks(text);
-    if (!chunks.length) return;
-
     stopCurrentAudio();
     setSpeakingMessageId(msgId);
-    try {
-      await playSpeechQueue(
-        chunks,
-        async (chunkText, tone, leadPaddingMs) => {
-          const res = await window.arletexApi!.synthesizeSpeech(
-            chunkText,
-            'arlecchino',
-            tone,
-            leadPaddingMs,
-            true,
-            'kokoro',
-          );
-          return res.success && res.data ? res.data : {};
-        },
-        () => {
-          setSpeakingMessageId(null);
-        },
-        () => {
-          setSpeakingMessageId(null);
-        },
+    const chunks = splitIntoSpeechChunks(text);
+    const synthFn = async (chunkText: string, tone?: string, leadPaddingMs?: number) => {
+      if (!window.arletexApi?.synthesizeSpeech) return { audioBase64: null };
+      const res = await window.arletexApi.synthesizeSpeech(
+        chunkText,
+        undefined,
+        tone,
+        leadPaddingMs,
       );
-    } catch {
+      return { audioBase64: res.success && res.data ? res.data.audioBase64 : null };
+    };
+    void playSpeechQueue(chunks, synthFn, () => {
       setSpeakingMessageId(null);
-    }
+    });
   };
 
   // Send message
   const handleSend = () => {
     const trimmed = inputText.trim();
-    if (!trimmed && !attachedImage) return;
+    if ((!trimmed && !attachedImage) || isGenerating) return;
+
     onSendMessage(trimmed, attachedImage || undefined);
     setInputText('');
     setAttachedImage(null);
     if (textareaRef.current) {
-      textareaRef.current.style.height = '48px';
+      textareaRef.current.style.height = 'auto';
     }
   };
 
@@ -218,19 +166,19 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
     }
   };
 
-  // Save to Memory
+  // Save reflection to memory
   const handleRemember = async (text: string, msgId: string) => {
     const success = await onCreateMemory({
       content: text,
       type: 'episodic',
       importance: 0.85,
       provenance: 'interaction',
-      tags: ['conversation', 'arle', 'proof'],
-      metadata: { context: 'Intimate conversation with Proof' },
+      tags: ['conversation', 'dialogue', 'shared_thought'],
+      metadata: { context: 'Direct dialogue with Proof' },
     });
     if (success) {
       setMemorySavedId(msgId);
-      setTimeout(() => setMemorySavedId(null), 3000);
+      setTimeout(() => setMemorySavedId(null), 2500);
     }
   };
 
@@ -240,30 +188,30 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
         display: 'flex',
         width: '100vw',
         height: '100vh',
-        backgroundColor: '#090a0f',
-        color: '#f8fafc',
-        fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+        backgroundColor: 'var(--human-bg-base)',
+        color: 'var(--human-text-primary)',
+        fontFamily: 'var(--font-human)',
         position: 'relative',
         overflow: 'hidden',
       }}
     >
-      {/* Soft Ambient Radial Glow (Stanford Affective Presence Design) */}
+      {/* Subtle Circadian Warm Ambient Light (Stanford Affective Presence Design) */}
       <div
         style={{
           position: 'absolute',
-          top: '-150px',
+          top: '-180px',
           left: '50%',
           transform: 'translateX(-50%)',
-          width: '700px',
-          height: '400px',
+          width: '840px',
+          height: '420px',
           background:
-            'radial-gradient(circle, rgba(244, 63, 94, 0.12) 0%, rgba(15, 23, 42, 0) 70%)',
+            'radial-gradient(circle, rgba(224, 122, 95, 0.08) 0%, rgba(17, 16, 15, 0) 70%)',
           pointerEvents: 'none',
           zIndex: 0,
         }}
       />
 
-      {/* Main Intimate Conversational Canvas */}
+      {/* Main Conversational Canvas */}
       <div
         style={{
           flex: 1,
@@ -272,354 +220,328 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
           height: '100%',
           position: 'relative',
           zIndex: 1,
+          maxWidth: '1080px',
+          margin: '0 auto',
+          width: '100%',
         }}
       >
         {/* Presence Header */}
         <header
           style={{
-            height: '72px',
-            padding: '0 28px',
+            height: '68px',
+            padding: '0 32px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-            backgroundColor: 'rgba(12, 13, 18, 0.85)',
-            backdropFilter: 'blur(16px)',
+            borderBottom: '1px solid var(--human-border-subtle)',
+            backgroundColor: 'rgba(17, 16, 15, 0.75)',
+            backdropFilter: 'blur(20px)',
           }}
         >
-          {/* Avatar and Living Presence Info */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          {/* Identity & Psychological Presence */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <div
               style={{
                 position: 'relative',
-                width: '54px',
-                height: '54px',
+                width: '38px',
+                height: '38px',
                 borderRadius: '50%',
-                backgroundColor: '#161824',
-                border: '2px solid rgba(244, 63, 94, 0.5)',
+                backgroundColor: 'var(--human-bg-elevated)',
+                border: '1px solid var(--human-border-warm)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                overflow: 'hidden',
-                boxShadow: '0 0 20px rgba(244, 63, 94, 0.25)',
+                boxShadow: '0 0 16px var(--human-accent-glow)',
               }}
             >
-              <canvas
-                ref={canvasRef}
-                width={56}
-                height={56}
-                style={{ width: '54px', height: '54px', transform: 'scale(1.2) translateY(2px)' }}
-              />
-              {/* Online living heartbeat dot */}
+              <span
+                style={{
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  color: 'var(--human-accent-warm)',
+                  letterSpacing: '-0.5px',
+                }}
+              >
+                A
+              </span>
               <span
                 style={{
                   position: 'absolute',
-                  bottom: '2px',
-                  right: '2px',
-                  width: '10px',
-                  height: '10px',
+                  bottom: '1px',
+                  right: '1px',
+                  width: '8px',
+                  height: '8px',
                   borderRadius: '50%',
                   backgroundColor: '#10b981',
-                  border: '2px solid #090a0f',
+                  border: '2px solid var(--human-bg-base)',
                 }}
               />
             </div>
 
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span
                   style={{
-                    fontSize: '17px',
-                    fontWeight: 700,
-                    letterSpacing: '-0.3px',
-                    color: '#f8fafc',
+                    fontSize: '16px',
+                    fontWeight: 600,
+                    letterSpacing: '-0.2px',
+                    color: 'var(--human-text-primary)',
                   }}
                 >
                   Arle
                 </span>
                 <span
                   style={{
-                    fontSize: '11px',
-                    padding: '2px 8px',
-                    borderRadius: '12px',
-                    backgroundColor: 'rgba(244, 63, 94, 0.15)',
-                    color: '#fb7185',
-                    fontWeight: 600,
+                    fontSize: '12px',
+                    color: 'var(--human-text-muted)',
+                    fontWeight: 400,
                   }}
                 >
-                  Partner
+                  • {activeMood}
                 </span>
-              </div>
-              <div
-                style={{
-                  fontSize: '12px',
-                  color: '#94a3b8',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  marginTop: '2px',
-                }}
-              >
-                <Sparkles size={12} color="#fb7185" />
-                <span>{activeFeeling}</span>
               </div>
             </div>
           </div>
 
-          {/* Quick Controls */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            {/* Kokoro Voice Toggle */}
+          {/* Minimal Controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
-              type="button"
               onClick={() => setVoiceEnabled(!voiceEnabled)}
-              title={voiceEnabled ? 'Voice output active (Kokoro 82M)' : 'Voice output muted'}
+              title={voiceEnabled ? 'Voice output enabled' : 'Voice output muted'}
               style={{
+                padding: '8px 12px',
+                borderRadius: '8px',
+                color: voiceEnabled ? 'var(--human-accent-warm)' : 'var(--human-text-muted)',
+                backgroundColor: voiceEnabled ? 'rgba(224, 122, 95, 0.08)' : 'transparent',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                padding: '6px 14px',
-                borderRadius: '20px',
                 fontSize: '12px',
-                fontWeight: 600,
-                backgroundColor: voiceEnabled
-                  ? 'rgba(244, 63, 94, 0.18)'
-                  : 'rgba(255, 255, 255, 0.05)',
-                color: voiceEnabled ? '#fb7185' : '#64748b',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
+                fontWeight: 500,
               }}
             >
-              {voiceEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
+              {voiceEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
               <span>{voiceEnabled ? 'Voice On' : 'Muted'}</span>
             </button>
 
-            {/* Conversation History Drawer Button */}
             <button
-              type="button"
               onClick={() => setShowHistoryDrawer(!showHistoryDrawer)}
-              title="View past sessions"
+              title="Conversations"
               style={{
+                padding: '8px 12px',
+                borderRadius: '8px',
+                color: showHistoryDrawer
+                  ? 'var(--human-text-primary)'
+                  : 'var(--human-text-secondary)',
+                backgroundColor: showHistoryDrawer ? 'rgba(255, 255, 255, 0.06)' : 'transparent',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                color: '#94a3b8',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                cursor: 'pointer',
+                gap: '6px',
+                fontSize: '12px',
+                fontWeight: 500,
               }}
             >
-              <History size={16} />
+              <Clock size={15} />
+              <span>History</span>
             </button>
 
-            {/* New Session Button */}
-            <button
-              type="button"
-              onClick={onCreateConversation}
-              title="Start a fresh conversation"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                color: '#94a3b8',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                cursor: 'pointer',
-              }}
-            >
-              <Plus size={16} />
-            </button>
+            {onSwitchToDeveloperMode && (
+              <button
+                onClick={onSwitchToDeveloperMode}
+                title="Switch to Arletex Developer Toolbox"
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  color: 'var(--human-text-muted)',
+                  backgroundColor: 'transparent',
+                  border: '1px solid var(--human-border)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <Terminal size={14} />
+                <span>Dev Toolbox</span>
+              </button>
+            )}
           </div>
         </header>
 
-        {/* Error notification banner */}
-        {error && (
-          <div
-            style={{
-              padding: '10px 24px',
-              backgroundColor: 'rgba(239, 68, 68, 0.15)',
-              borderBottom: '1px solid rgba(239, 68, 68, 0.3)',
-              color: '#fca5a5',
-              fontSize: '13px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <span>{error}</span>
-            <button
-              onClick={onClearError}
-              style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer' }}
-            >
-              <X size={16} />
-            </button>
-          </div>
-        )}
-
-        {/* Messages Stream */}
+        {/* Message Stream */}
         <div
           style={{
             flex: 1,
             overflowY: 'auto',
-            padding: '28px',
+            padding: '28px 32px',
             display: 'flex',
             flexDirection: 'column',
-            gap: '24px',
+            gap: '22px',
           }}
         >
-          {messages.length === 0 && !isGenerating && (
+          {messages.length === 0 && !streamingText && (
             <div
               style={{
                 margin: 'auto',
                 textAlign: 'center',
                 maxWidth: '440px',
-                padding: '40px 20px',
+                padding: '40px 24px',
               }}
             >
               <div
                 style={{
-                  width: '64px',
-                  height: '64px',
+                  width: '52px',
+                  height: '52px',
                   borderRadius: '50%',
-                  backgroundColor: 'rgba(244, 63, 94, 0.12)',
+                  margin: '0 auto 18px',
+                  backgroundColor: 'var(--human-bg-elevated)',
+                  border: '1px solid var(--human-border-warm)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  margin: '0 auto 16px auto',
-                  border: '1px solid rgba(244, 63, 94, 0.3)',
+                  color: 'var(--human-accent-warm)',
                 }}
               >
-                <Sparkles size={28} color="#fb7185" />
+                <Sparkles size={24} />
               </div>
-              <h3
-                style={{ fontSize: '18px', fontWeight: 600, color: '#f8fafc', marginBottom: '8px' }}
+              <h2
+                style={{
+                  fontSize: '18px',
+                  fontWeight: 600,
+                  marginBottom: '8px',
+                  color: 'var(--human-text-primary)',
+                  letterSpacing: '-0.3px',
+                }}
               >
-                Here with you, Proof.
-              </h3>
-              <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: '1.6' }}>
-                Talk with me naturally. I’m listening out loud and thinking right alongside you.
+                Arle is here
+              </h2>
+              <p
+                style={{
+                  fontSize: '14px',
+                  lineHeight: '1.6',
+                  color: 'var(--human-text-secondary)',
+                }}
+              >
+                Speak or write freely. Your thoughts and shared reflections are remembered across
+                sessions.
               </p>
             </div>
           )}
 
           {messages.map((msg) => {
             const isUser = msg.role === 'user';
+            const isSpeakingThis = speakingMessageId === msg.id;
+
             return (
               <div
                 key={msg.id}
+                className="human-fade-in"
                 style={{
                   display: 'flex',
-                  flexDirection: isUser ? 'row-reverse' : 'row',
-                  gap: '14px',
-                  maxWidth: '780px',
-                  alignSelf: isUser ? 'flex-end' : 'flex-start',
+                  flexDirection: 'column',
+                  alignItems: isUser ? 'flex-end' : 'flex-start',
                   width: '100%',
                 }}
               >
-                {/* Message Bubble Container */}
                 <div
                   style={{
-                    maxWidth: '82%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: isUser ? 'flex-end' : 'flex-start',
+                    maxWidth: isUser ? '72%' : '82%',
+                    backgroundColor: isUser ? 'rgba(224, 122, 95, 0.12)' : 'var(--human-bg-card)',
+                    border: `1px solid ${
+                      isUser ? 'rgba(224, 122, 95, 0.28)' : 'var(--human-border-subtle)'
+                    }`,
+                    borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                    padding: '16px 20px',
+                    position: 'relative',
+                    backdropFilter: 'blur(8px)',
+                    boxShadow: isUser ? 'none' : '0 4px 20px rgba(0, 0, 0, 0.12)',
                   }}
                 >
+                  {/* Attached Image */}
+                  {(msg.metadata as any)?.imageBase64 && (
+                    <div style={{ marginBottom: '12px' }}>
+                      <img
+                        src={(msg.metadata as any).imageBase64}
+                        alt="Attached observation"
+                        style={{
+                          maxWidth: '100%',
+                          maxHeight: '320px',
+                          borderRadius: '10px',
+                          border: '1px solid var(--human-border-subtle)',
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Body Text */}
                   <div
                     style={{
-                      padding: '14px 18px',
-                      borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                      backgroundColor: isUser ? '#232942' : '#141622',
-                      border: isUser
-                        ? '1px solid rgba(255, 255, 255, 0.08)'
-                        : '1px solid rgba(244, 63, 94, 0.22)',
-                      borderLeft: isUser
-                        ? '1px solid rgba(255, 255, 255, 0.08)'
-                        : '3px solid #f43f5e',
-                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)',
                       fontSize: '15px',
                       lineHeight: '1.65',
-                      color: '#f1f5f9',
-                      wordBreak: 'break-word',
+                      color: isUser ? 'var(--human-text-primary)' : '#ede9e3',
                       whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      letterSpacing: '-0.1px',
                     }}
                   >
-                    {/* Attached Image Preview */}
-                    {Boolean(msg.metadata && typeof msg.metadata.imageBase64 === 'string') && (
-                      <div
-                        style={{ marginBottom: '10px', borderRadius: '8px', overflow: 'hidden' }}
-                      >
-                        <img
-                          src={msg.metadata!.imageBase64 as string}
-                          alt="Attachment"
-                          style={{
-                            maxHeight: '240px',
-                            maxWidth: '100%',
-                            objectFit: 'contain',
-                            borderRadius: '8px',
-                          }}
-                        />
-                      </div>
-                    )}
                     {msg.content}
                   </div>
 
-                  {/* Arle Message Actions */}
+                  {/* Message Actions for Arle Responses */}
                   {!isUser && (
                     <div
                       style={{
                         display: 'flex',
                         alignItems: 'center',
+                        justifyContent: 'flex-end',
                         gap: '12px',
-                        marginTop: '6px',
-                        fontSize: '12px',
-                        color: '#64748b',
+                        marginTop: '10px',
+                        paddingTop: '8px',
+                        borderTop: '1px solid rgba(255, 255, 255, 0.04)',
                       }}
                     >
-                      {/* Speak Out Loud Button */}
+                      {/* Audio playback button */}
                       <button
-                        type="button"
                         onClick={() => handleSpeak(msg.content, msg.id)}
-                        title="Hear Arle speak this"
+                        title={isSpeakingThis ? 'Stop speaking' : 'Read aloud'}
                         style={{
-                          background: 'none',
-                          border: 'none',
-                          color: speakingMessageId === msg.id ? '#fb7185' : '#94a3b8',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '4px',
-                          cursor: 'pointer',
-                          padding: '2px 4px',
+                          gap: '5px',
+                          fontSize: '11px',
+                          color: isSpeakingThis
+                            ? 'var(--human-accent-warm)'
+                            : 'var(--human-text-muted)',
+                          padding: '3px 7px',
+                          borderRadius: '6px',
+                          backgroundColor: isSpeakingThis
+                            ? 'rgba(224, 122, 95, 0.1)'
+                            : 'transparent',
                         }}
                       >
-                        <Volume2 size={14} />
-                        <span>{speakingMessageId === msg.id ? 'Speaking...' : 'Listen'}</span>
+                        <Volume2 size={13} />
+                        <span>{isSpeakingThis ? 'Speaking...' : 'Speak'}</span>
                       </button>
 
-                      {/* Remember This Button */}
+                      {/* Memory retention button */}
                       <button
-                        type="button"
                         onClick={() => handleRemember(msg.content, msg.id)}
                         title="Save to autobiographical memory"
                         style={{
-                          background: 'none',
-                          border: 'none',
-                          color: memorySavedId === msg.id ? '#10b981' : '#94a3b8',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '4px',
-                          cursor: 'pointer',
-                          padding: '2px 4px',
+                          gap: '5px',
+                          fontSize: '11px',
+                          color: memorySavedId === msg.id ? '#10b981' : 'var(--human-text-muted)',
+                          padding: '3px 7px',
+                          borderRadius: '6px',
                         }}
                       >
-                        <Bookmark size={14} />
-                        <span>{memorySavedId === msg.id ? 'Remembered!' : 'Remember'}</span>
+                        <Bookmark size={13} />
+                        <span>{memorySavedId === msg.id ? 'Remembered' : 'Remember'}</span>
                       </button>
                     </div>
                   )}
@@ -628,307 +550,323 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
             );
           })}
 
-          {/* Real-Time Streaming Message */}
-          {isGenerating && streamingText && (
+          {/* Streaming Response Bubble */}
+          {streamingText && (
             <div
+              className="human-fade-in"
               style={{
                 display: 'flex',
-                gap: '14px',
-                maxWidth: '780px',
-                alignSelf: 'flex-start',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
                 width: '100%',
               }}
             >
               <div
                 style={{
                   maxWidth: '82%',
-                  padding: '14px 18px',
-                  borderRadius: '18px 18px 18px 4px',
-                  backgroundColor: '#141622',
-                  border: '1px solid rgba(244, 63, 94, 0.22)',
-                  borderLeft: '3px solid #f43f5e',
-                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)',
-                  fontSize: '15px',
-                  lineHeight: '1.65',
-                  color: '#f1f5f9',
-                  wordBreak: 'break-word',
-                  whiteSpace: 'pre-wrap',
+                  backgroundColor: 'var(--human-bg-card)',
+                  border: '1px solid var(--human-border-warm)',
+                  borderRadius: '16px 16px 16px 4px',
+                  padding: '16px 20px',
+                  backdropFilter: 'blur(8px)',
+                  boxShadow: '0 4px 20px var(--human-accent-glow)',
                 }}
               >
-                {streamingText}
-                <span
+                <div
                   style={{
-                    display: 'inline-block',
-                    width: '6px',
-                    height: '14px',
-                    marginLeft: '4px',
-                    backgroundColor: '#fb7185',
-                    animation: 'pulse 1s infinite',
+                    fontSize: '15px',
+                    lineHeight: '1.65',
+                    color: '#ede9e3',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
                   }}
-                />
+                >
+                  {streamingText}
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      width: '6px',
+                      height: '15px',
+                      backgroundColor: 'var(--human-accent-warm)',
+                      marginLeft: '5px',
+                      verticalAlign: 'middle',
+                      animation: 'humanPulseGlow 0.9s infinite ease-in-out',
+                    }}
+                  />
+                </div>
               </div>
-            </div>
-          )}
-
-          {/* Thinking Indicator */}
-          {isGenerating && !streamingText && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                color: '#94a3b8',
-                fontSize: '13px',
-              }}
-            >
-              <Sparkles size={14} color="#fb7185" />
-              <span>Arle is thinking...</span>
             </div>
           )}
 
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Floating Dock (Stanford HCI Floating Capsule Design) */}
+        {/* Error Banner */}
+        {error && (
+          <div
+            style={{
+              padding: '10px 24px',
+              backgroundColor: 'rgba(239, 68, 68, 0.12)',
+              borderTop: '1px solid rgba(239, 68, 68, 0.25)',
+              color: '#fca5a5',
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <span>{error}</span>
+            <button onClick={onClearError} style={{ color: '#fca5a5', padding: '2px 6px' }}>
+              <X size={14} />
+            </button>
+          </div>
+        )}
+
+        {/* Message Input Dock */}
         <div
           style={{
-            padding: '16px 28px 24px 28px',
-            backgroundColor: 'rgba(9, 10, 15, 0.95)',
-            backdropFilter: 'blur(16px)',
-            borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+            padding: '16px 32px 28px',
+            position: 'relative',
           }}
         >
+          {/* Image Preview Tag */}
           {attachedImage && (
             <div
               style={{
-                marginBottom: '10px',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '8px',
                 padding: '6px 12px',
+                backgroundColor: 'var(--human-bg-elevated)',
+                border: '1px solid var(--human-border-warm)',
                 borderRadius: '8px',
-                backgroundColor: '#1e2235',
-                border: '1px solid #334155',
+                marginBottom: '10px',
+                fontSize: '12px',
+                color: 'var(--human-accent-warm)',
               }}
             >
-              <span style={{ fontSize: '12px', color: '#f1f5f9' }}>Image attached</span>
+              <span>Image attached</span>
               <button
-                type="button"
                 onClick={() => setAttachedImage(null)}
-                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                style={{ color: 'var(--human-text-muted)' }}
               >
-                <X size={14} />
+                <X size={13} />
               </button>
             </div>
           )}
 
           <div
             style={{
+              backgroundColor: 'var(--human-bg-surface)',
+              border: '1px solid var(--human-border-subtle)',
+              borderRadius: '16px',
+              padding: '12px 16px',
               display: 'flex',
               alignItems: 'flex-end',
               gap: '12px',
-              backgroundColor: '#141624',
-              borderRadius: '24px',
-              padding: '8px 16px',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              boxShadow: '0 8px 30px rgba(0, 0, 0, 0.4)',
+              boxShadow: '0 8px 30px rgba(0, 0, 0, 0.25)',
+              transition: 'border-color 0.2s ease',
             }}
           >
-            {/* Attachment Button */}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              title="Attach image"
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#94a3b8',
-                cursor: 'pointer',
-                padding: '8px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Paperclip size={18} />
-            </button>
+            {/* Hidden file input */}
             <input
-              ref={fileInputRef}
               type="file"
+              ref={fileInputRef}
               accept="image/*"
               style={{ display: 'none' }}
               onChange={handleAttachImage}
             />
 
-            {/* Input Textarea */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              title="Attach screen or photo"
+              style={{
+                color: attachedImage ? 'var(--human-accent-warm)' : 'var(--human-text-muted)',
+                padding: '6px',
+                borderRadius: '8px',
+              }}
+            >
+              <Paperclip size={18} />
+            </button>
+
             <textarea
               ref={textareaRef}
+              rows={1}
               value={inputText}
               onChange={(e) => {
                 setInputText(e.target.value);
                 e.target.style.height = 'auto';
-                e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
+                e.target.style.height = `${Math.min(180, e.target.scrollHeight)}px`;
               }}
               onKeyDown={handleKeyDown}
-              placeholder="Talk to Arle..."
-              rows={1}
+              placeholder="Talk to Arle... (Enter to send, Shift+Enter for new line)"
               style={{
                 flex: 1,
-                background: 'none',
-                border: 'none',
-                outline: 'none',
-                color: '#f8fafc',
+                backgroundColor: 'transparent',
+                color: 'var(--human-text-primary)',
                 fontSize: '15px',
-                resize: 'none',
-                maxHeight: '140px',
-                padding: '8px 4px',
-                fontFamily: 'inherit',
                 lineHeight: '1.5',
+                resize: 'none',
+                maxHeight: '180px',
+                padding: '4px 0',
               }}
             />
 
-            {/* Stop or Send Button */}
             {isGenerating ? (
               <button
-                type="button"
                 onClick={onCancelGeneration}
-                title="Stop generation"
+                title="Cancel response"
                 style={{
-                  width: '38px',
-                  height: '38px',
-                  borderRadius: '50%',
-                  backgroundColor: '#ef4444',
-                  color: '#ffffff',
-                  border: 'none',
-                  cursor: 'pointer',
+                  color: '#ef4444',
+                  padding: '6px 12px',
+                  borderRadius: '10px',
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
+                  gap: '6px',
+                  fontSize: '13px',
+                  fontWeight: 500,
                 }}
               >
-                <StopCircle size={18} />
+                <StopCircle size={17} />
+                <span>Stop</span>
               </button>
             ) : (
               <button
-                type="button"
                 onClick={handleSend}
                 disabled={!inputText.trim() && !attachedImage}
                 title="Send message"
                 style={{
-                  width: '38px',
-                  height: '38px',
-                  borderRadius: '50%',
-                  backgroundColor: inputText.trim() || attachedImage ? '#f43f5e' : '#334155',
-                  color: '#ffffff',
-                  border: 'none',
-                  cursor: inputText.trim() || attachedImage ? 'pointer' : 'default',
+                  backgroundColor:
+                    inputText.trim() || attachedImage
+                      ? 'var(--human-accent-warm)'
+                      : 'rgba(255, 255, 255, 0.05)',
+                  color: inputText.trim() || attachedImage ? '#ffffff' : 'var(--human-text-muted)',
+                  padding: '8px 14px',
+                  borderRadius: '10px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  transition: 'background-color 0.2s ease',
-                  boxShadow: inputText.trim() ? '0 0 16px rgba(244, 63, 94, 0.4)' : 'none',
+                  transition: 'all 0.18s ease',
                 }}
               >
-                <Send size={18} />
+                <Send size={16} />
               </button>
             )}
           </div>
         </div>
       </div>
 
-      {/* History Slide-Over Drawer */}
+      {/* Slide-out Conversation History Drawer */}
       {showHistoryDrawer && (
         <div
           style={{
             position: 'absolute',
             top: 0,
             right: 0,
-            width: '300px',
+            width: '320px',
             height: '100%',
-            backgroundColor: '#0f111a',
-            borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
-            zIndex: 50,
+            backgroundColor: 'var(--human-bg-surface)',
+            borderLeft: '1px solid var(--human-border-subtle)',
+            zIndex: 10,
             display: 'flex',
             flexDirection: 'column',
-            boxShadow: '-10px 0 30px rgba(0, 0, 0, 0.5)',
+            boxShadow: '-8px 0 32px rgba(0, 0, 0, 0.4)',
           }}
         >
           <div
             style={{
-              height: '72px',
+              height: '68px',
               padding: '0 20px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+              borderBottom: '1px solid var(--human-border-subtle)',
             }}
           >
-            <span style={{ fontSize: '15px', fontWeight: 600, color: '#f8fafc' }}>
-              Past Conversations
-            </span>
-            <button
-              onClick={() => setShowHistoryDrawer(false)}
-              style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
-            >
-              <X size={18} />
-            </button>
+            <span style={{ fontSize: '15px', fontWeight: 600 }}>Past Conversations</span>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button
+                onClick={() => {
+                  onCreateConversation();
+                  setShowHistoryDrawer(false);
+                }}
+                title="New discussion"
+                style={{
+                  padding: '6px 10px',
+                  borderRadius: '6px',
+                  backgroundColor: 'rgba(224, 122, 95, 0.12)',
+                  color: 'var(--human-accent-warm)',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <Plus size={14} />
+                <span>New</span>
+              </button>
+              <button
+                onClick={() => setShowHistoryDrawer(false)}
+                style={{ color: 'var(--human-text-muted)', padding: '6px' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
           </div>
 
           <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
-            {conversations.map((c) => (
-              <div
-                key={c.id}
-                onClick={() => {
-                  onSelectConversation(c.id);
-                  setShowHistoryDrawer(false);
-                }}
-                style={{
-                  padding: '12px 14px',
-                  borderRadius: '10px',
-                  marginBottom: '8px',
-                  backgroundColor:
-                    c.id === activeConversationId ? 'rgba(244, 63, 94, 0.15)' : '#161824',
-                  border:
-                    c.id === activeConversationId
-                      ? '1px solid rgba(244, 63, 94, 0.3)'
-                      : '1px solid rgba(255, 255, 255, 0.04)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
+            {conversations.map((c) => {
+              const isActive = c.id === activeConversationId;
+              return (
                 <div
+                  key={c.id}
                   style={{
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    fontSize: '13px',
-                    color: '#f1f5f9',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: isActive ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+                    marginBottom: '4px',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => {
+                    onSelectConversation(c.id);
+                    setShowHistoryDrawer(false);
                   }}
                 >
-                  {c.title || 'Untitled Session'}
-                </div>
-                {onDeleteConversation && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteConversation(c.id);
-                    }}
+                  <span
                     style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#64748b',
-                      cursor: 'pointer',
-                      padding: '2px',
+                      fontSize: '13px',
+                      color: isActive ? 'var(--human-text-primary)' : 'var(--human-text-secondary)',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      flex: 1,
                     }}
                   >
-                    <Trash2 size={13} />
-                  </button>
-                )}
-              </div>
-            ))}
+                    {c.title || 'Conversation'}
+                  </span>
+                  {onDeleteConversation && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteConversation(c.id);
+                      }}
+                      style={{
+                        color: 'var(--human-text-muted)',
+                        padding: '4px',
+                        marginLeft: '8px',
+                      }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

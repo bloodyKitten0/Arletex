@@ -753,7 +753,7 @@ export const EnvironmentView: React.FC = () => {
                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
               >
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)' }}>
-                  Relationship State (Partner: Proof)
+                  User Alignment & Affinity (Subject: Proof)
                 </span>
                 <ProvenanceBadge tag={relationship ? 'inferred' : 'unavailable'} />
               </div>
@@ -764,13 +764,13 @@ export const EnvironmentView: React.FC = () => {
                 {(relationship?.trustScore ?? 0.92).toFixed(2)}
               </div>
               <div style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)' }}>
-                Affection: {(relationship?.affectionLevel ?? 0.88).toFixed(2)} | Conflict:{' '}
+                Affinity: {(relationship?.affectionLevel ?? 0.88).toFixed(2)} | Conflict:{' '}
                 {relationship?.conflictState || 'resolved'}
               </div>
               <div
                 style={{ fontSize: '11px', color: 'var(--text-muted, #6e7681)', marginTop: 'auto' }}
               >
-                Source: SQLite `ape_relationship_state` (Equal partner framing)
+                Source: SQLite `ape_relationship_state`
               </div>
             </div>
           </div>

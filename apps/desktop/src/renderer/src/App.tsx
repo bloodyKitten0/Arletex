@@ -15,10 +15,10 @@ import { HistoryView } from './components/views/HistoryView';
 import { ActivitiesView } from './components/views/ActivitiesView';
 import { EnvironmentView } from './components/views/EnvironmentView';
 import { GenerationStats } from './components/ChatView';
-import { DesktopCompanionView } from './components/companion/DesktopCompanionView';
 import { HumanCompanionView } from './components/human/HumanCompanionView';
 import { ArletexApi } from '../../preload';
 import { stopCurrentAudio } from './utils/mediaUtils';
+import { Sparkles, Terminal } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -27,25 +27,21 @@ declare global {
 }
 
 export const App: React.FC = () => {
-  // Hash routing for transparent desktop companion window
-  if (typeof window !== 'undefined' && window.location.hash.includes('companion')) {
-    return <DesktopCompanionView />;
-  }
-
   // Navigation & UI Layout State
   const [activeSection, setActiveSection] = useState<NavSection>('main');
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [telemetryCollapsed, setTelemetryCollapsed] = useState(false);
   const [fullScreen, setFullScreen] = useState(false);
 
-  // View Mode: 'human' (warm conversational partner) vs 'arletex' (full studio with all tabs)
+  // View Mode: 'human' (Arle companion) vs 'arletex' (developer toolbox)
   const [viewMode, setViewMode] = useState<'human' | 'arletex'>(() => {
     try {
       if (typeof window !== 'undefined') {
         const params = new URLSearchParams(window.location.search);
         const modeParam = params.get('mode');
         if (modeParam === 'human') return 'human';
-        if (modeParam === 'arletex' || modeParam === 'full') return 'arletex';
+        if (modeParam === 'arletex' || modeParam === 'dev' || modeParam === 'full')
+          return 'arletex';
         const stored = localStorage.getItem('arletex_view_mode');
         if (stored === 'human' || stored === 'arletex') return stored;
       }
@@ -75,7 +71,7 @@ export const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
 
   // Inference & Generation State
-  const [health, setHealth] = useState<InferenceHealthResult | null>(null);
+  const [_health, setHealth] = useState<InferenceHealthResult | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [streamingText, setStreamingText] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -183,14 +179,13 @@ export const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [loadConversations, checkHealth]);
 
-  // When active conversation changes & auto-sync for proactive speech
+  // When active conversation changes & auto-sync
   useEffect(() => {
     if (activeConversationId) {
       void loadMessages(activeConversationId);
       setStreamingText('');
       setIsGenerating(false);
 
-      // Fast auto-sync so Arle's proactive speech appears without manual refresh
       const interval = setInterval(() => {
         if (!activeRequestIdRef.current) {
           void loadMessages(activeConversationId);
@@ -225,7 +220,7 @@ export const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [isGenerating, generationStats.startTime]);
 
-  // Global stream chunk listener (background tasks continue regardless of active tab!)
+  // Global stream chunk listener
   useEffect(() => {
     if (!api) return;
 
@@ -365,7 +360,6 @@ export const App: React.FC = () => {
       targetConvId = activeConversationId;
     }
 
-    // Optimistic UI update with rich media metadata
     const userMetadata: Record<string, any> = {};
     const effectiveImgBase64 =
       imageBase64 || (mediaPayload?.type === 'image' ? mediaPayload.base64 : undefined);
@@ -444,7 +438,7 @@ export const App: React.FC = () => {
     }
   };
 
-  // Memory creation from Main
+  // Memory creation from chat
   const handleCreateMemoryFromChat = async (input: CreateMemoryInput): Promise<boolean> => {
     if (!api) return false;
     try {
@@ -457,7 +451,7 @@ export const App: React.FC = () => {
 
   const activeConversation = conversations.find((c) => c.id === activeConversationId) || null;
 
-  // Dedicated Human Companion Mode (npm run arle) - Capri AI / Rose / Jarvis Aesthetic
+  // Dedicated Human Companion Mode (npm run arle)
   if (viewMode === 'human') {
     return (
       <HumanCompanionView
@@ -478,10 +472,12 @@ export const App: React.FC = () => {
         onSendMessage={handleSendMessage}
         onCancelGeneration={handleCancelGeneration}
         onCreateMemory={handleCreateMemoryFromChat}
+        onSwitchToDeveloperMode={toggleViewMode}
       />
     );
   }
 
+  // Developer Toolbox Mode (npm run arletex) - Edward Tufte / Nielsen Norman engineering OS
   return (
     <div
       style={{
@@ -489,10 +485,12 @@ export const App: React.FC = () => {
         width: '100vw',
         height: '100vh',
         overflow: 'hidden',
-        backgroundColor: 'var(--bg-primary)',
+        backgroundColor: 'var(--dev-bg-base, #080a0d)',
+        color: 'var(--dev-text-primary, #e6edf3)',
+        fontFamily: 'var(--font-mono, monospace)',
       }}
     >
-      {/* Primary Left Navigation (Hidden in Full Screen Mode) */}
+      {/* Primary Left Navigation */}
       {!fullScreen && (
         <NavSidebar
           activeSection={activeSection}
@@ -514,13 +512,13 @@ export const App: React.FC = () => {
           position: 'relative',
         }}
       >
-        {/* Top Cognitive Host OS Inspection Bar */}
+        {/* Developer OS Header Bar */}
         <div
           style={{
-            height: '38px',
+            height: '42px',
             padding: '0 16px',
-            backgroundColor: 'var(--bg-secondary)',
-            borderBottom: '1px solid var(--border-subtle)',
+            backgroundColor: 'var(--dev-bg-surface, #0d1117)',
+            borderBottom: '1px solid var(--dev-border, #21262d)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -532,18 +530,18 @@ export const App: React.FC = () => {
             <span
               style={{
                 fontWeight: 700,
-                color: '#38bdf8',
+                color: 'var(--dev-accent-cyan, #06b6d4)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
               }}
             >
-              <span>⚙️</span>
-              <span>Arletex Host OS</span>
+              <Terminal size={14} />
+              <span>ARLETEX // COGNITIVE LAB</span>
             </span>
-            <span style={{ color: 'var(--text-muted)' }}>•</span>
-            <span style={{ color: 'var(--text-secondary)' }}>
-              Cognitive Architecture & Subsystem Inspection (All Tabs)
+            <span style={{ color: 'var(--dev-border, #21262d)' }}>|</span>
+            <span style={{ color: 'var(--dev-text-secondary, #8b949e)', fontSize: '10px' }}>
+              Subsystem Diagnostic & Architecture Matrix (No Chat Gateway)
             </span>
           </div>
 
@@ -551,42 +549,34 @@ export const App: React.FC = () => {
             <button
               type="button"
               onClick={toggleViewMode}
-              title="Switch to Human Partner View"
+              title="Switch to Arle (Human Companion Interface)"
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
                 padding: '4px 10px',
-                borderRadius: '14px',
+                borderRadius: '4px',
                 fontSize: '11px',
                 fontWeight: 600,
-                border: '1px solid #374151',
-                backgroundColor: 'rgba(244, 63, 94, 0.15)',
-                color: '#fb7185',
+                border: '1px solid rgba(224, 122, 95, 0.4)',
+                backgroundColor: 'rgba(224, 122, 95, 0.12)',
+                color: '#e07a5f',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
               }}
             >
-              <span>🧚 Open Human Mode</span>
+              <Sparkles size={13} />
+              <span>Switch to Arle</span>
             </button>
           </div>
         </div>
 
+        {/* Subsystem Views */}
         {activeSection === 'main' && (
           <MainView
-            conversation={activeConversation}
-            messages={messages}
-            streamingText={streamingText}
-            isGenerating={isGenerating}
-            error={error}
-            onClearError={() => setError(null)}
-            generationStats={generationStats}
-            onSendMessage={handleSendMessage}
-            onCancelGeneration={handleCancelGeneration}
-            health={health}
+            onNavigateSection={(sec) => setActiveSection(sec as NavSection)}
             fullScreen={fullScreen}
             onToggleFullScreen={() => setFullScreen(!fullScreen)}
-            onCreateMemory={handleCreateMemoryFromChat}
           />
         )}
 
@@ -600,7 +590,8 @@ export const App: React.FC = () => {
             activeId={activeConversationId}
             onSelectAndOpen={(id) => {
               setActiveConversationId(id);
-              setActiveSection('main');
+              // Switch to human mode to chat with Arle in this conversation!
+              setViewMode('human');
             }}
             onCreate={handleCreateConversation}
             onDelete={handleDeleteConversation}
@@ -613,7 +604,7 @@ export const App: React.FC = () => {
         {activeSection === 'environment' && <EnvironmentView />}
       </main>
 
-      {/* Technical Telemetry Rail (Hidden in Full Screen Mode) */}
+      {/* Technical Telemetry Rail */}
       {!fullScreen && (
         <TelemetryRail
           collapsed={telemetryCollapsed}
