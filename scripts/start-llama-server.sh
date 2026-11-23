@@ -71,11 +71,11 @@ if [ -n "$MMPROJ_PATH" ] && [ -f "$MMPROJ_PATH" ]; then
 fi
 
 LORA_PATH="${LORA_PATH:-}"
-if [ -z "$LORA_PATH" ] && [ -f "$PROJECT_DIR/models/lora/medicine_specialist/adapter_model.safetensors" ]; then
-  LORA_PATH="$PROJECT_DIR/models/lora/medicine_specialist/adapter_model.safetensors"
+if [ -z "$LORA_PATH" ] && [ -f "$PROJECT_DIR/models/lora/medicine_specialist/adapter_model.gguf" ]; then
+  LORA_PATH="$PROJECT_DIR/models/lora/medicine_specialist/adapter_model.gguf"
 fi
 
-if [ -n "$LORA_PATH" ] && [ -f "$LORA_PATH" ]; then
+if [ -n "$LORA_PATH" ] && [ -f "$LORA_PATH" ] && [[ "$LORA_PATH" == *".gguf" ]]; then
   echo " LoRA Adapter: $LORA_PATH"
   EXTRA_ARGS+=(--lora "$LORA_PATH")
 fi
