@@ -15,7 +15,7 @@ import {
   Terminal,
 } from 'lucide-react';
 import { splitIntoSpeechChunks, playSpeechQueue, stopCurrentAudio } from '../../utils/mediaUtils';
-import { GenerationStats } from '../ChatView';
+import { GenerationStats } from '../../types';
 
 interface HumanCompanionViewProps {
   conversation: Conversation | null;

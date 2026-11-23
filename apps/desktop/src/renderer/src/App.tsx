@@ -14,7 +14,7 @@ import { EmoView } from './components/views/EmoView';
 import { HistoryView } from './components/views/HistoryView';
 import { ActivitiesView } from './components/views/ActivitiesView';
 import { EnvironmentView } from './components/views/EnvironmentView';
-import { GenerationStats } from './components/ChatView';
+import { GenerationStats } from './types';
 import { HumanCompanionView } from './components/human/HumanCompanionView';
 import { ArletexApi } from '../../preload';
 import { stopCurrentAudio } from './utils/mediaUtils';
