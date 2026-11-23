@@ -2928,9 +2928,33 @@ Provide factual, comprehensive, high-density educational content.`;
       // D. Hybrid RAG Search across External Knowledge Documents & Chunks
       let academicKnowledgeContext = '';
       try {
-        const knowledgeResults = await this.knowledgeBaseService.search(userMessageContent, {
+        let ragSearchQuery = userMessageContent;
+
+        // Context-enriched query expansion:
+        // If the user's message is a follow-up, correction, or short critique, enrich query with recent conversation history
+        const isFollowUpOrCritique =
+          userMessageContent.trim().length < 80 ||
+          /^(?:wrong|no|incorrect|false|fix|correct|explain|why|how|derive|calculate|what about|continue|wait)\b/i.test(
+            userMessageContent.trim(),
+          );
+
+        if (isFollowUpOrCritique && filteredHistory.length > 0) {
+          const recentUserMsgs = filteredHistory
+            .filter((m) => m.role === 'user')
+            .slice(-3)
+            .map((m) => m.content)
+            .join(' ');
+          const recentAssistantMsgs = filteredHistory
+            .filter((m) => m.role === 'assistant')
+            .slice(-2)
+            .map((m) => m.content.slice(0, 300))
+            .join(' ');
+          ragSearchQuery = `${userMessageContent} ${recentUserMsgs} ${recentAssistantMsgs}`.trim();
+        }
+
+        const knowledgeResults = await this.knowledgeBaseService.search(ragSearchQuery, {
           limit: 5,
-          minScore: 0.2,
+          minScore: 0.15,
         });
 
         if (knowledgeResults.length > 0) {
@@ -2942,8 +2966,12 @@ Provide factual, comprehensive, high-density educational content.`;
                   `--- Document: "${kr.documentTitle}" (Domain: ${kr.domain}) ---\n${kr.chunk.content.trim()}`,
               )
               .join('\n\n') +
-            '\n\n[PhD-Level Academic Grounding Invariant]:\n' +
-            'You possess verified, comprehensive PhD-level mastery in this discipline. When answering questions regarding the above concepts, you MUST ground your answer directly in the exact governing mathematical equations, boundary conditions, physical definitions, and biological/chemical mechanisms provided in the retrieved ground truth above. Answer with full graduate rigor, precision, and depth, avoiding conversational superficiality or reversing microenvironments.\n';
+            '\n\n[PhD-Level Academic Grounding & Verification Invariant]:\n' +
+            'You possess verified, comprehensive PhD-level mastery in this discipline. When answering questions, deriving proofs, or correcting prior statements regarding the above concepts:\n' +
+            '1. You MUST ground your answer directly and strictly in the exact governing mathematical equations, boundary conditions, physical definitions, and biological/chemical mechanisms provided in the retrieved ground truth above.\n' +
+            '2. NEVER hallucinate decay constants, half-lives, peak times, or dimensional units. For example, for Xenon-135: lambda_I = 2.93e-5 s^-1 (T_1/2 = 6.57 h), lambda_Xe = 2.09e-5 s^-1 (T_1/2 = 9.14 h). Iodine decays FASTER than Xenon, which is why Xenon peaks at ~11.3 hours post-scram in high flux.\n' +
+            '3. NEVER misattribute the breakdown of point approximations: the prompt-jump approximation breaks down during spatial xenon oscillations strictly due to SPATIAL MODAL DECOUPLING (flux tilting across large cores), NOT slow timescales.\n' +
+            '4. Render all mathematical equations cleanly using LaTeX display blocks ($$ ... $$) and inline symbols ($ ... $). Format display equations on their own lines for clean rendering.\n';
         }
       } catch (ragErr: any) {
         this.logger.debug(`Academic RAG retrieval note: ${ragErr?.message}`);

@@ -10,12 +10,64 @@ interface MarkdownContentProps {
 }
 
 export const MarkdownContent: React.FC<MarkdownContentProps> = ({ content, isUser = false }) => {
-  // Pre-process math delimiters: convert \[ ... \] to $$ ... $$, and \( ... \) to $ ... $
+  // Pre-process math delimiters: convert \[ ... \] to $$ ... $$, \( ... \) to $ ... $,
+  // and auto-wrap standalone formulas / mathematical tokens so KaTeX renders cleanly
   const processedContent = useMemo(() => {
     if (!content) return '';
-    return content
+
+    // 1. Standardize display and inline delimiters
+    let text = content
       .replace(/\\\[([\s\S]*?)\\\]/g, (_match, math) => `\n$$\n${math.trim()}\n$$\n`)
       .replace(/\\\(([\s\S]*?)\\\)/g, (_match, math) => `$${math.trim()}$`);
+
+    // 2. Process line-by-line for standalone equations and bare LaTeX tokens
+    const lines = text.split('\n');
+    let inCodeBlock = false;
+    let inMathBlock = false;
+
+    const processedLines = lines.map((line) => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('```')) {
+        inCodeBlock = !inCodeBlock;
+        return line;
+      }
+      if (inCodeBlock) return line;
+
+      // Track $$ blocks
+      const dollarCount = (trimmed.match(/\$\$/g) || []).length;
+      if (dollarCount % 2 === 1) {
+        inMathBlock = !inMathBlock;
+        return line;
+      }
+      if (inMathBlock) return line;
+
+      // Check if a line is a standalone equation missing $$ delimiters
+      const isStandaloneEquation =
+        !trimmed.startsWith('$') &&
+        !trimmed.endsWith('$') &&
+        (
+          /^(?:[a-zA-Z0-9_{}\\]+\s*=\s*)?\\frac\{/.test(trimmed) ||
+          /^(?:\\frac|\\partial|\\sum|\\int|\\prod|\\lim)\b/.test(trimmed) ||
+          /^[a-zA-Z_][a-zA-Z0-9_{}^()]*\s*=\s*.*(?:\\frac|\\ln|\\exp|\\lambda|\\sigma|\\gamma|\\Sigma|\\approx).*$/.test(trimmed)
+        ) &&
+        !/[a-zA-Z]{5,}\s+[a-zA-Z]{5,}\s+[a-zA-Z]{5,}/.test(trimmed); // not regular English sentences
+
+      if (isStandaloneEquation) {
+        return `\n$$\n${trimmed}\n$$\n`;
+      }
+
+      // Convert common unescaped inline symbols in prose (e.g. \lambda_I, \sigma_a^X, \phi_0, t_{\text{max}})
+      if (!line.includes('$')) {
+        return line.replace(
+          /(^|[\s(])(\\[a-zA-Z]+(?:_[a-zA-Z0-9{}]+|\^[a-zA-Z0-9{}]+)+(?:[\^a-zA-Z0-9{}_]*))($|[\s),.:;!?])/g,
+          '$1$$$2$$$3',
+        );
+      }
+
+      return line;
+    });
+
+    return processedLines.join('\n');
   }, [content]);
 
   return (
@@ -26,8 +78,43 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({ content, isUse
         lineHeight: '1.65',
         color: isUser ? 'var(--human-text-primary, #ffffff)' : '#ede9e3',
         wordBreak: 'break-word',
+        letterSpacing: 'normal',
       }}
     >
+      <style>{`
+        .markdown-body {
+          letter-spacing: normal !important;
+        }
+        .markdown-body .katex {
+          letter-spacing: normal !important;
+          font-size: 1.08em;
+          text-rendering: auto;
+        }
+        .markdown-body .katex * {
+          letter-spacing: normal !important;
+        }
+        .markdown-body .katex-display {
+          margin: 1.25em 0 !important;
+          padding: 18px 24px !important;
+          background: #090c10 !important;
+          border-radius: 10px !important;
+          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          overflow-x: auto !important;
+          overflow-y: hidden !important;
+          text-align: center !important;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45) !important;
+        }
+        .markdown-body .katex-display > .katex {
+          text-align: center !important;
+          display: inline-block !important;
+          white-space: normal !important;
+        }
+        .markdown-body .katex-display .katex-html {
+          overflow-x: auto;
+          overflow-y: hidden;
+          padding: 4px 0;
+        }
+      `}</style>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex]}

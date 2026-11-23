@@ -66,11 +66,41 @@ export class CurriculumDecomposer {
           title: 'Fission Product Poisoning, Xenon Dynamics & Fuel Burnup',
           pillar: 'Reactivity Transients & Long-Term Core Depletion',
           governingPrinciples:
-            'Xenon-135 transient buildup and burnout, Iodine-135 precursor decay, Xenon dead time / pit, spatial Xenon oscillations, Samarium-149 equilibrium poisoning, fuel burnup (GWd/MTU), fissile vs fertile conversion ratios (U-238 to Pu-239, Th-232 to U-233).',
+            'Coupled Bateman Differential Rate Laws for Iodine-135 and Xenon-135:\n' +
+            'd(N_I)/dt = gamma_I * Sigma_f * Phi - lambda_I * N_I\n' +
+            'd(N_Xe)/dt = gamma_Xe * Sigma_f * Phi + lambda_I * N_I - (lambda_Xe + sigma_a_Xe * Phi) * N_Xe\n' +
+            'Nuclear Parameters (Thermal Fission of U-235):\n' +
+            '- Fission yields: gamma_I = 0.061 (6.1%), gamma_Xe = 0.003 (0.3%)\n' +
+            '- Decay constants: lambda_I = ln(2)/(6.57 h) = 2.93e-5 s^-1 (0.1055 h^-1); lambda_Xe = ln(2)/(9.14 h) = 2.09e-5 s^-1 (0.0758 h^-1)\n' +
+            '- Microscopic absorption cross section: sigma_a_Xe = 2.65e6 barns = 2.65e-18 cm^2\n\n' +
+            'Post-Scram Shutdown Dynamics (Phi = 0):\n' +
+            'Under sudden reactor scram, flux drops to zero (Phi = 0), stopping direct fission production and neutron burnout (sigma_a_Xe * Phi * N_Xe = 0).\n' +
+            'Pre-scram equilibrium initial conditions:\n' +
+            'N_I(0) = (gamma_I * Sigma_f * Phi_0) / lambda_I\n' +
+            'N_Xe(0) = ((gamma_I + gamma_Xe) * Sigma_f * Phi_0) / (lambda_Xe + sigma_a_Xe * Phi_0)\n' +
+            'Post-scram rate equations:\n' +
+            'd(N_I)/dt = -lambda_I * N_I  ==>  N_I(t) = N_I(0) * exp(-lambda_I * t)\n' +
+            'd(N_Xe)/dt = lambda_I * N_I(t) - lambda_Xe * N_Xe(t)\n' +
+            'Exact integrated post-scram Xenon-135 solution:\n' +
+            'N_Xe(t) = N_Xe(0) * exp(-lambda_Xe * t) + (lambda_I / (lambda_Xe - lambda_I)) * N_I(0) * (exp(-lambda_I * t) - exp(-lambda_Xe * t))\n\n' +
+            'Derivation of Peak Xenon Time (t_max):\n' +
+            'At the peak xenon concentration, d(N_Xe)/dt = 0  ==>  lambda_I * N_I(t_max) = lambda_Xe * N_Xe(t_max).\n' +
+            'Differentiating the exact post-scram solution and solving for t_max yields:\n' +
+            't_max = (1 / (lambda_Xe - lambda_I)) * ln( (lambda_Xe / lambda_I) * [ 1 + ((lambda_Xe - lambda_I) / lambda_I) * (N_Xe(0) / N_I(0)) ] )\n' +
+            'In the high-flux limit (Phi_0 >= 1e13 n/cm^2*s, where N_Xe(0) << N_I(0) due to intense pre-scram burnout):\n' +
+            't_max ≈ ln(lambda_I / lambda_Xe) / (lambda_I - lambda_Xe)\n' +
+            'Plugging in exact decay constants:\n' +
+            't_max ≈ ln(0.1055 / 0.0758) / (0.1055 - 0.0758) = ln(1.3918) / 0.0297 ≈ 0.3306 / 0.0297 ≈ 11.13 to 11.4 hours (~11.3 hours).\n' +
+            'Physical Mechanism: Iodine-135 decays faster than Xenon-135 (T_1/2 = 6.57 h vs 9.14 h, lambda_I > lambda_Xe). Iodine dumps into Xenon-135 faster than Xenon can decay away, creating a large post-scram reactivity pit ("iodine pit" or "xenon dead time") peaking around 11 hours.\n\n' +
+            'Prompt-Jump Approximation & Spatial Xenon Oscillations Breakdown:\n' +
+            '- Prompt-Jump Approximation: Sets dn/dt ≈ 0 in Point Kinetics Equations (PKE) because prompt neutron generation time (Lambda ~ 10^-4 s) is orders of magnitude faster than delayed neutron precursor half-lives (seconds to minutes).\n' +
+            '- Reason for Breakdown during Spatial Xenon Oscillations:\n' +
+            '  The breakdown in large thermal cores (PWRs, BWRs) is NOT due to slow timescales. Slow xenon timescales (hours) fully satisfy the quasi-steady assumption (dn/dt ≈ 0).\n' +
+            '  The failure is caused by SPATIAL MODAL DECOUPLING (Flux Tilting). In large cores (dimensions L >> neutron migration length M), higher-order spatial harmonics decouple from the fundamental mode. When local Xenon burns out in a high-flux region, it inserts localized positive reactivity, tilting power toward that side, while the opposite side builds up Xenon and shuts down. Point kinetics assumes a fixed, invariant spatial flux shape S(r); it is zero-dimensional and mathematically cannot represent asymmetric spatial flux tilting or nodal harmonic coupling. Full 3D multigroup space-time diffusion/transport equations are strictly required.',
           searchQueries: [
-            'Xenon pit',
-            'Nuclear poison',
-            'Breeding ratio nuclear physics',
+            'Xenon pit Bateman equations',
+            'Iodine-135 Xenon-135 peak time',
+            'Spatial xenon oscillations flux tilting',
           ],
         },
         {
