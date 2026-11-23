@@ -202,9 +202,6 @@ export class LlamaServerAdapter implements IInferenceProvider {
       'Identity & Email:',
       '- Identity & Email:',
       '[Direct Dialogue Context',
-      '\n*',
-      '\n *',
-      '\n* ',
       'Do not output',
       'Do not output any of these:',
       'NEVER output',
@@ -351,7 +348,7 @@ export class LlamaServerAdapter implements IInferenceProvider {
           if (delta) {
             fullContent += delta;
             const scriptMatch = fullContent.match(
-              /(\.?[_gG]etResponse\s*\(|\n?Proof:|\n?User:|\n?You:|<\/?user|<\/?assistant|<\|im_start\||<\|im_end\||[㈑濩]|\n\s*(user|assistant)\s*[\n:]|:\s*\n-\s*Current Persistent Mood|Action completed successfully!|Ambient audio stream captured|Visual frame or environmental state verified|\n```json|Track is playing now|System audio volume:|Your response must be in this format|A new message arrived|\n:\s*|\n-\s*\[|The Spotify Web Player|Conversation Partner:|Identity & Email:|\[Direct Dialogue Context|Do not output|NEVER output|Do not write|Chrome Profile|\n\s*\*)/i,
+              /(\.?[_gG]etResponse\s*\(|\n?Proof:|\n?User:|\n?You:|<\/?user|<\/?assistant|<\|im_start\||<\|im_end\||[㈑濩]|\n\s*(user|assistant)\s*[\n:]|:\s*\n-\s*Current Persistent Mood|Action completed successfully!|Ambient audio stream captured|Visual frame or environmental state verified|\n```json|Track is playing now|System audio volume:|Your response must be in this format|A new message arrived|\n:\s*|\n-\s*\[|The Spotify Web Player|Conversation Partner:|Identity & Email:|\[Direct Dialogue Context|Do not output|NEVER output|Do not write|Chrome Profile)/i,
             );
             if (scriptMatch && scriptMatch.index !== undefined) {
               this.logger.warn(
