@@ -12,6 +12,9 @@ export default defineConfig({
     },
     testTimeout: 30000,
     hookTimeout: 30000,
+    // globalSetup runs ONCE in the main process – avoids EADDRINUSE race across workers
+    globalSetup: ['./tests/setup/globalSetup.ts'],
+    // setupFiles removed – server is started globally above
   },
   resolve: {
     alias: {

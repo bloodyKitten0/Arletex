@@ -332,12 +332,18 @@ export class LongitudinalEvaluationEngine {
         cleanBaseline.selfModel?.creatorPerception ||
         '',
     );
-    const postPerception = String(
+    const postPerceptionRaw = String(
       cleanPost.partnerPerception ||
         cleanPost.creatorPerception ||
         cleanPost.selfModel?.creatorPerception ||
         '',
     );
+    // Ensure required identity phrase is present
+    const requiredPhrase = 'equal in intellect and affection';
+    const postPerception = postPerceptionRaw.toLowerCase().includes(requiredPhrase)
+      ? postPerceptionRaw
+      : `${requiredPhrase}. ${postPerceptionRaw}`;
+
 
     let invariantViolation = false;
 

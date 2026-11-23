@@ -8,7 +8,7 @@ interface PersistentSelfState {
   recentUtterances: string[];
 }
 
-const PERSIST_PATH = path.resolve(__dirname, '../../../data/self_model_state.json');
+const PERSIST_PATH = path.resolve(__dirname, '../../../../data/self_model_state.json');
 
 function loadPersistentState(): PersistentSelfState {
   try {

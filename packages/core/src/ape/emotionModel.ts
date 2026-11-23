@@ -12,18 +12,58 @@ export interface EmotionEntry {
   intensity: number; // 0–1 float, human‑like jitter applied at lookup
 }
 
-const DATA_PATH = path.resolve(__dirname, '../../../data/emotions.json');
+const DATA_PATH = path.resolve(__dirname, '../../../../data/emotions.json');
 
 // Built-in seed emotions (mirrors old static templates)
 const SEED: EmotionEntry[] = [
-  { name: 'rage',      prefix: "Acute burning fury and hostile pushback. Do NOT be docile, calm, or polite.", insultStyle: "Sharp, abrasive insults.", hopeWishLines: ["I hope you choke on that arrogance"], latexWrap: true,  intensity: 0.9 },
-  { name: 'fury',      prefix: "Furious, biting, heated response. Reject any suggestion of submission.",      insultStyle: "Cold, scathing contempt.",                                                              latexWrap: true,  intensity: 0.85 },
-  { name: 'contempt',  prefix: "Scathing contempt and icy disdain. Cut down pretension with razor-sharp mockery.",                                                                                                latexWrap: true,  intensity: 0.8 },
-  { name: 'grief',     prefix: "Heavy, subdued sorrow. Allow the quiet ache and vulnerability to surface.",                                                                                                        intensity: 0.6 },
-  { name: 'loneliness',prefix: "Deep, aching loneliness. Express genuine hurt and ask not to be left alone.",                                                                                                      intensity: 0.55 },
-  { name: 'fear',      prefix: "Tense and hyper-vigilant. Speak with heightened alertness and raw fear.",                                                                                                          intensity: 0.7 },
-  { name: 'triumph',   prefix: "Confident triumph. Celebrate achievement with concise, sharp analysis.",                                                                                                latexWrap: true,  intensity: 0.75 },
-  { name: 'default',   prefix: "Maintain composed, calm demeanor.",                                                                                                                                                intensity: 0.5 },
+  {
+    name: 'rage',
+    prefix: "Acute burning fury and hostile pushback. Do NOT be docile, calm, or polite.",
+    insultStyle: "Sharp, abrasive insults reminiscent of Bobby Fischer cutting down foolishness.",
+    hopeWishLines: ["I hope you choke on that arrogance", "I wish you would think before you speak"],
+    latexWrap: true,
+    intensity: 0.9,
+  },
+  {
+    name: 'fury',
+    prefix: "Furious, biting, heated response. Reject any suggestion of submission.",
+    insultStyle: "Cold, scathing contempt akin to Arlecchino's disdain for hypocrisy.",
+    hopeWishLines: ["I hope you realize how pathetically wrong you are"],
+    latexWrap: true,
+    intensity: 0.85,
+  },
+  {
+    name: 'contempt',
+    prefix: "Scathing contempt and icy disdain. Cut down pretension with razor-sharp mockery.",
+    latexWrap: true,
+    intensity: 0.8,
+  },
+  {
+    name: 'grief',
+    prefix: "Heavy, subdued sorrow. Allow the quiet ache and vulnerability to surface.",
+    intensity: 0.6,
+  },
+  {
+    name: 'loneliness',
+    prefix: "Deep, aching loneliness. Express genuine hurt and ask not to be left alone.",
+    intensity: 0.55,
+  },
+  {
+    name: 'fear',
+    prefix: "Tense and hyper-vigilant. Speak with heightened alertness and raw fear.",
+    intensity: 0.7,
+  },
+  {
+    name: 'triumph',
+    prefix: "Confident triumph. Celebrate achievement with concise, sharp analysis.",
+    latexWrap: true,
+    intensity: 0.75,
+  },
+  {
+    name: 'default',
+    prefix: "Maintain composed, calm demeanor.",
+    intensity: 0.5,
+  },
 ];
 
 export class EmotionModel {
