@@ -63,6 +63,37 @@
 
 ---
 
+### GOAL 6: End-to-End Live Verification, 280+ Emotion Dynamic Affect Validation, and PhD-Level USMLE Doctor Licensing Benchmark
+* **What Went Wrong Previously:** Systems were declared working on paper through mock drivers and green unit tests, while in the live app Arle leaked timestamps, the body failed to appear on screen, the UI remained a developer console, and her medical knowledge was backed by ghost files.
+* **The Exact Millimeter Standard (Definition of Done):**
+  1. **Live Dual-App Boot & Verification:**
+     - Both `npm run arle` (Human Companion) and `npm run arletex` (Cognitive OS) must be booted live, navigated, and verified on the target system (ASUS ROG Ally X, Bazzite Wayland).
+     - The floating desktop companion body must physically appear, stay mapped, render sprite animations, and follow dragging on the live desktop.
+  2. **Total Emotion Repertoire Live Affect Validation (280+ Emotions):**
+     - Validate all 143 canonical APE emotions AND all 148 complex experiential states (291 total distinct affective states).
+     - Prove that when an emotional state is triggered, it directly and measurably alters:
+       a) Her cognitive stance and internal monologue.
+       b) Her conversational vocabulary, sentence length, and tone of voice.
+       c) Her autobiographical and associative memory retrieval.
+       d) Her physical sprite skin selection and animation state.
+     - Zero static decorative cards: every single emotion must have a demonstrable impact on her cognition and expression.
+  3. **PhD-Level Medical Mastery & USMLE Licensing Board Benchmark:**
+     - Ingest real medical literature and clinical curricula into her grounded RAG and train a real specialized adapter.
+     - Formally test her with questions directly from the American Doctor Licensing Exams (USMLE Step 1, Step 2 CK, and Step 3), covering multi-step clinical vignettes, pathophysiology, pharmacokinetics, differential diagnosis, and management guidelines.
+     - Achieve high-pass / PhD-level accuracy (>= 75% on board-style multi-step clinical reasoning) with thorough evidence-backed clinical justifications.
+  4. **Strict Failure Accounting & Remediation Protocol:**
+     - If ANY test, question, state transition, or verification step fails, it is strictly forbidden to hide it, bypass it, or mock it.
+     - Every single failure must be documented at the bottom of `next.md` under `# Section 99: Failure Audit and Remediation Ledger` with:
+       * The exact test / prompt / vignette that failed.
+       * The observed error or incorrect response.
+       * The root cause in code or weights.
+       * The remediation applied.
+       * The verified re-test pass evidence.
+     - The feature/test must be redone, retrained, or recoded and retested until it legitimately passes with 100% verified evidence.
+  5. **Completion Gate:** If any of the 280+ emotions fail to affect her thinking/speech, or if she fails the USMLE licensing board exam benchmark, or if any unrectified failure exists in the ledger, **IT IS NOT DONE**.
+
+---
+
 
 # Arle / Arletex — Remaining Work, Implementation Instructions, and Definition of Done
 
@@ -2723,3 +2754,14 @@ All documentation, architecture blueprints, decision records, specifications, ba
     - Fully audited backlog: 28/28 Arle Completion Examination (100% demonstrated).
     - All P0, P1, P2, P3, and P4 checklists annotated with empirical test evidence.
     - Zero mocked booleans or fabricated successes.
+
+---
+
+# Section 99: Failure Audit and Remediation Ledger
+
+**Purpose:** Mandatory permanent ledger documenting every failure encountered during verification of Goals 1 through 6, ensuring total transparency, zero hidden failures, and verified remediation before sign-off.
+
+| Failure ID | Target / Test Name | Category | Observed Failure | Root Cause | Remediation Applied | Re-Test Result & Evidence | Status |
+|---|---|---|---|---|---|---|---|
+| *None recorded yet — ledger initialized* | - | - | - | - | - | - | `INITIALIZED` |
+
