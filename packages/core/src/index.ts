@@ -107,6 +107,9 @@ export * from './knowledge/documentIngestionService.js';
 export * from './knowledge/knowledgeBaseService.js';
 export * from './knowledge/researchEvaluationEngine.js';
 export * from './knowledge/loraSpecializationEngine.js';
+export * from './knowledge/webResearchEngine.js';
+export * from './knowledge/curriculumDecomposer.js';
+export * from './knowledge/phdKnowledgeAcquisitionService.js';
 
 // Evolution Engine & Autonomy Level Subsystems (P3.3 & P3.4)
 export * from './evolution/evolutionEngine.js';

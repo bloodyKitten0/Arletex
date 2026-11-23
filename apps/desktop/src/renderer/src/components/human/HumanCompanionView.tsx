@@ -142,6 +142,8 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
           topic,
           domain: learnDomainInput,
           content: learnContentInput.trim() || undefined,
+          depth: 'phd',
+          autonomousWebResearch: true,
         });
         if (res.success && res.data) {
           setLearnResult({
@@ -162,6 +164,8 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
             topic,
             domain: learnDomainInput,
             content: learnContentInput.trim() || undefined,
+            depth: 'phd',
+            autonomousWebResearch: true,
           }),
         });
         const data = await res.json();
@@ -1592,8 +1596,8 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
                 <div
                   style={{
                     display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
+                    flexDirection: 'column',
+                    gap: '6px',
                     fontSize: '12px',
                     color: 'var(--human-accent-warm)',
                     backgroundColor: 'rgba(224, 122, 95, 0.08)',
@@ -1602,10 +1606,22 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
                     border: '1px solid rgba(224, 122, 95, 0.18)',
                   }}
                 >
-                  <Loader2 size={14} className="spin" />
-                  <span>
-                    {learnProgress?.message || 'Processing and synthesizing knowledge...'}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Loader2 size={14} className="spin" />
+                    <span style={{ fontWeight: 600 }}>
+                      {learnProgress?.message || 'Processing and synthesizing knowledge...'}
+                    </span>
+                  </div>
+                  {learnProgress?.currentModule && (
+                    <div style={{ fontSize: '11px', color: 'var(--human-text-muted)', marginLeft: '22px' }}>
+                      Current Pillar: {learnProgress.currentModule}
+                    </div>
+                  )}
+                  {learnProgress?.sourcesFound && learnProgress.sourcesFound.length > 0 && (
+                    <div style={{ fontSize: '11px', color: 'var(--human-accent-sage)', marginLeft: '22px' }}>
+                      Web Sources: {learnProgress.sourcesFound.join(', ')}
+                    </div>
+                  )}
                 </div>
 
                 {/* Pipeline Stages Checklist */}
@@ -1620,15 +1636,15 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
                   }}
                 >
                   {[
-                    { threshold: 15, label: '1. Semantic Domain Taxonomy & Structure' },
-                    { threshold: 35, label: '2. Autonomous Synthesis & Conceptual Depth' },
-                    { threshold: 65, label: '3. Vector Embeddings via EmbeddingGemma' },
-                    { threshold: 88, label: '4. Indexing into SQLite Long-Term Repository' },
-                    { threshold: 100, label: '5. Semantic Memory Store Integration' },
+                    { threshold: 10, label: '1. PhD Curriculum Syllabus & Pillar Decomposition' },
+                    { threshold: 30, label: '2. Autonomous Web Research & Wikipedia API Scraping' },
+                    { threshold: 60, label: '3. PhD Synthesis: Equations, Laws & Boundary Conditions' },
+                    { threshold: 85, label: '4. Vector Chunking & Embedding via EmbeddingGemma' },
+                    { threshold: 100, label: '5. SQLite Knowledge Store & Semantic Memory Integration' },
                   ].map((stage, idx) => {
                     const currentProg = learnProgress?.progress || 10;
                     const isDone = currentProg >= stage.threshold;
-                    const stageThresholds = [15, 35, 65, 88, 100];
+                    const stageThresholds = [10, 30, 60, 85, 100];
                     const prevThreshold = idx > 0 ? (stageThresholds[idx - 1] ?? 0) : 0;
                     const isCurrent =
                       currentProg < stage.threshold && (idx === 0 || currentProg >= prevThreshold);

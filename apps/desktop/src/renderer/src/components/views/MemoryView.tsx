@@ -51,6 +51,8 @@ export const MemoryView: React.FC = () => {
   const [learnTopic, setLearnTopic] = useState('');
   const [learnDomain, setLearnDomain] = useState('general');
   const [learnContent, setLearnContent] = useState('');
+  const [learnDepth, setLearnDepth] = useState<'phd' | 'graduate' | 'standard'>('phd');
+  const [autonomousWebResearch, setAutonomousWebResearch] = useState(true);
   const [isLearning, setIsLearning] = useState(false);
   const [learnProgress, setLearnProgress] = useState<LearnProgressChunk | null>(null);
   const [learnResult, setLearnResult] = useState<{
@@ -224,6 +226,8 @@ export const MemoryView: React.FC = () => {
         topic: learnTopic.trim(),
         domain: learnDomain,
         content: learnContent.trim() || undefined,
+        depth: learnDepth,
+        autonomousWebResearch,
       });
 
       if (res.success && res.data) {
@@ -1227,17 +1231,30 @@ export const MemoryView: React.FC = () => {
                 <div
                   style={{
                     display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
+                    flexDirection: 'column',
+                    gap: '6px',
                     fontSize: '12px',
                     color: '#e07a5f',
                     backgroundColor: 'rgba(224, 122, 95, 0.1)',
                     padding: '10px 14px',
                     borderRadius: '6px',
+                    border: '1px solid rgba(224, 122, 95, 0.2)',
                   }}
                 >
-                  <Loader2 size={14} className="spin" />
-                  <span>{learnProgress?.message || 'Processing and chunking...'}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Loader2 size={14} className="spin" />
+                    <span style={{ fontWeight: 600 }}>{learnProgress?.message || 'Processing and chunking...'}</span>
+                  </div>
+                  {learnProgress?.currentModule && (
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginLeft: '22px' }}>
+                      Current Pillar: {learnProgress.currentModule}
+                    </div>
+                  )}
+                  {learnProgress?.sourcesFound && learnProgress.sourcesFound.length > 0 && (
+                    <div style={{ fontSize: '11px', color: '#81b29a', marginLeft: '22px' }}>
+                      Web Sources: {learnProgress.sourcesFound.join(', ')}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1382,6 +1399,54 @@ export const MemoryView: React.FC = () => {
                     <option value="medicine">Medicine & Life Sciences</option>
                     <option value="philosophy">Philosophy & Ethics</option>
                   </select>
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      color: 'var(--text-secondary)',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Academic Depth
+                  </label>
+                  <select
+                    value={learnDepth}
+                    onChange={(e) => setLearnDepth(e.target.value as any)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      backgroundColor: 'var(--bg-tertiary)',
+                      border: '1px solid var(--border-subtle)',
+                      color: 'var(--text-primary)',
+                      fontSize: '13px',
+                      outline: 'none',
+                    }}
+                  >
+                    <option value="phd">PhD Doctoral Rigor (Multi-Pillar Curriculum, Governing Equations & Invariants)</option>
+                    <option value="graduate">Master's Comprehensive (Core Mechanics & Formal Frameworks)</option>
+                    <option value="standard">Standard Reference Overview</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    type="checkbox"
+                    id="autonomousWebResearch"
+                    checked={autonomousWebResearch}
+                    onChange={(e) => setAutonomousWebResearch(e.target.checked)}
+                    style={{ accentColor: '#e07a5f', width: '16px', height: '16px', cursor: 'pointer' }}
+                  />
+                  <label
+                    htmlFor="autonomousWebResearch"
+                    style={{ fontSize: '12px', color: 'var(--text-primary)', cursor: 'pointer', userSelect: 'none' }}
+                  >
+                    Autonomous Web Research & Scraping (Wikipedia API & Academic Sources)
+                  </label>
                 </div>
 
                 <div>

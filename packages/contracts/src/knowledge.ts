@@ -97,13 +97,18 @@ export const LearnTopicInputSchema = z.object({
   content: z.string().optional(),
   domain: z.string().optional().default('general'),
   sourceUri: z.string().optional(),
+  depth: z.enum(['phd', 'graduate', 'standard']).optional().default('phd'),
+  autonomousWebResearch: z.boolean().optional().default(true),
 });
-export type LearnTopicInput = z.infer<typeof LearnTopicInputSchema>;
+export type LearnTopicInput = z.input<typeof LearnTopicInputSchema>;
 
 export const LearnProgressChunkSchema = z.object({
   topic: z.string(),
   stage: z.enum([
     'analyzing',
+    'decomposing',
+    'searching_web',
+    'fetching_sources',
     'synthesizing',
     'embedding',
     'indexing',
@@ -114,6 +119,10 @@ export const LearnProgressChunkSchema = z.object({
   message: z.string(),
   documentId: z.string().optional(),
   chunkCount: z.number().optional(),
+  currentModule: z.string().optional(),
+  totalModules: z.number().optional(),
+  moduleIndex: z.number().optional(),
+  sourcesFound: z.array(z.string()).optional(),
   error: z.string().optional(),
 });
 export type LearnProgressChunk = z.infer<typeof LearnProgressChunkSchema>;

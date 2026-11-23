@@ -62,6 +62,7 @@ import {
   ILogger,
   IntentTaskManager,
   KnowledgeBaseService,
+  PhdKnowledgeAcquisitionService,
   MemoryExperienceSync,
   OpenWorldBrowserAgency,
   PlanningInterface,
@@ -409,6 +410,7 @@ export class ArletexBackendServer {
   public readonly experientialStateRepo: SqliteExperientialStateRepository;
   public readonly knowledgeRepo: SqliteKnowledgeRepository;
   public readonly knowledgeBaseService: KnowledgeBaseService;
+  public readonly phdKnowledgeService: PhdKnowledgeAcquisitionService;
   public readonly adapterLifecycleManager: AdapterLifecycleManager;
 
   private activeStreams = new Map<string, AbortController>();
@@ -512,6 +514,12 @@ export class ArletexBackendServer {
     this.experientialStateRepo.pruneStaleManualEpisodes();
     this.knowledgeRepo = new SqliteKnowledgeRepository(db);
     this.knowledgeBaseService = new KnowledgeBaseService({ repo: this.knowledgeRepo, logger });
+    this.phdKnowledgeService = new PhdKnowledgeAcquisitionService({
+      knowledgeBaseService: this.knowledgeBaseService,
+      memoryRepo: this.memoryRepo,
+      logger,
+      llmEndpoint: 'http://127.0.0.1:8080',
+    });
     this.adapterLifecycleManager = new AdapterLifecycleManager(this.knowledgeRepo, logger);
     this.apeService = new ApeService(
       this.apeRepo,
@@ -2169,6 +2177,24 @@ export class ArletexBackendServer {
       throw new Error('Topic cannot be empty');
     }
     const domain = (input.domain || 'general').trim().toLowerCase();
+
+    // Autonomous PhD Academic Research Pipeline
+    if (
+      input.autonomousWebResearch !== false ||
+      input.depth === 'phd' ||
+      !input.content ||
+      input.content.trim().length < 60
+    ) {
+      this.logger.info(`Starting autonomous PhD web research pipeline for topic "${topic}" (${domain})`);
+      const phdRes = await this.phdKnowledgeService.learnPhdTopic(input, onProgress);
+      return {
+        success: phdRes.success,
+        document: phdRes.documents[0],
+        chunksCount: phdRes.totalChunksCount,
+        error: phdRes.error,
+      };
+    }
+
     const sourceUri = input.sourceUri || `user://study/${encodeURIComponent(topic)}`;
 
     try {
@@ -2894,6 +2920,30 @@ Provide factual, comprehensive, high-density educational content.`;
       // Asynchronously consolidate notable user statements into permanent memories
       void this.autoConsolidateUserStatement(userMessageContent, conversationId, userMsg.id);
 
+      // D. Hybrid RAG Search across External Knowledge Documents & Chunks
+      let academicKnowledgeContext = '';
+      try {
+        const knowledgeResults = await this.knowledgeBaseService.search(userMessageContent, {
+          limit: 5,
+          minScore: 0.2,
+        });
+
+        if (knowledgeResults.length > 0) {
+          academicKnowledgeContext =
+            '\n\n[Authoritative Academic Knowledge Retrieval (Ground Truth - Retrieved from SQLite Vector Store)]:\n' +
+            knowledgeResults
+              .map(
+                (kr) =>
+                  `--- Document: "${kr.documentTitle}" (Domain: ${kr.domain}) ---\n${kr.chunk.content.trim()}`,
+              )
+              .join('\n\n') +
+            '\n\n[PhD-Level Academic Grounding Invariant]:\n' +
+            'You possess verified, comprehensive PhD-level mastery in this discipline. When answering questions regarding the above concepts, you MUST ground your answer directly in the exact governing mathematical equations, boundary conditions, physical definitions, and biological/chemical mechanisms provided in the retrieved ground truth above. Answer with full graduate rigor, precision, and depth, avoiding conversational superficiality or reversing microenvironments.\n';
+        }
+      } catch (ragErr: any) {
+        this.logger.debug(`Academic RAG retrieval note: ${ragErr?.message}`);
+      }
+
       const apeStateBlock = this.apeService.formatApePromptContext({
         elapsedSinceLastContactMs,
         downtimeMs,
@@ -2910,7 +2960,8 @@ Provide factual, comprehensive, high-density educational content.`;
         '\n\n' +
         apeStateBlock +
         perceptionBlock +
-        memoryContext;
+        memoryContext +
+        academicKnowledgeContext;
 
       let userContent: any = userMessageContent;
       const contentParts: any[] = [];
