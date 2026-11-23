@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { splitIntoSpeechChunks, playSpeechQueue, stopCurrentAudio } from '../../utils/mediaUtils';
 import { GenerationStats } from '../../types';
+import { MarkdownContent } from '../chat/MarkdownContent';
 
 interface HumanCompanionViewProps {
   conversation: Conversation | null;
@@ -729,18 +730,22 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
                   )}
 
                   {/* Body Text */}
-                  <div
-                    style={{
-                      fontSize: '15px',
-                      lineHeight: '1.65',
-                      color: isUser ? 'var(--human-text-primary)' : '#ede9e3',
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-word',
-                      letterSpacing: '-0.1px',
-                    }}
-                  >
-                    {msg.content}
-                  </div>
+                  {isUser ? (
+                    <div
+                      style={{
+                        fontSize: '15px',
+                        lineHeight: '1.65',
+                        color: 'var(--human-text-primary)',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                        letterSpacing: '-0.1px',
+                      }}
+                    >
+                      {msg.content}
+                    </div>
+                  ) : (
+                    <MarkdownContent content={msg.content} isUser={false} />
+                  )}
 
                   {/* Message Actions for Arle Responses */}
                   {!isUser && (
@@ -943,17 +948,8 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
                   boxShadow: '0 4px 20px var(--human-accent-glow)',
                 }}
               >
-                <div
-                  style={{
-                    fontSize: '15px',
-                    lineHeight: '1.65',
-                    color: '#ede9e3',
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                    marginBottom: '14px',
-                  }}
-                >
-                  {streamingText}
+                <div style={{ marginBottom: '14px' }}>
+                  <MarkdownContent content={streamingText} isUser={false} />
                   <span
                     style={{
                       display: 'inline-block',

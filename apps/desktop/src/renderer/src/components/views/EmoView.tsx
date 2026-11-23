@@ -457,6 +457,7 @@ export const EmoView: React.FC = () => {
 
   // Activate experiential state handler
   const [activatingEmotionId, setActivatingEmotionId] = useState<string | null>(null);
+  const [selectedLevels, setSelectedLevels] = useState<Record<string, number>>({});
 
   const handleActivateEmotion = async (emotionId: string, intensity: number = 0.85) => {
     setActivatingEmotionId(emotionId);
@@ -1431,7 +1432,14 @@ export const EmoView: React.FC = () => {
                   gap: '14px',
                 }}
               >
-                {activeEmotions.map((em) => {
+                {(() => {
+                  const seen = new Set<string>();
+                  const uniqueActive = activeEmotions.filter((em) => {
+                    if (seen.has(em.emotionId)) return false;
+                    seen.add(em.emotionId);
+                    return true;
+                  });
+                  return uniqueActive.map((em) => {
                   const isExpanded = expandedEmotionId === em.id;
                   return (
                     <div
@@ -1585,7 +1593,8 @@ export const EmoView: React.FC = () => {
                       )}
                     </div>
                   );
-                })}
+                });
+                })()}
               </div>
             )}
           </div>
@@ -3494,104 +3503,89 @@ export const EmoView: React.FC = () => {
                   </div>
 
                   {/* Induction Controls */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '8px',
-                      padding: '8px 10px',
-                      borderRadius: '6px',
-                      backgroundColor: isActive
-                        ? 'rgba(16, 185, 129, 0.08)'
-                        : 'rgba(255, 255, 255, 0.02)',
-                      border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.3)' : 'var(--border-subtle)'}`,
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Level:</span>
-                      <button
-                        type="button"
-                        disabled={activatingEmotionId === emotion.id}
-                        onClick={() => handleActivateEmotion(emotion.id, 0.5)}
+                  {(() => {
+                    const selectedIntensity =
+                      selectedLevels[emotion.id] ?? (activeInstance ? activeInstance.intensity : 0.85);
+                    return (
+                      <div
                         style={{
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          fontSize: '10px',
-                          fontWeight: 600,
-                          backgroundColor: 'var(--bg-secondary)',
-                          color: 'var(--text-secondary)',
-                          border: '1px solid var(--border-subtle)',
-                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '8px',
+                          padding: '8px 10px',
+                          borderRadius: '6px',
+                          backgroundColor: isActive
+                            ? 'rgba(16, 185, 129, 0.08)'
+                            : 'rgba(255, 255, 255, 0.02)',
+                          border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.3)' : 'var(--border-subtle)'}`,
                         }}
                       >
-                        50%
-                      </button>
-                      <button
-                        type="button"
-                        disabled={activatingEmotionId === emotion.id}
-                        onClick={() => handleActivateEmotion(emotion.id, 0.85)}
-                        style={{
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          fontSize: '10px',
-                          fontWeight: 700,
-                          backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                          color: '#10b981',
-                          border: '1px solid rgba(16, 185, 129, 0.4)',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        85%
-                      </button>
-                      <button
-                        type="button"
-                        disabled={activatingEmotionId === emotion.id}
-                        onClick={() => handleActivateEmotion(emotion.id, 1.0)}
-                        style={{
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          fontSize: '10px',
-                          fontWeight: 600,
-                          backgroundColor: 'var(--bg-secondary)',
-                          color: 'var(--text-secondary)',
-                          border: '1px solid var(--border-subtle)',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        100%
-                      </button>
-                    </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Level:</span>
+                          {[0.5, 0.85, 1.0].map((lvl) => {
+                            const isLvlSelected = Math.abs(selectedIntensity - lvl) < 0.04;
+                            return (
+                              <button
+                                key={lvl}
+                                type="button"
+                                disabled={activatingEmotionId === emotion.id}
+                                onClick={() => {
+                                  setSelectedLevels((prev) => ({ ...prev, [emotion.id]: lvl }));
+                                  void handleActivateEmotion(emotion.id, lvl);
+                                }}
+                                style={{
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  fontSize: '10px',
+                                  fontWeight: isLvlSelected ? 700 : 600,
+                                  backgroundColor: isLvlSelected
+                                    ? 'rgba(16, 185, 129, 0.2)'
+                                    : 'var(--bg-secondary)',
+                                  color: isLvlSelected ? '#10b981' : 'var(--text-secondary)',
+                                  border: isLvlSelected
+                                    ? '1px solid rgba(16, 185, 129, 0.5)'
+                                    : '1px solid var(--border-subtle)',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                {Math.round(lvl * 100)}%
+                              </button>
+                            );
+                          })}
+                        </div>
 
-                    <button
-                      type="button"
-                      disabled={activatingEmotionId === emotion.id}
-                      onClick={() => handleActivateEmotion(emotion.id, 0.85)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '5px',
-                        padding: '4px 10px',
-                        borderRadius: '5px',
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        backgroundColor: isActive ? '#10b981' : 'rgba(16, 185, 129, 0.2)',
-                        color: isActive ? '#0d1117' : '#10b981',
-                        border: '1px solid #10b981',
-                        cursor: activatingEmotionId === emotion.id ? 'not-allowed' : 'pointer',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      <Sparkles size={12} />
-                      <span>
-                        {activatingEmotionId === emotion.id
-                          ? 'Inducing...'
-                          : isActive
-                            ? 'Boost (85%)'
-                            : '⚡ Feel This'}
-                      </span>
-                    </button>
-                  </div>
+                        <button
+                          type="button"
+                          disabled={activatingEmotionId === emotion.id}
+                          onClick={() => handleActivateEmotion(emotion.id, selectedIntensity)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            padding: '4px 10px',
+                            borderRadius: '5px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            backgroundColor: isActive ? '#10b981' : 'rgba(16, 185, 129, 0.2)',
+                            color: isActive ? '#0d1117' : '#10b981',
+                            border: '1px solid #10b981',
+                            cursor: activatingEmotionId === emotion.id ? 'not-allowed' : 'pointer',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <Sparkles size={12} />
+                          <span>
+                            {activatingEmotionId === emotion.id
+                              ? 'Inducing...'
+                              : isActive
+                                ? `Boost (${Math.round(selectedIntensity * 100)}%)`
+                                : `⚡ Feel This (${Math.round(selectedIntensity * 100)}%)`}
+                          </span>
+                        </button>
+                      </div>
+                    );
+                  })()}
 
                   {/* Footer Tags: Persistence + Invariant Badge */}
                   <div

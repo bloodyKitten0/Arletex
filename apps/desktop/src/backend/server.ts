@@ -210,13 +210,18 @@ export function sanitizeAssistantDialogue(text: string): string {
     .replace(/[-*]?\s*Identity & Email:[\s\S]*/gi, '')
     .replace(/\[(?:Direct Dialogue Context|Recalled Relevant Memories)[\s\S]*/gi, '')
     .replace(/(?:Do not output|Do not write|NEVER output)[\s\S]*/gi, '')
-    .replace(/(?:\n|^)\s*(?:Do not output|NEVER output|Please note|Note:)[\s\S]*/gi, '')
+    .replace(/(?:\n|^)\s*(?:Do not output|NEVER output)\b[\s\S]*/gi, '')
     .replace(/\b(?:within|in)\s+Google\s+Chrome\s+Profile\s*\d*(?:\s*\([^)]*\))?/gi, '')
     .replace(/\bGoogle\s+Chrome\s+Profile\s*\d*(?:\s*\([^)]*\))?/gi, '')
     .trim();
 
-  // Strip roleplay asterisks (both closed *text* and unclosed *text at end of string)
-  cleaned = cleaned.replace(/\*[^*]*(\*|$)/g, '').trim();
+  // Strip roleplay bodily actions (*smiles*, *sighs*) while preserving markdown bold (**text**), italics (*math*), and lists (* item)
+  cleaned = cleaned
+    .replace(
+      /\*(?:smiles|sighs|chuckles|looks|glances|nods|pauses|whispers|laughs|steps|leans|turns|sits|stands|presses|watches|blinks)[^*]*\*/gi,
+      '',
+    )
+    .trim();
   // Strip trailing roleplay body language descriptions
   cleaned = cleaned.replace(/(?:^|\n)\s*Arle's\s+voice[\s\S]*/gi, '').trim();
   cleaned = cleaned.replace(/(?:^|\n)\s*her\s+body\s+language[\s\S]*/gi, '').trim();

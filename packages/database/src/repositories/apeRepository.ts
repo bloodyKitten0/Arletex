@@ -516,7 +516,17 @@ export class ApeRepository implements IApeRepository {
     sql += ' ORDER BY intensity DESC, last_updated_at DESC';
 
     const rows = this.db.prepare(sql).all(...params) as any[];
-    return rows.map((r) => ({
+    // Deduplicate by emotion_id: keep the single highest-intensity/newest active record per emotion
+    const seenEmotionIds = new Set<string>();
+    const uniqueRows: any[] = [];
+    for (const r of rows) {
+      if (!seenEmotionIds.has(r.emotion_id)) {
+        seenEmotionIds.add(r.emotion_id);
+        uniqueRows.push(r);
+      }
+    }
+
+    return uniqueRows.map((r) => ({
       id: r.id,
       emotionId: r.emotion_id,
       intensity: r.intensity,
@@ -590,6 +600,11 @@ export class ApeRepository implements IApeRepository {
       JSON.stringify(emotion.resolutionConditions || []),
       emotion.status,
     );
+
+    // Clean up any stale duplicate rows for the same emotionId
+    this.db
+      .prepare('DELETE FROM ape_active_emotions WHERE emotion_id = ? AND id != ?')
+      .run(emotion.emotionId, emotion.id);
   }
 
   public resolveActiveEmotion(id: string, _reason?: string): void {
