@@ -1,7 +1,11 @@
 import { BrowserWindow, screen, ipcMain } from 'electron';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { CompanionAnimation, DesktopCompanionState, IPC_CHANNELS } from '@arletex/contracts';
 import { rootLogger } from '@arletex/core';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const logger = rootLogger.child('CompanionManager');
 
@@ -48,6 +52,7 @@ export class CompanionManager {
     this.state.x = initialX;
     this.state.y = initialY;
 
+    const isLinux = process.platform === 'linux';
     this.companionWindow = new BrowserWindow({
       width: 180,
       height: 180,
@@ -59,6 +64,7 @@ export class CompanionManager {
       resizable: false,
       hasShadow: false,
       skipTaskbar: true,
+      ...(isLinux ? { type: 'toolbar' } : {}),
       webPreferences: {
         preload: preloadPath,
         contextIsolation: true,
@@ -68,7 +74,15 @@ export class CompanionManager {
     });
 
     this.companionWindow.removeMenu();
-    this.companionWindow.setAlwaysOnTop(true, 'screen-saver');
+    try {
+      if (process.platform === 'darwin') {
+        this.companionWindow.setAlwaysOnTop(true, 'screen-saver');
+      } else {
+        this.companionWindow.setAlwaysOnTop(true, 'floating');
+      }
+    } catch {
+      this.companionWindow.setAlwaysOnTop(true);
+    }
     try {
       this.companionWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     } catch {}

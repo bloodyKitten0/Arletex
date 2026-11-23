@@ -94,41 +94,44 @@ class CompanionBackendSync(QObject):
         self.timer.start(1000)  # poll every 1 second
 
     def poll_backend(self):
-        try:
-            req = urllib.request.Request(
-                "http://127.0.0.1:3000/api/companion/state",
-                headers={"User-Agent": "ArletexCompanionBody/1.0"},
-            )
-            with urllib.request.urlopen(req, timeout=0.8) as response:
-                if response.status == 200:
-                    data = json.loads(response.read().decode("utf-8"))
-                    if data.get("success") and "data" in data:
-                        self.state_updated.emit(data["data"])
-                        return
-        except Exception:
-            pass
+        ports = [int(os.environ.get("ARLETEX_PORT", 39281)), 39281, 3000]
+        for port in ports:
+            try:
+                req = urllib.request.Request(
+                    f"http://127.0.0.1:{port}/api/companion/state",
+                    headers={"User-Agent": "ArletexCompanionBody/1.0"},
+                )
+                with urllib.request.urlopen(req, timeout=0.8) as response:
+                    if response.status == 200:
+                        data = json.loads(response.read().decode("utf-8"))
+                        if data.get("success") and "data" in data:
+                            self.state_updated.emit(data["data"])
+                            return
+            except Exception:
+                pass
 
-        # Try APE experiential state snapshot if companion endpoint is idle
-        try:
-            req_ape = urllib.request.Request(
-                "http://127.0.0.1:3000/api/ape/state",
-                headers={"User-Agent": "ArletexCompanionBody/1.0"},
-            )
-            with urllib.request.urlopen(req_ape, timeout=0.8) as response:
-                if response.status == 200:
-                    ape_data = json.loads(response.read().decode("utf-8"))
-                    aff = ape_data.get("affective", {})
-                    valence = aff.get("valence", 0.0)
-                    mood = aff.get("currentMood", "").lower()
-                    # Resolve skin based on affect
-                    skin = "girl_1"
-                    if "curious" in mood or "playful" in mood or valence > 0.4:
-                        skin = "girl_2"
-                    elif "contemplat" in mood or "solemn" in mood or valence < -0.2:
-                        skin = "girl_3"
-                    self.state_updated.emit({"character": skin, "backend_alive": True})
-        except Exception:
-            pass
+            # Try APE experiential state snapshot if companion endpoint is idle
+            try:
+                req_ape = urllib.request.Request(
+                    f"http://127.0.0.1:{port}/api/ape/state",
+                    headers={"User-Agent": "ArletexCompanionBody/1.0"},
+                )
+                with urllib.request.urlopen(req_ape, timeout=0.8) as response:
+                    if response.status == 200:
+                        ape_data = json.loads(response.read().decode("utf-8"))
+                        aff = ape_data.get("affective", {})
+                        pad = aff.get("pad", {})
+                        valence = pad.get("valence", aff.get("valence", 0.0))
+                        mood = aff.get("currentMood", "").lower()
+                        skin = "girl_1"
+                        if "curious" in mood or "playful" in mood or valence > 0.4:
+                            skin = "girl_2"
+                        elif "contemplat" in mood or "solemn" in mood or valence < -0.2:
+                            skin = "girl_3"
+                        self.state_updated.emit({"character": skin, "backend_alive": True})
+                        return
+            except Exception:
+                pass
 
 
 class CompanionBodyWindow(QWidget):
@@ -149,7 +152,6 @@ class CompanionBodyWindow(QWidget):
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint
             | Qt.WindowType.WindowStaysOnTopHint
-            | Qt.WindowType.SubWindow
             | Qt.WindowType.Tool
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
