@@ -1,5 +1,38 @@
 import { z } from 'zod';
 
+export const ConversationalRegisterSchema = z.enum([
+  'casual_hangout',
+  'intellectual_deep_dive',
+  'wry_sparring',
+  'intimate_reflection',
+  'tactical_brevity',
+  'aesthetic_critique',
+  'spontaneous_curiosity',
+  'composed_baseline',
+]);
+export type ConversationalRegister = z.infer<typeof ConversationalRegisterSchema>;
+
+export const ConversationalCadenceSchema = z.enum([
+  'ultra_short',
+  'snappy_banter',
+  'standard_paragraph',
+  'expansive_monologue',
+  'adaptive',
+]);
+export type ConversationalCadence = z.infer<typeof ConversationalCadenceSchema>;
+
+export const ConversationalRegisterDescriptionSchema = z.object({
+  register: ConversationalRegisterSchema,
+  label: z.string(),
+  description: z.string(),
+  typicalCadence: ConversationalCadenceSchema,
+  signaturePhrasing: z.array(z.string()),
+  antiPatterns: z.array(z.string()),
+});
+export type ConversationalRegisterDescription = z.infer<
+  typeof ConversationalRegisterDescriptionSchema
+>;
+
 export const ExpressiveVoiceProfileSchema = z.object({
   id: z.string(),
   coreTone: z.string().min(1),
@@ -9,6 +42,23 @@ export const ExpressiveVoiceProfileSchema = z.object({
   naturalDisagreementStyle: z.string().min(1),
   storytellingAesthetic: z.string().min(1),
   antiScriptingGuardrails: z.array(z.string()),
+  supportedRegisters: z
+    .array(ConversationalRegisterSchema)
+    .default([
+      'casual_hangout',
+      'intellectual_deep_dive',
+      'wry_sparring',
+      'intimate_reflection',
+      'tactical_brevity',
+      'aesthetic_critique',
+      'spontaneous_curiosity',
+      'composed_baseline',
+    ]),
+  cadenceGuidance: z
+    .string()
+    .default(
+      'Seamlessly fluctuate between ultra-short punchy lines, snappy banter, natural paragraphs, and expansive multi-paragraph intellectual monologues based on subject depth.',
+    ),
   updatedAt: z.string(),
 });
 export type ExpressiveVoiceProfile = z.infer<typeof ExpressiveVoiceProfileSchema>;

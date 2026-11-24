@@ -27,6 +27,21 @@ export class SqliteExpressiveIdentityRepository implements IExpressiveIdentityRe
         naturalDisagreementStyle: row.natural_disagreement_style,
         storytellingAesthetic: row.storytelling_aesthetic,
         antiScriptingGuardrails: JSON.parse(row.anti_scripting_guardrails),
+        supportedRegisters: row.supported_registers
+          ? JSON.parse(row.supported_registers)
+          : [
+              'casual_hangout',
+              'intellectual_deep_dive',
+              'wry_sparring',
+              'intimate_reflection',
+              'tactical_brevity',
+              'aesthetic_critique',
+              'spontaneous_curiosity',
+              'composed_baseline',
+            ],
+        cadenceGuidance:
+          row.cadence_guidance ||
+          'Seamlessly fluctuate between ultra-short punchy lines, snappy banter, natural paragraphs, and expansive multi-paragraph intellectual monologues based on subject depth.',
         updatedAt: row.updated_at,
       };
     } catch (err: any) {

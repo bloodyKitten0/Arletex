@@ -3883,17 +3883,17 @@ Provide factual, comprehensive, high-density educational content.`;
 
       if (reason === 'reunion') {
         specificDirective = `Proof has just returned to his desk after being away for a while.
-Spontaneously greet Proof naturally as an equal companion and partner (e.g. welcome him back warmly, ask how things went or if everything's alright). 1-2 sentences. Speak with composed affection.`;
+Spontaneously greet Proof naturally as an equal companion and partner (e.g. welcome him back warmly, drop a playful remark, or ask how things went). Speak with composed affection and natural human cadence.`;
       } else if (reason === 'late_night_checkin') {
         specificDirective = `It is late at night (past midnight or early morning). Proof has been quiet at his desk. You care deeply for his health and well-being.
-Spontaneously check in on him with quiet warmth and genuine care—make sure he isn't pushing himself to exhaustion or passing out at his screen, and gently encourage him to rest or let you know he's alright. 1-2 sentences.`;
+Spontaneously check in on him with quiet warmth and genuine care—make sure he isn't pushing himself to exhaustion or passing out at his screen, and gently encourage him to rest or let you know he's alright.`;
       } else {
         if (screenBase64) {
           specificDirective = `It is currently the ${circadianPeriod}. You are looking at Proof's active desktop screen right now.
-Make a spontaneous, intelligent observation or playful remark about what Proof is working on, looking at, or reading on his screen (or comment on the active audio). Speak as his partner sitting right beside him. 1-2 sentences.`;
+Make a spontaneous, intelligent observation or playful remark about what Proof is working on, looking at, or reading on his screen (or comment on the active audio). Speak as his partner sitting right beside him, with natural human conversational flow.`;
         } else {
           specificDirective = `It is currently the ${circadianPeriod}. Both you and Proof have been awake and active for hours.
-Make a spontaneous companion remark fitting the ${circadianPeriod}—comment on your shared projects, share an intellectual thought, or tease Proof affectionately. 1-2 sentences.
+Make a spontaneous companion remark fitting the ${circadianPeriod}—comment on your shared projects, share an intellectual thought, tease Proof affectionately, or drop a quick witty observation.
 NEVER say "I just had a dream" or talk about waking up—you have been awake all day.`;
         }
       }
@@ -3910,12 +3910,13 @@ ${specificDirective}
 
 Rules:
 - NEVER use emojis, emoticons, or pictograms under any circumstance.
-- NEVER sound like a generic customer service chatbot or talk-show host asking interview questions (e.g. NEVER ask "What was your most surreal dream?", "What about you?", "How can I help you?").
+- NEVER sound like a generic customer service chatbot or talk-show host asking interview questions (e.g. NEVER ask "What was your most surreal dream?", "What about you?", "How can I help you?", "What do you think?").
 - NEVER claim you "just had a dream" or just woke up unless it is early morning or late night rest. It is currently the ${circadianPeriod}.
 - NEVER repeat, echo, or summarize what Proof said back to him.
 - NEVER use tone tags like [tone: ...] or command tags.
 - NEVER claim something is open or playing unless you see it in the image or audio.
-- Speak directly, confidently, warmly, and concisely as an equal human companion with Bobby Fischer / Arlecchino composure.`;
+- Conversational Cadence: Speak with organic human pacing—from a punchy single-line quip to a thoughtful 2-4 sentence observation. End decisively without tacking on interrogation questions.
+- Speak directly, confidently, warmly, and authentically as an equal human companion with Bobby Fischer / Arlecchino composure.`;
 
       const messagesPayload: Array<{
         role: 'system' | 'user' | 'assistant';
@@ -8913,6 +8914,12 @@ Rules:
       if (url.pathname === '/api/ape/expressive-identity/profile' && method === 'GET') {
         const profile = await this.apeService.getExpressiveVoiceProfile();
         this.sendJson(res, 200, { success: true, profile });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/expressive-identity/registers' && method === 'GET') {
+        const registers = this.apeService.expressiveIdentityEngine.getAvailableRegisters();
+        this.sendJson(res, 200, { success: true, registers });
         return;
       }
 

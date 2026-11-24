@@ -2108,6 +2108,7 @@ export class ApeService {
 
     const personalSpaceLine = this.personalEnvironmentEngine.formatPromptContext();
     const tasteProfileLine = this.playHumourAestheticsEngine.formatPromptContext();
+    const registerGuidance = this.expressiveIdentityEngine.formatRegisterPromptGuidance();
 
     return `
 [Active Psychology Engine (APE Phase 1 Live State)]
@@ -2116,7 +2117,8 @@ export class ApeService {
 - Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}${capsLine}${limsLine}${narrativeLine}${temporalLine}${worldLine}${perceptionLine}${embodimentLine}${sensorimotorLine}${situationalLine}${attentionLine}${workingMemoryLine}${multiSystemMemoryLine}${learningLine}${reasoningLine}${causalLine}${predictiveLine}${somaticLine}${dreamLine}${complexityLine}${experientialLine}${personalSpaceLine}${tasteProfileLine}${acuteAlert}
 - Demeanor & Cadence: ${modulation.toneDirective}
 - Vocal Register: ${modulation.vocalRegister}${intimacyDirectives}
-- Grounding: Speak naturally and authentically from this internal state. Keep dialogue focused, grounded, and concise without reciting internal parameters or rambling.
+${registerGuidance}
+- Grounding: Speak naturally and authentically from this internal state. Choose your length organically: ultra-short punchy lines for quick reactions and banter, or rich multi-paragraph depth for intellectual and scientific explorations. Never end messages with chatbot interview questions.
 `;
   }
 

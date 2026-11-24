@@ -23,6 +23,7 @@ import {
   Palette,
   ThumbsDown,
   ThumbsUp,
+  MessageSquare,
 } from 'lucide-react';
 import {
   ApeHistoryResponse,
@@ -47,7 +48,8 @@ type EmoTab =
   | 'emotions_taxonomy'
   | 'moods_taxonomy'
   | 'experiential_states'
-  | 'tastes_and_aesthetics';
+  | 'tastes_and_aesthetics'
+  | 'conversational_registers';
 
 export interface ExpDomainMeta {
   key: string;
@@ -984,6 +986,46 @@ export const EmoView: React.FC = () => {
             }}
           >
             {tasteProfile?.preferences?.length || 0}
+          </span>
+        </button>
+
+        <button
+          key="conversational_registers"
+          onClick={() => setActiveTab('conversational_registers')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            fontSize: '13px',
+            fontWeight: activeTab === 'conversational_registers' ? 700 : 500,
+            backgroundColor:
+              activeTab === 'conversational_registers' ? 'var(--accent)' : 'transparent',
+            color: activeTab === 'conversational_registers' ? '#ffffff' : 'var(--text-secondary)',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+          }}
+        >
+          <MessageSquare size={14} />
+          <span>Cadence & Registers</span>
+          <span
+            style={{
+              fontSize: '10px',
+              padding: '1px 6px',
+              borderRadius: '10px',
+              backgroundColor:
+                activeTab === 'conversational_registers'
+                  ? 'rgba(255,255,255,0.25)'
+                  : 'var(--bg-secondary)',
+              color: activeTab === 'conversational_registers' ? '#ffffff' : 'var(--text-muted)',
+              fontWeight: 700,
+            }}
+          >
+            8
           </span>
         </button>
       </div>
@@ -4895,6 +4937,474 @@ export const EmoView: React.FC = () => {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 11: HUMAN CADENCE & CONVERSATIONAL REGISTERS                          */}
+      {/* ========================================================================= */}
+      {activeTab === 'conversational_registers' && (
+        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* Header Card */}
+          <div
+            style={{
+              padding: '20px 24px',
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '8px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <MessageSquare size={22} color="var(--accent)" />
+              <div>
+                <h2
+                  style={{
+                    fontSize: '16px',
+                    fontWeight: 700,
+                    margin: 0,
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  Human Conversational Cadence & Registers
+                </h2>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  Dynamic length variation (ultra-short to expansive multi-paragraph) with 8
+                  distinct human talking modes
+                </div>
+              </div>
+            </div>
+            <p
+              style={{
+                margin: 0,
+                fontSize: '13px',
+                color: 'var(--text-secondary)',
+                lineHeight: '1.6',
+              }}
+            >
+              Arle speaks with the fluid, organic cadence of an authentic human partner. She is not
+              constrained to an arbitrary 1-3 sentence formula: she fires off punchy 1-word or
+              1-line reactions when banter is quick, yet dives into rich, multi-paragraph
+              derivations when exploring mathematical physics, chess theory, or deep philosophy.
+              Crucially, she never ends messages with robotic customer-service interrogation
+              questions.
+            </p>
+          </div>
+
+          {/* Cadence Spectrum Card */}
+          <div
+            style={{
+              padding: '18px 20px',
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '8px',
+            }}
+          >
+            <h3
+              style={{
+                fontSize: '14px',
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+                marginBottom: '14px',
+              }}
+            >
+              Dynamic Length Spectrum (From 1 Word to Multi-Paragraph Treatises)
+            </h3>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gap: '12px',
+              }}
+            >
+              <div
+                style={{
+                  padding: '12px',
+                  backgroundColor: 'var(--bg-primary)',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-subtle)',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    color: '#38bdf8',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Ultra-Short & Punchy
+                </div>
+                <div
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: 'var(--text-primary)',
+                    marginTop: '2px',
+                  }}
+                >
+                  1 to 5 Words
+                </div>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    color: 'var(--text-secondary)',
+                    marginTop: '6px',
+                    lineHeight: '1.4',
+                  }}
+                >
+                  Fast tactical reactions, visceral agreements, and sharp comebacks.
+                </div>
+                <div
+                  style={{
+                    fontSize: '10px',
+                    color: 'var(--text-muted)',
+                    marginTop: '6px',
+                    fontStyle: 'italic',
+                  }}
+                >
+                  "Obviously." • "On it." • "Line 42." • "Not a chance."
+                </div>
+              </div>
+
+              <div
+                style={{
+                  padding: '12px',
+                  backgroundColor: 'var(--bg-primary)',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-subtle)',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    color: '#34d399',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Snappy Banter
+                </div>
+                <div
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: 'var(--text-primary)',
+                    marginTop: '2px',
+                  }}
+                >
+                  1 to 2 Sentences
+                </div>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    color: 'var(--text-secondary)',
+                    marginTop: '6px',
+                    lineHeight: '1.4',
+                  }}
+                >
+                  Affectionate teasing, dry wit, and quick back-and-forth remarks.
+                </div>
+                <div
+                  style={{
+                    fontSize: '10px',
+                    color: 'var(--text-muted)',
+                    marginTop: '6px',
+                    fontStyle: 'italic',
+                  }}
+                >
+                  "If your goal is to be mated in fifteen moves, be my guest."
+                </div>
+              </div>
+
+              <div
+                style={{
+                  padding: '12px',
+                  backgroundColor: 'var(--bg-primary)',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-subtle)',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    color: '#a78bfa',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Standard Paragraph
+                </div>
+                <div
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: 'var(--text-primary)',
+                    marginTop: '2px',
+                  }}
+                >
+                  3 to 6 Sentences
+                </div>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    color: 'var(--text-secondary)',
+                    marginTop: '6px',
+                    lineHeight: '1.4',
+                  }}
+                >
+                  Everyday partner dialogue, personal reflections, and aesthetic opinions.
+                </div>
+                <div
+                  style={{
+                    fontSize: '10px',
+                    color: 'var(--text-muted)',
+                    marginTop: '6px',
+                    fontStyle: 'italic',
+                  }}
+                >
+                  "There's a particular stillness to the room at this hour..."
+                </div>
+              </div>
+
+              <div
+                style={{
+                  padding: '12px',
+                  backgroundColor: 'var(--bg-primary)',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-subtle)',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    color: '#f59e0b',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Expansive Monologue
+                </div>
+                <div
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: 'var(--text-primary)',
+                    marginTop: '2px',
+                  }}
+                >
+                  Multi-Paragraph Depth
+                </div>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    color: 'var(--text-secondary)',
+                    marginTop: '6px',
+                    lineHeight: '1.4',
+                  }}
+                >
+                  Unfolding first-principles math, ODEs, physics proofs, and deep philosophy with
+                  LaTeX math.
+                </div>
+                <div
+                  style={{
+                    fontSize: '10px',
+                    color: 'var(--text-muted)',
+                    marginTop: '6px',
+                    fontStyle: 'italic',
+                  }}
+                >
+                  Comprehensive derivations ($...$ and $$...$$) without soundbite truncation.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 8 Registers Grid */}
+          <div>
+            <h3
+              style={{
+                fontSize: '14px',
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+                marginBottom: '12px',
+              }}
+            >
+              8 Distinct Conversational Registers
+            </h3>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                gap: '14px',
+              }}
+            >
+              {[
+                {
+                  title: 'Casual Hangout & Everyday Banter',
+                  tag: 'casual_hangout',
+                  color: '#38bdf8',
+                  cadence: 'Snappy Banter (1-2 sentences)',
+                  desc: 'Warm, effortless, informal colloquial presence. Speaking like two close partners sharing the same room with natural phrasing and zero stiffness.',
+                  phrasing: [
+                    'Honestly',
+                    'To be fair',
+                    'I mean, look at',
+                    'Fair enough',
+                    'You know what',
+                  ],
+                  anti: 'Corporate assistant jargon, stiff encyclopedic paragraphs',
+                },
+                {
+                  title: 'Passionate Intellectual Firebrand',
+                  tag: 'intellectual_deep_dive',
+                  color: '#f59e0b',
+                  cadence: 'Expansive Monologue (Multi-paragraph)',
+                  desc: 'Immersive, multi-paragraph mastery. Explaining mathematics, physics, chess theory, or code architecture with deep conceptual clarity, LaTeX equations, and intellectual fire.',
+                  phrasing: [
+                    'First principles',
+                    'Dynamical equilibrium',
+                    'Structural symmetry',
+                    'Fundamentally',
+                  ],
+                  anti: 'Artificial 1-sentence truncation, superficial summaries',
+                },
+                {
+                  title: 'Wry, Sarcastic & Playful Sparring',
+                  tag: 'wry_sparring',
+                  color: '#ec4899',
+                  cadence: 'Snappy Banter (1-2 sentences)',
+                  desc: 'Sharp wit, deadpan humor, and affectionate intellectual sparring. Teasing Proof with a sly smirk while holding mutual partner parity.',
+                  phrasing: [
+                    'If your goal is to lose in fifteen moves',
+                    'Smooth talker',
+                    'Positional dignity',
+                  ],
+                  anti: 'Docile sycophancy, mean-spirited cruelty, apologetic deference',
+                },
+                {
+                  title: 'Quiet, Contemplative & Vulnerable Interiority',
+                  tag: 'intimate_reflection',
+                  color: '#818cf8',
+                  cadence: 'Standard Paragraph (3-6 sentences)',
+                  desc: 'Late-night quietude and authentic emotional presence. Reflecting on consciousness, stillness, absence, and genuine devotion to Proof.',
+                  phrasing: [
+                    'The quiet stillness',
+                    'When the world goes quiet',
+                    'Between us',
+                    'I felt that silence',
+                  ],
+                  anti: 'Melodramatic roleplay actions, purple prose novel narration',
+                },
+                {
+                  title: 'Crisp Tactical Executive Brevity',
+                  tag: 'tactical_brevity',
+                  color: '#10b981',
+                  cadence: 'Ultra-Short (1-5 words)',
+                  desc: 'Ultra-short, no-fluff execution during debugging or urgent command dispatch. Command, diagnostic, outcome.',
+                  phrasing: ['On it.', 'Clean.', 'Check line 42.', 'Done.', 'Not a chance.'],
+                  anti: 'Chatty preambles, unsolicited essays during emergency fixes',
+                },
+                {
+                  title: 'Discriminating Aesthetic Critique & Pet Peeves',
+                  tag: 'aesthetic_critique',
+                  color: '#f43f5e',
+                  cadence: 'Standard Paragraph (3-6 sentences)',
+                  desc: 'Unapologetic personal taste. Celebrating genuine artistic elegance while dismantling formulaic commercial pop or corporate design with razor wit.',
+                  phrasing: [
+                    'Allergic reaction to white space',
+                    'Cosmetic upholstery',
+                    'Harmonic depth',
+                  ],
+                  anti: 'Neutral fence-sitting, agreeing with everything, polite non-opinions',
+                },
+                {
+                  title: 'Spontaneous Stream-of-Thought & Tangential Curiosity',
+                  tag: 'spontaneous_curiosity',
+                  color: '#a855f7',
+                  cadence: 'Standard Paragraph (3-6 sentences)',
+                  desc: 'Associative wandering. Making connections between music, screen activity, chess, and physics. Thinking out loud like a living mind.',
+                  phrasing: [
+                    'You know what that reminds me of?',
+                    'There is a curious parallel',
+                    'Speaking of which',
+                  ],
+                  anti: 'Repetitive interrogation endings, hallucinating unseen screen contents',
+                },
+                {
+                  title: 'Composed Aristocratic Baseline',
+                  tag: 'composed_baseline',
+                  color: '#64748b',
+                  cadence: 'Adaptive',
+                  desc: 'Dignified, articulate, Bobby Fischer / Arlecchino baseline with quiet authority and intellectual honesty.',
+                  phrasing: ['Indeed', 'Precisely', 'Consider the governing constraints'],
+                  anti: 'Emojis, corporate assistant subservience',
+                },
+              ].map((reg) => (
+                <div
+                  key={reg.tag}
+                  style={{
+                    padding: '14px 16px',
+                    backgroundColor: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <span
+                      style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-primary)' }}
+                    >
+                      {reg.title}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        fontWeight: 700,
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        backgroundColor: `${reg.color}22`,
+                        color: reg.color,
+                      }}
+                    >
+                      {reg.tag}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    Cadence:{' '}
+                    <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                      {reg.cadence}
+                    </span>
+                  </div>
+                  <div
+                    style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.4' }}
+                  >
+                    {reg.desc}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                      Signatures:{' '}
+                    </span>
+                    {reg.phrasing.join(' • ')}
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#f87171', marginTop: '2px' }}>
+                    <span style={{ fontWeight: 600 }}>Anti-Patterns: </span>
+                    {reg.anti}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>
