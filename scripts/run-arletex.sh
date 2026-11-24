@@ -12,7 +12,7 @@ fi
 
 PORT="${LLAMA_PORT:-8080}"
 SPECIALIST_PORT="${ARLETEX_SPECIALISTS_PORT:-39282}"
-MODEL_PATH="${ARLETEX_MODEL_PATH:-${HOME}/models/qwen-heretic/Qwen3.5-9B-Heretic-Q4_K_M.gguf}"
+MODEL_PATH="${ARLETEX_MODEL_PATH:-${HOME}/models/qwen-14b-abliterated/Qwen2.5-14B-Instruct-abliterated-v2.Q4_K_M.gguf}"
 UI_MODE="${ARLETEX_VIEW_MODE:-human}"
 
 for arg in "$@"; do
@@ -34,7 +34,7 @@ export ARLETEX_VIEW_MODE="$UI_MODE"
 echo "=========================================================="
 echo " Starting Arletex (Arle Artificial Individual)"
 echo " UI Launch Mode:      $UI_MODE"
-echo " Cognitive Engine:    Qwen 3.5-9B Heretic (Multimodal Vision)"
+echo " Cognitive Engine:    Qwen 2.5-14B Instruct (Abliterated)"
 echo " Cognitive Port:      $PORT (Vulkan on Radeon 780M)"
 echo " Specialist Services: EmbeddingGemma, Whisper, Kokoro"
 echo " Specialist Port:     $SPECIALIST_PORT"

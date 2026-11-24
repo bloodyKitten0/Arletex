@@ -205,6 +205,8 @@ export class OllamaAdapter implements IInferenceProvider {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let fullContent = '';
+    let fullReasoning = '';
+    let inThinkTag = false;
     let buffer = '';
 
     try {
@@ -227,22 +229,74 @@ export class OllamaAdapter implements IInferenceProvider {
 
           try {
             const parsed = JSON.parse(trimmed) as {
-              message?: { content?: string };
+              message?: { content?: string; thinking?: string };
               done?: boolean;
               done_reason?: string;
             };
 
-            const delta = parsed.message?.content || '';
+            let delta = parsed.message?.content || '';
+            let reasoningDelta = parsed.message?.thinking || '';
+
+            if (delta) {
+              let dialoguePiece = '';
+              let thinkPiece = '';
+              let cursor = 0;
+
+              while (cursor < delta.length) {
+                if (!inThinkTag) {
+                  const openIdx = delta.indexOf('<think>', cursor);
+                  if (openIdx !== -1) {
+                    dialoguePiece += delta.slice(cursor, openIdx);
+                    cursor = openIdx + '<think>'.length;
+                    inThinkTag = true;
+                  } else {
+                    dialoguePiece += delta.slice(cursor);
+                    cursor = delta.length;
+                  }
+                } else {
+                  const closeIdx = delta.indexOf('</think>', cursor);
+                  if (closeIdx !== -1) {
+                    thinkPiece += delta.slice(cursor, closeIdx);
+                    cursor = closeIdx + '</think>'.length;
+                    inThinkTag = false;
+                  } else {
+                    thinkPiece += delta.slice(cursor);
+                    cursor = delta.length;
+                  }
+                }
+              }
+
+              delta = dialoguePiece;
+              if (thinkPiece) {
+                reasoningDelta += thinkPiece;
+              }
+            }
+
+            if (reasoningDelta) {
+              fullReasoning += reasoningDelta;
+            }
+
             if (delta) {
               fullContent += delta;
-              const loopCheck = findRepetitionLoop(fullContent);
-              if (loopCheck.isLoop) {
-                fullContent = loopCheck.cleanText;
+
+              const hesitationMatch = fullContent.match(
+                /(?:(?:\n|^)\s*|\s*[.?!]\s*|\s*—\s*|\s*,\s*|\.\.\.\s*)(?:Wait,?\s+(?:I'll|let's|let\s+me|I\s+need|I\s+should)|No\s+wait,?\s+(?:we|I|let)|Wait\s+I'll\s+just|\?\s*No\.?\s*Actually|Actually\s+I'll\s+stop\s+second-guessing|\?\s*No\.?\s*Let's\s+just|\?\s*No\s+I'll\s+just|No\s+keep\s+simple|No\.?\s*Let's\s+write\s+final|\?\s*No\s+I'll\s+give|\?\s*No\.?\s*Let's\s+stick|\?\s*No\.?\s*Okay\s+here\s+is)\b/i,
+              );
+              if (hesitationMatch && hesitationMatch.index !== undefined && hesitationMatch.index > 50) {
+                this.logger.warn(
+                  `[Ollama] Second-guessing / backtracking spiral detected at index ${hesitationMatch.index}. Truncating turn with composure.`,
+                );
+                fullContent = fullContent.slice(0, hesitationMatch.index).trim();
+                const mathDollars = (fullContent.match(/\$\$/g) || []).length;
+                if (mathDollars % 2 !== 0) {
+                  fullContent += '\n$$';
+                }
                 safeOnChunk({
                   requestId,
                   conversationId,
                   delta: '',
-                  fullContent,
+                  fullContent: fullContent || fullReasoning,
+                  fullReasoning,
                   isDone: true,
                   finishReason: 'stop',
                   error: null,
@@ -251,11 +305,36 @@ export class OllamaAdapter implements IInferenceProvider {
                 return fullContent;
               }
 
+              const loopCheck = findRepetitionLoop(fullContent);
+              if (loopCheck.isLoop) {
+                fullContent = loopCheck.cleanText;
+                const mathDollars = (fullContent.match(/\$\$/g) || []).length;
+                if (mathDollars % 2 !== 0) {
+                  fullContent += '\n$$';
+                }
+                safeOnChunk({
+                  requestId,
+                  conversationId,
+                  delta: '',
+                  fullContent: fullContent || fullReasoning,
+                  fullReasoning,
+                  isDone: true,
+                  finishReason: 'stop',
+                  error: null,
+                });
+                reader.cancel().catch(() => {});
+                return fullContent;
+              }
+            }
+
+            if (delta || reasoningDelta) {
               safeOnChunk({
                 requestId,
                 conversationId,
                 delta,
-                fullContent,
+                reasoningDelta,
+                fullContent: fullContent || fullReasoning,
+                fullReasoning,
                 isDone: false,
                 finishReason: null,
                 error: null,
@@ -267,7 +346,8 @@ export class OllamaAdapter implements IInferenceProvider {
                 requestId,
                 conversationId,
                 delta: '',
-                fullContent,
+                fullContent: fullContent || fullReasoning,
+                fullReasoning,
                 isDone: true,
                 finishReason: (parsed.done_reason as any) || 'stop',
                 error: null,

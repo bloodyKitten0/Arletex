@@ -215,6 +215,17 @@ export function sanitizeAssistantDialogue(text: string): string {
     .replace(/\bGoogle\s+Chrome\s+Profile\s*\d*(?:\s*\([^)]*\))?/gi, '')
     .trim();
 
+  // Strip inline <think>...</think> reasoning scratchpads
+  cleaned = cleaned.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/<think>[\s\S]*$/gi, '').trim();
+
+  // Strip second-guessing / panic spiral stammering
+  cleaned = cleaned
+    .replace(
+      /(?:(?:\n|^)\s*|\s*[.?!]\s*|\s*—\s*|\s*,\s*|\.\.\.\s*)(?:Wait,?\s+(?:I'll|let's|let\s+me)|No\s+wait,?\s+(?:we|I|let)|Wait\s+I'll\s+just|\?\s*No\.?\s*Actually|Actually\s+I'll\s+stop\s+second-guessing|\?\s*No\.?\s*Let's\s+just|\?\s*No\s+I'll\s+just|No\s+keep\s+simple|No\.?\s*Let's\s+write\s+final|\?\s*No\s+I'll\s+give)\b[\s\S]*/i,
+      '',
+    )
+    .trim();
+
   // Strip roleplay bodily actions (*smiles*, *sighs*) while preserving markdown bold (**text**), italics (*math*), and lists (* item)
   cleaned = cleaned
     .replace(

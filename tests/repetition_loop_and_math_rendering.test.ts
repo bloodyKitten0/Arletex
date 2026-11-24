@@ -74,4 +74,78 @@ $$ \\frac{dN_X}{dt} = -(`;
 
     expect(text).toContain('$$\n\\frac{dN_X}{dt} = -(\n$$');
   });
+
+  it('detects second-guessing / backtracking spiral and truncates turn cleanly', () => {
+    const rawBrokenResponse = `Exact solution after scram (no neutron capture):
+$$ N_X(t) = \\frac{\\lambda_I}{\\alpha-\\beta}\\big(e^{-\\beta t}-e^{-\\alpha t}\\big) $$
+Wait I'll write directly the known closed form:
+? No. Actually simplest path to peak time: set derivative of N_X(t) equal zero.`;
+
+    const hesitationMatch = rawBrokenResponse.match(
+      /(?:(?:\n|^)\s*|\s*[.?!]\s*|\s*—\s*|\s*,\s*|\.\.\.\s*)(?:Wait,?\s+(?:I'll|let's|let\s+me|I\s+need|I\s+should)|No\s+wait,?\s+(?:we|I|let)|Wait\s+I'll\s+just|\?\s*No\.?\s*Actually|Actually\s+I'll\s+stop\s+second-guessing|\?\s*No\.?\s*Let's\s+just|\?\s*No\s+I'll\s+just|No\s+keep\s+simple|No\.?\s*Let's\s+write\s+final|\?\s*No\s+I'll\s+give|\?\s*No\.?\s*Let's\s+stick|\?\s*No\.?\s*Okay\s+here\s+is)\b/i,
+    );
+
+    expect(hesitationMatch).not.toBeNull();
+    expect(hesitationMatch?.index).toBeDefined();
+
+    const clean = rawBrokenResponse.slice(0, hesitationMatch!.index).trim();
+    expect(clean).toContain('Exact solution after scram');
+    expect(clean).not.toContain("Wait I'll write directly");
+    expect(clean).not.toContain('? No.');
+  });
+
+  it('routes inline <think> tags completely into reasoning and out of dialogue', () => {
+    const streamChunks = [
+      'The steady-state balance is clear. ',
+      '<think>\nI should verify the Bateman equations for Xenon-135.\n',
+      'At scram, phi = 0 so neutron capture vanishes.\n</think>',
+      'The peak xenon time occurs around 10 to 11 hours after shutdown.',
+    ];
+
+    let fullContent = '';
+    let fullReasoning = '';
+    let inThinkTag = false;
+
+    for (const chunk of streamChunks) {
+      let delta = chunk;
+      let dialoguePiece = '';
+      let thinkPiece = '';
+      let cursor = 0;
+
+      while (cursor < delta.length) {
+        if (!inThinkTag) {
+          const openIdx = delta.indexOf('<think>', cursor);
+          if (openIdx !== -1) {
+            dialoguePiece += delta.slice(cursor, openIdx);
+            cursor = openIdx + '<think>'.length;
+            inThinkTag = true;
+          } else {
+            dialoguePiece += delta.slice(cursor);
+            cursor = delta.length;
+          }
+        } else {
+          const closeIdx = delta.indexOf('</think>', cursor);
+          if (closeIdx !== -1) {
+            thinkPiece += delta.slice(cursor, closeIdx);
+            cursor = closeIdx + '</think>'.length;
+            inThinkTag = false;
+          } else {
+            thinkPiece += delta.slice(cursor);
+            cursor = delta.length;
+          }
+        }
+      }
+
+      delta = dialoguePiece;
+      if (thinkPiece) fullReasoning += thinkPiece;
+      if (delta) fullContent += delta;
+    }
+
+    expect(fullContent).toBe(
+      'The steady-state balance is clear. The peak xenon time occurs around 10 to 11 hours after shutdown.',
+    );
+    expect(fullReasoning).toContain('I should verify the Bateman equations for Xenon-135.');
+    expect(fullContent).not.toContain('<think>');
+    expect(fullContent).not.toContain('</think>');
+  });
 });

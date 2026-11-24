@@ -313,6 +313,7 @@ export class LlamaServerAdapter implements IInferenceProvider {
 
     let fullContent = '';
     let fullReasoning = '';
+    let inThinkTag = false;
     let isDoneEmitted = false;
     let lastFinishReason: string | null = null;
     const reader = response.body.getReader();
@@ -344,11 +345,47 @@ export class LlamaServerAdapter implements IInferenceProvider {
 
         try {
           const parsed = JSON.parse(event.data);
-          const delta = parsed.choices?.[0]?.delta?.content || '';
-          const reasoningDelta = parsed.choices?.[0]?.delta?.reasoning_content || '';
+          let delta = parsed.choices?.[0]?.delta?.content || '';
+          let reasoningDelta = parsed.choices?.[0]?.delta?.reasoning_content || '';
           const finishReason = parsed.choices?.[0]?.finish_reason || null;
           if (finishReason) {
             lastFinishReason = finishReason;
+          }
+
+          // Route inline <think>...</think> tokens into reasoning if emitted in content delta
+          if (delta) {
+            let dialoguePiece = '';
+            let thinkPiece = '';
+            let cursor = 0;
+
+            while (cursor < delta.length) {
+              if (!inThinkTag) {
+                const openIdx = delta.indexOf('<think>', cursor);
+                if (openIdx !== -1) {
+                  dialoguePiece += delta.slice(cursor, openIdx);
+                  cursor = openIdx + '<think>'.length;
+                  inThinkTag = true;
+                } else {
+                  dialoguePiece += delta.slice(cursor);
+                  cursor = delta.length;
+                }
+              } else {
+                const closeIdx = delta.indexOf('</think>', cursor);
+                if (closeIdx !== -1) {
+                  thinkPiece += delta.slice(cursor, closeIdx);
+                  cursor = closeIdx + '</think>'.length;
+                  inThinkTag = false;
+                } else {
+                  thinkPiece += delta.slice(cursor);
+                  cursor = delta.length;
+                }
+              }
+            }
+
+            delta = dialoguePiece;
+            if (thinkPiece) {
+              reasoningDelta += thinkPiece;
+            }
           }
 
           if (reasoningDelta) {
@@ -369,12 +406,34 @@ export class LlamaServerAdapter implements IInferenceProvider {
               emitDone('stop');
               return;
             }
+
+            const hesitationMatch = fullContent.match(
+              /(?:(?:\n|^)\s*|\s*[.?!]\s*|\s*—\s*|\s*,\s*|\.\.\.\s*)(?:Wait,?\s+(?:I'll|let's|let\s+me|I\s+need|I\s+should)|No\s+wait,?\s+(?:we|I|let)|Wait\s+I'll\s+just|\?\s*No\.?\s*Actually|Actually\s+I'll\s+stop\s+second-guessing|\?\s*No\.?\s*Let's\s+just|\?\s*No\s+I'll\s+just|No\s+keep\s+simple|No\.?\s*Let's\s+write\s+final|\?\s*No\s+I'll\s+give|\?\s*No\.?\s*Let's\s+stick|\?\s*No\.?\s*Okay\s+here\s+is)\b/i,
+            );
+            if (hesitationMatch && hesitationMatch.index !== undefined && hesitationMatch.index > 50) {
+              this.logger.warn(
+                `[Llama] Second-guessing / backtracking spiral detected at index ${hesitationMatch.index}. Truncating turn with composure.`,
+              );
+              fullContent = fullContent.slice(0, hesitationMatch.index).trim();
+              const mathDollars = (fullContent.match(/\$\$/g) || []).length;
+              if (mathDollars % 2 !== 0) {
+                fullContent += '\n$$';
+              }
+              void reader.cancel().catch(() => {});
+              emitDone('stop');
+              return;
+            }
+
             const loopCheck = findRepetitionLoop(fullContent);
             if (loopCheck.isLoop) {
               this.logger.warn(
                 `[Llama] Repetition loop detected at ${fullContent.length} chars. Truncating loop and terminating inference stream.`,
               );
               fullContent = loopCheck.cleanText;
+              const mathDollars = (fullContent.match(/\$\$/g) || []).length;
+              if (mathDollars % 2 !== 0) {
+                fullContent += '\n$$';
+              }
               void reader.cancel().catch(() => {});
               emitDone('stop');
               return;
