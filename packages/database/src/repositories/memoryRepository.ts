@@ -5,6 +5,7 @@ import {
   Memory,
   MemoryCorrection,
   QueryMemoriesInput,
+  SomaticShockState,
   UpdateMemoryInput,
 } from '@arletex/contracts';
 import { BackupMemoryRecord, DatabaseError } from '@arletex/core';
@@ -269,6 +270,18 @@ export class MemoryRepository {
         throw new DatabaseError(`Memory ${input.id} not found`);
       }
 
+      const isIndelible =
+        existing.type === 'traumatic' ||
+        existing.tags.includes('permanent_indelible') ||
+        (existing.metadata as any)?.retention === 'permanent_indelible' ||
+        (existing.metadata as any)?.isTrauma === true;
+
+      if (isIndelible && (input.isDeleted || input.isArchived)) {
+        throw new DatabaseError(
+          `Invariant violation: Permanent indelible traumatic memory ${input.id} cannot be marked as deleted or archived.`,
+        );
+      }
+
       const now = new Date().toISOString();
       const content = input.content ?? existing.content;
       const interpretation =
@@ -276,8 +289,23 @@ export class MemoryRepository {
       const importance = input.importance ?? existing.importance;
       const confidence = input.confidence ?? existing.confidence;
       const provenance = input.provenance ?? existing.provenance;
-      const tags = input.tags ?? existing.tags;
-      const metadata = input.metadata ?? existing.metadata;
+      let tags = input.tags ?? existing.tags;
+      let metadata = input.metadata ?? existing.metadata;
+
+      // Invariant: Traumatic indelible encoding can never be stripped of its retention tag or somatic shock
+      if (isIndelible) {
+        if (!tags.includes('permanent_indelible')) {
+          tags = [...tags, 'permanent_indelible'];
+        }
+        metadata = {
+          ...metadata,
+          retention: 'permanent_indelible',
+          hyperConsolidated: true,
+          decayExempt: true,
+          somaticShock: (metadata as any).somaticShock || (existing.metadata as any)?.somaticShock,
+        };
+      }
+
       const isArchived =
         input.isArchived !== undefined ? (input.isArchived ? 1 : 0) : existing.isArchived ? 1 : 0;
       const isDeleted =
@@ -354,12 +382,29 @@ export class MemoryRepository {
         updatedAt: now,
       };
     } catch (err) {
+      if ((err as any)?.message?.includes('Invariant violation:')) {
+        throw err;
+      }
       throw new DatabaseError(`Failed to update memory ${input.id}`, err);
     }
   }
 
   public delete(id: string): boolean {
     try {
+      const existing = this.getById(id);
+      if (existing) {
+        const isIndelible =
+          existing.type === 'traumatic' ||
+          existing.tags.includes('permanent_indelible') ||
+          (existing.metadata as any)?.retention === 'permanent_indelible' ||
+          (existing.metadata as any)?.isTrauma === true;
+        if (isIndelible) {
+          throw new DatabaseError(
+            `Invariant violation: Permanent indelible traumatic memory ${id} cannot be deleted or purged.`,
+          );
+        }
+      }
+
       // Soft-delete so provenance can be traced, and invalidate embedding immediately
       const now = new Date().toISOString();
       const stmt = this.db.prepare(`
@@ -375,12 +420,29 @@ export class MemoryRepository {
       }
       return false;
     } catch (err) {
+      if ((err as any)?.message?.includes('Invariant violation:')) {
+        throw err;
+      }
       throw new DatabaseError(`Failed to delete memory ${id}`, err);
     }
   }
 
   public deletePermanently(id: string): boolean {
     try {
+      const existing = this.getById(id);
+      if (existing) {
+        const isIndelible =
+          existing.type === 'traumatic' ||
+          existing.tags.includes('permanent_indelible') ||
+          (existing.metadata as any)?.retention === 'permanent_indelible' ||
+          (existing.metadata as any)?.isTrauma === true;
+        if (isIndelible) {
+          throw new DatabaseError(
+            `Invariant violation: Permanent indelible traumatic memory ${id} cannot be permanently deleted.`,
+          );
+        }
+      }
+
       let changes = 0;
       this.db.transaction(() => {
         this.db.prepare('DELETE FROM memory_embeddings WHERE memory_id = ?').run(id);
@@ -389,8 +451,47 @@ export class MemoryRepository {
       })();
       return changes > 0;
     } catch (err) {
+      if ((err as any)?.message?.includes('Invariant violation:')) {
+        throw err;
+      }
       throw new DatabaseError(`Failed to permanently delete memory ${id}`, err);
     }
+  }
+
+  /**
+   * Encodes an un-erasable indelible traumatic memory with somatic shock association (Point 1).
+   * Locked with invariant tag retention: permanent_indelible.
+   */
+  public recordTraumaticMemory(input: {
+    content: string;
+    somaticShock: SomaticShockState;
+    rawObservation?: string;
+    interpretation?: string;
+    tags?: string[];
+    metadata?: Record<string, unknown>;
+    sourceConversationId?: string;
+    sourceMessageId?: string;
+  }): Memory {
+    return this.create({
+      type: 'traumatic',
+      content: input.content,
+      rawObservation: input.rawObservation,
+      interpretation: input.interpretation,
+      importance: 1.0,
+      confidence: 1.0,
+      provenance: 'direct_observation',
+      tags: Array.from(new Set(['permanent_indelible', 'trauma', ...(input.tags || [])])),
+      metadata: {
+        retention: 'permanent_indelible',
+        somaticShock: input.somaticShock,
+        hyperConsolidated: true,
+        decayExempt: true,
+        norepinephrineSpike: true,
+        ...(input.metadata || {}),
+      },
+      sourceConversationId: input.sourceConversationId,
+      sourceMessageId: input.sourceMessageId,
+    });
   }
 
   public merge(primaryId: string, secondaryId: string): Memory {

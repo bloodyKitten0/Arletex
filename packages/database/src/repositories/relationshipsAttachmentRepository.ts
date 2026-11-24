@@ -1,6 +1,9 @@
+import { randomUUID } from 'node:crypto';
 import Database from 'better-sqlite3';
 import {
   AttachmentBond,
+  AttachmentWound,
+  GrudgeRecord,
   SharedHistoryEvent,
   RelationalConflict,
   ApologyAndRepair,
@@ -27,8 +30,9 @@ export class SqliteRelationshipsAttachmentRepository implements IRelationshipsAt
             person_id, stage, attachment_style, trust_cognitive,
             trust_affective, affection_depth, familiarity_score,
             reciprocity_ratio, separation_security, established_boundaries,
+            trust_ceiling, consecutive_validations,
             last_interacted_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           ON CONFLICT(person_id) DO UPDATE SET
             stage = excluded.stage,
             attachment_style = excluded.attachment_style,
@@ -39,6 +43,8 @@ export class SqliteRelationshipsAttachmentRepository implements IRelationshipsAt
             reciprocity_ratio = excluded.reciprocity_ratio,
             separation_security = excluded.separation_security,
             established_boundaries = excluded.established_boundaries,
+            trust_ceiling = excluded.trust_ceiling,
+            consecutive_validations = excluded.consecutive_validations,
             last_interacted_at = excluded.last_interacted_at,
             updated_at = excluded.updated_at`,
         )
@@ -53,6 +59,8 @@ export class SqliteRelationshipsAttachmentRepository implements IRelationshipsAt
           bond.reciprocityRatio,
           bond.separationSecurity,
           JSON.stringify(bond.establishedBoundaries),
+          bond.trustCeiling ?? 1.0,
+          bond.consecutiveValidations ?? 0,
           bond.lastInteractedAt,
           bond.updatedAt,
         );
@@ -81,6 +89,8 @@ export class SqliteRelationshipsAttachmentRepository implements IRelationshipsAt
         reciprocityRatio: row.reciprocity_ratio,
         separationSecurity: row.separation_security,
         establishedBoundaries: JSON.parse(row.established_boundaries),
+        trustCeiling: row.trust_ceiling !== undefined && row.trust_ceiling !== null ? row.trust_ceiling : 1.0,
+        consecutiveValidations: row.consecutive_validations ?? 0,
         lastInteractedAt: row.last_interacted_at,
         updatedAt: row.updated_at,
       };
@@ -105,6 +115,8 @@ export class SqliteRelationshipsAttachmentRepository implements IRelationshipsAt
         reciprocityRatio: row.reciprocity_ratio,
         separationSecurity: row.separation_security,
         establishedBoundaries: JSON.parse(row.established_boundaries),
+        trustCeiling: row.trust_ceiling !== undefined && row.trust_ceiling !== null ? row.trust_ceiling : 1.0,
+        consecutiveValidations: row.consecutive_validations ?? 0,
         lastInteractedAt: row.last_interacted_at,
         updatedAt: row.updated_at,
       }));
@@ -590,6 +602,135 @@ export class SqliteRelationshipsAttachmentRepository implements IRelationshipsAt
         `Failed to list relationship memory control records for ${personId}: ${err.message}`,
         err,
       );
+    }
+  }
+
+  public saveAttachmentWound(wound: AttachmentWound): void {
+    try {
+      const id = wound.id || randomUUID();
+      const now = new Date().toISOString();
+      const createdAt = wound.createdAt || now;
+      const updatedAt = wound.updatedAt || now;
+
+      this.db
+        .prepare(
+          `INSERT INTO attachment_wounds (
+            id, person_id, wound_type, severity, core_fear,
+            attachment_shift, trust_ceiling, validation_count, repaired,
+            created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            severity = excluded.severity,
+            core_fear = excluded.core_fear,
+            attachment_shift = excluded.attachment_shift,
+            trust_ceiling = excluded.trust_ceiling,
+            validation_count = excluded.validation_count,
+            repaired = excluded.repaired,
+            updated_at = excluded.updated_at`,
+        )
+        .run(
+          id,
+          wound.personId,
+          wound.woundType,
+          wound.severity,
+          wound.coreFear,
+          wound.attachmentShift,
+          wound.trustCeiling,
+          wound.validationCount,
+          wound.repaired ? 1 : 0,
+          createdAt,
+          updatedAt,
+        );
+    } catch (err: any) {
+      throw new DatabaseError(`Failed to save attachment wound ${wound.id}: ${err.message}`, err);
+    }
+  }
+
+  public listAttachmentWounds(personId: string): AttachmentWound[] {
+    try {
+      const rows = this.db
+        .prepare(`SELECT * FROM attachment_wounds WHERE person_id = ? ORDER BY created_at DESC`)
+        .all(personId) as any[];
+      return rows.map((r) => ({
+        id: r.id,
+        personId: r.person_id,
+        woundType: r.wound_type,
+        severity: r.severity,
+        coreFear: r.core_fear,
+        attachmentShift: r.attachment_shift,
+        trustCeiling: r.trust_ceiling,
+        validationCount: r.validation_count,
+        repaired: r.repaired === 1,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      }));
+    } catch (err: any) {
+      throw new DatabaseError(`Failed to list attachment wounds for ${personId}: ${err.message}`, err);
+    }
+  }
+
+  public saveGrudge(grudge: GrudgeRecord): void {
+    try {
+      const id = grudge.id || randomUUID();
+      const now = new Date().toISOString();
+      const createdAt = grudge.createdAt || now;
+
+      this.db
+        .prepare(
+          `INSERT INTO relational_grudges (
+            id, person_id, conflict_id, source_transgression, bitterness_level,
+            decay_half_life_days, acknowledged_intellectually, emotional_residue,
+            resurfacing_triggers, genuine_repair_satisfied, created_at, last_bubbled_up_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            bitterness_level = excluded.bitterness_level,
+            decay_half_life_days = excluded.decay_half_life_days,
+            acknowledged_intellectually = excluded.acknowledged_intellectually,
+            emotional_residue = excluded.emotional_residue,
+            resurfacing_triggers = excluded.resurfacing_triggers,
+            genuine_repair_satisfied = excluded.genuine_repair_satisfied,
+            last_bubbled_up_at = excluded.last_bubbled_up_at`,
+        )
+        .run(
+          id,
+          grudge.personId,
+          grudge.conflictId || null,
+          grudge.sourceTransgression,
+          grudge.bitternessLevel,
+          grudge.decayHalfLifeDays,
+          grudge.acknowledgedIntellectually ? 1 : 0,
+          grudge.emotionalResidue,
+          JSON.stringify(grudge.resurfacingTriggers || []),
+          grudge.genuineRepairSatisfied ? 1 : 0,
+          createdAt,
+          grudge.lastBubbledUpAt || null,
+        );
+    } catch (err: any) {
+      throw new DatabaseError(`Failed to save relational grudge ${grudge.id}: ${err.message}`, err);
+    }
+  }
+
+  public listGrudges(personId: string): GrudgeRecord[] {
+    try {
+      const rows = this.db
+        .prepare(`SELECT * FROM relational_grudges WHERE person_id = ? ORDER BY created_at DESC`)
+        .all(personId) as any[];
+      return rows.map((r) => ({
+        id: r.id,
+        personId: r.person_id,
+        conflictId: r.conflict_id || undefined,
+        sourceTransgression: r.source_transgression,
+        bitternessLevel: r.bitterness_level,
+        decayHalfLifeDays: r.decay_half_life_days,
+        acknowledgedIntellectually: r.acknowledged_intellectually === 1,
+        emotionalResidue: r.emotional_residue,
+        resurfacingTriggers: JSON.parse(r.resurfacing_triggers || '[]'),
+        genuineRepairSatisfied: r.genuine_repair_satisfied === 1,
+        createdAt: r.created_at,
+        lastBubbledUpAt: r.last_bubbled_up_at || undefined,
+      }));
+    } catch (err: any) {
+      throw new DatabaseError(`Failed to list relational grudges for ${personId}: ${err.message}`, err);
     }
   }
 }

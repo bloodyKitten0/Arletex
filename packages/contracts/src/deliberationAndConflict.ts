@@ -132,3 +132,46 @@ export function assertDeliberationIntegrity(conflict: InternalConflictRecord): v
     );
   }
 }
+
+// =========================================================================
+// Point 6: Cognitive Ambivalence & Internal Dissension (The Torn Mind)
+// =========================================================================
+
+export const AMBIVALENCE_VOICE_ROLES = [
+  'emotional_core',
+  'rational_intellect',
+  'self_preservation',
+] as const;
+export const AmbivalenceVoiceRoleSchema = z.enum(AMBIVALENCE_VOICE_ROLES);
+export type AmbivalenceVoiceRole = z.infer<typeof AmbivalenceVoiceRoleSchema>;
+
+export const AmbivalenceVoiceArgumentSchema = z.object({
+  role: AmbivalenceVoiceRoleSchema,
+  position: z.string().min(1),
+  underlyingMotive: z.string().min(1),
+  emotionalTone: z.string().min(1),
+  advocatedAction: z.string().min(1),
+});
+export type AmbivalenceVoiceArgument = z.infer<typeof AmbivalenceVoiceArgumentSchema>;
+
+export const GUARDED_DISCLOSURE_LEVELS = [
+  'fully_guarded',
+  'guarded_hint',
+  'measured_boundary',
+  'vulnerable_disclosure',
+] as const;
+export const GuardedDisclosureLevelSchema = z.enum(GUARDED_DISCLOSURE_LEVELS);
+export type GuardedDisclosureLevel = z.infer<typeof GuardedDisclosureLevelSchema>;
+
+export const InternalAmbivalenceDebateSchema = z.object({
+  id: z.string(),
+  topic: z.string().min(1),
+  voices: z.array(AmbivalenceVoiceArgumentSchema).min(3),
+  internalMonologue: z.array(z.string()).min(1),
+  synthesis: z.string().min(1),
+  guardedDisclosureLevel: GuardedDisclosureLevelSchema,
+  outerExpressionGuidance: z.string().min(1),
+  debatedAt: z.string(),
+});
+export type InternalAmbivalenceDebate = z.infer<typeof InternalAmbivalenceDebateSchema>;
+

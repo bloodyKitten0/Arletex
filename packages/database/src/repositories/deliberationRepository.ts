@@ -3,6 +3,7 @@ import {
   InternalConflictRecord,
   InternalConflictStatus,
   assertDeliberationIntegrity,
+  InternalAmbivalenceDebate,
 } from '@arletex/contracts';
 import { DatabaseError, IDeliberationRepository } from '@arletex/core';
 
@@ -97,6 +98,69 @@ export class SqliteDeliberationRepository implements IDeliberationRepository {
       this.db.prepare(`DELETE FROM internal_conflicts WHERE id = ?`).run(id);
     } catch (err: any) {
       throw new DatabaseError(`Failed to delete internal conflict ${id}: ${err.message}`, err);
+    }
+  }
+
+  public saveAmbivalenceDebate(debate: InternalAmbivalenceDebate): void {
+    try {
+      this.db
+        .prepare(
+          `INSERT INTO internal_conflicts (
+            id, context_description, competing_desires_json, alternatives_json,
+            status, indecision_strategy, chosen_alternative_id, decision_justification,
+            trade_off_analysis_json, post_decision_reassessment_json, created_at, resolved_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            context_description = excluded.context_description,
+            competing_desires_json = excluded.competing_desires_json,
+            alternatives_json = excluded.alternatives_json,
+            status = excluded.status,
+            chosen_alternative_id = excluded.chosen_alternative_id,
+            decision_justification = excluded.decision_justification,
+            trade_off_analysis_json = excluded.trade_off_analysis_json`,
+        )
+        .run(
+          debate.id,
+          `[ambivalence_debate] ${debate.topic}`,
+          JSON.stringify(debate.voices),
+          JSON.stringify(debate.internalMonologue),
+          'resolved',
+          'ambivalence_synthesis',
+          debate.guardedDisclosureLevel,
+          debate.outerExpressionGuidance,
+          JSON.stringify({ synthesis: debate.synthesis, topic: debate.topic }),
+          null,
+          debate.debatedAt,
+          debate.debatedAt,
+        );
+    } catch (err: any) {
+      throw new DatabaseError(`Failed to save ambivalence debate ${debate.id}: ${err.message}`, err);
+    }
+  }
+
+  public listAmbivalenceDebates(limit: number = 50): InternalAmbivalenceDebate[] {
+    try {
+      const rows = this.db
+        .prepare(
+          `SELECT * FROM internal_conflicts WHERE context_description LIKE '[ambivalence_debate]%' ORDER BY created_at DESC LIMIT ?`,
+        )
+        .all(limit) as any[];
+      return rows.map((r) => {
+        const tradeOff = JSON.parse(r.trade_off_analysis_json || '{}');
+        const rawTopic = r.context_description.replace('[ambivalence_debate] ', '');
+        return {
+          id: r.id,
+          topic: tradeOff.topic || rawTopic,
+          voices: JSON.parse(r.competing_desires_json || '[]'),
+          internalMonologue: JSON.parse(r.alternatives_json || '[]'),
+          synthesis: tradeOff.synthesis || '',
+          guardedDisclosureLevel: r.chosen_alternative_id || 'measured_boundary',
+          outerExpressionGuidance: r.decision_justification || '',
+          debatedAt: r.created_at,
+        };
+      });
+    } catch (err: any) {
+      throw new DatabaseError(`Failed to list ambivalence debates: ${err.message}`, err);
     }
   }
 

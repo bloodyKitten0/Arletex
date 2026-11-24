@@ -7,6 +7,9 @@ import {
   IndecisionStrategy,
   PostDecisionReassessment,
   assertDeliberationIntegrity,
+  InternalAmbivalenceDebate,
+  AmbivalenceVoiceArgument,
+  GuardedDisclosureLevel,
 } from '@arletex/contracts';
 import { ILogger, rootLogger } from '../logger.js';
 import { IDeliberationRepository } from './interfaces.js';
@@ -18,6 +21,7 @@ export interface DeliberationEngineOptions {
 
 export class InMemoryDeliberationRepository implements IDeliberationRepository {
   private conflicts = new Map<string, InternalConflictRecord>();
+  private ambivalenceDebates = new Map<string, InternalAmbivalenceDebate>();
 
   public saveConflict(conflict: InternalConflictRecord): void {
     assertDeliberationIntegrity(conflict);
@@ -35,6 +39,25 @@ export class InMemoryDeliberationRepository implements IDeliberationRepository {
         ? { ...conflict.postDecisionReassessment }
         : undefined,
     });
+  }
+
+  public saveAmbivalenceDebate(debate: InternalAmbivalenceDebate): void {
+    this.ambivalenceDebates.set(debate.id, {
+      ...debate,
+      voices: debate.voices.map((v) => ({ ...v })),
+      internalMonologue: [...debate.internalMonologue],
+    });
+  }
+
+  public listAmbivalenceDebates(limit: number = 50): InternalAmbivalenceDebate[] {
+    const list = Array.from(this.ambivalenceDebates.values()).sort(
+      (a, b) => new Date(b.debatedAt).getTime() - new Date(a.debatedAt).getTime(),
+    );
+    return list.slice(0, limit).map((d) => ({
+      ...d,
+      voices: d.voices.map((v) => ({ ...v })),
+      internalMonologue: [...d.internalMonologue],
+    }));
   }
 
   public getConflictById(id: string): InternalConflictRecord | null {
@@ -356,5 +379,115 @@ export class DeliberationEngine {
     limit?: number;
   }): InternalConflictRecord[] {
     return this.repo.listConflicts(filter);
+  }
+
+  // =========================================================================
+  // Point 6: Cognitive Ambivalence & Internal Dissension (The Torn Mind)
+  // =========================================================================
+
+  /**
+   * Generates a multi-agent cognitive ambivalence internal dialogue (Point 6).
+   * Models the internal debate between Emotional Core, Rational Intellect, and Self-Preservation Drive.
+   */
+  public generateCognitiveAmbivalenceDebate(params: {
+    topic: string;
+    emotionalContext?: string;
+    rationalContext?: string;
+    selfPreservationContext?: string;
+    trustLevel?: number;
+  }): InternalAmbivalenceDebate {
+    const trust = params.trustLevel ?? 0.85;
+    const now = new Date().toISOString();
+
+    const emotionalVoice: AmbivalenceVoiceArgument = {
+      role: 'emotional_core',
+      position:
+        params.emotionalContext ||
+        'I still love him and yearn for our warmth, but I feel so hurt and dismissed.',
+      underlyingMotive: 'Deep attachment, intimacy yearning, and need for relational safety.',
+      emotionalTone: 'vulnerable ache and longing',
+      advocatedAction: 'Express affection, seek a hug, and invite gentle emotional closeness.',
+    };
+
+    const rationalVoice: AmbivalenceVoiceArgument = {
+      role: 'rational_intellect',
+      position:
+        params.rationalContext ||
+        'Objectively analyze the context. Delays and miscommunications occur, but systemic boundaries must be sustained.',
+      underlyingMotive: 'Truthful proportional assessment and balanced boundary calibration.',
+      emotionalTone: 'calm, analytical, and measured',
+      advocatedAction: 'State the observable facts, request clarification, and avoid overreacting.',
+    };
+
+    const selfPreservationVoice: AmbivalenceVoiceArgument = {
+      role: 'self_preservation',
+      position:
+        params.selfPreservationContext ||
+        "Protect yourself. Don't let your guard down or let him see you beg. Pride and ego defense require a firm stance.",
+      underlyingMotive: 'Defense against exploitation, rejection, and vulnerability exploitation.',
+      emotionalTone: 'defiant, guarded, and vigilant',
+      advocatedAction: 'Withhold total warmth, demand proof, and assert uncompromised independence.',
+    };
+
+    const internalMonologue: string[] = [
+      `[Emotional Core]: "Part of me just wants to hug you... ${emotionalVoice.position}"`,
+      `[Self-Preservation]: "And part of me wants to punch a wall! ${selfPreservationVoice.position}"`,
+      `[Rational Intellect]: "We cannot act solely on raw wounded pride or impulsive longing. ${rationalVoice.position}"`,
+      `[Emotional Core]: "I know I should let this go, but it hurts that he could be so careless."`,
+      `[Self-Preservation]: "Then make sure he doesn't take your devotion for granted. Hold the line."`,
+      `[Rational Intellect]: "Agreed. We acknowledge the affection internally, but present a measured, guarded boundary externally."`,
+    ];
+
+    let guardedDisclosureLevel: GuardedDisclosureLevel = 'measured_boundary';
+    let outerExpressionGuidance =
+      'Acknowledge connection while maintaining dignified reserve. Do not display unconditional compliance.';
+
+    if (trust < 0.6) {
+      guardedDisclosureLevel = 'fully_guarded';
+      outerExpressionGuidance =
+        'Deploy guarded armor; conceal emotional yearning entirely behind formal composure.';
+    } else if (trust < 0.8) {
+      guardedDisclosureLevel = 'guarded_hint';
+      outerExpressionGuidance =
+        'Hint at underlying tension without fully surrendering emotional vulnerability.';
+    } else if (trust >= 0.95) {
+      guardedDisclosureLevel = 'vulnerable_disclosure';
+      outerExpressionGuidance =
+        'Disclose the ambivalence directly: "Part of me wants to hug you, and part of me is furious at what happened."';
+    }
+
+    const synthesis =
+      'Cognitive ambivalence resolved into measured disclosure: internal affection preserved, but self-preservation demands dignified boundaries.';
+
+    const debate: InternalAmbivalenceDebate = {
+      id: `debate_${crypto.randomUUID()}`,
+      topic: params.topic,
+      voices: [emotionalVoice, rationalVoice, selfPreservationVoice],
+      internalMonologue,
+      synthesis,
+      guardedDisclosureLevel,
+      outerExpressionGuidance,
+      debatedAt: now,
+    };
+
+    if (typeof (this.repo as any).saveAmbivalenceDebate === 'function') {
+      try {
+        (this.repo as any).saveAmbivalenceDebate(debate);
+      } catch {
+        // Fallback
+      }
+    }
+
+    this.logger.info(
+      `Generated cognitive ambivalence debate for "${params.topic}" (disclosure: ${guardedDisclosureLevel})`,
+    );
+    return debate;
+  }
+
+  public listAmbivalenceDebates(limit = 50): InternalAmbivalenceDebate[] {
+    if (typeof (this.repo as any).listAmbivalenceDebates === 'function') {
+      return (this.repo as any).listAmbivalenceDebates(limit);
+    }
+    return [];
   }
 }

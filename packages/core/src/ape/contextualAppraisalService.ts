@@ -8,6 +8,7 @@ import {
   ContextualAppraisalFrame,
   AppraisalInterpretationComparison,
   assertAppraisalDivergence,
+  EmotionalTriggerNode,
 } from '@arletex/contracts';
 import { ILogger, rootLogger } from '../logger.js';
 import { IEmotionalAppraisalRepository } from './interfaces.js';
@@ -58,6 +59,46 @@ export class InMemoryEmotionalAppraisalRepository implements IEmotionalAppraisal
 
   public deleteComparison(id: string): void {
     this.comparisons.delete(id);
+  }
+
+  private triggerNodes = new Map<string, EmotionalTriggerNode>();
+
+  public saveTriggerNode(node: EmotionalTriggerNode): void {
+    this.triggerNodes.set(node.id, {
+      ...node,
+      somaticShock: { ...node.somaticShock },
+      flashbackPadDelta: { ...node.flashbackPadDelta },
+      defensivePostures: [...node.defensivePostures],
+    });
+  }
+
+  public getTriggerNode(id: string): EmotionalTriggerNode | null {
+    const n = this.triggerNodes.get(id);
+    if (!n) return null;
+    return {
+      ...n,
+      somaticShock: { ...n.somaticShock },
+      flashbackPadDelta: { ...n.flashbackPadDelta },
+      defensivePostures: [...n.defensivePostures],
+    };
+  }
+
+  public listTriggerNodes(traumaMemoryId?: string): EmotionalTriggerNode[] {
+    let list = Array.from(this.triggerNodes.values());
+    if (traumaMemoryId) {
+      list = list.filter((n) => n.traumaMemoryId === traumaMemoryId);
+    }
+    list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return list.map((n) => ({
+      ...n,
+      somaticShock: { ...n.somaticShock },
+      flashbackPadDelta: { ...n.flashbackPadDelta },
+      defensivePostures: [...n.defensivePostures],
+    }));
+  }
+
+  public deleteTriggerNode(id: string): void {
+    this.triggerNodes.delete(id);
   }
 }
 

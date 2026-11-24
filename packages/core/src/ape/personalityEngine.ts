@@ -122,6 +122,11 @@ export class PersonalityEngine {
    * and foundational values.
    */
   public modulateAppraisal(appraisal: ApeAppraisal, event: ApeEvent): ApeAppraisal {
+    // Invariant: Traumatic conditioned flashbacks bypass baseline composure dampening (Point 2)
+    if (appraisal.isFlashback) {
+      return appraisal;
+    }
+
     const personality = this.getState();
     const temperament = personality.temperament;
     const traits = new Map(personality.traits.map((t) => [t.id, t.score]));

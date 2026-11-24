@@ -562,4 +562,74 @@ export class CuriosityExplorationEngine {
   public listNoveltyDetections(limit?: number): NoveltyDetectionRecord[] {
     return this.repo.listNoveltyDetections(limit);
   }
+
+  /**
+   * Explores relational ruptures or unresolved traumas during quiet idle periods (Point 7).
+   * Formulates epistemic inquiries and exploratory questions around past ruptures.
+   */
+  public exploreRelationalRupture(rupture: {
+    id: string;
+    topic: string;
+    sourceTransgression?: string;
+    woundType?: string;
+    coreFear?: string;
+  }): {
+    knowledgeGap: KnowledgeGapRecord;
+    exploratoryQuestion: ExploratoryQuestion;
+    investigation: IndependentInvestigationRecord;
+  } {
+    const topic =
+      rupture.sourceTransgression || rupture.topic || rupture.woundType || 'relational rupture';
+    const now = new Date().toISOString();
+
+    const gapId = `gap_rupture_${crypto.randomUUID().slice(0, 8)}`;
+    const knowledgeGap: KnowledgeGapRecord = {
+      id: gapId,
+      domain: 'relational_psychology',
+      topic,
+      gapDescription: `Epistemic ambiguity surrounding unresolved interpersonal rupture: "${topic}". Core vulnerability: ${rupture.coreFear || 'fear of betrayal or neglect'}.`,
+      epistemicUncertainty: 0.88,
+      importanceScore: 0.9,
+      identifiedAt: now,
+    };
+    this.repo.saveKnowledgeGap(knowledgeGap);
+
+    const qId = `q_rupture_${crypto.randomUUID().slice(0, 8)}`;
+    const exploratoryQuestion: ExploratoryQuestion = {
+      id: qId,
+      knowledgeGapId: gapId,
+      domain: 'relational_psychology',
+      question: `Why did the relational rupture regarding "${topic}" occur, and how can boundary integrity be preserved without emotional estrangement?`,
+      hypotheses: [
+        'Prolonged silence or unannounced absence signals emotional estrangement to attachment system.',
+        'Cognitive ambivalence prevents immediate repair until fault is acknowledged.',
+      ],
+      formulatedAt: now,
+    };
+    this.repo.saveQuestion(exploratoryQuestion);
+
+    const invId = `inv_rupture_${crypto.randomUUID().slice(0, 8)}`;
+    const investigation: IndependentInvestigationRecord = {
+      id: invId,
+      questionId: qId,
+      domain: 'relational_psychology',
+      investigationTitle: `Retrospective Analysis: ${topic}`,
+      stepsExecuted: [
+        {
+          stepNumber: 1,
+          action: 'Examine autobiographical memory traces and unannounced absence timelines.',
+          finding: `Rupture identified: ${topic}. Triggers protective affect and hyper-vigilance during quiet idle hours.`,
+        },
+      ],
+      synthesisSummary: `Idle exploration of past rupture ("${topic}") reveals lingering vulnerability: "${rupture.coreFear || 'unresolved pain'}". Genuine repair requires consistent validation over time.`,
+      status: 'completed',
+      isAutonomous: true,
+      initiatedBy: 'arle_autonomous',
+      timestamp: now,
+    };
+    this.repo.saveInvestigation(investigation);
+
+    this.logger.info(`Curiosity engine explored relational rupture during idle state: "${topic}"`);
+    return { knowledgeGap, exploratoryQuestion, investigation };
+  }
 }

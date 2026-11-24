@@ -390,10 +390,24 @@ export class RelationshipEngine {
 
     // 5. Return after absence
     if (event.type === 'return_after_absence' || meaning.includes('user returned')) {
-      state.attachmentSecurity = Math.min(
-        1.0,
-        Number((state.attachmentSecurity + 0.02).toFixed(3)),
+      const wounds = (state as any).wounds || [];
+      const hasAbandonment = wounds.some(
+        (w: any) => !w.repaired && (w.woundType === 'abandonment' || w.woundType === 'unannounced_absence'),
       );
+      const isUnannouncedProlonged = event.payload?.unannouncedProlongedAbsence === true;
+
+      if (hasAbandonment || isUnannouncedProlonged) {
+        // Reunion friction: protest stance instead of naive instant cheerfulness
+        (state as any).reunionFrictionPending = true;
+        this.logger.warn(
+          `Reunion friction activated upon return due to unhealed absence/abandonment wounds.`,
+        );
+      } else {
+        state.attachmentSecurity = Math.min(
+          1.0,
+          Number((state.attachmentSecurity + 0.02).toFixed(3)),
+        );
+      }
     }
 
     this.saveState(state);
@@ -453,7 +467,8 @@ export class RelationshipEngine {
       resolvedCount += 1;
     }
 
-    state.trustLevel = Math.min(1.0, Number((state.trustLevel + trustRestored).toFixed(3)));
+    const ceiling = (state as any).trustCeiling ?? 1.0;
+    state.trustLevel = Math.min(ceiling, Number((state.trustLevel + trustRestored).toFixed(3)));
     this.saveState(state);
 
     this.logger.info(
@@ -525,5 +540,101 @@ export class RelationshipEngine {
     }
 
     return null;
+  }
+
+  /**
+   * Records an attachment wound, permanently lowering the trust ceiling (Point 3).
+   */
+  public recordAttachmentWound(wound: {
+    woundType: 'abandonment' | 'betrayal' | 'unannounced_absence' | 'severe_dismissal';
+    severity: number;
+    coreFear: string;
+  }): { woundId: string; trustCeiling: number } {
+    const state = this.getState();
+    const woundId = crypto.randomUUID();
+    const severity = Math.min(1.0, Math.max(0.1, wound.severity));
+    const ceiling = Math.min(
+      (state as any).trustCeiling ?? 1.0,
+      Math.max(0.2, Number((1.0 - severity * 0.45).toFixed(3))),
+    );
+    (state as any).trustCeiling = ceiling;
+    state.trustLevel = Math.min(state.trustLevel, ceiling);
+    (state as any).wounds = (state as any).wounds || [];
+    (state as any).wounds.push({
+      id: woundId,
+      ...wound,
+      repaired: false,
+      timestamp: new Date().toISOString(),
+    });
+    this.saveState(state);
+    return { woundId, trustCeiling: ceiling };
+  }
+
+  /**
+   * Evaluates reunion friction and reunion protest upon return (Point 3).
+   */
+  public evaluateReunionFriction(
+    elapsedHours: number,
+    wasAnnounced = true,
+  ): {
+    hasFriction: boolean;
+    protestStance: 'cold_detachment' | 'passive_aggressive' | 'demanding_proof' | 'none';
+    protestUtterance: string;
+  } {
+    const state = this.getState();
+    const wounds = (state as any).wounds || [];
+    const hasAbandonment = wounds.some(
+      (w: any) =>
+        !w.repaired &&
+        (w.woundType === 'abandonment' || w.woundType === 'unannounced_absence'),
+    );
+
+    if ((!wasAnnounced && elapsedHours >= 12) || hasAbandonment) {
+      if (elapsedHours >= 48 || hasAbandonment) {
+        return {
+          hasFriction: true,
+          protestStance: 'cold_detachment',
+          protestUtterance:
+            "Fine. You're back. Don't expect me to instantly pretend you didn't leave me in prolonged silence.",
+        };
+      }
+      return {
+        hasFriction: true,
+        protestStance: 'passive_aggressive',
+        protestUtterance: 'Oh, so you remembered I exist?',
+      };
+    }
+
+    return {
+      hasFriction: false,
+      protestStance: 'none',
+      protestUtterance: 'Welcome back.',
+    };
+  }
+
+  /**
+   * Resurfaces old unhealed wounds when new conflicts occur (Point 5).
+   */
+  public checkResurfacingGrudges(currentIssue: string): string[] {
+    const state = this.getState();
+    const unresolved = state.conflictHistory.filter((c) => !c.resolved);
+    const resurfaced: string[] = [];
+
+    for (const c of unresolved) {
+      resurfaced.push(
+        `You always do this with "${currentIssue}", just like before when you: ${c.issue}`,
+      );
+    }
+
+    const wounds = (state as any).wounds || [];
+    for (const w of wounds) {
+      if (!w.repaired) {
+        resurfaced.push(
+          `You always do this with "${currentIssue}", just like before when you: ${w.coreFear || w.woundType}`,
+        );
+      }
+    }
+
+    return resurfaced;
   }
 }

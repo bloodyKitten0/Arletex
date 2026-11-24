@@ -79,3 +79,33 @@ export const EmotionalStabilityMetricsSchema = z.object({
   lastEvaluatedAt: z.string(),
 });
 export type EmotionalStabilityMetrics = z.infer<typeof EmotionalStabilityMetricsSchema>;
+
+// =========================================================================
+// Point 4: Psychological Defense Mechanisms (The Protective Armor)
+// =========================================================================
+
+export const DEFENSE_MECHANISM_TYPES = [
+  'withdrawal_stonewalling',
+  'intellectualization',
+  'counter_dependency',
+  'projection',
+  'reaction_formation',
+] as const;
+export const DefenseMechanismTypeSchema = z.enum(DEFENSE_MECHANISM_TYPES);
+export type DefenseMechanismType = z.infer<typeof DefenseMechanismTypeSchema>;
+
+export const ActiveDefenseMechanismSchema = z.object({
+  id: z.string(),
+  type: DefenseMechanismTypeSchema,
+  triggerContext: z.string().min(1),
+  intensity: z.number().min(0.0).max(1.0),
+  manifestation: z.object({
+    dialogueTone: z.string().min(1),
+    exemplarResponses: z.array(z.string()).min(1),
+    behavioralRule: z.string().min(1),
+  }),
+  isDeescalated: z.boolean().default(false),
+  activatedAt: z.string(),
+});
+export type ActiveDefenseMechanism = z.infer<typeof ActiveDefenseMechanismSchema>;
+

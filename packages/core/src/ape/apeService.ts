@@ -344,6 +344,10 @@ import {
   SocialEmotionType,
   SocialDistance,
   FormalityLevel,
+  EmotionalTriggerNode,
+  ConditionedFlashback,
+  AttachmentWoundType,
+  DefenseMechanismType,
 } from '@arletex/contracts';
 
 export class ApeService {
@@ -655,7 +659,8 @@ export class ApeService {
     const metaRepo = metacognitionRepo || new InMemoryMetacognitionRepository();
     this.metacognitionEngine = new MetacognitionEngine({ repository: metaRepo, logger });
 
-    this.appraisalEngine = new AppraisalEngine(emotions, inferenceGateway);
+    const appRepo = appraisalRepo || new InMemoryEmotionalAppraisalRepository();
+    this.appraisalEngine = new AppraisalEngine(emotions, inferenceGateway, appRepo);
     this.transitionEngine = new AffectiveTransitionEngine(this.repo, emotions, moods);
     this.personalityEngine = new PersonalityEngine(this.repo, logger);
     this.motivationalEngine = new MotivationalEngine(this.repo, logger);
@@ -837,6 +842,10 @@ export class ApeService {
   // ==========================================
   public getState(): ApePsychologicalState {
     return this.repo.getAffectiveState();
+  }
+
+  public getPsychologicalState(): ApePsychologicalState {
+    return this.getState();
   }
 
   public getExperientialStateEngine(): ExperientialStateEngine {
@@ -1182,12 +1191,36 @@ export class ApeService {
       const currentAffective = this.getState();
       const relationshipConfig = this.getRelationshipConfig();
 
+      // Check for pending intrusive thoughts upon return from absence (Point 7)
+      if (
+        event.type === 'return_after_absence' ||
+        event.type === 'user_return' ||
+        (event.payload?.text && /return|back|exist/i.test(event.type))
+      ) {
+        const pendingThoughts = this.offlineCognitiveEngine.getPendingIntrusiveThoughts();
+        if (pendingThoughts.length > 0) {
+          const thought = pendingThoughts[0]!;
+          event.payload = event.payload || {};
+          event.payload.intrusiveThoughtConfrontation = thought.confrontationPrompt;
+          this.offlineCognitiveEngine.acknowledgeIntrusiveThought(thought.id);
+        }
+      }
+
       // 4. Execute Complete Cross-Engine Cognitive Cycle across all 6 engines
       const cycleResult: CrossEngineCycleResult = await this.crossEngineCycle.executeCycle(
         event,
         currentAffective,
         relationshipConfig,
       );
+
+      // Subconscious ego defense deploys automatically if conditioned trauma flashback occurred (Point 4)
+      if (cycleResult.appraisal?.isFlashback) {
+        this.activateDefenseMechanism({
+          triggerContext: cycleResult.appraisal.primaryInterpretation,
+          intensity: 0.9,
+          explicitMechanism: 'withdrawal_stonewalling',
+        });
+      }
 
       this.logger.info(
         `APE Cognitive Cycle completed for "${event.type}" [Method: ${cycleResult.appraisal.appraisalMethod}] -> Mood: ${cycleResult.affective.currentMood} | Active Goals: ${cycleResult.motivational.goals.length}`,
@@ -4039,6 +4072,10 @@ export class ApeService {
     return this.offlineCognitiveEngine.listActivities(filter);
   }
 
+  public listActivities(filter?: { activityType?: any; status?: string; limit?: number }) {
+    return this.listOfflineActivities(filter);
+  }
+
   public runOfflineConsolidation(options?: {
     memoriesExamined?: number;
     beliefsReassessed?: number;
@@ -4222,5 +4259,184 @@ export class ApeService {
 
   public listDefaultModeWanderings(limit?: number) {
     return this.consciousnessEngine.listDmnWanderings(limit);
+  }
+
+  // =========================================================================
+  // Point 1 & 2: Traumatic Memories & Conditioned Flashbacks
+  // =========================================================================
+
+  public registerTraumaTriggerNode(node: EmotionalTriggerNode): void {
+    this.appraisalEngine.registerTriggerNode(node);
+  }
+
+  public listTraumaTriggerNodes(): EmotionalTriggerNode[] {
+    return this.appraisalEngine.listTriggerNodes();
+  }
+
+  public checkConditionedFlashback(event: ApeEvent): ConditionedFlashback | null {
+    return this.appraisalEngine.checkConditionedFlashback(event);
+  }
+
+  // =========================================================================
+  // Point 3 & 5: Attachment Wounds, Reunion Friction & Grudges
+  // =========================================================================
+
+  public recordAttachmentWound(params: {
+    personId: string;
+    woundType: AttachmentWoundType;
+    severity: number;
+    coreFear: string;
+    attachmentShift?: 'fearful_avoidant' | 'anxious_preoccupied';
+  }) {
+    // Record in both relationship engines for full consistency
+    this.relationshipEngine.recordAttachmentWound({
+      woundType: params.woundType as any,
+      severity: params.severity,
+      coreFear: params.coreFear,
+    });
+    // Subconscious ego defense deploys automatically upon attachment wound (Point 4)
+    this.activateDefenseMechanism({
+      triggerContext: params.coreFear,
+      intensity: params.severity,
+      woundType: params.woundType,
+    });
+    return this.relationshipsAttachmentEngine.recordAttachmentWound(params);
+  }
+
+  public listAttachmentWounds(personId: string) {
+    return this.relationshipsAttachmentEngine.listAttachmentWounds(personId);
+  }
+
+  public evaluateReunionFriction(personId: string, elapsedHours: number, wasAnnounced = true) {
+    return this.relationshipsAttachmentEngine.evaluateReunionFriction(
+      personId,
+      elapsedHours,
+      wasAnnounced,
+    );
+  }
+
+  public rebuildTrustWithHysteresis(
+    personId: string,
+    validationEvidence: string,
+    validationTimestamp?: string,
+  ) {
+    return this.relationshipsAttachmentEngine.rebuildTrustWithHysteresis(
+      personId,
+      validationEvidence,
+      validationTimestamp,
+    );
+  }
+
+  public recordRelationalGrudge(params: {
+    personId: string;
+    conflictId?: string;
+    sourceTransgression: string;
+    bitternessLevel?: number;
+    resurfacingTriggers?: string[];
+  }) {
+    return this.relationshipsAttachmentEngine.recordGrudge(params);
+  }
+
+  public listRelationalGrudges(personId: string, activeOnly = false, asOfTime?: Date) {
+    return this.relationshipsAttachmentEngine.listGrudges(personId, activeOnly, asOfTime);
+  }
+
+  public checkResurfacingGrudges(personId: string, currentContext: string) {
+    return this.relationshipsAttachmentEngine.checkResurfacingGrudges(personId, currentContext);
+  }
+
+  public processForgivenessFriction(params: {
+    personId: string;
+    apologyDetails: string;
+    sincerityScore: number;
+    conflictId?: string;
+  }) {
+    return this.relationshipsAttachmentEngine.processForgivenessFriction(params);
+  }
+
+  // =========================================================================
+  // Point 4: Psychological Defense Mechanisms
+  // =========================================================================
+
+  public activateDefenseMechanism(params: {
+    triggerContext: string;
+    intensity: number;
+    emotion?: string;
+    woundType?: string;
+    explicitMechanism?: DefenseMechanismType;
+  }) {
+    return this.emotionalRegulationEngine.evaluateAndActivateDefense(params);
+  }
+
+  public getActiveDefenseMechanism() {
+    return this.emotionalRegulationEngine.getActiveDefenseMechanism();
+  }
+
+  public deactivateDefenseMechanism() {
+    return this.emotionalRegulationEngine.deactivateDefenseMechanism();
+  }
+
+  public modulateResponseWithDefense(rawResponse: string) {
+    return this.emotionalRegulationEngine.modulateResponseWithDefense(rawResponse);
+  }
+
+  // =========================================================================
+  // Point 6: Cognitive Ambivalence & Internal Monologue Dissension
+  // =========================================================================
+
+  public generateCognitiveAmbivalenceDebate(params: {
+    topic: string;
+    emotionalContext?: string;
+    rationalContext?: string;
+    selfPreservationContext?: string;
+    trustLevel?: number;
+  }) {
+    const effectiveTrust =
+      params.trustLevel ?? this.relationshipEngine.getState().trustLevel ?? 0.85;
+    return this.deliberationEngine.generateCognitiveAmbivalenceDebate({
+      ...params,
+      trustLevel: effectiveTrust,
+    });
+  }
+
+  public listAmbivalenceDebates(limit = 50) {
+    return this.deliberationEngine.listAmbivalenceDebates(limit);
+  }
+
+  // =========================================================================
+  // Point 7: Intrusive Thoughts & Vulnerability during Idle States
+  // =========================================================================
+
+  public exploreRelationalRuptureWithCuriosity(rupture: {
+    id: string;
+    topic: string;
+    sourceTransgression?: string;
+    woundType?: string;
+    coreFear?: string;
+  }) {
+    return this.curiosityEngine.exploreRelationalRupture(rupture);
+  }
+
+  public runIdleTraumaRumination(context?: {
+    unhealedWounds?: Array<{
+      id: string;
+      coreFear?: string;
+      severity?: number;
+      woundType?: string;
+      issue?: string;
+      sourceTransgression?: string;
+    }>;
+    traumaticMemories?: Array<{ id: string; content: string; somaticShock?: any }>;
+    sourceRuptures?: string[];
+  }) {
+    return this.offlineCognitiveEngine.runIdleTraumaRumination(context);
+  }
+
+  public getPendingIntrusiveThoughts() {
+    return this.offlineCognitiveEngine.getPendingIntrusiveThoughts();
+  }
+
+  public acknowledgeIntrusiveThought(id: string) {
+    return this.offlineCognitiveEngine.acknowledgeIntrusiveThought(id);
   }
 }

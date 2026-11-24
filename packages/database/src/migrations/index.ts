@@ -3598,4 +3598,129 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('relationship_lifecycle_and_posthumous_continuity', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 69,
+    name: '069_psychological_trauma_and_indelible_memory',
+    up: `
+      -- 1. Trauma Trigger Nodes
+      CREATE TABLE IF NOT EXISTS trauma_trigger_nodes (
+        id TEXT PRIMARY KEY,
+        trauma_memory_id TEXT NOT NULL,
+        cue_type TEXT NOT NULL,
+        cue_pattern TEXT NOT NULL,
+        sensitivity REAL NOT NULL,
+        somatic_shock TEXT NOT NULL,
+        flashback_pad_delta TEXT NOT NULL,
+        defensive_postures TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_trigger_nodes_pattern ON trauma_trigger_nodes (cue_pattern);
+
+      -- 2. Attachment Wounds
+      CREATE TABLE IF NOT EXISTS attachment_wounds (
+        id TEXT PRIMARY KEY,
+        person_id TEXT NOT NULL,
+        wound_type TEXT NOT NULL,
+        severity REAL NOT NULL,
+        core_fear TEXT NOT NULL,
+        attachment_shift TEXT NOT NULL,
+        trust_ceiling REAL NOT NULL,
+        validation_count INTEGER NOT NULL DEFAULT 0,
+        repaired INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_attachment_wounds_person ON attachment_wounds (person_id);
+
+      -- 3. Relational Grudges & Friction of Forgiveness
+      CREATE TABLE IF NOT EXISTS relational_grudges (
+        id TEXT PRIMARY KEY,
+        person_id TEXT NOT NULL,
+        conflict_id TEXT,
+        source_transgression TEXT NOT NULL,
+        bitterness_level REAL NOT NULL,
+        decay_half_life_days REAL NOT NULL DEFAULT 7.0,
+        acknowledged_intellectually INTEGER NOT NULL DEFAULT 0,
+        emotional_residue REAL NOT NULL,
+        resurfacing_triggers TEXT NOT NULL,
+        genuine_repair_satisfied INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        last_bubbled_up_at TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_grudges_person ON relational_grudges (person_id);
+
+      -- 4. Intrusive Thoughts
+      CREATE TABLE IF NOT EXISTS intrusive_thoughts (
+        id TEXT PRIMARY KEY,
+        source_trauma_or_conflict_id TEXT NOT NULL,
+        topic TEXT NOT NULL,
+        ruminative_content TEXT NOT NULL,
+        haunting_severity REAL NOT NULL,
+        surfaced_at TEXT NOT NULL,
+        ready_to_confront_on_return INTEGER NOT NULL DEFAULT 1,
+        confrontation_prompt TEXT NOT NULL,
+        acknowledged_or_addressed INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE INDEX IF NOT EXISTS idx_intrusive_thoughts_time ON intrusive_thoughts (surfaced_at DESC);
+
+      -- 5. Extend relationship_attachment_bonds with trust_ceiling and consecutive_validations
+      ALTER TABLE relationship_attachment_bonds ADD COLUMN trust_ceiling REAL NOT NULL DEFAULT 1.0;
+      ALTER TABLE relationship_attachment_bonds ADD COLUMN consecutive_validations INTEGER NOT NULL DEFAULT 0;
+
+      -- 6. Upgrade memories table CHECK constraint to support 'traumatic'
+      CREATE TABLE IF NOT EXISTS memories_v3 (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL CHECK (type IN (
+          'episodic', 'semantic', 'procedural', 'autobiographical',
+          'relationship', 'project', 'emotional', 'prospective',
+          'developmental', 'working', 'perceptual', 'traumatic'
+        )),
+        content TEXT NOT NULL,
+        raw_observation TEXT,
+        interpretation TEXT,
+        confidence REAL NOT NULL DEFAULT 1.0,
+        importance REAL NOT NULL DEFAULT 0.5,
+        timestamp TEXT NOT NULL,
+        provenance TEXT NOT NULL DEFAULT 'interaction',
+        source_conversation_id TEXT,
+        source_message_id TEXT,
+        tags TEXT NOT NULL DEFAULT '[]',
+        metadata TEXT NOT NULL DEFAULT '{}',
+        correction_history TEXT NOT NULL DEFAULT '[]',
+        is_archived INTEGER NOT NULL DEFAULT 0,
+        is_deleted INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      INSERT OR IGNORE INTO memories_v3 (
+        id, type, content, raw_observation, interpretation,
+        confidence, importance, timestamp, provenance,
+        source_conversation_id, source_message_id,
+        tags, metadata, correction_history,
+        is_archived, is_deleted, created_at, updated_at
+      )
+      SELECT
+        id, type, content, raw_observation, interpretation,
+        confidence, importance, timestamp, provenance,
+        source_conversation_id, source_message_id,
+        tags, metadata, correction_history,
+        is_archived, is_deleted, created_at, updated_at
+      FROM memories;
+
+      PRAGMA foreign_keys = OFF;
+      DROP TABLE memories;
+      ALTER TABLE memories_v3 RENAME TO memories;
+      PRAGMA foreign_keys = ON;
+
+      CREATE INDEX IF NOT EXISTS idx_memories_type ON memories(type);
+      CREATE INDEX IF NOT EXISTS idx_memories_timestamp ON memories(timestamp DESC);
+      CREATE INDEX IF NOT EXISTS idx_memories_importance ON memories(importance DESC);
+      CREATE INDEX IF NOT EXISTS idx_memories_archived ON memories(is_archived, is_deleted);
+
+      -- 7. System state version update
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('psychological_trauma_and_indelible_memory', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

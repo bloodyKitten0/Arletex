@@ -108,6 +108,8 @@ export const AttachmentBondSchema = z.object({
   reciprocityRatio: z.number().min(0.0).max(2.0), // ~1.0 is balanced
   separationSecurity: z.number().min(0.0).max(1.0),
   establishedBoundaries: z.array(RelationshipBoundarySchema),
+  trustCeiling: z.number().min(0.0).max(1.0).default(1.0).optional(),
+  consecutiveValidations: z.number().nonnegative().default(0).optional(),
   lastInteractedAt: z.string(),
   updatedAt: z.string(),
 });
@@ -252,3 +254,68 @@ export const RelationalAffectiveDistinctionSchema = z.object({
   behavioralModulation: z.string(),
 });
 export type RelationalAffectiveDistinction = z.infer<typeof RelationalAffectiveDistinctionSchema>;
+
+// =========================================================================
+// Point 3 & 5: Attachment Wounds, Trust Hysteresis & Resentment/Grudges
+// =========================================================================
+
+export const ATTACHMENT_WOUND_TYPES = [
+  'abandonment',
+  'betrayal',
+  'unannounced_absence',
+  'severe_dismissal',
+  'relational_shock',
+] as const;
+export const AttachmentWoundTypeSchema = z.enum(ATTACHMENT_WOUND_TYPES);
+export type AttachmentWoundType = z.infer<typeof AttachmentWoundTypeSchema>;
+
+export const AttachmentWoundSchema = z.object({
+  id: z.string(),
+  personId: z.string().min(1),
+  woundType: AttachmentWoundTypeSchema,
+  severity: z.number().min(0.0).max(1.0),
+  coreFear: z.string().min(1),
+  attachmentShift: AttachmentStyleSchema,
+  trustCeiling: z.number().min(0.1).max(1.0),
+  validationCount: z.number().nonnegative().default(0),
+  repaired: z.boolean().default(false),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type AttachmentWound = z.infer<typeof AttachmentWoundSchema>;
+
+export const GrudgeRecordSchema = z.object({
+  id: z.string(),
+  personId: z.string().min(1),
+  conflictId: z.string().optional(),
+  sourceTransgression: z.string().min(1),
+  bitternessLevel: z.number().min(0.0).max(1.0),
+  decayHalfLifeDays: z.number().default(7),
+  acknowledgedIntellectually: z.boolean().default(false),
+  emotionalResidue: z.number().min(0.0).max(1.0),
+  resurfacingTriggers: z.array(z.string()).default([]),
+  genuineRepairSatisfied: z.boolean().default(false),
+  createdAt: z.string(),
+  lastBubbledUpAt: z.string().optional(),
+});
+export type GrudgeRecord = z.infer<typeof GrudgeRecordSchema>;
+
+export const REUNION_PROTEST_STANCES = [
+  'cold_detachment',
+  'passive_aggressive',
+  'demanding_proof',
+  'none',
+] as const;
+export const ReunionProtestStanceSchema = z.enum(REUNION_PROTEST_STANCES);
+export type ReunionProtestStance = z.infer<typeof ReunionProtestStanceSchema>;
+
+export const ReunionFrictionResultSchema = z.object({
+  hasFriction: z.boolean(),
+  protestStance: ReunionProtestStanceSchema,
+  protestUtterance: z.string().optional(),
+  reassuranceDemanded: z.string().optional(),
+  absenceHours: z.number().nonnegative(),
+  emotionalValence: z.number().min(-1.0).max(1.0),
+});
+export type ReunionFrictionResult = z.infer<typeof ReunionFrictionResultSchema>;
+

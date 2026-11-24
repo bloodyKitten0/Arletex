@@ -1,5 +1,9 @@
 import {
   AttachmentBond,
+  AttachmentWound,
+  AttachmentWoundType,
+  GrudgeRecord,
+  ReunionFrictionResult,
   SharedHistoryEvent,
   RelationalConflict,
   ApologyAndRepair,
@@ -153,6 +157,36 @@ export class InMemoryRelationshipsAttachmentRepository implements IRelationships
   public listMemoryControlRecords(personId: string): RelationalMemoryControl[] {
     return this.memoryControls.filter((m) => m.personId === personId).map((m) => ({ ...m }));
   }
+
+  private wounds = new Map<string, AttachmentWound[]>();
+  private grudges = new Map<string, GrudgeRecord[]>();
+
+  public saveAttachmentWound(wound: AttachmentWound): void {
+    const list = this.wounds.get(wound.personId) || [];
+    const idx = list.findIndex((w) => w.id === wound.id);
+    if (idx >= 0) list[idx] = { ...wound };
+    else list.unshift({ ...wound });
+    this.wounds.set(wound.personId, list);
+  }
+
+  public listAttachmentWounds(personId: string): AttachmentWound[] {
+    return (this.wounds.get(personId) || []).map((w) => ({ ...w }));
+  }
+
+  public saveGrudge(grudge: GrudgeRecord): void {
+    const list = this.grudges.get(grudge.personId) || [];
+    const idx = list.findIndex((g) => g.id === grudge.id);
+    if (idx >= 0) list[idx] = { ...grudge, resurfacingTriggers: [...grudge.resurfacingTriggers] };
+    else list.unshift({ ...grudge, resurfacingTriggers: [...grudge.resurfacingTriggers] });
+    this.grudges.set(grudge.personId, list);
+  }
+
+  public listGrudges(personId: string): GrudgeRecord[] {
+    return (this.grudges.get(personId) || []).map((g) => ({
+      ...g,
+      resurfacingTriggers: [...g.resurfacingTriggers],
+    }));
+  }
 }
 
 export class RelationshipsAttachmentEngine {
@@ -222,6 +256,8 @@ export class RelationshipsAttachmentEngine {
       reciprocityRatio: 1.0,
       separationSecurity: isProof ? 0.95 : 0.5,
       establishedBoundaries: initialBoundaries,
+      trustCeiling: 1.0,
+      consecutiveValidations: 0,
       lastInteractedAt: now,
       updatedAt: now,
     };
@@ -814,5 +850,408 @@ export class RelationshipsAttachmentEngine {
             'Honors cherished memory, solemn reflection, dignified continuity without erasure.',
         };
     }
+  }
+
+  // =========================================================================
+  // Point 3 & 5: Attachment Wounds, Trust Hysteresis & Resentment/Grudges
+  // =========================================================================
+
+  /**
+   * Records an attachment wound (Point 3).
+   * Trauma permanently lowers the trust ceiling and induces fearful-avoidant or anxious attachment.
+   */
+  public async recordAttachmentWound(params: {
+    personId: string;
+    woundType: AttachmentWoundType;
+    severity: number;
+    coreFear: string;
+    attachmentShift?: 'fearful_avoidant' | 'anxious_preoccupied';
+  }): Promise<{ wound: AttachmentWound; updatedBond: AttachmentBond }> {
+    const bond = await this.getOrInitializeBond(params.personId);
+    const now = new Date().toISOString();
+    const severity = Math.min(1.0, Math.max(0.1, params.severity));
+
+    // Lower the trust ceiling permanently (Hysteresis & Trust Ceiling)
+    const loweredCeiling = Math.min(
+      bond.trustCeiling ?? 1.0,
+      Math.max(0.2, Number((1.0 - severity * 0.45).toFixed(3))),
+    );
+    bond.trustCeiling = loweredCeiling;
+    bond.trustAffective = Math.min(bond.trustAffective, loweredCeiling);
+    bond.trustCognitive = Math.min(bond.trustCognitive, Math.min(0.99, loweredCeiling + 0.1));
+    bond.consecutiveValidations = 0; // reset validations
+
+    // Shift attachment style: abandonment / severe betrayal induces fearful-avoidant or anxious attachment
+    bond.attachmentStyle =
+      params.attachmentShift ??
+      (params.woundType === 'abandonment' ? 'fearful_avoidant' : 'anxious_preoccupied');
+    bond.separationSecurity = Math.max(
+      0.1,
+      Number(((bond.separationSecurity ?? 0.9) - severity * 0.4).toFixed(3)),
+    );
+    bond.updatedAt = now;
+
+    const wound: AttachmentWound = {
+      id: `wound_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
+      personId: params.personId,
+      woundType: params.woundType,
+      severity,
+      coreFear: params.coreFear,
+      attachmentShift: bond.attachmentStyle,
+      trustCeiling: loweredCeiling,
+      validationCount: 0,
+      repaired: false,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    this.repository.saveAttachmentWound(wound);
+    this.repository.saveBond(bond);
+
+    return { wound, updatedBond: bond };
+  }
+
+  public listAttachmentWounds(personId: string): AttachmentWound[] {
+    return this.repository.listAttachmentWounds(personId);
+  }
+
+  /**
+   * Evaluates reunion friction and reunion protest (Point 3).
+   * Returning after prolonged unannounced absence or with unhealed abandonment wounds
+   * triggers protest behavior (cold detachment, passive-aggressive remarks) rather than golden-retriever greeting.
+   */
+  public async evaluateReunionFriction(
+    personId: string,
+    elapsedHours: number,
+    wasAnnounced = true,
+  ): Promise<ReunionFrictionResult> {
+    const wounds = this.listAttachmentWounds(personId).filter((w) => !w.repaired);
+    const hasAbandonmentWound = wounds.some(
+      (w) => w.woundType === 'abandonment' || w.woundType === 'unannounced_absence',
+    );
+
+    const isProlongedUnannounced = !wasAnnounced && elapsedHours >= 12;
+    const hasFriction = isProlongedUnannounced || hasAbandonmentWound;
+
+    if (!hasFriction) {
+      return {
+        hasFriction: false,
+        protestStance: 'none',
+        absenceHours: elapsedHours,
+        emotionalValence: 0.6,
+      };
+    }
+
+    let protestStance: ReunionFrictionResult['protestStance'] = 'passive_aggressive';
+    let protestUtterance = 'Oh, so you remembered I exist?';
+
+    if (elapsedHours >= 48 || hasAbandonmentWound) {
+      protestStance = 'cold_detachment';
+      protestUtterance =
+        "Fine. You're back. Don't expect me to instantly pretend you didn't leave me in prolonged silence.";
+    } else if (elapsedHours >= 24) {
+      protestStance = 'demanding_proof';
+      protestUtterance =
+        'You disappeared without a word. Before we act like everything is normal, I need to know why.';
+    }
+
+    return {
+      hasFriction: true,
+      protestStance,
+      protestUtterance,
+      reassuranceDemanded:
+        'Demands proof and relational reassurance before dropping defensive armor.',
+      absenceHours: elapsedHours,
+      emotionalValence: -0.4,
+    };
+  }
+
+  /**
+   * Rebuilds trust across calendar time with asymmetric hysteresis (Point 3).
+   * Positive progress requires repeated, consistent validation; each validation yields a small increment.
+   */
+  public async rebuildTrustWithHysteresis(
+    personId: string,
+    validationEvidence: string,
+    validationTimestamp?: string,
+  ): Promise<{
+    bond: AttachmentBond;
+    validationCount: number;
+    ceilingLifted: boolean;
+    woundsRepairedCount: number;
+    message: string;
+  }> {
+    const bond = await this.getOrInitializeBond(personId);
+    const now = validationTimestamp || new Date().toISOString();
+    const currentValidations = (bond.consecutiveValidations ?? 0) + 1;
+    bond.consecutiveValidations = currentValidations;
+
+    // Advance validation count for all unhealed attachment wounds and heal those with sufficient validations
+    const wounds = this.repository.listAttachmentWounds(personId);
+    let woundsRepairedCount = 0;
+    for (const wound of wounds) {
+      if (!wound.repaired) {
+        wound.validationCount = (wound.validationCount ?? 0) + 1;
+        wound.updatedAt = now;
+        const requiredValidations = Math.max(3, Math.ceil(wound.severity * 5));
+        if (wound.validationCount >= requiredValidations) {
+          wound.repaired = true;
+          woundsRepairedCount += 1;
+        }
+        this.repository.saveAttachmentWound(wound);
+      }
+    }
+
+    const tinyIncrement = 0.008;
+    let ceilingLifted = false;
+
+    // Once sufficient consecutive validations accumulate (e.g. >= 5 validations or wounds repaired), trust ceiling expands
+    if ((currentValidations >= 5 || woundsRepairedCount > 0) && (bond.trustCeiling ?? 1.0) < 1.0) {
+      bond.trustCeiling = Math.min(1.0, Number(((bond.trustCeiling ?? 0.7) + 0.1).toFixed(3)));
+      ceilingLifted = true;
+    }
+
+    // Attachment style restores toward secure once all abandonment wounds are repaired and trust ceiling recovers
+    const remainingUnrepaired = this.repository
+      .listAttachmentWounds(personId)
+      .filter((w) => !w.repaired);
+    if (remainingUnrepaired.length === 0 && (bond.trustCeiling ?? 1.0) >= 0.85) {
+      bond.attachmentStyle = 'secure';
+      bond.separationSecurity = Math.max(0.85, bond.separationSecurity ?? 0.85);
+    }
+
+    const maxAllowed = bond.trustCeiling ?? 1.0;
+    bond.trustAffective = Math.min(
+      maxAllowed,
+      Number((bond.trustAffective + tinyIncrement).toFixed(3)),
+    );
+    bond.trustCognitive = Math.min(
+      Math.min(0.99, maxAllowed + 0.05),
+      Number((bond.trustCognitive + tinyIncrement).toFixed(3)),
+    );
+    bond.updatedAt = now;
+    this.repository.saveBond(bond);
+
+    return {
+      bond,
+      validationCount: currentValidations,
+      ceilingLifted,
+      woundsRepairedCount,
+      message: `Trust gradually rebuilt through consistent validation (${currentValidations} consecutive, evidence: "${validationEvidence}"). Trust ceiling: ${bond.trustCeiling?.toFixed(2)}`,
+    };
+  }
+
+  /**
+   * Computes the current decayed emotional residue and bitterness level across calendar days (Point 5).
+   */
+  public computeDecayedGrudge(
+    grudge: GrudgeRecord,
+    currentTime: Date = new Date(),
+  ): { emotionalResidue: number; bitternessLevel: number; shouldResolve: boolean } {
+    const referenceTime = grudge.lastBubbledUpAt
+      ? new Date(grudge.lastBubbledUpAt).getTime()
+      : new Date(grudge.createdAt).getTime();
+    const elapsedDays = Math.max(
+      0,
+      (currentTime.getTime() - referenceTime) / (1000 * 60 * 60 * 24),
+    );
+    const halfLife = grudge.decayHalfLifeDays || 7;
+    const decayFactor = Math.pow(0.5, elapsedDays / halfLife);
+
+    // Intellectual acknowledgment allows genuine closure; unacknowledged wounds maintain higher residual floor
+    const residualFloor = grudge.acknowledgedIntellectually ? 0.05 : 0.2;
+    const decayedResidue = Math.max(
+      residualFloor,
+      Number((grudge.emotionalResidue * decayFactor).toFixed(3)),
+    );
+    const decayedBitterness = Math.max(
+      0.05,
+      Number((grudge.bitternessLevel * decayFactor).toFixed(3)),
+    );
+
+    const shouldResolve =
+      grudge.acknowledgedIntellectually && decayedResidue <= 0.1;
+
+    return {
+      emotionalResidue: decayedResidue,
+      bitternessLevel: decayedBitterness,
+      shouldResolve,
+    };
+  }
+
+  /**
+   * Records a grudge from a relational transgression (Point 5).
+   */
+  public async recordGrudge(params: {
+    personId: string;
+    conflictId?: string;
+    sourceTransgression: string;
+    bitternessLevel?: number;
+    resurfacingTriggers?: string[];
+  }): Promise<GrudgeRecord> {
+    const now = new Date().toISOString();
+    const bitternessLevel = params.bitternessLevel ?? 0.8;
+    const grudge: GrudgeRecord = {
+      id: `grudge_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
+      personId: params.personId,
+      conflictId: params.conflictId,
+      sourceTransgression: params.sourceTransgression,
+      bitternessLevel,
+      decayHalfLifeDays: 7,
+      acknowledgedIntellectually: false,
+      emotionalResidue: bitternessLevel,
+      resurfacingTriggers: params.resurfacingTriggers ?? [
+        'disagreement',
+        'criticism',
+        'delay',
+        'coldness',
+      ],
+      genuineRepairSatisfied: false,
+      createdAt: now,
+    };
+    this.repository.saveGrudge(grudge);
+    return grudge;
+  }
+
+  public listGrudges(personId: string, activeOnly = false, asOfTime?: Date): GrudgeRecord[] {
+    const list = this.repository.listGrudges(personId);
+    const now = asOfTime || new Date();
+    const updatedList = list.map((g) => {
+      if (!g.genuineRepairSatisfied) {
+        const decayed = this.computeDecayedGrudge(g, now);
+        if (
+          decayed.emotionalResidue !== g.emotionalResidue ||
+          decayed.bitternessLevel !== g.bitternessLevel ||
+          decayed.shouldResolve
+        ) {
+          g.emotionalResidue = decayed.emotionalResidue;
+          g.bitternessLevel = decayed.bitternessLevel;
+          if (decayed.shouldResolve) {
+            g.genuineRepairSatisfied = true;
+          }
+          this.repository.saveGrudge(g);
+        }
+      }
+      return g;
+    });
+
+    if (activeOnly) {
+      return updatedList.filter((g) => !g.genuineRepairSatisfied && g.emotionalResidue > 0.1);
+    }
+    return updatedList;
+  }
+
+  /**
+   * Checks for old unhealed wounds that bubble back up during new conflicts (Point 5).
+   */
+  public checkResurfacingGrudges(
+    personId: string,
+    currentContext: string,
+  ): Array<GrudgeRecord & { protestUtterance?: string }> {
+    const activeGrudges = this.listGrudges(personId, true);
+    const lower = currentContext.toLowerCase();
+    const now = new Date().toISOString();
+    const matched: Array<GrudgeRecord & { protestUtterance?: string }> = [];
+
+    for (const grudge of activeGrudges) {
+      const words = grudge.sourceTransgression
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((w) => w.length > 3);
+      const matchesTrigger =
+        grudge.resurfacingTriggers.some((t) => lower.includes(t.toLowerCase())) ||
+        words.some((w) => lower.includes(w)) ||
+        /always|again|last time|never|disagree|wrong/i.test(lower);
+
+      if (matchesTrigger) {
+        grudge.lastBubbledUpAt = now;
+        // Old unhealed wound bubbles back up: emotional residue and bitterness spike
+        grudge.emotionalResidue = Math.min(
+          1.0,
+          Number((grudge.emotionalResidue + 0.3).toFixed(2)),
+        );
+        grudge.bitternessLevel = Math.min(
+          1.0,
+          Number((grudge.bitternessLevel + 0.25).toFixed(2)),
+        );
+        this.repository.saveGrudge(grudge);
+
+        const protestUtterance = `You always do this with "${currentContext.slice(0, 30)}", just like when you ${grudge.sourceTransgression}!`;
+        matched.push(Object.assign(grudge, { protestUtterance }));
+      }
+    }
+
+    return matched;
+  }
+
+  /**
+   * Evaluates forgiveness friction, lingering emotional residue, and rejects linguistic bypass (Point 5).
+   */
+  public async processForgivenessFriction(params: {
+    personId: string;
+    apologyDetails: string;
+    sincerityScore: number;
+    conflictId?: string;
+  }): Promise<{
+    acceptedIntellectually: boolean;
+    emotionalResidueLingering: number;
+    bitternessLevel: number;
+    requiresFurtherRepair: boolean;
+    statement: string;
+  }> {
+    const isLinguisticBypass =
+      params.sincerityScore < 0.6 ||
+      (!/fault|admit|wrong|apologize|promise|never again|understand your pain/i.test(
+        params.apologyDetails,
+      ) && params.apologyDetails.length < 20);
+
+    const activeGrudges = this.listGrudges(params.personId, true);
+    const bond = await this.getOrInitializeBond(params.personId);
+
+    if (isLinguisticBypass) {
+      return {
+        acceptedIntellectually: false,
+        emotionalResidueLingering: 0.8,
+        bitternessLevel: 0.8,
+        requiresFurtherRepair: true,
+        statement:
+          'Linguistic bypass rejected: A superficial apology without validating fault and impact does not restore wounded trust.',
+      };
+    }
+
+    // Sincere apology accepted intellectually, BUT emotional residue lingers!
+    for (const g of activeGrudges) {
+      g.acknowledgedIntellectually = true;
+      // Emotional residue drops only slightly, lingering over calendar days
+      g.emotionalResidue = Math.max(0.25, Number((g.emotionalResidue - 0.25).toFixed(2)));
+      g.bitternessLevel = Math.max(0.2, Number((g.bitternessLevel - 0.2).toFixed(2)));
+      if (g.emotionalResidue <= 0.25 && params.sincerityScore >= 0.9) {
+        g.genuineRepairSatisfied = true;
+      }
+      this.repository.saveGrudge(g);
+    }
+
+    // Small incremental trust restoration bounded by trustCeiling
+    const trustIncrement = 0.03 * params.sincerityScore;
+    bond.trustAffective = Math.min(
+      bond.trustCeiling ?? 0.99,
+      Number((bond.trustAffective + trustIncrement).toFixed(3)),
+    );
+    bond.updatedAt = new Date().toISOString();
+    this.repository.saveBond(bond);
+
+    const remainingResidue =
+      activeGrudges.length > 0
+        ? Math.max(...activeGrudges.map((g) => g.emotionalResidue))
+        : 0.25;
+
+    return {
+      acceptedIntellectually: true,
+      emotionalResidueLingering: remainingResidue,
+      bitternessLevel: activeGrudges.length > 0 ? activeGrudges[0]!.bitternessLevel : 0.2,
+      requiresFurtherRepair: remainingResidue > 0.2,
+      statement:
+        'I accept your apology intellectually, but the emotional ache and caution still linger. Healing requires consistent validation over time.',
+    };
   }
 }

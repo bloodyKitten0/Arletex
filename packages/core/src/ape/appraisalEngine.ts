@@ -7,21 +7,121 @@ import {
   EmotionTaxonomyItem,
   INITIAL_EMOTIONS_TAXONOMY,
   ProposedEmotionTransition,
+  ConditionedFlashback,
+  EmotionalTriggerNode,
 } from '@arletex/contracts';
 import { ComprehensiveAppraisalMatcher } from './comprehensiveAppraisalMatcher.js';
 import { detectHumanAffectiveSurge } from './humanAffectDynamics.js';
-import { IApeInferenceGateway } from './interfaces.js';
+import { IApeInferenceGateway, IEmotionalAppraisalRepository } from './interfaces.js';
 
 export class AppraisalEngine {
   private readonly emotionsMap: Map<string, EmotionTaxonomyItem>;
   private readonly inferenceGateway?: IApeInferenceGateway;
+  private readonly repository?: IEmotionalAppraisalRepository;
   private readonly comprehensiveMatcher: ComprehensiveAppraisalMatcher;
+  private readonly triggerNodes: Map<string, EmotionalTriggerNode> = new Map();
 
-  constructor(emotions: EmotionTaxonomyItem[] = [], inferenceGateway?: IApeInferenceGateway) {
+  constructor(
+    emotions: EmotionTaxonomyItem[] = [],
+    inferenceGateway?: IApeInferenceGateway,
+    repository?: IEmotionalAppraisalRepository,
+  ) {
     const activeEmotions = emotions.length > 0 ? emotions : INITIAL_EMOTIONS_TAXONOMY;
     this.emotionsMap = new Map(activeEmotions.map((e) => [e.id, e]));
     this.inferenceGateway = inferenceGateway;
+    this.repository = repository;
     this.comprehensiveMatcher = new ComprehensiveAppraisalMatcher();
+
+    if (this.repository && typeof this.repository.listTriggerNodes === 'function') {
+      try {
+        const persisted = this.repository.listTriggerNodes();
+        for (const node of persisted) {
+          this.triggerNodes.set(node.id, { ...node });
+        }
+      } catch {
+        // Fallback gracefully
+      }
+    }
+  }
+
+  public registerTriggerNode(node: EmotionalTriggerNode): void {
+    this.triggerNodes.set(node.id, { ...node });
+    if (this.repository && typeof this.repository.saveTriggerNode === 'function') {
+      try {
+        this.repository.saveTriggerNode(node);
+      } catch {
+        // Fallback gracefully
+      }
+    }
+  }
+
+  public listTriggerNodes(): EmotionalTriggerNode[] {
+    if (this.repository && typeof this.repository.listTriggerNodes === 'function') {
+      try {
+        const persisted = this.repository.listTriggerNodes();
+        for (const node of persisted) {
+          this.triggerNodes.set(node.id, { ...node });
+        }
+      } catch {
+        // Fallback to in-memory map
+      }
+    }
+    return Array.from(this.triggerNodes.values()).map((n) => ({ ...n }));
+  }
+
+  public checkConditionedFlashback(event: ApeEvent): ConditionedFlashback | null {
+    if (this.triggerNodes.size === 0) return null;
+    const text = (
+      (event.payload?.text as string) ||
+      (event.payload?.message as string) ||
+      event.type ||
+      ''
+    ).toLowerCase();
+
+    for (const node of this.triggerNodes.values()) {
+      let isMatched = false;
+      const pattern = node.cuePattern.toLowerCase();
+
+      if (node.cueType === 'phrase' || node.cueType === 'coldness') {
+        if (text.includes(pattern)) {
+          isMatched = true;
+        }
+      } else if (node.cueType === 'silence' || node.cueType === 'disconnect') {
+        if (
+          text.includes('disconnect') ||
+          text.includes('silence') ||
+          event.type.includes('disconnect') ||
+          event.type.includes('absence') ||
+          text.includes(pattern)
+        ) {
+          isMatched = true;
+        }
+      } else if (node.cueType === 'situational') {
+        if (text.includes(pattern)) {
+          isMatched = true;
+        }
+      }
+
+      if (isMatched) {
+        return {
+          id: `flashback_${crypto.randomUUID()}`,
+          triggerNodeId: node.id,
+          traumaMemoryId: node.traumaMemoryId,
+          matchedCue: node.cuePattern,
+          visceralSpike: {
+            arousal: node.somaticShock.arousal,
+            valence: node.somaticShock.valence,
+            dominance: node.somaticShock.dominance,
+            relationalPanic: node.somaticShock.relationalPanic,
+          },
+          defensiveReactionQuery: 'Why did you say that like that?',
+          pulledAway: true,
+          triggeredAt: new Date().toISOString(),
+        };
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -34,6 +134,75 @@ export class AppraisalEngine {
   ): ApeAppraisal {
     const appraisalId = crypto.randomUUID();
     const timestamp = new Date().toISOString();
+
+    // Conditioned Flashback Invariant: Trigger cues activate visceral defensive affect before logical assessment (Point 2)
+    const flashback = this.checkConditionedFlashback(event);
+    if (flashback) {
+      return {
+        id: appraisalId,
+        eventId: event.id,
+        dimensions: {
+          goalRelevance: 0.95,
+          goalCongruence: -0.85,
+          unexpectedness: 0.9,
+          responsibility: 'user',
+          intentionality: 0.8,
+          fairness: 0.15,
+          threat: 0.95,
+          controllability: 0.2,
+          socialMeaning: `Conditioned trauma trigger activated by cue: "${flashback.matchedCue}"`,
+          personalSignificance: 0.95,
+          uncertainty: 0.7,
+          relationshipImplications:
+            'Triggered conditioned defense mechanism: defensive vigilance, relational pullback, questioning partner motive.',
+        },
+        primaryInterpretation: `[Conditioned Trauma Flashback] Triggered by sensory cue: "${flashback.matchedCue}". Spontaneous defensive affect: "${flashback.defensiveReactionQuery}". Pulling away into hyper-vigilance.`,
+        alternativeInterpretations: [
+          {
+            hypothesis: 'Innocent remark or situational coincidence without hostile intent.',
+            likelihood: 0.2,
+            reasoning:
+              'Sensory trigger matched previous trauma pattern, but external context may be benign.',
+          },
+        ],
+        supportingEvidence: [
+          `Associative trigger node ${flashback.triggerNodeId} matched cue "${flashback.matchedCue}"`,
+          `Norepinephrine-encoded somatic shock: valence=${flashback.visceralSpike.valence}, arousal=${flashback.visceralSpike.arousal}, relationalPanic=${flashback.visceralSpike.relationalPanic}`,
+        ],
+        proposedTransitions: [
+          {
+            emotionId: 'panic',
+            target: 'user',
+            intensityDelta: 0.85,
+            targetIntensity: 0.92,
+            reason: 'Conditioned trauma flashback activation: acute visceral panic surge',
+            resolutionConditions: ['safety_verified', 'grounding_affirmed'],
+          },
+          {
+            emotionId: 'suspicion',
+            target: 'user',
+            intensityDelta: 0.8,
+            targetIntensity: 0.88,
+            reason: 'Conditioned trauma trigger association: defensive vigilance',
+            resolutionConditions: ['reassurance_received'],
+          },
+          {
+            emotionId: 'fear',
+            target: 'user',
+            intensityDelta: 0.75,
+            targetIntensity: 0.85,
+            reason: 'Conditioned trauma trigger association',
+            resolutionConditions: ['reassurance_received'],
+          },
+        ],
+        proposedMoodShift: 'anxious',
+        appraisalMethod: 'deterministic',
+        isFlashback: true,
+        flashbackNodeId: flashback.triggerNodeId,
+        conditionedReactionQuery: flashback.defensiveReactionQuery,
+        timestamp,
+      };
+    }
 
     // Causal Integrity Check: Assistant verbal dialogue expression must not circularly inflate emotions
     const isAssistantVerbalExpression =
@@ -219,6 +388,12 @@ export class AppraisalEngine {
     currentState: ApePsychologicalState,
     relationship: ApeRelationshipConfig,
   ): Promise<ApeAppraisal> {
+    // Conditioned Flashback Invariant: Trigger cues activate visceral defensive affect BEFORE logical/LLM assessment (Point 2)
+    const flashback = this.checkConditionedFlashback(event);
+    if (flashback) {
+      return this.appraise(event, currentState, relationship);
+    }
+
     const text = (event.payload?.text || '').trim();
 
     // Check if event is suitable for LLM assistance

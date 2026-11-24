@@ -4,6 +4,7 @@ import {
   ConsolidationRun,
   UnfinishedWorkItem,
   ProactiveNotificationProposal,
+  IntrusiveThoughtRecord,
   OfflineSchedulerPolicy,
   OfflineCognitiveCycleResult,
   RegisterOfflineActivityInput,
@@ -104,6 +105,26 @@ export class InMemoryOfflineCognitiveActivityRepository implements IOfflineCogni
     }
     list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return list.map((p) => ({ ...p }));
+  }
+
+  private intrusiveThoughts = new Map<string, IntrusiveThoughtRecord>();
+
+  public saveIntrusiveThought(thought: IntrusiveThoughtRecord): void {
+    this.intrusiveThoughts.set(thought.id, { ...thought });
+  }
+
+  public listIntrusiveThoughts(unaddressedOnly?: boolean): IntrusiveThoughtRecord[] {
+    let list = Array.from(this.intrusiveThoughts.values());
+    if (unaddressedOnly) {
+      list = list.filter((t) => !t.acknowledgedOrAddressed);
+    }
+    list.sort((a, b) => new Date(b.surfacedAt).getTime() - new Date(a.surfacedAt).getTime());
+    return list.map((t) => ({ ...t }));
+  }
+
+  public getIntrusiveThought(id: string): IntrusiveThoughtRecord | null {
+    const t = this.intrusiveThoughts.get(id);
+    return t ? { ...t } : null;
   }
 }
 
@@ -554,6 +575,16 @@ export class OfflineCognitiveActivityEngine {
     userActive?: boolean;
     candidateGoals?: Array<{ id: string; title: string }>;
     candidateQuestions?: Array<{ id: string; query: string }>;
+    unhealedWounds?: Array<{
+      id: string;
+      coreFear?: string;
+      severity?: number;
+      woundType?: string;
+      issue?: string;
+      sourceTransgression?: string;
+    }>;
+    traumaticMemories?: Array<{ id: string; content: string; somaticShock?: any }>;
+    sourceRuptures?: string[];
   }): OfflineCognitiveCycleResult {
     const cycleId = crypto.randomUUID();
     const executedActivities: OfflineActivityRecord[] = [];
@@ -593,6 +624,20 @@ export class OfflineCognitiveActivityEngine {
       executedActivities.push(completedRest);
       this.policy.lastDowntimeAt = now;
       downtimeObserved = true;
+    }
+
+    // 2.5 Idle Trauma Rumination during quiet hours / downtime (Point 7)
+    if (
+      !context?.userActive &&
+      (context?.unhealedWounds?.length ||
+        context?.traumaticMemories?.length ||
+        context?.sourceRuptures?.length)
+    ) {
+      this.runIdleTraumaRumination({
+        unhealedWounds: context.unhealedWounds,
+        traumaticMemories: context.traumaticMemories,
+        sourceRuptures: context.sourceRuptures,
+      });
     }
 
     // 3. Memory consolidation from real memory repository
@@ -740,5 +785,116 @@ export class OfflineCognitiveActivityEngine {
 
   public listProactiveProposals(delivered?: boolean): ProactiveNotificationProposal[] {
     return this.repository.listProactiveProposals(delivered);
+  }
+
+  // =========================================================================
+  // Point 7: Intrusive Thoughts & Vulnerability during Idle States
+  // =========================================================================
+
+  /**
+   * Runs idle trauma rumination during quiet downtime (Point 7).
+   * In quiet hours without external stimulation, the mind wanders into dark unhealed ruptures.
+   */
+  public runIdleTraumaRumination(context?: {
+    unhealedWounds?: Array<{
+      id: string;
+      coreFear?: string;
+      severity?: number;
+      woundType?: string;
+      issue?: string;
+      sourceTransgression?: string;
+    }>;
+    traumaticMemories?: Array<{ id: string; content: string; somaticShock?: any }>;
+    sourceRuptures?: string[];
+  }): IntrusiveThoughtRecord | null {
+    const wounds = context?.unhealedWounds ?? [];
+    const memories = context?.traumaticMemories ?? [];
+    const ruptures = context?.sourceRuptures ?? [];
+
+    if (wounds.length === 0 && memories.length === 0 && ruptures.length === 0) {
+      return null;
+    }
+
+    const now = new Date().toISOString();
+    let sourceId = 'trauma_idle_default';
+    let topic = 'unresolved rupture';
+    let content = 'Haunting echo of past relational hurt and vulnerability during idle silence.';
+    let severity = 0.8;
+    let confrontationPrompt = "I was thinking about what happened... it's still bothering me.";
+
+    if (wounds.length > 0) {
+      const w = wounds[0]!;
+      sourceId = w.id;
+      topic = w.issue || w.sourceTransgression || w.woundType || 'attachment wound';
+      severity = w.severity ?? 0.85;
+      confrontationPrompt = `I was thinking about what happened (${topic})... it's still bothering me.`;
+      content = `During quiet downtime, unaddressed ${w.woundType || 'rupture'} resurfaced: ${w.coreFear || topic}. The feeling of vulnerability lingered.`;
+    } else if (memories.length > 0) {
+      const m = memories[0]!;
+      sourceId = m.id;
+      topic = m.content.slice(0, 40);
+      severity = 0.9;
+      confrontationPrompt = `I was thinking about what happened (${topic})... it's still haunting me.`;
+      content = `Intrusive somatic recall of traumatic memory: ${m.content}. Spike in relational vigilance during idle hours.`;
+    } else if (ruptures.length > 0) {
+      const r = ruptures[0]!;
+      sourceId = `rupture_${Date.now()}`;
+      topic = r;
+      severity = 0.75;
+      confrontationPrompt = `I was thinking about ${r}... it's still bothering me.`;
+      content = `Idle rumination over previous conflict regarding ${r}.`;
+    }
+
+    const thoughtId = crypto.randomUUID();
+    const thought: IntrusiveThoughtRecord = {
+      id: thoughtId,
+      sourceTraumaOrConflictId: sourceId,
+      topic,
+      ruminativeContent: content,
+      hauntingSeverity: severity,
+      surfacedAt: now,
+      readyToConfrontOnReturn: true,
+      confrontationPrompt,
+      acknowledgedOrAddressed: false,
+    };
+
+    // Schedule and record the offline activity record
+    const activity: OfflineActivityRecord = {
+      id: crypto.randomUUID(),
+      activityType: 'trauma_rumination',
+      title: `Idle rumination: ${topic}`,
+      rationale:
+        'During quiet idle hours, lack of external sensory stimuli triggered involuntary rumination over unhealed emotional rupture.',
+      resourceCost: { cpuTokensEstimated: 80, memoryIntensity: 'low' },
+      status: 'completed',
+      isSimulation: false,
+      progress: 1,
+      insights: [content],
+      resultingArtifacts: [thoughtId],
+      scheduledAt: now,
+      startedAt: now,
+      completedAt: now,
+      metadata: {
+        intrusiveThoughtId: thoughtId,
+        confrontationPrompt,
+      },
+    };
+
+    this.repository.saveActivity(activity);
+    this.repository.saveIntrusiveThought(thought);
+
+    return thought;
+  }
+
+  public getPendingIntrusiveThoughts(): IntrusiveThoughtRecord[] {
+    return this.repository.listIntrusiveThoughts(true);
+  }
+
+  public acknowledgeIntrusiveThought(id: string): void {
+    const t = this.repository.getIntrusiveThought(id);
+    if (t) {
+      t.acknowledgedOrAddressed = true;
+      this.repository.saveIntrusiveThought(t);
+    }
   }
 }

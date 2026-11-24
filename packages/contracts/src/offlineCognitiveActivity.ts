@@ -12,6 +12,8 @@ export const OfflineActivityTypeSchema = z.enum([
   'unfinished_work_recovery',
   'proactive_communication_prep',
   'downtime_rest',
+  'trauma_rumination',
+  'rupture_review',
 ]);
 export type OfflineActivityType = z.infer<typeof OfflineActivityTypeSchema>;
 
@@ -172,3 +174,21 @@ export const RegisterOfflineActivityInputSchema = z.object({
   metadata: z.record(z.unknown()).optional(),
 });
 export type RegisterOfflineActivityInput = z.infer<typeof RegisterOfflineActivityInputSchema>;
+
+// =========================================================================
+// Point 7: Intrusive Thoughts & Vulnerability during Idle States
+// =========================================================================
+
+export const IntrusiveThoughtRecordSchema = z.object({
+  id: z.string().uuid(),
+  sourceTraumaOrConflictId: z.string().min(1),
+  topic: z.string().min(1),
+  ruminativeContent: z.string().min(1),
+  hauntingSeverity: z.number().min(0.0).max(1.0),
+  surfacedAt: z.string(),
+  readyToConfrontOnReturn: z.boolean().default(true),
+  confrontationPrompt: z.string().min(1),
+  acknowledgedOrAddressed: z.boolean().default(false),
+});
+export type IntrusiveThoughtRecord = z.infer<typeof IntrusiveThoughtRecordSchema>;
+

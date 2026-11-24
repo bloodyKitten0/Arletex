@@ -160,6 +160,10 @@ import {
   TurnTakingState,
   AudienceAdaptationProfile,
   AttachmentBond,
+  AttachmentWound,
+  GrudgeRecord,
+  EmotionalTriggerNode,
+  InternalAmbivalenceDebate,
   SharedHistoryEvent,
   RelationalConflict,
   ApologyAndRepair,
@@ -191,6 +195,7 @@ import {
   ConsolidationRun,
   UnfinishedWorkItem,
   ProactiveNotificationProposal,
+  IntrusiveThoughtRecord,
   SecurityAuthorizationDecision,
   SecurityAuditLog,
   SecurityBoundaryPolicy,
@@ -683,6 +688,8 @@ export interface IDeliberationRepository {
     limit?: number;
   }): InternalConflictRecord[];
   deleteConflict(id: string): void;
+  saveAmbivalenceDebate?(debate: InternalAmbivalenceDebate): void;
+  listAmbivalenceDebates?(limit?: number): InternalAmbivalenceDebate[];
 }
 
 export interface IAutonomousActivityRepository {
@@ -702,6 +709,10 @@ export interface IEmotionalAppraisalRepository {
   getComparisonById(id: string): AppraisalInterpretationComparison | null;
   listComparisons(limit?: number): AppraisalInterpretationComparison[];
   deleteComparison(id: string): void;
+  saveTriggerNode(node: EmotionalTriggerNode): void;
+  getTriggerNode(id: string): EmotionalTriggerNode | null;
+  listTriggerNodes(traumaMemoryId?: string): EmotionalTriggerNode[];
+  deleteTriggerNode(id: string): void;
 }
 
 export interface IEmotionalRepertoireRepository {
@@ -912,6 +923,12 @@ export interface IRelationshipsAttachmentRepository {
   listExpectations(personId: string): RelationalExpectation[];
   saveMemoryControlRecord(record: RelationalMemoryControl): void;
   listMemoryControlRecords(personId: string): RelationalMemoryControl[];
+
+  // Attachment Wounds & Relational Grudges
+  saveAttachmentWound(wound: AttachmentWound): void;
+  listAttachmentWounds(personId: string): AttachmentWound[];
+  saveGrudge(grudge: GrudgeRecord): void;
+  listGrudges(personId: string): GrudgeRecord[];
 }
 
 export interface ISocialLearningCultureRepository {
@@ -978,6 +995,9 @@ export interface IOfflineCognitiveActivityRepository {
   listUnfinishedWorkItems(status?: string): UnfinishedWorkItem[];
   saveProactiveProposal(proposal: ProactiveNotificationProposal): void;
   listProactiveProposals(delivered?: boolean): ProactiveNotificationProposal[];
+  saveIntrusiveThought(thought: IntrusiveThoughtRecord): void;
+  listIntrusiveThoughts(unaddressedOnly?: boolean): IntrusiveThoughtRecord[];
+  getIntrusiveThought(id: string): IntrusiveThoughtRecord | null;
 }
 
 export interface IEthicalBoundariesSecurityRepository {

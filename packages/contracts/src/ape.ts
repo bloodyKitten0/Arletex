@@ -373,6 +373,9 @@ export const ApeAppraisalSchema = z.object({
     .enum(['deterministic', 'llm_assisted', 'fallback'])
     .default('deterministic')
     .optional(),
+  isFlashback: z.boolean().optional(),
+  flashbackNodeId: z.string().optional(),
+  conditionedReactionQuery: z.string().optional(),
   timestamp: z.string().datetime(),
 });
 

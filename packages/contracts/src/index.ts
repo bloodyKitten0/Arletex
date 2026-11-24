@@ -228,6 +228,7 @@ export const MemoryTypeSchema = z.enum([
   'developmental',
   'working',
   'perceptual',
+  'traumatic',
 ]);
 export type MemoryType = z.infer<typeof MemoryTypeSchema>;
 

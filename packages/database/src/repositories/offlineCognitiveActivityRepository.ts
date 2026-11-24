@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import Database from 'better-sqlite3';
 import {
   OfflineActivityRecord,
@@ -5,6 +6,7 @@ import {
   ConsolidationRun,
   UnfinishedWorkItem,
   ProactiveNotificationProposal,
+  IntrusiveThoughtRecord,
 } from '@arletex/contracts';
 import { DatabaseError, IOfflineCognitiveActivityRepository } from '@arletex/core';
 
@@ -320,5 +322,91 @@ export class SqliteOfflineCognitiveActivityRepository implements IOfflineCogniti
       completedAt: row.completed_at ?? undefined,
       metadata: JSON.parse(row.metadata || '{}'),
     };
+  }
+
+  public saveIntrusiveThought(thought: IntrusiveThoughtRecord): void {
+    try {
+      const id = thought.id || randomUUID();
+      const now = new Date().toISOString();
+      const surfacedAt = thought.surfacedAt || now;
+
+      this.db
+        .prepare(
+          `INSERT INTO intrusive_thoughts (
+            id, source_trauma_or_conflict_id, topic, ruminative_content,
+            haunting_severity, surfaced_at, ready_to_confront_on_return,
+            confrontation_prompt, acknowledged_or_addressed
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            topic = excluded.topic,
+            ruminative_content = excluded.ruminative_content,
+            haunting_severity = excluded.haunting_severity,
+            surfaced_at = excluded.surfaced_at,
+            ready_to_confront_on_return = excluded.ready_to_confront_on_return,
+            confrontation_prompt = excluded.confrontation_prompt,
+            acknowledged_or_addressed = excluded.acknowledged_or_addressed`,
+        )
+        .run(
+          id,
+          thought.sourceTraumaOrConflictId,
+          thought.topic,
+          thought.ruminativeContent,
+          thought.hauntingSeverity,
+          surfacedAt,
+          thought.readyToConfrontOnReturn ? 1 : 0,
+          thought.confrontationPrompt,
+          thought.acknowledgedOrAddressed ? 1 : 0,
+        );
+    } catch (err: any) {
+      throw new DatabaseError(
+        `Failed to save intrusive thought ${thought.id}: ${err.message}`,
+        err,
+      );
+    }
+  }
+
+  public listIntrusiveThoughts(unaddressedOnly?: boolean): IntrusiveThoughtRecord[] {
+    try {
+      let query = `SELECT * FROM intrusive_thoughts`;
+      const params: any[] = [];
+      if (unaddressedOnly) {
+        query += ` WHERE acknowledged_or_addressed = 0`;
+      }
+      query += ` ORDER BY surfaced_at DESC`;
+      const rows = this.db.prepare(query).all(...params) as any[];
+      return rows.map((r) => ({
+        id: r.id,
+        sourceTraumaOrConflictId: r.source_trauma_or_conflict_id,
+        topic: r.topic,
+        ruminativeContent: r.ruminative_content,
+        hauntingSeverity: r.haunting_severity,
+        surfacedAt: r.surfaced_at,
+        readyToConfrontOnReturn: r.ready_to_confront_on_return === 1,
+        confrontationPrompt: r.confrontation_prompt,
+        acknowledgedOrAddressed: r.acknowledged_or_addressed === 1,
+      }));
+    } catch (err: any) {
+      throw new DatabaseError(`Failed to list intrusive thoughts: ${err.message}`, err);
+    }
+  }
+
+  public getIntrusiveThought(id: string): IntrusiveThoughtRecord | null {
+    try {
+      const r = this.db.prepare(`SELECT * FROM intrusive_thoughts WHERE id = ?`).get(id) as any;
+      if (!r) return null;
+      return {
+        id: r.id,
+        sourceTraumaOrConflictId: r.source_trauma_or_conflict_id,
+        topic: r.topic,
+        ruminativeContent: r.ruminative_content,
+        hauntingSeverity: r.haunting_severity,
+        surfacedAt: r.surfaced_at,
+        readyToConfrontOnReturn: r.ready_to_confront_on_return === 1,
+        confrontationPrompt: r.confrontation_prompt,
+        acknowledgedOrAddressed: r.acknowledged_or_addressed === 1,
+      };
+    } catch (err: any) {
+      throw new DatabaseError(`Failed to get intrusive thought ${id}: ${err.message}`, err);
+    }
   }
 }

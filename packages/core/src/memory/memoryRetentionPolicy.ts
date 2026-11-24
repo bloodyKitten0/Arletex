@@ -9,7 +9,8 @@ export type MemoryRetentionClass =
   | 'relationship'
   | 'procedural'
   | 'raw_sensory'
-  | 'derived_perceptual';
+  | 'derived_perceptual'
+  | 'permanent_indelible';
 
 export interface RetentionRule {
   retentionClass: MemoryRetentionClass;
@@ -129,6 +130,19 @@ export const CANONICAL_RETENTION_RULES: Record<MemoryRetentionClass, RetentionRu
     description:
       'Structured transcripts, image descriptions, captions, and perceptual embeddings tied to episodic events.',
   },
+  permanent_indelible: {
+    retentionClass: 'permanent_indelible',
+    isPermanent: true,
+    defaultRetentionDays: undefined,
+    halfLifeDays: undefined,
+    decayExemptThresholdImportance: 0.0,
+    reinforcementBoostPerAccess: 0.0,
+    allowRawStorage: true,
+    archivalStrategy: 'none',
+    privacyLevel: 'private_personal',
+    description:
+      'Indelible traumatic encoding locked with invariant retention. Immune to decay, purge, or overwriting.',
+  },
 };
 
 export class MemoryRetentionPolicyService {
@@ -143,6 +157,13 @@ export class MemoryRetentionPolicyService {
    */
   public getRule(typeOrClass: MemoryRetentionClass | MemoryType | string): RetentionRule {
     const norm = (typeOrClass || '').toLowerCase().trim();
+    if (
+      norm === 'permanent_indelible' ||
+      norm === 'trauma' ||
+      norm === 'traumatic'
+    ) {
+      return CANONICAL_RETENTION_RULES.permanent_indelible;
+    }
     if (norm === 'autobiographical') return CANONICAL_RETENTION_RULES.autobiographical;
     if (norm === 'relationship') return CANONICAL_RETENTION_RULES.relationship;
     if (norm === 'semantic') return CANONICAL_RETENTION_RULES.semantic;
@@ -164,9 +185,18 @@ export class MemoryRetentionPolicyService {
     importance = 0.5,
     retrievalAccessCount = 0,
   ): number {
+    const norm = (typeOrClass || '').toLowerCase().trim();
+    if (
+      norm === 'permanent_indelible' ||
+      norm === 'trauma' ||
+      norm === 'traumatic'
+    ) {
+      return 1.0;
+    }
+
     const rule = this.getRule(typeOrClass);
 
-    // Invariant: Autobiographical and relationship memories are permanent with zero temporal decay penalty
+    // Invariant: Autobiographical, relationship, and permanent_indelible memories are permanent with zero temporal decay penalty
     if (rule.isPermanent && rule.halfLifeDays === undefined) {
       return 1.0;
     }
@@ -199,8 +229,26 @@ export class MemoryRetentionPolicyService {
     retrievalAccessCount?: number;
     isArchived?: boolean;
     isDeleted?: boolean;
+    tags?: string[];
+    metadata?: Record<string, unknown>;
   }): { action: 'retain' | 'archive' | 'decay' | 'prune'; score: number; reason: string } {
     this.logger.debug(`Evaluating retention for memory ${memory.id} (${memory.type})`);
+
+    // Invariant: Indelible traumatic memories cannot be pruned or decayed even if marked isDeleted
+    const isIndelible =
+      memory.type === 'traumatic' ||
+      memory.type === 'permanent_indelible' ||
+      (memory.tags && memory.tags.includes('permanent_indelible')) ||
+      (memory.metadata && (memory.metadata.retention === 'permanent_indelible' || (memory.metadata as any).isTrauma === true));
+
+    if (isIndelible) {
+      return {
+        action: 'retain',
+        score: 1.0,
+        reason: 'Permanent indelible traumatic memory: locked with invariant retention, immune to decay, archival, and pruning.',
+      };
+    }
+
     if (memory.isDeleted) {
       return { action: 'prune', score: 0, reason: 'Memory marked as tombstoned/deleted' };
     }

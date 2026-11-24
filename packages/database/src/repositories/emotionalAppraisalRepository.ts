@@ -1,5 +1,9 @@
 import Database from 'better-sqlite3';
-import { AppraisalInterpretationComparison, assertAppraisalDivergence } from '@arletex/contracts';
+import {
+  AppraisalInterpretationComparison,
+  assertAppraisalDivergence,
+  EmotionalTriggerNode,
+} from '@arletex/contracts';
 import { DatabaseError, IEmotionalAppraisalRepository } from '@arletex/core';
 
 export class SqliteEmotionalAppraisalRepository implements IEmotionalAppraisalRepository {
@@ -72,6 +76,90 @@ export class SqliteEmotionalAppraisalRepository implements IEmotionalAppraisalRe
     } catch (err: any) {
       throw new DatabaseError(`Failed to delete appraisal comparison ${id}: ${err.message}`, err);
     }
+  }
+
+  public saveTriggerNode(node: EmotionalTriggerNode): void {
+    try {
+      this.db
+        .prepare(
+          `INSERT INTO trauma_trigger_nodes (
+            id, trauma_memory_id, cue_type, cue_pattern, sensitivity,
+            somatic_shock, flashback_pad_delta, defensive_postures, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            trauma_memory_id = excluded.trauma_memory_id,
+            cue_type = excluded.cue_type,
+            cue_pattern = excluded.cue_pattern,
+            sensitivity = excluded.sensitivity,
+            somatic_shock = excluded.somatic_shock,
+            flashback_pad_delta = excluded.flashback_pad_delta,
+            defensive_postures = excluded.defensive_postures`,
+        )
+        .run(
+          node.id,
+          node.traumaMemoryId,
+          node.cueType,
+          node.cuePattern,
+          node.sensitivity,
+          JSON.stringify(node.somaticShock),
+          JSON.stringify(node.flashbackPadDelta),
+          JSON.stringify(node.defensivePostures),
+          node.createdAt,
+        );
+    } catch (err: any) {
+      throw new DatabaseError(
+        `Failed to save trauma trigger node ${node.id}: ${err.message}`,
+        err,
+      );
+    }
+  }
+
+  public getTriggerNode(id: string): EmotionalTriggerNode | null {
+    try {
+      const row = this.db.prepare(`SELECT * FROM trauma_trigger_nodes WHERE id = ?`).get(id) as any;
+      if (!row) return null;
+      return this.mapTriggerNodeRow(row);
+    } catch (err: any) {
+      throw new DatabaseError(`Failed to get trauma trigger node ${id}: ${err.message}`, err);
+    }
+  }
+
+  public listTriggerNodes(traumaMemoryId?: string): EmotionalTriggerNode[] {
+    try {
+      let query = `SELECT * FROM trauma_trigger_nodes`;
+      const params: any[] = [];
+      if (traumaMemoryId) {
+        query += ` WHERE trauma_memory_id = ?`;
+        params.push(traumaMemoryId);
+      }
+      query += ` ORDER BY created_at DESC`;
+      const rows = this.db.prepare(query).all(...params) as any[];
+      return rows.map((r) => this.mapTriggerNodeRow(r));
+    } catch (err: any) {
+      throw new DatabaseError(`Failed to list trauma trigger nodes: ${err.message}`, err);
+    }
+  }
+
+  public deleteTriggerNode(id: string): void {
+    try {
+      this.db.prepare(`DELETE FROM trauma_trigger_nodes WHERE id = ?`).run(id);
+    } catch (err: any) {
+      throw new DatabaseError(`Failed to delete trauma trigger node ${id}: ${err.message}`, err);
+    }
+  }
+
+  private mapTriggerNodeRow(row: any): EmotionalTriggerNode {
+    return {
+      id: row.id,
+      traumaMemoryId: row.trauma_memory_id,
+      cueType: row.cue_type,
+      cuePattern: row.cue_pattern,
+      sensitivity: Number(row.sensitivity),
+      somaticShock: JSON.parse(row.somatic_shock || '{}'),
+      flashbackPadDelta: JSON.parse(row.flashback_pad_delta || '{}'),
+      defensivePostures: JSON.parse(row.defensive_postures || '[]'),
+      createdAt: row.created_at,
+    };
   }
 
   private mapComparisonRow(row: any): AppraisalInterpretationComparison {

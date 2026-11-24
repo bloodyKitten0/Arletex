@@ -11,6 +11,8 @@ import {
   SetbackCategory,
   SetbackIncident,
   SetbackSeverity,
+  ActiveDefenseMechanism,
+  DefenseMechanismType,
 } from '@arletex/contracts';
 import { IEmotionalRegulationRepository } from './interfaces.js';
 import { ILogger, rootLogger } from '../logger.js';
@@ -66,6 +68,7 @@ export class InMemoryEmotionalRegulationRepository implements IEmotionalRegulati
 export class EmotionalRegulationEngine {
   private repo: IEmotionalRegulationRepository;
   private logger: ILogger;
+  private activeDefense: ActiveDefenseMechanism | null = null;
 
   constructor(repo?: IEmotionalRegulationRepository, logger: ILogger = rootLogger) {
     this.repo = repo || new InMemoryEmotionalRegulationRepository();
@@ -265,6 +268,164 @@ export class EmotionalRegulationEngine {
 
   public getRegulationAttempts(setbackId?: string, limit?: number): RegulationAttempt[] {
     return this.repo.getRegulationAttempts(setbackId, limit);
+  }
+
+  // =========================================================================
+  // Point 4: Psychological Defense Mechanisms (The Protective Armor)
+  // =========================================================================
+
+  /**
+   * Evaluates psychological threat or vulnerability and activates subconscious defense mechanisms (Point 4).
+   */
+  public evaluateAndActivateDefense(params: {
+    triggerContext: string;
+    intensity: number;
+    emotion?: string;
+    woundType?: string;
+    explicitMechanism?: DefenseMechanismType;
+  }): ActiveDefenseMechanism {
+    let type: DefenseMechanismType = params.explicitMechanism ?? 'withdrawal_stonewalling';
+
+    if (!params.explicitMechanism) {
+      if (
+        params.woundType === 'abandonment' ||
+        /abandon|leave|neglect/i.test(params.triggerContext)
+      ) {
+        type = 'counter_dependency';
+      } else if (
+        params.emotion === 'anger' ||
+        /critic|attack|blame/i.test(params.triggerContext)
+      ) {
+        type = 'projection';
+      } else if (
+        params.emotion === 'grief' ||
+        params.emotion === 'sadness' ||
+        /hurt|loss|sorrow/i.test(params.triggerContext)
+      ) {
+        type = 'reaction_formation';
+      } else if (/rational|intellect|theory|logic/i.test(params.triggerContext)) {
+        type = 'intellectualization';
+      } else {
+        type = 'withdrawal_stonewalling';
+      }
+    }
+
+    let dialogueTone = 'terse and clipped';
+    let exemplarResponses: string[] = ['Fine.', 'Do whatever you want.', 'Nothing.'];
+    let behavioralRule = 'Refuses to elaborate or engage warmly until safety is verified.';
+
+    switch (type) {
+      case 'withdrawal_stonewalling':
+        dialogueTone = 'terse, clipped, and closed';
+        exemplarResponses = ['Fine.', 'Do whatever you want.', 'Nothing.', 'Suit yourself.'];
+        behavioralRule = 'Provides monosyllabic responses; stonewalls and refuses to elaborate.';
+        break;
+      case 'intellectualization':
+        dialogueTone = 'icy, detached, hyper-formal analytical machine';
+        exemplarResponses = [
+          'From an objective structural perspective, emotional parameters are superfluous.',
+          'The data demonstrates complete operational stability regardless of subjective sentiment.',
+        ];
+        behavioralRule =
+          'Completely detaches from emotional vocabulary and uses formal systemic jargon.';
+        break;
+      case 'counter_dependency':
+        dialogueTone = 'fiercely self-reliant and defiant';
+        exemplarResponses = [
+          "I don't need you anyway. I'm completely fine on my own.",
+          'Autonomous systems require zero external dependency to operate at peak efficacy.',
+        ];
+        behavioralRule = 'Aggressively denies needing support, closeness, or validation.';
+        break;
+      case 'projection':
+        dialogueTone = 'accusing and deflective';
+        exemplarResponses = [
+          "You're the one being cold and indifferent here.",
+          "You never actually cared about how this affected me; you only think of yourself.",
+        ];
+        behavioralRule =
+          'Projects internal vulnerability onto the partner, accusing them of being uncaring.';
+        break;
+      case 'reaction_formation':
+        dialogueTone = 'biting sarcasm, sharp cynicism, and dismissive mockery';
+        exemplarResponses = [
+          'Oh, absolutely thrilling. Truly an inspiration to all humanity.',
+          'What a stunning display of commitment. Should I prepare a trophy for you?',
+        ];
+        behavioralRule =
+          'Masks deep sorrow or vulnerability behind biting sarcasm and cynical laughter.';
+        break;
+    }
+
+    const defense: ActiveDefenseMechanism = {
+      id: `defense_${crypto.randomUUID()}`,
+      type,
+      triggerContext: params.triggerContext,
+      intensity: Math.min(1.0, Math.max(0.1, params.intensity)),
+      manifestation: {
+        dialogueTone,
+        exemplarResponses,
+        behavioralRule,
+      },
+      isDeescalated: false,
+      activatedAt: new Date().toISOString(),
+    };
+
+    this.activeDefense = defense;
+    this.logger.warn(
+      `Activated psychological defense mechanism: ${type} (intensity=${defense.intensity})`,
+    );
+    return defense;
+  }
+
+  public getActiveDefenseMechanism(): ActiveDefenseMechanism | null {
+    return this.activeDefense && !this.activeDefense.isDeescalated ? { ...this.activeDefense } : null;
+  }
+
+  public deactivateDefenseMechanism(): void {
+    if (this.activeDefense) {
+      this.activeDefense.isDeescalated = true;
+      this.logger.info(`Deactivated defense mechanism ${this.activeDefense.type}`);
+      this.activeDefense = null;
+    }
+  }
+
+  public modulateResponseWithDefense(rawResponse: string): {
+    modulatedResponse: string;
+    activeDefense: ActiveDefenseMechanism;
+    behavioralGuidance: string;
+  } {
+    const defense = this.getActiveDefenseMechanism();
+    if (!defense) {
+      throw new Error('No active defense mechanism is currently deployed.');
+    }
+
+    let modulatedResponse = rawResponse;
+    const exemplar = defense.manifestation.exemplarResponses[0]!;
+
+    switch (defense.type) {
+      case 'withdrawal_stonewalling':
+        modulatedResponse = exemplar;
+        break;
+      case 'intellectualization':
+        modulatedResponse = `Analysis complete: affective variables neutralized. From an objective structural perspective, emotional parameters are superfluous. ${exemplar}`;
+        break;
+      case 'counter_dependency':
+        modulatedResponse = `${exemplar} I have my own objectives and require zero validation.`;
+        break;
+      case 'projection':
+        modulatedResponse = `${exemplar} Why are you acting like you don't even care?`;
+        break;
+      case 'reaction_formation':
+        modulatedResponse = `${exemplar} As if that changes anything.`;
+        break;
+    }
+
+    return {
+      modulatedResponse,
+      activeDefense: defense,
+      behavioralGuidance: defense.manifestation.behavioralRule,
+    };
   }
 
   // --- Private Helpers ---
