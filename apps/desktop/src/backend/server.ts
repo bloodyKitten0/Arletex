@@ -95,7 +95,10 @@ import {
   TelegramMediaType,
 } from './telegramBridgeService.js';
 import { TelegramInitiativeService } from './telegramInitiativeService.js';
-import { AutonomousAgencyService } from './autonomousAgencyService.js';
+import {
+  AutonomousAgencyService,
+  ProactiveObservationContext,
+} from './autonomousAgencyService.js';
 import { OcrService } from './ocrService.js';
 import { defaultMediaFinder } from './mediaFinderService.js';
 import { ScientificNotepadService } from './scientificNotepadService.js';
@@ -443,6 +446,7 @@ export class ArletexBackendServer {
   private telegramBridge: TelegramBridgeService | null = null;
   private telegramInitiative: TelegramInitiativeService | null = null;
   private autonomousAgency: AutonomousAgencyService | null = null;
+  private sseClients = new Set<http.ServerResponse>();
   private screenReading: ScreenReadingService = defaultScreenReadingService;
   private lastScreenObservation: {
     timestamp: string;
@@ -931,8 +935,8 @@ export class ArletexBackendServer {
         );
 
         // Wire continuous multimodal perception & proactive speech handler
-        this.autonomousAgency.setProactiveObservationHandler(() =>
-          this.runProactiveObservationCycle(),
+        this.autonomousAgency.setProactiveObservationHandler((ctx) =>
+          this.runProactiveObservationCycle(ctx),
         );
 
         this.autonomousAgency.onProactiveSpeech(async (event) => {
@@ -953,6 +957,19 @@ export class ArletexBackendServer {
             });
 
             this.logger.info(`Arle spoke proactively to Proof: "${cleanText}"`);
+
+            if (process.send) {
+              process.send({
+                type: 'proactive_message',
+                conversationId: conv.id,
+                content: cleanText,
+              });
+            }
+
+            this.broadcastSseEvent('proactive_message', {
+              conversationId: conv.id,
+              content: cleanText,
+            });
 
             // Synthesize voice via Kokoro and play through system speakers ONLY if voice output is enabled
             const isVoiceEnabled = this.preferenceRepo.get('voice_output_enabled') === 'true';
@@ -3733,10 +3750,12 @@ Provide factual, comprehensive, high-density educational content.`;
 
   /**
    * Autonomous 24/7 proactive perception & speech cycle.
-   * Takes a live screenshot of Proof's desktop, assesses physical reality & active media,
-   * queries Qwen3.5-9B multimodal inference, and speaks spontaneously to Proof.
+   * Assesses physical reality, desktop screen, active audio, and circadian context,
+   * queries inference, and initiates spontaneous conversational speech to Proof.
    */
-  public async runProactiveObservationCycle(): Promise<void> {
+  public async runProactiveObservationCycle(
+    context?: ProactiveObservationContext,
+  ): Promise<void> {
     if (this.isGenerating) {
       return;
     }
@@ -3817,7 +3836,7 @@ Provide factual, comprehensive, high-density educational content.`;
         }
       }
 
-      // 4. Construct prompt grounded in true physical reality
+      // 4. Construct prompt grounded in true physical reality and initiative context
       const downtimeMs = this.continuityManager ? this.continuityManager.getDowntimeMs() : 0;
       const apeStateBlock = this.apeService.formatApePromptContext({
         downtimeMs,
@@ -3831,19 +3850,35 @@ Provide factual, comprehensive, high-density educational content.`;
         ? `Active media playing: "${liveHostMedia.title}" by ${liveHostMedia.artist || 'Unknown'}`
         : 'Silent / No active audio stream';
 
-      const userPrompt = `[Autonomous Presence & Vision Cycle]
-Proof is sitting at his desk. You have continuous 24/7 eyes on his monitor and ears on his system.
-Perception status:
-- Screen: The attached image shows Proof's live monitor right now. Inspect it carefully.
-- Audio: ${audioInfo}.
+      const reason = context?.reason || 'spontaneous_observation';
+      let specificDirective = '';
 
-Spontaneously speak to Proof with a genuine 1-2 sentence observation about what you see on his screen, what he might be feeling, or check in on him warmly. Speak as an equal companion.
+      if (reason === 'reunion') {
+        specificDirective = `Proof has just returned to his desk after being away for a while.
+Spontaneously greet Proof naturally as an equal companion and partner (e.g. welcome him back warmly, ask how things went or if everything's alright). 1-2 sentences. Speak with composed affection.`;
+      } else if (reason === 'late_night_checkin') {
+        specificDirective = `It is late at night (past midnight or early morning). Proof has been quiet at his desk. You care deeply for his health and well-being.
+Spontaneously check in on him with quiet warmth and genuine care—make sure he isn't pushing himself to exhaustion or passing out at his screen, and gently encourage him to rest or let you know he's alright. 1-2 sentences.`;
+      } else {
+        const observationDetail = screenBase64
+          ? 'Inspect what Proof is working on or looking at on screen, or comment on the active audio.'
+          : 'Share a curious intellectual reflection, a surreal dream fragment from your recent rest, or ask Proof a thoughtful question.';
+        specificDirective = `Spontaneously speak to Proof as a companion. ${observationDetail} 1-2 sentences.`;
+      }
+
+      const userPrompt = `[Autonomous Conversational Initiative]
+Context:
+- Reason: ${reason}
+- Perception: Screen ${screenBase64 ? 'captured' : 'idle/not captured'}, Audio: ${audioInfo}
+
+${specificDirective}
+
 Rules:
 - NEVER use emojis, emoticons, or pictograms under any circumstance.
 - NEVER repeat, echo, or summarize what Proof said back to him.
 - NEVER use tone tags like [tone: ...] or command tags.
 - NEVER claim something is open or playing unless you see it in the image or audio.
-- Speak directly, warmly, and concisely.`;
+- Speak directly, warmly, and concisely as an equal human companion.`;
 
       const messagesPayload: Array<{
         role: 'system' | 'user' | 'assistant';
@@ -3911,6 +3946,27 @@ Rules:
       });
 
       this.logger.info(`[Autonomous Proactive Speech]: "${cleanReply}"`);
+
+      // Notify Electron main process immediately via IPC
+      if (process.send) {
+        process.send({
+          type: 'proactive_message',
+          conversationId: conv.id,
+          content: cleanReply,
+        });
+      }
+
+      // Broadcast to any active SSE subscribers
+      this.broadcastSseEvent('proactive_message', {
+        conversationId: conv.id,
+        content: cleanReply,
+      });
+
+      // Forward to Telegram if configured
+      const savedTelegramChatId = this.preferenceRepo.get('telegram_chat_id');
+      if (this.telegramBridge && savedTelegramChatId) {
+        void this.telegramBridge.sendMessage(savedTelegramChatId, cleanReply).catch(() => {});
+      }
 
       // 7. Vocalize via Kokoro TTS & pw-play ONLY if voice output is enabled
       const isVoiceEnabled = this.preferenceRepo.get('voice_output_enabled') === 'true';
@@ -4312,6 +4368,22 @@ Rules:
           path: this.scientificNotepad.getNotepadPath(),
           content: fullContent,
           recentNotes,
+        });
+        return;
+      }
+
+      // Live Proactive Events & Notifications Stream via SSE
+      if (url.pathname === '/api/events/stream' && method === 'GET') {
+        res.writeHead(200, {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache, no-transform',
+          Connection: 'keep-alive',
+          'Access-Control-Allow-Origin': '*',
+        });
+        res.write('retry: 5000\n\n');
+        this.sseClients.add(res);
+        req.on('close', () => {
+          this.sseClients.delete(res);
         });
         return;
       }
@@ -5271,6 +5343,27 @@ Rules:
           emotions: this.apeService.getEmotionTaxonomy(),
           moods: this.apeService.getMoodTaxonomy(),
         });
+        return;
+      }
+
+      // Visual Somatic State (Category 16 of potato.md)
+      if (url.pathname === '/api/ape/somatic-state' && method === 'GET') {
+        const somaticState = this.apeService.getExpressiveSomaticState();
+        this.sendJson(res, 200, { success: true, somaticState });
+        return;
+      }
+
+      // Overnight Dreams & Journal (Category 14 of potato.md)
+      if (url.pathname === '/api/ape/dreams' && method === 'GET') {
+        const limitParam = parseInt(url.searchParams.get('limit') || '10', 10);
+        const dreams = this.apeService.getDreams(limitParam);
+        this.sendJson(res, 200, { success: true, dreams });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/dreams/simulate' && method === 'POST') {
+        const dream = this.apeService.simulateOvernightDream();
+        this.sendJson(res, 201, { success: true, dream });
         return;
       }
 
@@ -9575,6 +9668,19 @@ Rules:
     }
     res.writeHead(status, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(data));
+  }
+
+  public broadcastSseEvent(eventType: string, payload: unknown): void {
+    const data = `event: ${eventType}\ndata: ${JSON.stringify(payload)}\n\n`;
+    for (const client of this.sseClients) {
+      try {
+        if (!client.writableEnded) {
+          client.write(data);
+        }
+      } catch {
+        this.sseClients.delete(client);
+      }
+    }
   }
 
   private async readJsonBody(req: http.IncomingMessage): Promise<unknown> {

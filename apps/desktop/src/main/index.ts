@@ -199,6 +199,19 @@ async function startBackendService(): Promise<number> {
             reject(new Error(`Backend health check failed: ${healthErr.message}`));
           }
         }
+      } else if (msg && msg.type === 'proactive_message') {
+        logger.info(
+          `[ProactiveSpeech] Received unprompted message from Arle for conversation: ${msg.conversationId}`,
+        );
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send(IPC_CHANNELS.INFERENCE_STREAM_CHUNK, {
+            requestId: crypto.randomUUID(),
+            conversationId: msg.conversationId,
+            delta: '',
+            fullContent: msg.content,
+            isDone: true,
+          });
+        }
       }
     });
 

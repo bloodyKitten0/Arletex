@@ -240,6 +240,7 @@ export const App: React.FC = () => {
         if (targetId && targetId === activeConversationIdRef.current) {
           void loadMessages(targetId);
         }
+        void loadConversations();
         return;
       }
 

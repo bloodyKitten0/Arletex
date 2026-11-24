@@ -26,6 +26,11 @@ export interface ProactiveSpeechEvent {
   source: 'screen_observation' | 'reflection' | 'companion_care';
 }
 
+export interface ProactiveObservationContext {
+  reason: 'reunion' | 'late_night_checkin' | 'spontaneous_observation';
+  idleSeconds: number;
+}
+
 export interface AutonomousAgencyStatus {
   isEnabled: boolean;
   isLoopActive: boolean;
@@ -49,17 +54,22 @@ export class AutonomousAgencyService {
   private currentActivity: string | null = null;
   private lastActionTimestamp: string | null = null;
   private lastUserInteractionTime = 0;
-  private lastProactiveSpeechTime = Date.now();
+  private lastProactiveSpeechTime = 0;
+  private pendingReunion = false;
   private recentLogs: AutonomousActionLog[] = [];
   private isCycleRunning = false;
   private proactiveSpeechListeners: Array<(event: ProactiveSpeechEvent) => void> = [];
-  private proactiveObservationHandler: (() => Promise<void>) | null = null;
+  private proactiveObservationHandler:
+    | ((context: ProactiveObservationContext) => Promise<void>)
+    | null = null;
 
   public onProactiveSpeech(fn: (event: ProactiveSpeechEvent) => void): void {
     this.proactiveSpeechListeners.push(fn);
   }
 
-  public setProactiveObservationHandler(fn: () => Promise<void>): void {
+  public setProactiveObservationHandler(
+    fn: (context: ProactiveObservationContext) => Promise<void>,
+  ): void {
     this.proactiveObservationHandler = fn;
   }
 
@@ -129,7 +139,18 @@ export class AutonomousAgencyService {
   }
 
   public notifyUserActivity(): void {
-    this.lastUserInteractionTime = Date.now();
+    const now = Date.now();
+    if (this.lastUserInteractionTime > 0) {
+      const elapsed = now - this.lastUserInteractionTime;
+      // If Proof was away for > 8 minutes, flag pending reunion so Arle warmly greets him upon return
+      if (elapsed > 8 * 60 * 1000) {
+        this.pendingReunion = true;
+        this.logger.info(
+          `User activity detected after ${(elapsed / 60000).toFixed(1)}m absence. Flagged pending reunion.`,
+        );
+      }
+    }
+    this.lastUserInteractionTime = now;
   }
 
   public setEnabled(enabled: boolean): void {
@@ -142,7 +163,7 @@ export class AutonomousAgencyService {
     }
   }
 
-  public startLoop(intervalMs = 120000): void {
+  public startLoop(intervalMs = 30000): void {
     if (this.timer) {
       clearInterval(this.timer);
     }
@@ -190,12 +211,13 @@ export class AutonomousAgencyService {
       return null;
     }
 
-    // Pause autonomous background actions if Proof was active recently (last 15 seconds) so we don't interrupt him
+    // Pause autonomous background actions if Proof was active recently (last 15 seconds) so we don't interrupt him,
+    // unless a reunion greeting is pending and Proof has settled in for at least 2 seconds.
     const idleSeconds =
       this.lastUserInteractionTime === 0
         ? 999999
         : (Date.now() - this.lastUserInteractionTime) / 1000;
-    if (idleSeconds < 15) {
+    if (idleSeconds < 15 && (!this.pendingReunion || idleSeconds < 2)) {
       this.logger.debug(
         `Skipping autonomous cycle; Proof was active ${idleSeconds.toFixed(0)}s ago.`,
       );
@@ -230,28 +252,59 @@ export class AutonomousAgencyService {
         }
       }
 
-      // 1. Proactive Multimodal Observation & Spontaneous Speech
-      // Only speak proactively if Proof has been idle for at least 5 minutes and at least 30 minutes since last speech
-      const msSinceLastSpeech = Date.now() - this.lastProactiveSpeechTime;
-      const shouldSpeakProactively =
-        Boolean(this.proactiveObservationHandler) &&
-        idleSeconds > 300 &&
-        msSinceLastSpeech > 1800000;
+      // 1. Proactive Multimodal Observation & Human-like Conversational Initiative
+      const now = Date.now();
+      const currentHour = new Date().getHours();
+      const isLateNight = currentHour >= 0 && currentHour < 5;
+      const msSinceLastSpeech = now - this.lastProactiveSpeechTime;
 
-      if (shouldSpeakProactively && this.proactiveObservationHandler) {
-        this.lastProactiveSpeechTime = Date.now();
-        this.currentActivity = 'Observing Proof monitor screen & speaking spontaneously';
+      let proactiveReason: 'reunion' | 'late_night_checkin' | 'spontaneous_observation' | null =
+        null;
+
+      if (this.pendingReunion && idleSeconds >= 2) {
+        // Proof returned after prolonged absence (> 8 mins)
+        proactiveReason = 'reunion';
+      } else if (isLateNight && idleSeconds >= 45 && msSinceLastSpeech >= 150000) {
+        // Late night care / health check-in (past midnight, quiet for 45s, 2.5 min cooldown)
+        proactiveReason = 'late_night_checkin';
+      } else if (idleSeconds >= 60 && msSinceLastSpeech >= 240000) {
+        // Spontaneous daytime / evening initiative (idle for 60s, 4 min cooldown)
+        proactiveReason = 'spontaneous_observation';
+      }
+
+      if (proactiveReason && this.proactiveObservationHandler) {
+        this.lastProactiveSpeechTime = now;
+        if (proactiveReason === 'reunion') {
+          this.pendingReunion = false;
+        }
+
+        this.currentActivity =
+          proactiveReason === 'reunion'
+            ? 'Greeting Proof upon his return'
+            : proactiveReason === 'late_night_checkin'
+              ? 'Checking in on Proof during late-night hours'
+              : 'Observing Proof monitor screen & speaking spontaneously';
+
         this.logger.info(
-          'Autonomous Agency: Formulating live vision proactive speech with Proof...',
+          `Autonomous Agency: Proactive conversational initiative triggered (reason: ${proactiveReason}, idle: ${idleSeconds.toFixed(0)}s)...`,
         );
+
         try {
-          await this.proactiveObservationHandler();
+          await this.proactiveObservationHandler({
+            reason: proactiveReason,
+            idleSeconds,
+          });
           logEntry = {
             id: crypto.randomUUID(),
             timestamp,
             category: 'proactive_speech',
-            title: 'Live Screen Observation & Spontaneous Speech',
-            details: 'Observed active desktop screen and spoke to Proof via multimodal vision',
+            title:
+              proactiveReason === 'reunion'
+                ? 'Reunion Greeting'
+                : proactiveReason === 'late_night_checkin'
+                  ? 'Late-Night Care Check-in'
+                  : 'Live Observation & Spontaneous Speech',
+            details: `Initiated proactive speech to Proof (reason: ${proactiveReason})`,
           };
         } catch (obsErr: any) {
           this.logger.warn(`Proactive observation cycle note: ${obsErr.message}`);
@@ -313,14 +366,22 @@ export class AutonomousAgencyService {
             });
           }
 
-          // Replenish homeostatic substrate and execute restorative sleep/dream cycle if fatigue is high
+          // Replenish homeostatic substrate and execute restorative sleep/dream cycle if fatigue is high or late night
           this._apeService.replenishHomeostasis({
             energy: 0.2,
             fatigueReduction: 0.25,
             stressReduction: 0.2,
           });
-          if (homeostasis.fatigue > 0.6 || homeostasis.allostaticStressLoad > 0.5) {
+          if (homeostasis.fatigue > 0.6 || homeostasis.allostaticStressLoad > 0.5 || isLateNight) {
             this._apeService.runSleepDreamCycle('slow_wave_sleep');
+            try {
+              const dream = this._apeService.simulateOvernightDream();
+              this.logger.info(
+                `Autonomous Agency: Simulated overnight dream [${dream.dreamId}]: ${dream.dreamThemes[0]}`,
+              );
+            } catch (dreamErr: any) {
+              this.logger.debug(`Dream simulation note: ${dreamErr.message}`);
+            }
           }
 
           logEntry = {

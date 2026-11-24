@@ -1260,3 +1260,37 @@ export const AuditoryPerceptionInputSchema = z.object({
   salienceOverride: z.number().min(0.0).max(1.0).optional(),
 });
 export type AuditoryPerceptionInput = z.infer<typeof AuditoryPerceptionInputSchema>;
+
+export const ExpressiveSomaticStateSchema = z.object({
+  posture: z.enum([
+    'upright_composed',
+    'leaning_forward_intrigued',
+    'defensive_crossed',
+    'relaxed_intimate',
+    'tender_softened',
+    'alert_attentive',
+  ]),
+  gaze: z.enum([
+    'direct_steady',
+    'soft_attentive',
+    'averted_wary',
+    'lowered_vulnerable',
+    'playful_smirk',
+  ]),
+  microExpression: z.enum([
+    'faint_smirk',
+    'tender_softening',
+    'cool_detachment',
+    'furrowed_concern',
+    'intense_focus',
+  ]),
+  gesturalReadiness: z.enum([
+    'still_listening',
+    'head_tilt_curious',
+    'hand_open_expressive',
+    'withdrawn_guarded',
+  ]),
+  vocalRegister: z.string(),
+  dominantEmotion: z.string(),
+});
+export type ExpressiveSomaticState = z.infer<typeof ExpressiveSomaticStateSchema>;

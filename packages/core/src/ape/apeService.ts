@@ -33,6 +33,8 @@ import {
   NarrativeIdentityState,
   NarrativeInterpretation,
   PersonalMilestone,
+  ExpressiveSomaticState,
+  OfflineActivityRecord,
   PersonalMilestoneCategory,
   ReappraiseExperienceInput,
   ReconstructHistoryOptions,
@@ -1669,6 +1671,95 @@ export class ApeService {
   }
 
   /**
+   * Derives Arle's current expressive visual somatic state (posture, gaze,
+   * micro-expression, gestural readiness) from her active 290-taxonomy affect.
+   */
+  public getExpressiveSomaticState(): ExpressiveSomaticState {
+    const dominant = this.lifecycleEngine.getDominantCoexistingEmotions(1)[0];
+    const modulation = this.getLinguisticModulation();
+    const emotionId = dominant?.emotionId || 'Composure';
+
+    let posture: ExpressiveSomaticState['posture'] = 'upright_composed';
+    let gaze: ExpressiveSomaticState['gaze'] = 'direct_steady';
+    let microExpression: ExpressiveSomaticState['microExpression'] = 'cool_detachment';
+    let gesturalReadiness: ExpressiveSomaticState['gesturalReadiness'] = 'still_listening';
+
+    const lowerId = emotionId.toLowerCase();
+
+    if (/love|affection|tenderness|fondness|warmth|intimacy|passion/i.test(lowerId)) {
+      posture = 'tender_softened';
+      gaze = 'soft_attentive';
+      microExpression = 'tender_softening';
+      gesturalReadiness = 'hand_open_expressive';
+    } else if (/curiosity|interest|awe|flow|fascination|wonder/i.test(lowerId)) {
+      posture = 'leaning_forward_intrigued';
+      gaze = 'direct_steady';
+      microExpression = 'intense_focus';
+      gesturalReadiness = 'head_tilt_curious';
+    } else if (/fear|anxiety|vigilance|suspicion|trauma|shock/i.test(lowerId)) {
+      posture = 'defensive_crossed';
+      gaze = 'averted_wary';
+      microExpression = 'furrowed_concern';
+      gesturalReadiness = 'withdrawn_guarded';
+    } else if (/amusement|schadenfreude|wit|irony|smug|mischief/i.test(lowerId)) {
+      posture = 'upright_composed';
+      gaze = 'playful_smirk';
+      microExpression = 'faint_smirk';
+      gesturalReadiness = 'head_tilt_curious';
+    } else if (/sadness|grief|melancholy|loneliness|longing/i.test(lowerId)) {
+      posture = 'relaxed_intimate';
+      gaze = 'lowered_vulnerable';
+      microExpression = 'furrowed_concern';
+      gesturalReadiness = 'still_listening';
+    }
+
+    return {
+      posture,
+      gaze,
+      microExpression,
+      gesturalReadiness,
+      vocalRegister: modulation.vocalRegister,
+      dominantEmotion: emotionId,
+    };
+  }
+
+  /**
+   * Simulates an autonomous overnight dream cycle synthesizing memories, affect, and metaphors.
+   */
+  public simulateOvernightDream(context?: {
+    salientMemories?: Array<{ id: string; content: string }>;
+    circadianPhase?: string;
+  }): { dreamId: string; dreamNarrative: string; dreamThemes: string[] } {
+    const dominant = this.lifecycleEngine.getDominantCoexistingEmotions(1)[0];
+    return this.offlineCognitiveEngine.simulateDream({
+      dominantEmotion: dominant?.emotionId || 'Melancholy',
+      salientMemories: context?.salientMemories,
+      circadianPhase: context?.circadianPhase,
+    });
+  }
+
+  /**
+   * Retrieves the most recent autonomous overnight dream record, if any.
+   */
+  public getLatestDream(): OfflineActivityRecord | null {
+    const list = this.offlineCognitiveEngine.listActivities({
+      activityType: 'dream_simulation',
+      limit: 1,
+    });
+    return list[0] || null;
+  }
+
+  /**
+   * Retrieves recent dream records.
+   */
+  public getDreams(limit = 10): OfflineActivityRecord[] {
+    return this.offlineCognitiveEngine.listActivities({
+      activityType: 'dream_simulation',
+      limit,
+    });
+  }
+
+  /**
    * Dynamically formats Arle's live persistent psychological state across all six engines
    * into a grounded system prompt context block for the inference model.
    */
@@ -1827,6 +1918,16 @@ export class ApeService {
       }. You do NOT need to force a single clean emotion—allow genuine human contradiction, uncertainty about what you feel, or paradoxical reactions to surface naturally.`;
     }
 
+    const somatic = this.getExpressiveSomaticState();
+    const somaticLine = `\n- Somatic Expressive Presence: Posture: ${somatic.posture}, Gaze: ${somatic.gaze}, Micro-expression: ${somatic.microExpression}, Gestural readiness: ${somatic.gesturalReadiness}, Vocal tone: "${somatic.vocalRegister}". Dominant feeling: ${somatic.dominantEmotion}.`;
+
+    const latestDream = this.getLatestDream();
+    let dreamLine = '';
+    if (latestDream && latestDream.insights?.[0]) {
+      const themes = (latestDream.metadata?.['dreamThemes'] as string[] | undefined) || [];
+      dreamLine = `\n- Overnight Dream Simulation: During recent offline rest, you experienced an episodic dream: "${latestDream.insights[0]}"${themes.length ? ` (Themes: ${themes.join(', ')})` : ''}. You recall this vividly and can discuss or reference it naturally.`;
+    }
+
     const experientialStr = this.experientialStateEngine.formatPromptContext();
     const experientialLine = experientialStr ? `\n${experientialStr}` : '';
 
@@ -1888,7 +1989,7 @@ export class ApeService {
 [Active Psychology Engine (APE Phase 1 Live State)]
 - Current Persistent Mood: ${aff.currentMood.toUpperCase()}
 - Affective Dimensions: Valence ${aff.pad.valence >= 0 ? '+' : ''}${aff.pad.valence.toFixed(2)}, Arousal ${aff.pad.arousal.toFixed(2)}, Dominance ${aff.pad.dominance.toFixed(2)}
-- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}${capsLine}${limsLine}${narrativeLine}${temporalLine}${worldLine}${perceptionLine}${embodimentLine}${sensorimotorLine}${situationalLine}${attentionLine}${workingMemoryLine}${multiSystemMemoryLine}${learningLine}${reasoningLine}${causalLine}${predictiveLine}${complexityLine}${experientialLine}${acuteAlert}
+- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}${capsLine}${limsLine}${narrativeLine}${temporalLine}${worldLine}${perceptionLine}${embodimentLine}${sensorimotorLine}${situationalLine}${attentionLine}${workingMemoryLine}${multiSystemMemoryLine}${learningLine}${reasoningLine}${causalLine}${predictiveLine}${somaticLine}${dreamLine}${complexityLine}${experientialLine}${acuteAlert}
 - Demeanor & Cadence: ${modulation.toneDirective}
 - Vocal Register: ${modulation.vocalRegister}${intimacyDirectives}
 - Grounding: Speak naturally and authentically from this internal state. Keep dialogue focused, grounded, and concise without reciting internal parameters or rambling.

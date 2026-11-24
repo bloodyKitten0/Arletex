@@ -14,6 +14,7 @@ export const OfflineActivityTypeSchema = z.enum([
   'downtime_rest',
   'trauma_rumination',
   'rupture_review',
+  'dream_simulation',
 ]);
 export type OfflineActivityType = z.infer<typeof OfflineActivityTypeSchema>;
 
