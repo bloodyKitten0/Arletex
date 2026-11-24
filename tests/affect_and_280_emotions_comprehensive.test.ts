@@ -8,8 +8,8 @@ import {
   COMPLETE_143_EMOTIONS_LIST,
   ExperientialStateEngine,
   rootLogger,
-} from '@arletex/core';
-import { EXPERIENTIAL_STATE_CATALOG } from '@arletex/contracts';
+} from '../packages/core/src/index.js';
+import { EXPERIENTIAL_STATE_CATALOG } from '../packages/contracts/src/index.js';
 import { ArletexBackendServer } from '../apps/desktop/src/backend/server.js';
 
 describe('Goal 6 — Comprehensive Live Affect Validation Across All 280+ Affective States', () => {
@@ -144,7 +144,7 @@ describe('Goal 6 — Comprehensive Live Affect Validation Across All 280+ Affect
 
       // 2. Verify state appears in active states catalogue
       const active = expEngine.getActiveStates();
-      expect(active.some((s) => s.id === stateDef.id)).toBe(true);
+      expect(active.some((s: { id: string }) => s.id === stateDef.id)).toBe(true);
 
       // 3. Verify dynamic prompt formatting incorporates state and downstream effects
       const promptBlock = expEngine.formatPromptContext();
@@ -154,9 +154,9 @@ describe('Goal 6 — Comprehensive Live Affect Validation Across All 280+ Affect
       // 4. Verify downstream cognitive effects are generated
       expect(instance!.effects).toBeDefined();
       expect(instance!.effects.length).toBeGreaterThan(0);
-      const effectTypes = instance!.effects.map((e) => e.type);
+      const effectTypes = instance!.effects.map((e: { type: string }) => e.type);
       expect(
-        effectTypes.some((t) =>
+        effectTypes.some((t: string) =>
           [
             'attention_bias',
             'memory_retrieval_bias',

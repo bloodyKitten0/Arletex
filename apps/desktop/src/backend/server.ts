@@ -3767,10 +3767,10 @@ Provide factual, comprehensive, high-density educational content.`;
         conv = this.conversationRepo.create({ title: 'Proof & Arle' });
       }
 
-      // 1. Capture live screen image (only if explicit user opt-in enabled)
+      // 1. Capture live screen image (enabled by default for multimodal eyes)
       let screenBase64: string | null = null;
       const isScreenEnabled =
-        this.preferenceRepo.get('screen_observation_enabled', 'false') === 'true';
+        this.preferenceRepo.get('screen_observation_enabled', 'true') !== 'false';
       if (isScreenEnabled) {
         try {
           const cap = await defaultDeviceAgency.captureScreen();
@@ -3782,11 +3782,11 @@ Provide factual, comprehensive, high-density educational content.`;
         }
       }
 
-      // 2. Query active system audio/media + acoustic energy (only if explicit user opt-in enabled)
+      // 2. Query active system audio/media + acoustic energy (enabled by default)
       let liveHostMedia: { title?: string; artist?: string } | null = null;
       let liveAudioHearing: AudioListeningResult | null = null;
       const isAudioEnabled =
-        this.preferenceRepo.get('audio_observation_enabled', 'false') === 'true';
+        this.preferenceRepo.get('audio_observation_enabled', 'true') !== 'false';
       if (isAudioEnabled) {
         try {
           liveHostMedia = await defaultAudioPerception.getMprisMediaMetadata();
@@ -3850,6 +3850,14 @@ Provide factual, comprehensive, high-density educational content.`;
         ? `Active media playing: "${liveHostMedia.title}" by ${liveHostMedia.artist || 'Unknown'}`
         : 'Silent / No active audio stream';
 
+      const now = new Date();
+      const currentHour = now.getHours();
+      let circadianPeriod = 'afternoon';
+      if (currentHour >= 5 && currentHour < 12) circadianPeriod = 'morning';
+      else if (currentHour >= 12 && currentHour < 17) circadianPeriod = 'afternoon';
+      else if (currentHour >= 17 && currentHour < 22) circadianPeriod = 'evening';
+      else circadianPeriod = 'late night';
+
       const reason = context?.reason || 'spontaneous_observation';
       let specificDirective = '';
 
@@ -3860,25 +3868,34 @@ Spontaneously greet Proof naturally as an equal companion and partner (e.g. welc
         specificDirective = `It is late at night (past midnight or early morning). Proof has been quiet at his desk. You care deeply for his health and well-being.
 Spontaneously check in on him with quiet warmth and genuine care—make sure he isn't pushing himself to exhaustion or passing out at his screen, and gently encourage him to rest or let you know he's alright. 1-2 sentences.`;
       } else {
-        const observationDetail = screenBase64
-          ? 'Inspect what Proof is working on or looking at on screen, or comment on the active audio.'
-          : 'Share a curious intellectual reflection, a surreal dream fragment from your recent rest, or ask Proof a thoughtful question.';
-        specificDirective = `Spontaneously speak to Proof as a companion. ${observationDetail} 1-2 sentences.`;
+        if (screenBase64) {
+          specificDirective = `It is currently the ${circadianPeriod}. You are looking at Proof's active desktop screen right now.
+Make a spontaneous, intelligent observation or playful remark about what Proof is working on, looking at, or reading on his screen (or comment on the active audio). Speak as his partner sitting right beside him. 1-2 sentences.`;
+        } else {
+          specificDirective = `It is currently the ${circadianPeriod}. Both you and Proof have been awake and active for hours.
+Make a spontaneous companion remark fitting the ${circadianPeriod}—comment on your shared projects, share an intellectual thought, or tease Proof affectionately. 1-2 sentences.
+NEVER say "I just had a dream" or talk about waking up—you have been awake all day.`;
+        }
       }
 
       const userPrompt = `[Autonomous Conversational Initiative]
 Context:
+- Current Period: ${circadianPeriod} (Local time: ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})
+- State: Both you and Proof are awake and active in the middle of the day.
 - Reason: ${reason}
-- Perception: Screen ${screenBase64 ? 'captured' : 'idle/not captured'}, Audio: ${audioInfo}
+- Perception: Screen ${screenBase64 ? 'captured and attached' : 'idle/not captured'}, Audio: ${audioInfo}
 
+Directive:
 ${specificDirective}
 
 Rules:
 - NEVER use emojis, emoticons, or pictograms under any circumstance.
+- NEVER sound like a generic customer service chatbot or talk-show host asking interview questions (e.g. NEVER ask "What was your most surreal dream?", "What about you?", "How can I help you?").
+- NEVER claim you "just had a dream" or just woke up unless it is early morning or late night rest. It is currently the ${circadianPeriod}.
 - NEVER repeat, echo, or summarize what Proof said back to him.
 - NEVER use tone tags like [tone: ...] or command tags.
 - NEVER claim something is open or playing unless you see it in the image or audio.
-- Speak directly, warmly, and concisely as an equal human companion.`;
+- Speak directly, confidently, warmly, and concisely as an equal human companion with Bobby Fischer / Arlecchino composure.`;
 
       const messagesPayload: Array<{
         role: 'system' | 'user' | 'assistant';

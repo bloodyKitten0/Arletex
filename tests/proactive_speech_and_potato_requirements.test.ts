@@ -68,12 +68,38 @@ describe('Proactive Initiative & Potato.md Requirements', () => {
       expect(allDreams[0]?.id).toBe(dream.dreamId);
     });
 
-    it('injects overnight dream memories into formatApePromptContext', () => {
+    it('injects overnight dream memories into formatApePromptContext during morning/rest and suppresses in afternoon', () => {
       apeService.simulateOvernightDream();
-      const promptContext = apeService.formatApePromptContext();
+      const RealDate = global.Date;
 
-      expect(promptContext).toContain('Overnight Dream Simulation:');
-      expect(promptContext).toContain('Themes:');
+      // Morning (8 AM) -> dream recall is injected
+      const morningDate = new RealDate(2026, 10, 24, 8, 30, 0);
+      vi.spyOn(global, 'Date').mockImplementation((...args: any[]) => {
+        if (args.length > 0) return new (RealDate as any)(...args);
+        return morningDate;
+      });
+
+      try {
+        const morningPrompt = apeService.formatApePromptContext();
+        expect(morningPrompt).toContain('Overnight Dream Recall:');
+        expect(morningPrompt).toContain('Themes:');
+      } finally {
+        vi.restoreAllMocks();
+      }
+
+      // Afternoon (1:45 PM) -> dream recall is suppressed so she doesn't blurt "I just had a dream" at 1 PM
+      const afternoonDate = new RealDate(2026, 10, 24, 13, 45, 0);
+      vi.spyOn(global, 'Date').mockImplementation((...args: any[]) => {
+        if (args.length > 0) return new (RealDate as any)(...args);
+        return afternoonDate;
+      });
+
+      try {
+        const afternoonPrompt = apeService.formatApePromptContext();
+        expect(afternoonPrompt).not.toContain('Overnight Dream Recall:');
+      } finally {
+        vi.restoreAllMocks();
+      }
     });
   });
 

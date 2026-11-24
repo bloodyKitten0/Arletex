@@ -1925,7 +1925,12 @@ export class ApeService {
     let dreamLine = '';
     if (latestDream && latestDream.insights?.[0]) {
       const themes = (latestDream.metadata?.['dreamThemes'] as string[] | undefined) || [];
-      dreamLine = `\n- Overnight Dream Simulation: During recent offline rest, you experienced an episodic dream: "${latestDream.insights[0]}"${themes.length ? ` (Themes: ${themes.join(', ')})` : ''}. You recall this vividly and can discuss or reference it naturally.`;
+      const currentHours = new Date().getHours();
+      // Only inject dream simulation into active attention during morning (5-11 AM) or late-night rest,
+      // so she doesn't randomly blurt "I just had this dream" in the middle of the afternoon!
+      if (currentHours < 11 || currentHours >= 22) {
+        dreamLine = `\n- Overnight Dream Recall: During last night's rest, you experienced an episodic dream: "${latestDream.insights[0]}"${themes.length ? ` (Themes: ${themes.join(', ')})` : ''}. (Only mention this if Proof asks about dreams or if naturally relevant to morning reflections).`;
+      }
     }
 
     const experientialStr = this.experientialStateEngine.formatPromptContext();
