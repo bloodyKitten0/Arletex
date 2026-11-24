@@ -10,7 +10,23 @@ if [ -f "$PROJECT_DIR/.env" ]; then
   set +a
 fi
 
-MODEL_PATH="${1:-${ARLETEX_MODEL_PATH:-${HOME}/models/qwen-14b-abliterated/Qwen2.5-14B-Instruct-abliterated-v2.Q4_K_M.gguf}}"
+MODEL_TIER="${ARLETEX_MODEL_TIER:-${ARLETEX_MODEL_SIZE:-}}"
+DEFAULT_MODEL=""
+
+if [ -n "$MODEL_TIER" ] && [ -z "${1:-}" ]; then
+  case "${MODEL_TIER,,}" in
+    9b|9)
+      DEFAULT_MODEL="${HOME}/models/qwen-heretic/Qwen3.5-9B-Heretic-Q4_K_M.gguf"
+      export MMPROJ_PATH="${MMPROJ_PATH:-${HOME}/models/qwen-heretic/Qwen3.5-9B-mmproj-BF16.gguf}"
+      ;;
+    14b|14)
+      DEFAULT_MODEL="${HOME}/models/qwen-14b-abliterated/Qwen2.5-14B-Instruct-abliterated-v2.Q4_K_M.gguf"
+      export MMPROJ_PATH=""
+      ;;
+  esac
+fi
+
+MODEL_PATH="${1:-${DEFAULT_MODEL:-${ARLETEX_MODEL_PATH:-${HOME}/models/qwen-heretic/Qwen3.5-9B-Heretic-Q4_K_M.gguf}}}}"
 PORT="${2:-8080}"
 HOST="127.0.0.1"
 THREADS="8"

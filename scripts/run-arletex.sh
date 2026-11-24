@@ -12,8 +12,29 @@ fi
 
 PORT="${LLAMA_PORT:-8080}"
 SPECIALIST_PORT="${ARLETEX_SPECIALISTS_PORT:-39282}"
-MODEL_PATH="${ARLETEX_MODEL_PATH:-${HOME}/models/qwen-14b-abliterated/Qwen2.5-14B-Instruct-abliterated-v2.Q4_K_M.gguf}"
 UI_MODE="${ARLETEX_VIEW_MODE:-human}"
+
+# Determine model from ARLETEX_MODEL_TIER or explicit ARLETEX_MODEL_PATH
+MODEL_TIER="${ARLETEX_MODEL_TIER:-${ARLETEX_MODEL_SIZE:-}}"
+DEFAULT_MODEL=""
+MODEL_NAME="Qwen Cognitive Model"
+
+if [ -n "$MODEL_TIER" ]; then
+  case "${MODEL_TIER,,}" in
+    9b|9)
+      DEFAULT_MODEL="${HOME}/models/qwen-heretic/Qwen3.5-9B-Heretic-Q4_K_M.gguf"
+      export MMPROJ_PATH="${MMPROJ_PATH:-${HOME}/models/qwen-heretic/Qwen3.5-9B-mmproj-BF16.gguf}"
+      MODEL_NAME="Qwen 3.5-9B Heretic (Vision Enabled, Fast)"
+      ;;
+    14b|14)
+      DEFAULT_MODEL="${HOME}/models/qwen-14b-abliterated/Qwen2.5-14B-Instruct-abliterated-v2.Q4_K_M.gguf"
+      export MMPROJ_PATH=""
+      MODEL_NAME="Qwen 2.5-14B Instruct (Abliterated)"
+      ;;
+  esac
+fi
+
+MODEL_PATH="${DEFAULT_MODEL:-${ARLETEX_MODEL_PATH:-${HOME}/models/qwen-heretic/Qwen3.5-9B-Heretic-Q4_K_M.gguf}}"
 
 for arg in "$@"; do
   case "$arg" in
@@ -23,18 +44,37 @@ for arg in "$@"; do
     --mode=full|--mode=arletex|--full|--arletex)
       UI_MODE="arletex"
       ;;
+    9b|--9b|--9B)
+      MODEL_PATH="${HOME}/models/qwen-heretic/Qwen3.5-9B-Heretic-Q4_K_M.gguf"
+      export MMPROJ_PATH="${HOME}/models/qwen-heretic/Qwen3.5-9B-mmproj-BF16.gguf"
+      MODEL_NAME="Qwen 3.5-9B Heretic (Vision Enabled, Fast)"
+      ;;
+    14b|--14b|--14B)
+      MODEL_PATH="${HOME}/models/qwen-14b-abliterated/Qwen2.5-14B-Instruct-abliterated-v2.Q4_K_M.gguf"
+      export MMPROJ_PATH=""
+      MODEL_NAME="Qwen 2.5-14B Instruct (Abliterated)"
+      ;;
     *.gguf)
       MODEL_PATH="$arg"
+      MODEL_NAME="Custom Model ($(basename "$arg"))"
       ;;
   esac
 done
+
+if [ -z "${MODEL_NAME:-}" ] || [ "$MODEL_NAME" = "Qwen Cognitive Model" ]; then
+  if [[ "$MODEL_PATH" == *"9B"* ]] || [[ "$MODEL_PATH" == *"9b"* ]]; then
+    MODEL_NAME="Qwen 3.5-9B Heretic (Vision Enabled, Fast)"
+  else
+    MODEL_NAME="Qwen 2.5-14B Instruct (Abliterated)"
+  fi
+fi
 
 export ARLETEX_VIEW_MODE="$UI_MODE"
 
 echo "=========================================================="
 echo " Starting Arletex (Arle Artificial Individual)"
 echo " UI Launch Mode:      $UI_MODE"
-echo " Cognitive Engine:    Qwen 2.5-14B Instruct (Abliterated)"
+echo " Cognitive Engine:    $MODEL_NAME"
 echo " Cognitive Port:      $PORT (Vulkan on Radeon 780M)"
 echo " Specialist Services: EmbeddingGemma, Whisper, Kokoro"
 echo " Specialist Port:     $SPECIALIST_PORT"
