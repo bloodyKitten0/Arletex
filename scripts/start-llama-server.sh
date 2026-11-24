@@ -26,7 +26,7 @@ if [ -n "$MODEL_TIER" ] && [ -z "${1:-}" ]; then
   esac
 fi
 
-MODEL_PATH="${1:-${DEFAULT_MODEL:-${ARLETEX_MODEL_PATH:-${HOME}/models/qwen-heretic/Qwen3.5-9B-Heretic-Q4_K_M.gguf}}}}"
+MODEL_PATH="${1:-${DEFAULT_MODEL:-${ARLETEX_MODEL_PATH:-${HOME}/models/qwen-heretic/Qwen3.5-9B-Heretic-Q4_K_M.gguf}}}"
 PORT="${2:-8080}"
 HOST="127.0.0.1"
 THREADS="8"
