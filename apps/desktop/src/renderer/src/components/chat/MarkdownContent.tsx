@@ -20,7 +20,13 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({ content, isUse
       .replace(/\\\[([\s\S]*?)\\\]/g, (_match, math) => `\n$$\n${math.trim()}\n$$\n`)
       .replace(/\\\(([\s\S]*?)\\\)/g, (_match, math) => `$${math.trim()}$`);
 
-    // 2. Process line-by-line for standalone equations and bare LaTeX tokens
+    // 2. Normalize single-line display math: "$$ formula $$" -> "\n$$\nformula\n$$\n"
+    text = text.replace(/^\$\$\s*([^\$\n]+?)\s*\$\$$/gm, (_m, math) => `\n$$\n${math.trim()}\n$$\n`);
+
+    // 3. Normalize opening "$$ formula" on same line without closing -> "$$\nformula"
+    text = text.replace(/^\$\$\s*([^\$\n]+)$/gm, (_m, math) => `$$\n${math.trim()}`);
+
+    // 4. Process line-by-line for standalone equations and bare LaTeX tokens
     const lines = text.split('\n');
     let inCodeBlock = false;
     let inMathBlock = false;
@@ -67,7 +73,15 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({ content, isUse
       return line;
     });
 
-    return processedLines.join('\n');
+    let result = processedLines.join('\n');
+
+    // 5. Auto-close unclosed $$ blocks (essential for live token streaming & interrupted turns)
+    const displayDollarMatches = result.match(/\$\$/g) || [];
+    if (displayDollarMatches.length % 2 !== 0) {
+      result += '\n$$\n';
+    }
+
+    return result;
   }, [content]);
 
   return (
@@ -86,16 +100,18 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({ content, isUse
           letter-spacing: normal !important;
         }
         .markdown-body .katex {
+          line-height: 1.2 !important;
           letter-spacing: normal !important;
-          font-size: 1.08em;
+          font-size: 1.05em;
           text-rendering: auto;
+          color: inherit;
         }
         .markdown-body .katex * {
           letter-spacing: normal !important;
         }
         .markdown-body .katex-display {
           margin: 1.25em 0 !important;
-          padding: 18px 24px !important;
+          padding: 16px 20px !important;
           background: #090c10 !important;
           border-radius: 10px !important;
           border: 1px solid rgba(255, 255, 255, 0.1) !important;
@@ -107,17 +123,30 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({ content, isUse
         .markdown-body .katex-display > .katex {
           text-align: center !important;
           display: inline-block !important;
-          white-space: normal !important;
+          white-space: nowrap !important;
+          color: inherit;
         }
         .markdown-body .katex-display .katex-html {
           overflow-x: auto;
           overflow-y: hidden;
           padding: 4px 0;
+          color: inherit;
+        }
+        /* Suppress empty placeholder cards if KaTeX produces empty output */
+        .markdown-body .katex-display:empty,
+        .markdown-body .katex-display:has(.katex-html:empty) {
+          display: none !important;
+        }
+        .markdown-body .katex-error {
+          color: #e07a5f !important;
+          background: rgba(224, 122, 95, 0.1);
+          padding: 2px 6px;
+          border-radius: 4px;
         }
       `}</style>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex]}
+        rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false }]]}
         components={{
           p: ({ children }) => <p style={{ margin: '0 0 10px 0', lineHeight: 1.65 }}>{children}</p>,
           h1: ({ children }) => (

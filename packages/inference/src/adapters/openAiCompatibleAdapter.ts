@@ -11,19 +11,29 @@ import { ChatStreamOptions, IInferenceProvider } from '../types.js';
 function findRepetitionLoop(text: string): { isLoop: boolean; cleanText: string } {
   if (text.length < 80) return { isLoop: false, cleanText: text };
 
-  for (let len = 30; len <= 120; len += 10) {
-    if (text.length < len * 2) continue;
-    const tail = text.slice(-len);
-    const beforeTail = text.slice(0, -len);
-    const matchIndex = beforeTail.lastIndexOf(tail);
-    if (matchIndex !== -1) {
-      const repeatStart = text.length - len;
-      if (repeatStart > matchIndex) {
-        const clean = text.slice(0, repeatStart).trim();
-        return { isLoop: true, cleanText: clean };
-      }
+  // 1. Shorter phrases (20-79 chars): require at least 3 consecutive identical repetitions
+  for (let len = 20; len < 80; len++) {
+    if (text.length < len * 3) continue;
+    const chunk1 = text.slice(-len);
+    const chunk2 = text.slice(-2 * len, -len);
+    const chunk3 = text.slice(-3 * len, -2 * len);
+    if (chunk1 === chunk2 && chunk2 === chunk3) {
+      const clean = text.slice(0, -2 * len).trim();
+      return { isLoop: true, cleanText: clean };
     }
   }
+
+  // 2. Longer blocks (80-200 chars): 2 consecutive identical repetitions
+  for (let len = 80; len <= 200; len += 5) {
+    if (text.length < len * 2) continue;
+    const chunk1 = text.slice(-len);
+    const chunk2 = text.slice(-2 * len, -len);
+    if (chunk1 === chunk2) {
+      const clean = text.slice(0, -len).trim();
+      return { isLoop: true, cleanText: clean };
+    }
+  }
+
   return { isLoop: false, cleanText: text };
 }
 

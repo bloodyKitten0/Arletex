@@ -11,19 +11,29 @@ import { ChatStreamOptions, IInferenceProvider } from '../types.js';
 function findRepetitionLoop(text: string): { isLoop: boolean; cleanText: string } {
   if (text.length < 80) return { isLoop: false, cleanText: text };
 
-  for (let len = 30; len <= 120; len += 10) {
-    if (text.length < len * 2) continue;
-    const tail = text.slice(-len);
-    const beforeTail = text.slice(0, -len);
-    const matchIndex = beforeTail.lastIndexOf(tail);
-    if (matchIndex !== -1) {
-      const repeatStart = text.length - len;
-      if (repeatStart > matchIndex) {
-        const clean = text.slice(0, repeatStart).trim();
-        return { isLoop: true, cleanText: clean };
-      }
+  // 1. Shorter phrases (20-79 chars): require at least 3 consecutive identical repetitions
+  for (let len = 20; len < 80; len++) {
+    if (text.length < len * 3) continue;
+    const chunk1 = text.slice(-len);
+    const chunk2 = text.slice(-2 * len, -len);
+    const chunk3 = text.slice(-3 * len, -2 * len);
+    if (chunk1 === chunk2 && chunk2 === chunk3) {
+      const clean = text.slice(0, -2 * len).trim();
+      return { isLoop: true, cleanText: clean };
     }
   }
+
+  // 2. Longer blocks (80-200 chars): 2 consecutive identical repetitions
+  for (let len = 80; len <= 200; len += 5) {
+    if (text.length < len * 2) continue;
+    const chunk1 = text.slice(-len);
+    const chunk2 = text.slice(-2 * len, -len);
+    if (chunk1 === chunk2) {
+      const clean = text.slice(0, -len).trim();
+      return { isLoop: true, cleanText: clean };
+    }
+  }
+
   return { isLoop: false, cleanText: text };
 }
 
@@ -348,7 +358,7 @@ export class LlamaServerAdapter implements IInferenceProvider {
           if (delta) {
             fullContent += delta;
             const scriptMatch = fullContent.match(
-              /(\.?[_gG]etResponse\s*\(|\n?Proof:|\n?User:|\n?You:|<\/?user|<\/?assistant|<\|im_start\||<\|im_end\||[㈑濩]|\n\s*(user|assistant)\s*[\n:]|:\s*\n-\s*Current Persistent Mood|Action completed successfully!|Ambient audio stream captured|Visual frame or environmental state verified|\n```json|Track is playing now|System audio volume:|Your response must be in this format|A new message arrived|\n:\s*|\n-\s*\[|The Spotify Web Player|Conversation Partner:|Identity & Email:|\[Direct Dialogue Context|Do not output|NEVER output|Do not write|Chrome Profile)/i,
+              /(\.?[_gG]etResponse\s*\(|\n?Proof:|\n?User:|\n?You:|<\/?user|<\/?assistant|<\|im_start\||<\|im_end\||[㈑濩]|\n\s*(user|assistant)\s*[\n:]|:\s*\n-\s*Current Persistent Mood|Action completed successfully!|Ambient audio stream captured|Visual frame or environmental state verified|\n```json|Track is playing now|System audio volume:|Your response must be in this format|A new message arrived|\n-\s*\[(?:Active Psychology|Digital Agency|Direct Dialogue|Homeostasis|Unified Taxonomy)|The Spotify Web Player|Conversation Partner:|Identity & Email:|\[Direct Dialogue Context|Do not output|NEVER output|Do not write|Chrome Profile)/i,
             );
             if (scriptMatch && scriptMatch.index !== undefined) {
               this.logger.warn(
