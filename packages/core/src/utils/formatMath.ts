@@ -3,11 +3,11 @@ import { validateMath } from './validateMath.js';
 // Stochastic phrasing phrases – randomly prepended to give human variation
 const INTRO_PHRASES = [
   "Here's the math:",
-  "Let me show you:",
-  "Check this out:",
-  "Quick calculation:",
-  "Here it is:",
-  "",  // sometimes no prefix at all
+  'Let me show you:',
+  'Check this out:',
+  'Quick calculation:',
+  'Here it is:',
+  '', // sometimes no prefix at all
 ];
 
 /** Pick a random element from an array – seedable via global Math.random */
@@ -18,7 +18,7 @@ function pick<T>(arr: T[]): T {
 export function formatMath(latex: string): string {
   const trimmed = latex.trim();
   const inline = trimmed.startsWith('$') && trimmed.endsWith('$');
-  const block  = trimmed.startsWith('$$') && trimmed.endsWith('$$');
+  const block = trimmed.startsWith('$$') && trimmed.endsWith('$$');
   if (inline || block) return trimmed;
 
   const hasLatex = /\\[a-zA-Z]+/.test(trimmed);

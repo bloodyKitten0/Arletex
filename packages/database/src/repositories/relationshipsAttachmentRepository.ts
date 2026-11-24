@@ -89,7 +89,8 @@ export class SqliteRelationshipsAttachmentRepository implements IRelationshipsAt
         reciprocityRatio: row.reciprocity_ratio,
         separationSecurity: row.separation_security,
         establishedBoundaries: JSON.parse(row.established_boundaries),
-        trustCeiling: row.trust_ceiling !== undefined && row.trust_ceiling !== null ? row.trust_ceiling : 1.0,
+        trustCeiling:
+          row.trust_ceiling !== undefined && row.trust_ceiling !== null ? row.trust_ceiling : 1.0,
         consecutiveValidations: row.consecutive_validations ?? 0,
         lastInteractedAt: row.last_interacted_at,
         updatedAt: row.updated_at,
@@ -115,7 +116,8 @@ export class SqliteRelationshipsAttachmentRepository implements IRelationshipsAt
         reciprocityRatio: row.reciprocity_ratio,
         separationSecurity: row.separation_security,
         establishedBoundaries: JSON.parse(row.established_boundaries),
-        trustCeiling: row.trust_ceiling !== undefined && row.trust_ceiling !== null ? row.trust_ceiling : 1.0,
+        trustCeiling:
+          row.trust_ceiling !== undefined && row.trust_ceiling !== null ? row.trust_ceiling : 1.0,
         consecutiveValidations: row.consecutive_validations ?? 0,
         lastInteractedAt: row.last_interacted_at,
         updatedAt: row.updated_at,
@@ -665,7 +667,10 @@ export class SqliteRelationshipsAttachmentRepository implements IRelationshipsAt
         updatedAt: r.updated_at,
       }));
     } catch (err: any) {
-      throw new DatabaseError(`Failed to list attachment wounds for ${personId}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to list attachment wounds for ${personId}: ${err.message}`,
+        err,
+      );
     }
   }
 
@@ -730,7 +735,10 @@ export class SqliteRelationshipsAttachmentRepository implements IRelationshipsAt
         lastBubbledUpAt: r.last_bubbled_up_at || undefined,
       }));
     } catch (err: any) {
-      throw new DatabaseError(`Failed to list relational grudges for ${personId}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to list relational grudges for ${personId}: ${err.message}`,
+        err,
+      );
     }
   }
 }

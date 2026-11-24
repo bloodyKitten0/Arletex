@@ -1243,10 +1243,18 @@ export const MemoryView: React.FC = () => {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Loader2 size={14} className="spin" />
-                    <span style={{ fontWeight: 600 }}>{learnProgress?.message || 'Processing and chunking...'}</span>
+                    <span style={{ fontWeight: 600 }}>
+                      {learnProgress?.message || 'Processing and chunking...'}
+                    </span>
                   </div>
                   {learnProgress?.currentModule && (
-                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginLeft: '22px' }}>
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        color: 'var(--text-secondary)',
+                        marginLeft: '22px',
+                      }}
+                    >
                       Current Pillar: {learnProgress.currentModule}
                     </div>
                   )}
@@ -1274,12 +1282,14 @@ export const MemoryView: React.FC = () => {
                 {learnResult.success ? (
                   <>
                     <CheckCircle2 size={36} color="#81b29a" />
-                    <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    <div
+                      style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}
+                    >
                       Topic Successfully Ingested
                     </div>
                     <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                      Indexed {learnResult.chunksCount} chunks into SQLite external knowledge and created
-                      a persistent semantic memory.
+                      Indexed {learnResult.chunksCount} chunks into SQLite external knowledge and
+                      created a persistent semantic memory.
                     </p>
                     <button
                       type="button"
@@ -1305,7 +1315,9 @@ export const MemoryView: React.FC = () => {
                 ) : (
                   <>
                     <AlertCircle size={36} color="#f87171" />
-                    <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    <div
+                      style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}
+                    >
                       Ingestion Error
                     </div>
                     <p style={{ fontSize: '13px', color: '#fca5a5' }}>
@@ -1427,8 +1439,12 @@ export const MemoryView: React.FC = () => {
                       outline: 'none',
                     }}
                   >
-                    <option value="phd">PhD Doctoral Rigor (Multi-Pillar Curriculum, Governing Equations & Invariants)</option>
-                    <option value="graduate">Master's Comprehensive (Core Mechanics & Formal Frameworks)</option>
+                    <option value="phd">
+                      PhD Doctoral Rigor (Multi-Pillar Curriculum, Governing Equations & Invariants)
+                    </option>
+                    <option value="graduate">
+                      Master's Comprehensive (Core Mechanics & Formal Frameworks)
+                    </option>
                     <option value="standard">Standard Reference Overview</option>
                   </select>
                 </div>
@@ -1439,11 +1455,21 @@ export const MemoryView: React.FC = () => {
                     id="autonomousWebResearch"
                     checked={autonomousWebResearch}
                     onChange={(e) => setAutonomousWebResearch(e.target.checked)}
-                    style={{ accentColor: '#e07a5f', width: '16px', height: '16px', cursor: 'pointer' }}
+                    style={{
+                      accentColor: '#e07a5f',
+                      width: '16px',
+                      height: '16px',
+                      cursor: 'pointer',
+                    }}
                   />
                   <label
                     htmlFor="autonomousWebResearch"
-                    style={{ fontSize: '12px', color: 'var(--text-primary)', cursor: 'pointer', userSelect: 'none' }}
+                    style={{
+                      fontSize: '12px',
+                      color: 'var(--text-primary)',
+                      cursor: 'pointer',
+                      userSelect: 'none',
+                    }}
                   >
                     Autonomous Web Research & Scraping (Wikipedia API & Academic Sources)
                   </label>

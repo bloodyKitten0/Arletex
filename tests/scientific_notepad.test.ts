@@ -32,7 +32,9 @@ print("PeakTimeFormula:", peak_time)
 
     const result = await service.executePython(pythonCode);
     expect(result.success).toBe(true);
-    expect(result.output).toContain('PeakTimeFormula: -log(lambda_X/lambda_I)/(lambda_I - lambda_X)');
+    expect(result.output).toContain(
+      'PeakTimeFormula: -log(lambda_X/lambda_I)/(lambda_I - lambda_X)',
+    );
     expect(result.executionTimeMs).toBeGreaterThan(0);
   });
 

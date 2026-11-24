@@ -199,7 +199,8 @@ export class ApeRepository implements IApeRepository {
               id: 'collaborative_alignment',
               name: 'Collaborative Alignment',
               importance: 0.95,
-              description: 'Intellectual integrity, authentic communication, and aligned collaboration with Proof',
+              description:
+                'Intellectual integrity, authentic communication, and aligned collaboration with Proof',
               conflictingValueIds: [],
             },
             {

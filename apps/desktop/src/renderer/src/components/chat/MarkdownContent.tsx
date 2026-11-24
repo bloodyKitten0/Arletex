@@ -21,7 +21,10 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({ content, isUse
       .replace(/\\\(([\s\S]*?)\\\)/g, (_match, math) => `$${math.trim()}$`);
 
     // 2. Normalize single-line display math: "$$ formula $$" -> "\n$$\nformula\n$$\n"
-    text = text.replace(/^\$\$\s*([^\$\n]+?)\s*\$\$$/gm, (_m, math) => `\n$$\n${math.trim()}\n$$\n`);
+    text = text.replace(
+      /^\$\$\s*([^\$\n]+?)\s*\$\$$/gm,
+      (_m, math) => `\n$$\n${math.trim()}\n$$\n`,
+    );
 
     // 3. Normalize opening "$$ formula" on same line without closing -> "$$\nformula"
     text = text.replace(/^\$\$\s*([^\$\n]+)$/gm, (_m, math) => `$$\n${math.trim()}`);
@@ -51,11 +54,11 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({ content, isUse
       const isStandaloneEquation =
         !trimmed.startsWith('$') &&
         !trimmed.endsWith('$') &&
-        (
-          /^(?:[a-zA-Z0-9_{}\\]+\s*=\s*)?\\frac\{/.test(trimmed) ||
+        (/^(?:[a-zA-Z0-9_{}\\]+\s*=\s*)?\\frac\{/.test(trimmed) ||
           /^(?:\\frac|\\partial|\\sum|\\int|\\prod|\\lim)\b/.test(trimmed) ||
-          /^[a-zA-Z_][a-zA-Z0-9_{}^()]*\s*=\s*.*(?:\\frac|\\ln|\\exp|\\lambda|\\sigma|\\gamma|\\Sigma|\\approx).*$/.test(trimmed)
-        ) &&
+          /^[a-zA-Z_][a-zA-Z0-9_{}^()]*\s*=\s*.*(?:\\frac|\\ln|\\exp|\\lambda|\\sigma|\\gamma|\\Sigma|\\approx).*$/.test(
+            trimmed,
+          )) &&
         !/[a-zA-Z]{5,}\s+[a-zA-Z]{5,}\s+[a-zA-Z]{5,}/.test(trimmed); // not regular English sentences
 
       if (isStandaloneEquation) {
@@ -174,7 +177,14 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({ content, isUse
             </h2>
           ),
           h3: ({ children }) => (
-            <h3 style={{ fontSize: '14px', fontWeight: 600, margin: '10px 0 4px 0', color: '#f4a261' }}>
+            <h3
+              style={{
+                fontSize: '14px',
+                fontWeight: 600,
+                margin: '10px 0 4px 0',
+                color: '#f4a261',
+              }}
+            >
               {children}
             </h3>
           ),
@@ -188,7 +198,9 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({ content, isUse
               {children}
             </ol>
           ),
-          li: ({ children }) => <li style={{ marginBottom: '4px', lineHeight: 1.6 }}>{children}</li>,
+          li: ({ children }) => (
+            <li style={{ marginBottom: '4px', lineHeight: 1.6 }}>{children}</li>
+          ),
           blockquote: ({ children }) => (
             <blockquote
               style={{

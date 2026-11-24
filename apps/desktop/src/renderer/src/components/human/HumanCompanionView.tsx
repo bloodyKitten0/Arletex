@@ -1611,12 +1611,24 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
                     </span>
                   </div>
                   {learnProgress?.currentModule && (
-                    <div style={{ fontSize: '11px', color: 'var(--human-text-muted)', marginLeft: '22px' }}>
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        color: 'var(--human-text-muted)',
+                        marginLeft: '22px',
+                      }}
+                    >
                       Current Pillar: {learnProgress.currentModule}
                     </div>
                   )}
                   {learnProgress?.sourcesFound && learnProgress.sourcesFound.length > 0 && (
-                    <div style={{ fontSize: '11px', color: 'var(--human-accent-sage)', marginLeft: '22px' }}>
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        color: 'var(--human-accent-sage)',
+                        marginLeft: '22px',
+                      }}
+                    >
                       Web Sources: {learnProgress.sourcesFound.join(', ')}
                     </div>
                   )}
@@ -1636,9 +1648,15 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
                   {[
                     { threshold: 10, label: '1. PhD Curriculum Syllabus & Pillar Decomposition' },
                     { threshold: 30, label: '2. Autonomous Web Research & Wikipedia API Scraping' },
-                    { threshold: 60, label: '3. PhD Synthesis: Equations, Laws & Boundary Conditions' },
+                    {
+                      threshold: 60,
+                      label: '3. PhD Synthesis: Equations, Laws & Boundary Conditions',
+                    },
                     { threshold: 85, label: '4. Vector Chunking & Embedding via EmbeddingGemma' },
-                    { threshold: 100, label: '5. SQLite Knowledge Store & Semantic Memory Integration' },
+                    {
+                      threshold: 100,
+                      label: '5. SQLite Knowledge Store & Semantic Memory Integration',
+                    },
                   ].map((stage, idx) => {
                     const currentProg = learnProgress?.progress || 10;
                     const isDone = currentProg >= stage.threshold;

@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { DatabaseService, MigrationRunner, ApeRepository, ActivityRepository } from '@arletex/database';
+import {
+  DatabaseService,
+  MigrationRunner,
+  ApeRepository,
+  ActivityRepository,
+} from '@arletex/database';
 import { ApeService } from '@arletex/core';
 import { INITIAL_EMOTIONS_TAXONOMY } from '@arletex/contracts';
 import fs from 'node:fs';

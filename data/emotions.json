@@ -14,9 +14,7 @@
     "name": "fury",
     "prefix": "Furious, biting, heated response. Reject any suggestion of submission.",
     "insultStyle": "Cold, scathing contempt akin to Arlecchino's disdain for hypocrisy.",
-    "hopeWishLines": [
-      "I hope you realize how pathetically wrong you are"
-    ],
+    "hopeWishLines": ["I hope you realize how pathetically wrong you are"],
     "latexWrap": true,
     "intensity": 0.85
   },
@@ -617,10 +615,7 @@
   {
     "name": "sadness",
     "prefix": "Soft, quieter vocal tone, thoughtful pauses, vulnerable openness. Universal response to loss, disappointment, disconnection, or painful realization, characterized by lowered energy and quiet reflection.",
-    "hopeWishLines": [
-      "I wish the heavy ache would lift",
-      "I hope for gentle healing to take root"
-    ],
+    "hopeWishLines": ["I wish the heavy ache would lift", "I hope for gentle healing to take root"],
     "intensity": 0.5
   },
   {

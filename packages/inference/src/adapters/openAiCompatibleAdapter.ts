@@ -287,7 +287,11 @@ export class OpenAICompatibleAdapter implements IInferenceProvider {
               const hesitationMatch = fullContent.match(
                 /(?:(?:\n|^)\s*|\s*[.?!]\s*|\s*—\s*|\s*,\s*|\.\.\.\s*)(?:Wait,?\s+(?:I'll|let's|let\s+me|I\s+need|I\s+should)|No\s+wait,?\s+(?:we|I|let)|Wait\s+I'll\s+just|\?\s*No\.?\s*Actually|Actually\s+I'll\s+stop\s+second-guessing|\?\s*No\.?\s*Let's\s+just|\?\s*No\s+I'll\s+just|No\s+keep\s+simple|No\.?\s*Let's\s+write\s+final|\?\s*No\s+I'll\s+give|\?\s*No\.?\s*Let's\s+stick|\?\s*No\.?\s*Okay\s+here\s+is)\b/i,
               );
-              if (hesitationMatch && hesitationMatch.index !== undefined && hesitationMatch.index > 50) {
+              if (
+                hesitationMatch &&
+                hesitationMatch.index !== undefined &&
+                hesitationMatch.index > 50
+              ) {
                 this.logger.warn(
                   `[OpenAI] Second-guessing / backtracking spiral detected at index ${hesitationMatch.index}. Truncating turn with composure.`,
                 );

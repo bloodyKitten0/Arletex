@@ -43,11 +43,7 @@ export class CurriculumDecomposer {
           pillar: 'Reactivity Dynamics & Delayed Neutrons',
           governingPrinciples:
             'Point Kinetics Equations (PKE), delayed neutron precursor groups (β_i, λ_i), prompt jump approximation, inhour equation, prompt critical threshold ($1 reactivity), Doppler broadening of resonances, negative temperature coefficient of reactivity.',
-          searchQueries: [
-            'Nuclear reactor kinetics',
-            'Prompt critical',
-            'Doppler broadening',
-          ],
+          searchQueries: ['Nuclear reactor kinetics', 'Prompt critical', 'Doppler broadening'],
         },
         {
           index: 3,
@@ -131,11 +127,17 @@ export class CurriculumDecomposer {
     }
 
     // 2. Hematology & Stem Cell Biology (addresses previous specific test failure)
-    if (t.includes('hematolog') || t.includes('stem cell') || t.includes('bone marrow') || t.includes('hsc')) {
+    if (
+      t.includes('hematolog') ||
+      t.includes('stem cell') ||
+      t.includes('bone marrow') ||
+      t.includes('hsc')
+    ) {
       return [
         {
           index: 1,
-          title: 'Hematopoietic Stem Cell (HSC) Niches: Arteriolar vs Sinusoidal Perivascular Niches',
+          title:
+            'Hematopoietic Stem Cell (HSC) Niches: Arteriolar vs Sinusoidal Perivascular Niches',
           pillar: 'Stem Cell Quiescence vs Proliferation Compartmentalization',
           governingPrinciples:
             'Arteriolar niches (associated with NG2+ periarteriolar cells and sympathetic nerve fibers) maintain deep HSC quiescence (G0 state) through high local CXCL12 and SCF concentrations and hypoxic stability. Sinusoidal perivascular niches (surrounded by Leptin-receptor+ LepR+ stromal cells and endothelial cells) support HSC activation, cell cycle entry, and active proliferation. Blood-flow shear stress is felt in circulation, not adult marrow activation.',
@@ -151,11 +153,7 @@ export class CurriculumDecomposer {
           pillar: 'Differentiation Pathways & Transcription Factor Cascades',
           governingPrinciples:
             'Multipotent progenitor (MPP) hierarchy, common myeloid progenitor (CMP) vs common lymphoid progenitor (CLP), GATA-1 vs PU.1 cross-antagonism driving erythroid vs myeloid commitment, PAX5 in B-cell lineage, NOTCH1 in T-cell thymic commitment.',
-          searchQueries: [
-            'Haematopoiesis',
-            'PU.1 transcription factor',
-            'GATA1',
-          ],
+          searchQueries: ['Haematopoiesis', 'PU.1 transcription factor', 'GATA1'],
         },
         {
           index: 3,
@@ -199,7 +197,9 @@ export class CurriculumDecomposer {
     // 1. Check built-in expert curriculum first for zero-latency perfection
     const builtIn = this.getBuiltInCurriculum(topic);
     if (builtIn && builtIn.length > 0) {
-      this.logger.info(`Using authoritative PhD curriculum for "${topic}" (${builtIn.length} modules)`);
+      this.logger.info(
+        `Using authoritative PhD curriculum for "${topic}" (${builtIn.length} modules)`,
+      );
       return builtIn;
     }
 
@@ -248,10 +248,12 @@ Output strictly valid JSON with no markdown wrapping and no explanation. Follow 
               index: idx + 1,
               title: m.title || `Module ${idx + 1}: ${topic}`,
               pillar: m.pillar || domain,
-              governingPrinciples: m.governingPrinciples || 'Core theoretical principles and derivations.',
-              searchQueries: Array.isArray(m.searchQueries) && m.searchQueries.length > 0
-                ? m.searchQueries
-                : [`${topic} ${m.title || ''}`, topic],
+              governingPrinciples:
+                m.governingPrinciples || 'Core theoretical principles and derivations.',
+              searchQueries:
+                Array.isArray(m.searchQueries) && m.searchQueries.length > 0
+                  ? m.searchQueries
+                  : [`${topic} ${m.title || ''}`, topic],
             }));
           }
         }

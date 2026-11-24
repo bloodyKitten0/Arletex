@@ -5,7 +5,7 @@ export const startMockLlamaServer = async (port: number = 8080) => {
   return new Promise<void>((resolve, reject) => {
     const s = createServer((req, res) => {
       if (req.url?.includes('/v1/chat/completions') || req.url?.includes('/completion')) {
-        res.writeHead(200, { 'Content-Type': 'application/json', 'Connection': 'close' });
+        res.writeHead(200, { 'Content-Type': 'application/json', Connection: 'close' });
         res.end(
           JSON.stringify({
             id: 'mock-chatcmpl-1',
@@ -28,7 +28,7 @@ export const startMockLlamaServer = async (port: number = 8080) => {
         return;
       }
 
-      res.writeHead(200, { 'Content-Type': 'application/json', 'Connection': 'close' });
+      res.writeHead(200, { 'Content-Type': 'application/json', Connection: 'close' });
       res.end(JSON.stringify({ answer: 'mocked response', status: 'ok' }));
     });
 

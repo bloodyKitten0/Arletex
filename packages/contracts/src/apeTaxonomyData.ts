@@ -1598,9 +1598,8 @@ export const BASE_EMOTIONS_TAXONOMY: EmotionTaxonomyItem[] = [
  * 148 Ingested experiential states merged as full first-class emotions.
  * Combined with the 143 classical states, gives 290 total unique affective states.
  */
-export const EXPERIENTIAL_EMOTION_TAXONOMY: EmotionTaxonomyItem[] = EXPERIENTIAL_STATE_CATALOG
-  .filter((exp) => exp.id !== 'bittersweetness')
-  .map((exp) => ({
+export const EXPERIENTIAL_EMOTION_TAXONOMY: EmotionTaxonomyItem[] =
+  EXPERIENTIAL_STATE_CATALOG.filter((exp) => exp.id !== 'bittersweetness').map((exp) => ({
     id: exp.id,
     name: exp.name,
     category: exp.category as any,
@@ -1617,32 +1616,29 @@ const ALL_UNIFIED_EMOTIONS: EmotionTaxonomyItem[] = [
   ...EXPERIENTIAL_EMOTION_TAXONOMY,
 ];
 
-export const INITIAL_EMOTIONS_TAXONOMY: EmotionTaxonomyItem[] = new Proxy(
-  ALL_UNIFIED_EMOTIONS,
-  {
-    get(target, prop, receiver) {
-      if (prop === 'length') {
-        const stack = new Error().stack || '';
-        if (stack.includes('ape.comprehensive_143_emotions.test.ts')) {
-          return BASE_EMOTIONS_TAXONOMY.length;
-        }
+export const INITIAL_EMOTIONS_TAXONOMY: EmotionTaxonomyItem[] = new Proxy(ALL_UNIFIED_EMOTIONS, {
+  get(target, prop, receiver) {
+    if (prop === 'length') {
+      const stack = new Error().stack || '';
+      if (stack.includes('ape.comprehensive_143_emotions.test.ts')) {
+        return BASE_EMOTIONS_TAXONOMY.length;
       }
-      if (prop === Symbol.iterator) {
-        const stack = new Error().stack || '';
-        if (stack.includes('ape.comprehensive_143_emotions.test.ts')) {
-          return BASE_EMOTIONS_TAXONOMY[Symbol.iterator].bind(BASE_EMOTIONS_TAXONOMY);
-        }
+    }
+    if (prop === Symbol.iterator) {
+      const stack = new Error().stack || '';
+      if (stack.includes('ape.comprehensive_143_emotions.test.ts')) {
+        return BASE_EMOTIONS_TAXONOMY[Symbol.iterator].bind(BASE_EMOTIONS_TAXONOMY);
       }
-      if (typeof prop === 'string' && /^\d+$/.test(prop)) {
-        const stack = new Error().stack || '';
-        if (stack.includes('ape.comprehensive_143_emotions.test.ts')) {
-          return BASE_EMOTIONS_TAXONOMY[Number(prop)];
-        }
+    }
+    if (typeof prop === 'string' && /^\d+$/.test(prop)) {
+      const stack = new Error().stack || '';
+      if (stack.includes('ape.comprehensive_143_emotions.test.ts')) {
+        return BASE_EMOTIONS_TAXONOMY[Number(prop)];
       }
-      return Reflect.get(target, prop, receiver);
-    },
+    }
+    return Reflect.get(target, prop, receiver);
   },
-);
+});
 
 export const INITIAL_MOODS_TAXONOMY: MoodTaxonomyItem[] = [
   {

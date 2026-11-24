@@ -2,10 +2,10 @@
 // Returns randomised visual perception data to simulate sensory input.
 
 export interface VisionPercept {
-  brightness: number;      // 0–1
-  dominantColor: string;   // CSS hex
+  brightness: number; // 0–1
+  dominantColor: string; // CSS hex
   motionDetected: boolean;
-  faceCount: number;       // 0–5
+  faceCount: number; // 0–5
 }
 
 const HEX_PALETTE = ['#FF5733', '#33FF57', '#3357FF', '#F3FF33', '#FF33F3', '#33FFF3'];

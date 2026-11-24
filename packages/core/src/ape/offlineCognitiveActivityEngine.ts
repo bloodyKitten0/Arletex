@@ -906,7 +906,10 @@ export class OfflineCognitiveActivityEngine {
     const now = new Date().toISOString();
     const emotion = context?.dominantEmotion || 'Melancholy';
     const memories = context?.salientMemories || [];
-    const memoryFragments = memories.slice(0, 3).map((m) => m.content).join('; ');
+    const memoryFragments = memories
+      .slice(0, 3)
+      .map((m) => m.content)
+      .join('; ');
 
     const dreamThemes = [
       'dissolution_of_void',

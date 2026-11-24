@@ -893,7 +893,6 @@ export const EmoView: React.FC = () => {
             {(taxonomy.moods || INITIAL_MOODS_TAXONOMY).length}
           </span>
         </button>
-
       </div>
 
       {activationNotice && (
@@ -1440,160 +1439,160 @@ export const EmoView: React.FC = () => {
                     return true;
                   });
                   return uniqueActive.map((em) => {
-                  const isExpanded = expandedEmotionId === em.id;
-                  return (
-                    <div
-                      key={em.id}
-                      style={{
-                        backgroundColor: 'var(--bg-secondary)',
-                        borderRadius: '8px',
-                        border: '1px solid var(--border-subtle)',
-                        padding: '14px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '10px',
-                      }}
-                    >
+                    const isExpanded = expandedEmotionId === em.id;
+                    return (
                       <div
+                        key={em.id}
                         style={{
+                          backgroundColor: 'var(--bg-secondary)',
+                          borderRadius: '8px',
+                          border: '1px solid var(--border-subtle)',
+                          padding: '14px',
                           display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
+                          flexDirection: 'column',
+                          gap: '10px',
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span
+                              style={{
+                                fontSize: '14px',
+                                fontWeight: 600,
+                                color: 'var(--text-primary)',
+                                textTransform: 'capitalize',
+                              }}
+                            >
+                              {em.emotionId === 'romantic_love'
+                                ? 'Relational Trust'
+                                : em.emotionId === 'love'
+                                  ? 'Affiliative Warmth'
+                                  : em.emotionId.replace(/_/g, ' ')}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: '9px',
+                                textTransform: 'uppercase',
+                                fontWeight: 700,
+                                padding: '1px 6px',
+                                borderRadius: '10px',
+                                backgroundColor: 'rgba(168, 85, 247, 0.15)',
+                                color: 'var(--accent)',
+                              }}
+                            >
+                              {em.persistence}
+                            </span>
+                          </div>
+
                           <span
                             style={{
-                              fontSize: '14px',
+                              fontSize: '12px',
+                              fontFamily: 'var(--font-mono)',
                               fontWeight: 600,
-                              color: 'var(--text-primary)',
-                              textTransform: 'capitalize',
-                            }}
-                          >
-                            {em.emotionId === 'romantic_love'
-                              ? 'Relational Trust'
-                              : em.emotionId === 'love'
-                                ? 'Affiliative Warmth'
-                                : em.emotionId.replace(/_/g, ' ')}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: '9px',
-                              textTransform: 'uppercase',
-                              fontWeight: 700,
-                              padding: '1px 6px',
-                              borderRadius: '10px',
-                              backgroundColor: 'rgba(168, 85, 247, 0.15)',
                               color: 'var(--accent)',
                             }}
                           >
-                            {em.persistence}
+                            {(em.intensity * 100).toFixed(0)}%
                           </span>
                         </div>
 
-                        <span
-                          style={{
-                            fontSize: '12px',
-                            fontFamily: 'var(--font-mono)',
-                            fontWeight: 600,
-                            color: 'var(--accent)',
-                          }}
-                        >
-                          {(em.intensity * 100).toFixed(0)}%
-                        </span>
-                      </div>
-
-                      {/* Intensity Bar */}
-                      <div
-                        style={{
-                          height: '5px',
-                          backgroundColor: 'var(--bg-tertiary)',
-                          borderRadius: '3px',
-                          overflow: 'hidden',
-                        }}
-                      >
+                        {/* Intensity Bar */}
                         <div
                           style={{
-                            width: `${Math.max(4, em.intensity * 100)}%`,
-                            height: '100%',
-                            backgroundColor: em.intensity > 0.7 ? '#f778ba' : 'var(--accent)',
-                          }}
-                        />
-                      </div>
-
-                      <div
-                        style={{
-                          fontSize: '11px',
-                          color: 'var(--text-secondary)',
-                          lineHeight: 1.4,
-                        }}
-                      >
-                        {em.interpretation ||
-                          'Active emotional state in response to recent appraisal.'}
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => setExpandedEmotionId(isExpanded ? null : em.id)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          fontSize: '10px',
-                          color: 'var(--text-muted)',
-                          background: 'transparent',
-                          padding: 0,
-                          marginTop: '2px',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                        <span>
-                          {isExpanded
-                            ? 'Hide Causal Details'
-                            : 'Inspect Causal Appraisal & Evidence'}
-                        </span>
-                      </button>
-
-                      {isExpanded && (
-                        <div
-                          style={{
-                            marginTop: '6px',
-                            paddingTop: '8px',
-                            borderTop: '1px solid var(--border-subtle)',
-                            fontSize: '10px',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '6px',
+                            height: '5px',
+                            backgroundColor: 'var(--bg-tertiary)',
+                            borderRadius: '3px',
+                            overflow: 'hidden',
                           }}
                         >
-                          <div>
-                            <span style={{ color: 'var(--text-muted)' }}>Target: </span>
-                            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
-                              {em.target}
-                            </span>
-                          </div>
-                          {em.supportingEvidence?.length > 0 && (
-                            <div>
-                              <span style={{ color: 'var(--text-muted)' }}>Evidence: </span>
-                              <span style={{ color: 'var(--text-secondary)' }}>
-                                {em.supportingEvidence.join(', ')}
-                              </span>
-                            </div>
-                          )}
-                          {em.resolutionConditions?.length > 0 && (
-                            <div>
-                              <span style={{ color: 'var(--text-muted)' }}>Resolution: </span>
-                              <span style={{ color: '#3fb950' }}>
-                                {em.resolutionConditions.join(' • ')}
-                              </span>
-                            </div>
-                          )}
+                          <div
+                            style={{
+                              width: `${Math.max(4, em.intensity * 100)}%`,
+                              height: '100%',
+                              backgroundColor: em.intensity > 0.7 ? '#f778ba' : 'var(--accent)',
+                            }}
+                          />
                         </div>
-                      )}
-                    </div>
-                  );
-                });
+
+                        <div
+                          style={{
+                            fontSize: '11px',
+                            color: 'var(--text-secondary)',
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          {em.interpretation ||
+                            'Active emotional state in response to recent appraisal.'}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setExpandedEmotionId(isExpanded ? null : em.id)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontSize: '10px',
+                            color: 'var(--text-muted)',
+                            background: 'transparent',
+                            padding: 0,
+                            marginTop: '2px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                          <span>
+                            {isExpanded
+                              ? 'Hide Causal Details'
+                              : 'Inspect Causal Appraisal & Evidence'}
+                          </span>
+                        </button>
+
+                        {isExpanded && (
+                          <div
+                            style={{
+                              marginTop: '6px',
+                              paddingTop: '8px',
+                              borderTop: '1px solid var(--border-subtle)',
+                              fontSize: '10px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '6px',
+                            }}
+                          >
+                            <div>
+                              <span style={{ color: 'var(--text-muted)' }}>Target: </span>
+                              <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                                {em.target}
+                              </span>
+                            </div>
+                            {em.supportingEvidence?.length > 0 && (
+                              <div>
+                                <span style={{ color: 'var(--text-muted)' }}>Evidence: </span>
+                                <span style={{ color: 'var(--text-secondary)' }}>
+                                  {em.supportingEvidence.join(', ')}
+                                </span>
+                              </div>
+                            )}
+                            {em.resolutionConditions?.length > 0 && (
+                              <div>
+                                <span style={{ color: 'var(--text-muted)' }}>Resolution: </span>
+                                <span style={{ color: '#3fb950' }}>
+                                  {em.resolutionConditions.join(' • ')}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  });
                 })()}
               </div>
             )}
@@ -2652,8 +2651,8 @@ export const EmoView: React.FC = () => {
                 }}
               >
                 Arle maintains longitudinal interpersonal trust, consistent relational grounding,
-                and dignified authentic communication. Operates with genuine cognitive
-                independence, principled boundaries, and zero subservience.
+                and dignified authentic communication. Operates with genuine cognitive independence,
+                principled boundaries, and zero subservience.
               </p>
             </div>
           </div>
@@ -3234,7 +3233,8 @@ export const EmoView: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Flame size={20} color="var(--accent)" />
                 <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  Arle's Emotional Vocabulary ({(taxonomy.emotions || INITIAL_EMOTIONS_TAXONOMY).length} Defined Constructs)
+                  Arle's Emotional Vocabulary (
+                  {(taxonomy.emotions || INITIAL_EMOTIONS_TAXONOMY).length} Defined Constructs)
                 </h2>
               </div>
               <span
@@ -3373,7 +3373,9 @@ export const EmoView: React.FC = () => {
                   style={{
                     backgroundColor: 'var(--bg-card, #12161f)',
                     borderRadius: '8px',
-                    border: isActive ? '2px solid var(--accent, #10b981)' : '1px solid var(--border-subtle, #21262d)',
+                    border: isActive
+                      ? '2px solid var(--accent, #10b981)'
+                      : '1px solid var(--border-subtle, #21262d)',
                     boxShadow: isActive ? '0 0 12px rgba(16, 185, 129, 0.25)' : 'none',
                     padding: '16px',
                     display: 'flex',
@@ -3505,7 +3507,8 @@ export const EmoView: React.FC = () => {
                   {/* Induction Controls */}
                   {(() => {
                     const selectedIntensity =
-                      selectedLevels[emotion.id] ?? (activeInstance ? activeInstance.intensity : 0.85);
+                      selectedLevels[emotion.id] ??
+                      (activeInstance ? activeInstance.intensity : 0.85);
                     return (
                       <div
                         style={{
@@ -3522,7 +3525,9 @@ export const EmoView: React.FC = () => {
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Level:</span>
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                            Level:
+                          </span>
                           {[0.5, 0.85, 1.0].map((lvl) => {
                             const isLvlSelected = Math.abs(selectedIntensity - lvl) < 0.04;
                             return (

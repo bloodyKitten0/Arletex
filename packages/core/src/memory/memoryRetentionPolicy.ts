@@ -157,11 +157,7 @@ export class MemoryRetentionPolicyService {
    */
   public getRule(typeOrClass: MemoryRetentionClass | MemoryType | string): RetentionRule {
     const norm = (typeOrClass || '').toLowerCase().trim();
-    if (
-      norm === 'permanent_indelible' ||
-      norm === 'trauma' ||
-      norm === 'traumatic'
-    ) {
+    if (norm === 'permanent_indelible' || norm === 'trauma' || norm === 'traumatic') {
       return CANONICAL_RETENTION_RULES.permanent_indelible;
     }
     if (norm === 'autobiographical') return CANONICAL_RETENTION_RULES.autobiographical;
@@ -186,11 +182,7 @@ export class MemoryRetentionPolicyService {
     retrievalAccessCount = 0,
   ): number {
     const norm = (typeOrClass || '').toLowerCase().trim();
-    if (
-      norm === 'permanent_indelible' ||
-      norm === 'trauma' ||
-      norm === 'traumatic'
-    ) {
+    if (norm === 'permanent_indelible' || norm === 'trauma' || norm === 'traumatic') {
       return 1.0;
     }
 
@@ -239,13 +231,16 @@ export class MemoryRetentionPolicyService {
       memory.type === 'traumatic' ||
       memory.type === 'permanent_indelible' ||
       (memory.tags && memory.tags.includes('permanent_indelible')) ||
-      (memory.metadata && (memory.metadata.retention === 'permanent_indelible' || (memory.metadata as any).isTrauma === true));
+      (memory.metadata &&
+        (memory.metadata.retention === 'permanent_indelible' ||
+          (memory.metadata as any).isTrauma === true));
 
     if (isIndelible) {
       return {
         action: 'retain',
         score: 1.0,
-        reason: 'Permanent indelible traumatic memory: locked with invariant retention, immune to decay, archival, and pruning.',
+        reason:
+          'Permanent indelible traumatic memory: locked with invariant retention, immune to decay, archival, and pruning.',
       };
     }
 

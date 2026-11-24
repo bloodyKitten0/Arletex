@@ -134,7 +134,10 @@ export class SqliteDeliberationRepository implements IDeliberationRepository {
           debate.debatedAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(`Failed to save ambivalence debate ${debate.id}: ${err.message}`, err);
+      throw new DatabaseError(
+        `Failed to save ambivalence debate ${debate.id}: ${err.message}`,
+        err,
+      );
     }
   }
 

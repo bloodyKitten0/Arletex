@@ -64,7 +64,10 @@ $$ \\frac{dN_X}{dt} = -(`;
       .replace(/\\\[([\s\S]*?)\\\]/g, (_m, math) => `\n$$\n${math.trim()}\n$$\n`)
       .replace(/\\\(([\s\S]*?)\\\)/g, (_m, math) => `$${math.trim()}$`);
 
-    text = text.replace(/^\$\$\s*([^\$\n]+?)\s*\$\$$/gm, (_m, math) => `\n$$\n${math.trim()}\n$$\n`);
+    text = text.replace(
+      /^\$\$\s*([^\$\n]+?)\s*\$\$$/gm,
+      (_m, math) => `\n$$\n${math.trim()}\n$$\n`,
+    );
     text = text.replace(/^\$\$\s*([^\$\n]+)$/gm, (_m, math) => `$$\n${math.trim()}`);
 
     const displayDollarMatches = text.match(/\$\$/g) || [];

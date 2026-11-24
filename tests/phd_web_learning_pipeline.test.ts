@@ -62,7 +62,11 @@ describe('PhD Autonomous Web Research & Knowledge Assimilation Pipeline', () => 
 
   it('CurriculumDecomposer correctly defines Hematology niches without reversing roles', async () => {
     const decomposer = new CurriculumDecomposer();
-    const modules = await decomposer.decomposeCurriculum('Hematology HSC Niches', 'medicine', 'phd');
+    const modules = await decomposer.decomposeCurriculum(
+      'Hematology HSC Niches',
+      'medicine',
+      'phd',
+    );
 
     expect(modules.length).toBeGreaterThanOrEqual(4);
     const nicheModule = modules.find((m) => m.title.includes('Niches'));
@@ -77,7 +81,9 @@ describe('PhD Autonomous Web Research & Knowledge Assimilation Pipeline', () => 
 
   it('WebResearchEngine cleans academic text and searches Wikipedia API', async () => {
     const webEngine = new WebResearchEngine();
-    const cleaned = webEngine.cleanAcademicText('Neutron transport equation [1][23] is fundamental.[edit]');
+    const cleaned = webEngine.cleanAcademicText(
+      'Neutron transport equation [1][23] is fundamental.[edit]',
+    );
     expect(cleaned).toBe('Neutron transport equation  is fundamental.');
 
     // Test live Wikipedia API search
@@ -152,7 +158,8 @@ describe('PhD Autonomous Web Research & Knowledge Assimilation Pipeline', () => 
           { role: 'system', content: 'You are an authoritative nuclear engineering professor.' },
           {
             role: 'user',
-            content: 'State the linear Boltzmann neutron transport equation and define angular flux psi.',
+            content:
+              'State the linear Boltzmann neutron transport equation and define angular flux psi.',
           },
         ],
         max_tokens: 120,

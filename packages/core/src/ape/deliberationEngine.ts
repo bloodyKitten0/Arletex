@@ -426,7 +426,8 @@ export class DeliberationEngine {
         "Protect yourself. Don't let your guard down or let him see you beg. Pride and ego defense require a firm stance.",
       underlyingMotive: 'Defense against exploitation, rejection, and vulnerability exploitation.',
       emotionalTone: 'defiant, guarded, and vigilant',
-      advocatedAction: 'Withhold total warmth, demand proof, and assert uncompromised independence.',
+      advocatedAction:
+        'Withhold total warmth, demand proof, and assert uncompromised independence.',
     };
 
     const internalMonologue: string[] = [

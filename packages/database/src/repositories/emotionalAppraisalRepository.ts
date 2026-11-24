@@ -107,10 +107,7 @@ export class SqliteEmotionalAppraisalRepository implements IEmotionalAppraisalRe
           node.createdAt,
         );
     } catch (err: any) {
-      throw new DatabaseError(
-        `Failed to save trauma trigger node ${node.id}: ${err.message}`,
-        err,
-      );
+      throw new DatabaseError(`Failed to save trauma trigger node ${node.id}: ${err.message}`, err);
     }
   }
 

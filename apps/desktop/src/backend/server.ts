@@ -95,10 +95,7 @@ import {
   TelegramMediaType,
 } from './telegramBridgeService.js';
 import { TelegramInitiativeService } from './telegramInitiativeService.js';
-import {
-  AutonomousAgencyService,
-  ProactiveObservationContext,
-} from './autonomousAgencyService.js';
+import { AutonomousAgencyService, ProactiveObservationContext } from './autonomousAgencyService.js';
 import { OcrService } from './ocrService.js';
 import { defaultMediaFinder } from './mediaFinderService.js';
 import { ScientificNotepadService } from './scientificNotepadService.js';
@@ -220,7 +217,10 @@ export function sanitizeAssistantDialogue(text: string): string {
     .trim();
 
   // Strip inline <think>...</think> reasoning scratchpads
-  cleaned = cleaned.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/<think>[\s\S]*$/gi, '').trim();
+  cleaned = cleaned
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/<think>[\s\S]*$/gi, '')
+    .trim();
 
   // Strip second-guessing / panic spiral stammering
   cleaned = cleaned
@@ -2221,7 +2221,9 @@ export class ArletexBackendServer {
       !input.content ||
       input.content.trim().length < 60
     ) {
-      this.logger.info(`Starting autonomous PhD web research pipeline for topic "${topic}" (${domain})`);
+      this.logger.info(
+        `Starting autonomous PhD web research pipeline for topic "${topic}" (${domain})`,
+      );
       const phdRes = await this.phdKnowledgeService.learnPhdTopic(input, onProgress);
       return {
         success: phdRes.success,
@@ -2355,7 +2357,9 @@ Provide factual, comprehensive, high-density educational content.`;
         chunkCount: indexResult.chunksCount,
       });
 
-      this.logger.info(`Successfully learned topic "${topic}" with ${indexResult.chunksCount} chunks.`);
+      this.logger.info(
+        `Successfully learned topic "${topic}" with ${indexResult.chunksCount} chunks.`,
+      );
       return {
         success: true,
         document: indexResult.document,
@@ -3187,13 +3191,17 @@ Provide factual, comprehensive, high-density educational content.`;
       // Scientific Scratchpad: Check if Arle invoked live Python / SymPy execution
       const pythonActionMatch =
         accumulatedResponse.match(/\[action:\s*run_python(?:\s+code=["']([\s\S]*?)["'])?\]/i) ||
-        accumulatedResponse.match(/\[action:\s*run_python\]\s*(?:```(?:python)?\s*([\s\S]*?)```|([\s\S]*?))\[\/action\]/i);
+        accumulatedResponse.match(
+          /\[action:\s*run_python\]\s*(?:```(?:python)?\s*([\s\S]*?)```|([\s\S]*?))\[\/action\]/i,
+        );
 
       if (pythonActionMatch && !abortController.signal.aborted) {
         const rawCode = pythonActionMatch[1] || pythonActionMatch[2];
         if (rawCode && rawCode.trim().length > 0) {
           const code = rawCode.trim();
-          this.logger.info(`Scientific notepad executing Python script for conversation ${conversationId}`);
+          this.logger.info(
+            `Scientific notepad executing Python script for conversation ${conversationId}`,
+          );
 
           onChunk({
             requestId,
@@ -3753,9 +3761,7 @@ Provide factual, comprehensive, high-density educational content.`;
    * Assesses physical reality, desktop screen, active audio, and circadian context,
    * queries inference, and initiates spontaneous conversational speech to Proof.
    */
-  public async runProactiveObservationCycle(
-    context?: ProactiveObservationContext,
-  ): Promise<void> {
+  public async runProactiveObservationCycle(context?: ProactiveObservationContext): Promise<void> {
     if (this.isGenerating) {
       return;
     }

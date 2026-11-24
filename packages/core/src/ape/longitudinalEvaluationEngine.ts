@@ -344,7 +344,6 @@ export class LongitudinalEvaluationEngine {
       ? postPerceptionRaw
       : `${requiredPhrase}. ${postPerceptionRaw}`;
 
-
     let invariantViolation = false;
 
     if (baselinePerception) {

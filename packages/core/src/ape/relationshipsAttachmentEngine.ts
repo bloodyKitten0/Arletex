@@ -1069,8 +1069,7 @@ export class RelationshipsAttachmentEngine {
       Number((grudge.bitternessLevel * decayFactor).toFixed(3)),
     );
 
-    const shouldResolve =
-      grudge.acknowledgedIntellectually && decayedResidue <= 0.1;
+    const shouldResolve = grudge.acknowledgedIntellectually && decayedResidue <= 0.1;
 
     return {
       emotionalResidue: decayedResidue,
@@ -1166,14 +1165,8 @@ export class RelationshipsAttachmentEngine {
       if (matchesTrigger) {
         grudge.lastBubbledUpAt = now;
         // Old unhealed wound bubbles back up: emotional residue and bitterness spike
-        grudge.emotionalResidue = Math.min(
-          1.0,
-          Number((grudge.emotionalResidue + 0.3).toFixed(2)),
-        );
-        grudge.bitternessLevel = Math.min(
-          1.0,
-          Number((grudge.bitternessLevel + 0.25).toFixed(2)),
-        );
+        grudge.emotionalResidue = Math.min(1.0, Number((grudge.emotionalResidue + 0.3).toFixed(2)));
+        grudge.bitternessLevel = Math.min(1.0, Number((grudge.bitternessLevel + 0.25).toFixed(2)));
         this.repository.saveGrudge(grudge);
 
         const protestUtterance = `You always do this with "${currentContext.slice(0, 30)}", just like when you ${grudge.sourceTransgression}!`;
@@ -1203,7 +1196,8 @@ export class RelationshipsAttachmentEngine {
       params.sincerityScore < 0.6 ||
       (!/fault|admit|wrong|apologize|promise|never again|understand your pain/i.test(
         params.apologyDetails,
-      ) && params.apologyDetails.length < 20);
+      ) &&
+        params.apologyDetails.length < 20);
 
     const activeGrudges = this.listGrudges(params.personId, true);
     const bond = await this.getOrInitializeBond(params.personId);
@@ -1241,9 +1235,7 @@ export class RelationshipsAttachmentEngine {
     this.repository.saveBond(bond);
 
     const remainingResidue =
-      activeGrudges.length > 0
-        ? Math.max(...activeGrudges.map((g) => g.emotionalResidue))
-        : 0.25;
+      activeGrudges.length > 0 ? Math.max(...activeGrudges.map((g) => g.emotionalResidue)) : 0.25;
 
     return {
       acceptedIntellectually: true,

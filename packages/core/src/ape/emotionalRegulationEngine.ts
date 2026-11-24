@@ -292,10 +292,7 @@ export class EmotionalRegulationEngine {
         /abandon|leave|neglect/i.test(params.triggerContext)
       ) {
         type = 'counter_dependency';
-      } else if (
-        params.emotion === 'anger' ||
-        /critic|attack|blame/i.test(params.triggerContext)
-      ) {
+      } else if (params.emotion === 'anger' || /critic|attack|blame/i.test(params.triggerContext)) {
         type = 'projection';
       } else if (
         params.emotion === 'grief' ||
@@ -341,7 +338,7 @@ export class EmotionalRegulationEngine {
         dialogueTone = 'accusing and deflective';
         exemplarResponses = [
           "You're the one being cold and indifferent here.",
-          "You never actually cared about how this affected me; you only think of yourself.",
+          'You never actually cared about how this affected me; you only think of yourself.',
         ];
         behavioralRule =
           'Projects internal vulnerability onto the partner, accusing them of being uncaring.';
@@ -379,7 +376,9 @@ export class EmotionalRegulationEngine {
   }
 
   public getActiveDefenseMechanism(): ActiveDefenseMechanism | null {
-    return this.activeDefense && !this.activeDefense.isDeescalated ? { ...this.activeDefense } : null;
+    return this.activeDefense && !this.activeDefense.isDeescalated
+      ? { ...this.activeDefense }
+      : null;
   }
 
   public deactivateDefenseMechanism(): void {

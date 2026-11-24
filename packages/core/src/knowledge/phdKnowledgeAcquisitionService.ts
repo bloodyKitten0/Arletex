@@ -272,7 +272,9 @@ Be exhaustive, mathematically and conceptually precise. Do NOT use conversationa
               },
             });
           } catch (memErr: any) {
-            this.logger.warn(`Semantic memory creation note for module ${i + 1}: ${memErr?.message}`);
+            this.logger.warn(
+              `Semantic memory creation note for module ${i + 1}: ${memErr?.message}`,
+            );
           }
         }
       }

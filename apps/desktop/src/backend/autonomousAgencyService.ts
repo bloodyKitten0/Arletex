@@ -60,8 +60,7 @@ export class AutonomousAgencyService {
   private isCycleRunning = false;
   private proactiveSpeechListeners: Array<(event: ProactiveSpeechEvent) => void> = [];
   private proactiveObservationHandler:
-    | ((context: ProactiveObservationContext) => Promise<void>)
-    | null = null;
+    ((context: ProactiveObservationContext) => Promise<void>) | null = null;
 
   public onProactiveSpeech(fn: (event: ProactiveSpeechEvent) => void): void {
     this.proactiveSpeechListeners.push(fn);

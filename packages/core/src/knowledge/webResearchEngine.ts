@@ -31,20 +31,28 @@ export class WebResearchEngine {
   /**
    * Searches the open Wikipedia API for academic and scientific articles matching the query.
    */
-  public async searchWikipedia(query: string, limit = 3): Promise<Array<{ title: string; snippet: string; pageid: number }>> {
+  public async searchWikipedia(
+    query: string,
+    limit = 3,
+  ): Promise<Array<{ title: string; snippet: string; pageid: number }>> {
     try {
       const url = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(
         query,
       )}&srlimit=${limit}&utf8=&format=json`;
 
       const res = await fetch(url, {
-        headers: { 'User-Agent': 'ArletexBot/2.0 (Academic Research Hub; https://arletex.dev; contact@arletex.local)' },
+        headers: {
+          'User-Agent':
+            'ArletexBot/2.0 (Academic Research Hub; https://arletex.dev; contact@arletex.local)',
+        },
         signal: AbortSignal.timeout(10000),
       });
 
       if (!res.ok) {
         if (res.status === 429) {
-          this.logger.debug(`Wikipedia search rate limited (429) for "${query}". Using local academic synthesis.`);
+          this.logger.debug(
+            `Wikipedia search rate limited (429) for "${query}". Using local academic synthesis.`,
+          );
         } else {
           this.logger.debug(`Wikipedia search response status: ${res.status}`);
         }
@@ -69,14 +77,20 @@ export class WebResearchEngine {
   /**
    * Fetches full plain-text extracts of an article from Wikipedia.
    */
-  public async fetchWikipediaExtract(title: string, maxChars = 14000): Promise<WebResearchSource | null> {
+  public async fetchWikipediaExtract(
+    title: string,
+    maxChars = 14000,
+  ): Promise<WebResearchSource | null> {
     try {
       const url = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&titles=${encodeURIComponent(
         title,
       )}&format=json`;
 
       const res = await fetch(url, {
-        headers: { 'User-Agent': 'ArletexBot/2.0 (Academic Research Hub; https://arletex.dev; contact@arletex.local)' },
+        headers: {
+          'User-Agent':
+            'ArletexBot/2.0 (Academic Research Hub; https://arletex.dev; contact@arletex.local)',
+        },
         signal: AbortSignal.timeout(12000),
       });
 

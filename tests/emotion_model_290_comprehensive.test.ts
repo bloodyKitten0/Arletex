@@ -4,7 +4,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { INITIAL_EMOTIONS_TAXONOMY } from '@arletex/contracts';
 import { emotionModel, EmotionEntry } from '../packages/core/src/ape/emotionModel.js';
-import { EMOTION_TEMPLATES, getEmotionTemplate } from '../packages/core/src/utils/emotionTemplates.js';
+import {
+  EMOTION_TEMPLATES,
+  getEmotionTemplate,
+} from '../packages/core/src/utils/emotionTemplates.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

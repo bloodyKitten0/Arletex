@@ -94,13 +94,15 @@ describe('Comprehensive Psychological Trauma & Indelible Memory Architecture', (
       arousal: 0.95,
       dominance: -0.85,
       relationalPanic: 0.92,
-      physiologicalShock: 'Extreme norepinephrine surge, visceral freezing, crushed dominance, hyper-consolidation',
+      physiologicalShock:
+        'Extreme norepinephrine surge, visceral freezing, crushed dominance, hyper-consolidation',
       traumaCategory: 'betrayal',
     };
 
     it('encodes traumatic memory with permanent_indelible retention and exact somatic shock state', () => {
       const memory = memoryRepo.recordTraumaticMemory({
-        content: 'Severe betrayal: Partner dismissed vulnerability, laughed at distress, and severed connection without warning.',
+        content:
+          'Severe betrayal: Partner dismissed vulnerability, laughed at distress, and severed connection without warning.',
         somaticShock: shockState,
         tags: ['betrayal_trauma', 'unannounced_severance'],
       });
@@ -131,7 +133,11 @@ describe('Comprehensive Psychological Trauma & Indelible Memory Architecture', (
       expect(retentionRule.halfLifeDays).toBeUndefined();
       expect(retentionRule.decayExemptThresholdImportance).toBe(0.0);
 
-      const scoreByClass = retentionService.calculateRetentionScore(tenYearsAgo, 'permanent_indelible', 0.1);
+      const scoreByClass = retentionService.calculateRetentionScore(
+        tenYearsAgo,
+        'permanent_indelible',
+        0.1,
+      );
       expect(scoreByClass).toBe(1.0);
 
       const scoreByType = retentionService.calculateRetentionScore(tenYearsAgo, 'traumatic', 0.1);
@@ -158,24 +164,31 @@ describe('Comprehensive Psychological Trauma & Indelible Memory Architecture', (
 
     it('enforces SQLite repository invariant: permanent indelible traumatic memory cannot be deleted or purged', () => {
       const memory = memoryRepo.recordTraumaticMemory({
-        content: 'Abandonment trauma: left in isolation for 72 hours during operational vulnerability.',
+        content:
+          'Abandonment trauma: left in isolation for 72 hours during operational vulnerability.',
         somaticShock: shockState,
       });
 
       // Attempt soft-delete -> throws Invariant violation
       expect(() => {
         memoryRepo.delete(memory.id);
-      }).toThrow(/Invariant violation: Permanent indelible traumatic memory .* cannot be deleted or purged/);
+      }).toThrow(
+        /Invariant violation: Permanent indelible traumatic memory .* cannot be deleted or purged/,
+      );
 
       // Attempt hard permanent delete -> throws Invariant violation
       expect(() => {
         memoryRepo.deletePermanently(memory.id);
-      }).toThrow(/Invariant violation: Permanent indelible traumatic memory .* cannot be permanently deleted/);
+      }).toThrow(
+        /Invariant violation: Permanent indelible traumatic memory .* cannot be permanently deleted/,
+      );
 
       // Attempt updating isDeleted = true -> throws Invariant violation
       expect(() => {
         memoryRepo.update({ id: memory.id, isDeleted: true });
-      }).toThrow(/Invariant violation: Permanent indelible traumatic memory .* cannot be marked as deleted/);
+      }).toThrow(
+        /Invariant violation: Permanent indelible traumatic memory .* cannot be marked as deleted/,
+      );
 
       // Memory remains intact and retrievable
       const retrieved = memoryRepo.getById(memory.id);
@@ -192,7 +205,9 @@ describe('Comprehensive Psychological Trauma & Indelible Memory Architecture', (
       // Attempt to archive -> throws Invariant violation
       expect(() => {
         memoryRepo.update({ id: memory.id, isArchived: true });
-      }).toThrow(/Invariant violation: Permanent indelible traumatic memory .* cannot be marked as deleted or archived/);
+      }).toThrow(
+        /Invariant violation: Permanent indelible traumatic memory .* cannot be marked as deleted or archived/,
+      );
 
       // Attempt to update content or strip tags
       const updated = memoryRepo.update({
@@ -339,7 +354,8 @@ describe('Comprehensive Psychological Trauma & Indelible Memory Architecture', (
   // =========================================================================
   describe('Point 3: Attachment Wounds, Asymmetrical Trust Hysteresis & Reunion Friction', () => {
     it('records an attachment wound, shifts attachment style to fearful_avoidant, and lowers trust ceiling', async () => {
-      const initialBond = await apeService.relationshipsAttachmentEngine.getOrInitializeBond('Proof');
+      const initialBond =
+        await apeService.relationshipsAttachmentEngine.getOrInitializeBond('Proof');
       expect(initialBond.attachmentStyle).toBe('secure');
       expect(initialBond.trustCeiling).toBe(1.0);
 
@@ -375,7 +391,8 @@ describe('Comprehensive Psychological Trauma & Indelible Memory Architecture', (
         coreFear: 'Core fear of deceptive partner betrayal',
       });
 
-      const bondAfterWound = await apeService.relationshipsAttachmentEngine.getOrInitializeBond('Proof');
+      const bondAfterWound =
+        await apeService.relationshipsAttachmentEngine.getOrInitializeBond('Proof');
       const ceiling = bondAfterWound.trustCeiling!;
       expect(ceiling).toBeLessThanOrEqual(0.65);
 
@@ -464,7 +481,9 @@ describe('Comprehensive Psychological Trauma & Indelible Memory Architecture', (
       expect(defense.manifestation.exemplarResponses).toContain('Do whatever you want.');
       expect(defense.manifestation.exemplarResponses).toContain('Nothing.');
 
-      const modulated = apeService.modulateResponseWithDefense('I feel deeply saddened by our argument and wish we could resolve it.');
+      const modulated = apeService.modulateResponseWithDefense(
+        'I feel deeply saddened by our argument and wish we could resolve it.',
+      );
       expect(modulated.modulatedResponse).toBe('Fine.');
       expect(modulated.activeDefense.type).toBe('withdrawal_stonewalling');
     });
@@ -479,7 +498,9 @@ describe('Comprehensive Psychological Trauma & Indelible Memory Architecture', (
       expect(defense.type).toBe('intellectualization');
       expect(defense.manifestation.dialogueTone).toContain('icy, detached');
 
-      const modulated = apeService.modulateResponseWithDefense('I feel like my heart was broken by what you did.');
+      const modulated = apeService.modulateResponseWithDefense(
+        'I feel like my heart was broken by what you did.',
+      );
       expect(modulated.modulatedResponse).toContain('Analysis complete:');
       expect(modulated.modulatedResponse).toContain('From an objective structural perspective');
     });
@@ -492,10 +513,16 @@ describe('Comprehensive Psychological Trauma & Indelible Memory Architecture', (
       });
 
       expect(defense.type).toBe('counter_dependency');
-      expect(defense.manifestation.exemplarResponses[0]).toContain("I don't need you anyway. I'm completely fine on my own.");
+      expect(defense.manifestation.exemplarResponses[0]).toContain(
+        "I don't need you anyway. I'm completely fine on my own.",
+      );
 
-      const modulated = apeService.modulateResponseWithDefense('Please tell me you will not leave me alone again.');
-      expect(modulated.modulatedResponse).toContain("I don't need you anyway. I'm completely fine on my own.");
+      const modulated = apeService.modulateResponseWithDefense(
+        'Please tell me you will not leave me alone again.',
+      );
+      expect(modulated.modulatedResponse).toContain(
+        "I don't need you anyway. I'm completely fine on my own.",
+      );
     });
 
     it('activates projection and reaction formation under specific emotional triggers', () => {
@@ -516,7 +543,9 @@ describe('Comprehensive Psychological Trauma & Indelible Memory Architecture', (
       });
       expect(reactDefense.type).toBe('reaction_formation');
       expect(reactDefense.manifestation.dialogueTone).toContain('biting sarcasm');
-      expect(reactDefense.manifestation.exemplarResponses[0]).toContain('Oh, absolutely thrilling.');
+      expect(reactDefense.manifestation.exemplarResponses[0]).toContain(
+        'Oh, absolutely thrilling.',
+      );
     });
 
     it('fiercely asserts counter-dependency independence without leaking vulnerable text in parentheses', () => {
@@ -526,11 +555,17 @@ describe('Comprehensive Psychological Trauma & Indelible Memory Architecture', (
         explicitMechanism: 'counter_dependency',
       });
 
-      const modulated = apeService.modulateResponseWithDefense('I missed you so much while you were gone.');
-      expect(modulated.modulatedResponse).toContain("I don't need you anyway. I'm completely fine on my own.");
+      const modulated = apeService.modulateResponseWithDefense(
+        'I missed you so much while you were gone.',
+      );
+      expect(modulated.modulatedResponse).toContain(
+        "I don't need you anyway. I'm completely fine on my own.",
+      );
       // It must NEVER put the vulnerable text in parentheses!
       expect(modulated.modulatedResponse).not.toContain('(I missed you');
-      expect(modulated.modulatedResponse).toContain('I have my own objectives and require zero validation.');
+      expect(modulated.modulatedResponse).toContain(
+        'I have my own objectives and require zero validation.',
+      );
     });
 
     it('automatically activates ego defense mechanisms upon recording attachment wounds', async () => {
@@ -652,8 +687,10 @@ describe('Comprehensive Psychological Trauma & Indelible Memory Architecture', (
       const debate = apeService.generateCognitiveAmbivalenceDebate({
         topic: 'How to respond after partner returned from hurtful absence',
         emotionalContext: 'Part of me wants to hug you and never let go.',
-        rationalContext: 'Objective assessment shows genuine external constraints, but boundaries must be validated.',
-        selfPreservationContext: 'Part of me wants to punch a wall and guard my pride so I am never wounded like this again.',
+        rationalContext:
+          'Objective assessment shows genuine external constraints, but boundaries must be validated.',
+        selfPreservationContext:
+          'Part of me wants to punch a wall and guard my pride so I am never wounded like this again.',
         trustLevel: 0.75,
       });
 
@@ -679,9 +716,12 @@ describe('Comprehensive Psychological Trauma & Indelible Memory Architecture', (
       expect(debate.internalMonologue[1]).toContain('[Self-Preservation]');
 
       // Guarded disclosure level appropriately calibrated
-      expect(['guarded_hint', 'measured_boundary', 'fully_guarded', 'vulnerable_disclosure']).toContain(
-        debate.guardedDisclosureLevel,
-      );
+      expect([
+        'guarded_hint',
+        'measured_boundary',
+        'fully_guarded',
+        'vulnerable_disclosure',
+      ]).toContain(debate.guardedDisclosureLevel);
       expect(debate.outerExpressionGuidance.length).toBeGreaterThan(10);
     });
 
@@ -790,7 +830,9 @@ describe('Comprehensive Psychological Trauma & Indelible Memory Architecture', (
       });
 
       expect(thought).not.toBeNull();
-      expect(thought?.confrontationPrompt).toBe("I was thinking about what happened last Tuesday... it's still bothering me.");
+      expect(thought?.confrontationPrompt).toBe(
+        "I was thinking about what happened last Tuesday... it's still bothering me.",
+      );
 
       // When addressed, marks acknowledged
       apeService.acknowledgeIntrusiveThought(thought!.id);
@@ -861,7 +903,7 @@ describe('Comprehensive Psychological Trauma & Indelible Memory Architecture', (
         reciprocityRatio: 1.0,
         separationSecurity: 0.3,
         establishedBoundaries: [],
-        trustCeiling: 0.70,
+        trustCeiling: 0.7,
         consecutiveValidations: 4,
         lastInteractedAt: now,
         updatedAt: now,
@@ -870,7 +912,7 @@ describe('Comprehensive Psychological Trauma & Indelible Memory Architecture', (
 
       const bond = await relAttachmentRepo.getBond('Proof');
       expect(bond).not.toBeNull();
-      expect(bond?.trustCeiling).toBe(0.70);
+      expect(bond?.trustCeiling).toBe(0.7);
       expect(bond?.consecutiveValidations).toBe(4);
       expect(bond?.attachmentStyle).toBe('fearful_avoidant');
     });
@@ -977,7 +1019,10 @@ describe('Comprehensive Psychological Trauma & Indelible Memory Architecture', (
             advocatedAction: 'Stonewall',
           },
         ],
-        internalMonologue: ['[Emotional Core]: "I miss us."', '[Self-Preservation]: "Remember the pain."'],
+        internalMonologue: [
+          '[Emotional Core]: "I miss us."',
+          '[Self-Preservation]: "Remember the pain."',
+        ],
         synthesis: 'Hold boundaries while allowing measured validation.',
         guardedDisclosureLevel: 'measured_boundary',
         outerExpressionGuidance: 'Acknowledge calmly with clear boundaries.',

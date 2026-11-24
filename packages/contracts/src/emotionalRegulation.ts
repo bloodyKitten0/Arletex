@@ -108,4 +108,3 @@ export const ActiveDefenseMechanismSchema = z.object({
   activatedAt: z.string(),
 });
 export type ActiveDefenseMechanism = z.infer<typeof ActiveDefenseMechanismSchema>;
-

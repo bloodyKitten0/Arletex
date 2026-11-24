@@ -2,8 +2,8 @@
 // Returns randomised audio perception data to simulate sensory input.
 
 export interface AudioPercept {
-  volume: number;    // 0–1
-  pitch: number;     // Hz, 80–300 range
+  volume: number; // 0–1
+  pitch: number; // Hz, 80–300 range
   sentiment: 'neutral' | 'positive' | 'negative' | 'tense';
 }
 
@@ -17,7 +17,9 @@ export class AudioPerceptionService {
     return {
       volume: Math.random(),
       pitch: 80 + Math.random() * 220,
-      sentiment: sentiments[Math.floor(Math.random() * sentiments.length)] as AudioPercept['sentiment'],
+      sentiment: sentiments[
+        Math.floor(Math.random() * sentiments.length)
+      ] as AudioPercept['sentiment'],
     };
   }
 }

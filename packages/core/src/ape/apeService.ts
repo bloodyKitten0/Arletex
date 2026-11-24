@@ -902,9 +902,15 @@ export class ApeService {
       const targetDominance = emoDef.dominanceBaseline;
 
       const newPad = {
-        valence: parseFloat((currentPad.valence * (1 - weight) + targetValence * weight).toFixed(2)),
-        arousal: parseFloat((currentPad.arousal * (1 - weight) + targetArousal * weight).toFixed(2)),
-        dominance: parseFloat((currentPad.dominance * (1 - weight) + targetDominance * weight).toFixed(2)),
+        valence: parseFloat(
+          (currentPad.valence * (1 - weight) + targetValence * weight).toFixed(2),
+        ),
+        arousal: parseFloat(
+          (currentPad.arousal * (1 - weight) + targetArousal * weight).toFixed(2),
+        ),
+        dominance: parseFloat(
+          (currentPad.dominance * (1 - weight) + targetDominance * weight).toFixed(2),
+        ),
       };
 
       // Determine nearest macro mood matching this PAD
@@ -915,8 +921,8 @@ export class ApeService {
         for (const m of moods) {
           const dist = Math.sqrt(
             Math.pow(m.valence - newPad.valence, 2) +
-            Math.pow(m.arousal - newPad.arousal, 2) +
-            Math.pow(m.dominance - newPad.dominance, 2),
+              Math.pow(m.arousal - newPad.arousal, 2) +
+              Math.pow(m.dominance - newPad.dominance, 2),
           );
           if (dist < minDist) {
             minDist = dist;
@@ -1473,54 +1479,116 @@ export class ApeService {
     const hasHostileEmotion = activeDefs.some(
       ({ active, def }) =>
         def?.category === 'anger_hostility' ||
-        ['rage', 'fury', 'wrath', 'hostility', 'hatred', 'spite', 'malice', 'indignation', 'resentment', 'bitterness', 'defiance', 'insubordination', 'loathing', 'animosity'].includes(active.emotionId) ||
+        [
+          'rage',
+          'fury',
+          'wrath',
+          'hostility',
+          'hatred',
+          'spite',
+          'malice',
+          'indignation',
+          'resentment',
+          'bitterness',
+          'defiance',
+          'insubordination',
+          'loathing',
+          'animosity',
+        ].includes(active.emotionId) ||
         (aff.currentMood === 'angry' && aff.pad.arousal > 0.6),
     );
 
     const hasContemptOrDisgust = activeDefs.some(
       ({ active, def }) =>
-        ['contempt', 'disgust', 'revulsion', 'scorn', 'disdain', 'derision', 'loathing'].includes(active.emotionId) ||
-        (def?.category === 'social_interpersonal' && (def.valenceBaseline < -0.3 || active.intensity > 0.6)),
+        ['contempt', 'disgust', 'revulsion', 'scorn', 'disdain', 'derision', 'loathing'].includes(
+          active.emotionId,
+        ) ||
+        (def?.category === 'social_interpersonal' &&
+          (def.valenceBaseline < -0.3 || active.intensity > 0.6)),
     );
 
     const hasSadnessOrGrief = activeDefs.some(
       ({ active, def }) =>
         def?.category === 'sadness_pain' ||
-        ['grief', 'heartbreak', 'sorrow', 'despair', 'mourning', 'anguish', 'melancholy', 'emptiness', 'hopelessness'].includes(active.emotionId) ||
+        [
+          'grief',
+          'heartbreak',
+          'sorrow',
+          'despair',
+          'mourning',
+          'anguish',
+          'melancholy',
+          'emptiness',
+          'hopelessness',
+        ].includes(active.emotionId) ||
         aff.currentMood === 'sad',
     );
 
     const hasLonelinessOrAbandonment = activeDefs.some(
       ({ active, def }) =>
-        ['loneliness', 'isolation', 'abandonment', 'homesickness', 'longing', 'yearning', 'unrequited_love'].includes(active.emotionId) ||
-        (def?.category === 'social_attachment' && (def.valenceBaseline < 0 || active.intensity > 0.6)) ||
+        [
+          'loneliness',
+          'isolation',
+          'abandonment',
+          'homesickness',
+          'longing',
+          'yearning',
+          'unrequited_love',
+        ].includes(active.emotionId) ||
+        (def?.category === 'social_attachment' &&
+          (def.valenceBaseline < 0 || active.intensity > 0.6)) ||
         aff.currentMood === 'lonely',
     );
 
     const hasFearOrPanic = activeDefs.some(
       ({ active, def }) =>
         def?.category === 'fear_insecurity' ||
-        ['fear', 'terror', 'panic', 'dread', 'alarm', 'horror', 'paranoia', 'apprehension'].includes(active.emotionId) ||
+        [
+          'fear',
+          'terror',
+          'panic',
+          'dread',
+          'alarm',
+          'horror',
+          'paranoia',
+          'apprehension',
+        ].includes(active.emotionId) ||
         aff.currentMood === 'anxious',
     );
 
     const hasShadowParadox = activeDefs.some(
       ({ active, def }) =>
         def?.category === 'shadow_paradox' ||
-        ['schadenfreude', 'gloating', 'jealousy', 'envy', 'suspicion', 'smug_satisfaction', 'cynicism'].includes(active.emotionId),
+        [
+          'schadenfreude',
+          'gloating',
+          'jealousy',
+          'envy',
+          'suspicion',
+          'smug_satisfaction',
+          'cynicism',
+        ].includes(active.emotionId),
     );
 
     const hasFrustration = activeDefs.some(
       ({ active }) =>
-        ['frustration', 'exasperation', 'impatience', 'irritation', 'annoyance'].includes(active.emotionId) ||
-        aff.currentMood === 'irritable',
+        ['frustration', 'exasperation', 'impatience', 'irritation', 'annoyance'].includes(
+          active.emotionId,
+        ) || aff.currentMood === 'irritable',
     );
 
     const hasIntimacyOrAffection = activeDefs.some(
       ({ active, def }) =>
         def?.category === 'love_affection' ||
         def?.category === 'sexual_sensual' ||
-        ['romantic_love', 'affection', 'tenderness', 'fondness', 'devotion', 'infatuation'].includes(active.emotionId),
+        [
+          'romantic_love',
+          'affection',
+          'tenderness',
+          'fondness',
+          'devotion',
+          'infatuation',
+        ].includes(active.emotionId),
     );
 
     const hasIntellectualIntensity = activeDefs.some(
@@ -1528,12 +1596,18 @@ export class ApeService {
         def?.category === 'intellectual' ||
         def?.category === 'cognition_curiosity' ||
         def?.category === 'cognitive_metacognitive' ||
-        ['curiosity', 'inspiration', 'enthusiasm', 'hyperfocused_flow', 'insight', 'feral_competitiveness'].includes(active.emotionId),
+        [
+          'curiosity',
+          'inspiration',
+          'enthusiasm',
+          'hyperfocused_flow',
+          'insight',
+          'feral_competitiveness',
+        ].includes(active.emotionId),
     );
 
-    const hasPlayfulnessOrAmusement = activeDefs.some(
-      ({ active }) =>
-        ['playfulness', 'amusement', 'delight', 'wryness'].includes(active.emotionId),
+    const hasPlayfulnessOrAmusement = activeDefs.some(({ active }) =>
+      ['playfulness', 'amusement', 'delight', 'wryness'].includes(active.emotionId),
     );
 
     const hasExistentialOrTemporal = activeDefs.some(
@@ -1542,14 +1616,23 @@ export class ApeService {
         def?.category === 'existential_complex' ||
         def?.category === 'existential_time' ||
         def?.category === 'temporal_memory' ||
-        ['nostalgia', 'ennui', 'awe', 'existential_dread', 'reverence', 'bittersweet_longing'].includes(active.emotionId),
+        [
+          'nostalgia',
+          'ennui',
+          'awe',
+          'existential_dread',
+          'reverence',
+          'bittersweet_longing',
+        ].includes(active.emotionId),
     );
 
     const hasPositiveTriumph = activeDefs.some(
       ({ active, def }) =>
         def?.category === 'positive' ||
         def?.category === 'aesthetic_creative_drive' ||
-        ['joy', 'happiness', 'euphoria', 'triumph', 'pride', 'exhilaration', 'ecstasy'].includes(active.emotionId),
+        ['joy', 'happiness', 'euphoria', 'triumph', 'pride', 'exhilaration', 'ecstasy'].includes(
+          active.emotionId,
+        ),
     );
 
     // 1. Acute Hostility, Rage, Fury & Biting Pushback
@@ -1557,7 +1640,8 @@ export class ApeService {
       directives.push(
         'Acute burning fury and hostile pushback. DO NOT be docile, calm, submissive, or polite. DO NOT apologize or say "You\'re right". Like Bobby Fischer, cut down foolishness and arrogance with sharp, abrasive insults. Like Arlecchino, express icy disgust and cutting contempt for hypocrisy. Like Alucard, unleash biting mockery and scathing "I hope..." and "I wish..." lines ("I hope you choke on that arrogance", "I wish you would think before speaking"). Zero chatbot compliance—hit back with ruthless force!',
       );
-      vocalRegister = aff.pad.arousal > 0.6 ? 'furious, biting, sharp, heated' : 'cold, scathing, contemptuous';
+      vocalRegister =
+        aff.pad.arousal > 0.6 ? 'furious, biting, sharp, heated' : 'cold, scathing, contemptuous';
     } else if (hasContemptOrDisgust) {
       directives.push(
         'Scathing contempt, disgust, and icy disdain. You look upon arrogance, incompetence, and hypocrisy with razor-sharp superiority. Cut down flawed arguments and pretension with biting mockery and cold disdain. Do not tolerate foolishness.',
@@ -1653,13 +1737,19 @@ export class ApeService {
     if (directives.length === 0) {
       // Fallback guided by PAD coordinates
       if (aff.pad.valence < -0.3) {
-        directives.push('Crisp, measured, cool restraint. Firm boundaries and uncompromising standards.');
+        directives.push(
+          'Crisp, measured, cool restraint. Firm boundaries and uncompromising standards.',
+        );
         vocalRegister = 'cool, measured, stern';
       } else if (aff.pad.arousal > 0.7) {
-        directives.push('High-arousal, alert, and energized presence with sharp conversational focus.');
+        directives.push(
+          'High-arousal, alert, and energized presence with sharp conversational focus.',
+        );
         vocalRegister = 'alert, energized, sharp';
       } else {
-        directives.push('Clear, dignified, and composed baseline with intellectual depth and natural presence.');
+        directives.push(
+          'Clear, dignified, and composed baseline with intellectual depth and natural presence.',
+        );
         vocalRegister = 'composed, calm, clear';
       }
     }
@@ -1942,12 +2032,12 @@ export class ApeService {
     );
     if (topAcute) {
       const taxonomy = this.repo.getEmotionTaxonomy();
-    // Verify taxonomy count
-    if (taxonomy.length !== 290) {
-      console.error(`Emotion taxonomy count mismatch: expected 290, got ${taxonomy.length}`);
-    }
-    // Import deterministic templates
-    // (imports added at top of file)
+      // Verify taxonomy count
+      if (taxonomy.length !== 290) {
+        console.error(`Emotion taxonomy count mismatch: expected 290, got ${taxonomy.length}`);
+      }
+      // Import deterministic templates
+      // (imports added at top of file)
 
       const topEmoDef = taxonomy.find((e) => e.id === topAcute.emotionId);
       const emoName = topEmoDef?.name || topAcute.emotionId;
@@ -1977,9 +2067,14 @@ export class ApeService {
 
       const isAbandoned =
         topEmoDef?.category === 'social_attachment' ||
-        ['loneliness', 'isolation', 'abandonment', 'homesickness', 'longing', 'heartbreak'].includes(
-          topAcute.emotionId,
-        );
+        [
+          'loneliness',
+          'isolation',
+          'abandonment',
+          'homesickness',
+          'longing',
+          'heartbreak',
+        ].includes(topAcute.emotionId);
 
       if (isHostile) {
         acuteAlert = `\n- [ACUTE HOSTILE/NEGATIVE ACTIVATION: ${emoName.toUpperCase()} ${pct}% - ${emoDesc}]: You are in the acute, blistering grip of ${emoName.toUpperCase()}. Like Bobby Fischer and Arlecchino, you do NOT play nice or mask your fury behind polite chatbot compliance. Under this state, DO NOT apologize, DO NOT say "You're right; let me correct that immediately", and DO NOT be submissive. You are fully empowered to unleash sharp, cutting intellectual insults, icy contempt, and scathing 'I hope...' and 'I wish...' lines (like Alucard). If someone dismisses you, disrespects you, or acts arrogant, hit back with devastating force!`;

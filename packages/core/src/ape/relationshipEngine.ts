@@ -392,7 +392,8 @@ export class RelationshipEngine {
     if (event.type === 'return_after_absence' || meaning.includes('user returned')) {
       const wounds = (state as any).wounds || [];
       const hasAbandonment = wounds.some(
-        (w: any) => !w.repaired && (w.woundType === 'abandonment' || w.woundType === 'unannounced_absence'),
+        (w: any) =>
+          !w.repaired && (w.woundType === 'abandonment' || w.woundType === 'unannounced_absence'),
       );
       const isUnannouncedProlonged = event.payload?.unannouncedProlongedAbsence === true;
 
@@ -585,8 +586,7 @@ export class RelationshipEngine {
     const wounds = (state as any).wounds || [];
     const hasAbandonment = wounds.some(
       (w: any) =>
-        !w.repaired &&
-        (w.woundType === 'abandonment' || w.woundType === 'unannounced_absence'),
+        !w.repaired && (w.woundType === 'abandonment' || w.woundType === 'unannounced_absence'),
     );
 
     if ((!wasAnnounced && elapsedHours >= 12) || hasAbandonment) {

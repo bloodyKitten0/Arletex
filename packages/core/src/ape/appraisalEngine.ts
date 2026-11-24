@@ -2027,10 +2027,7 @@ export class AppraisalEngine {
         intensityDelta: 0.2,
         targetIntensity: Math.min(1.0, currentArousal * 0.7),
         reason: 'Cognitive cool-down and state settling following active session departure.',
-        resolutionConditions: [
-          'Homeostatic equilibrium restored',
-          'Next interactive turn',
-        ],
+        resolutionConditions: ['Homeostatic equilibrium restored', 'Next interactive turn'],
       });
     }
 
@@ -2069,7 +2066,9 @@ export class AppraisalEngine {
               : 'Natural cadence of desktop sessions.',
           likelihood: currentArousal > 0.6 ? 0.85 : 0.9,
           reasoning:
-            currentArousal > 0.6 ? 'Natural cadence of desktop sessions.' : 'Routine lifecycle behavior.',
+            currentArousal > 0.6
+              ? 'Natural cadence of desktop sessions.'
+              : 'Routine lifecycle behavior.',
         },
       ],
       supportingEvidence: [`Pre-departure arousal measured at ${currentArousal.toFixed(2)}`],

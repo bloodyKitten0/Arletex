@@ -2,7 +2,12 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { DatabaseService, MigrationRunner, SqliteKnowledgeRepository, MemoryRepository } from '@arletex/database';
+import {
+  DatabaseService,
+  MigrationRunner,
+  SqliteKnowledgeRepository,
+  MemoryRepository,
+} from '@arletex/database';
 import { KnowledgeBaseService } from '@arletex/core';
 import { LearnTopicInputSchema, LearnProgressChunkSchema } from '@arletex/contracts';
 
@@ -91,7 +96,8 @@ It controls cellular differentiation and developmental gene expression.`;
     const memory = memoryRepo.create({
       type: 'semantic',
       content: `Assimilated in-depth knowledge on "${topic}" (tech domain). Indexed 3 chunks into long-term knowledge repository.`,
-      rawObservation: 'Tokio event loop, epoll/kqueue multiplexing, pin projection, and waker mechanics.',
+      rawObservation:
+        'Tokio event loop, epoll/kqueue multiplexing, pin projection, and waker mechanics.',
       tags: ['learned_knowledge', 'tech', 'study', 'rust'],
       importance: 0.9,
       confidence: 0.95,
