@@ -3,7 +3,11 @@ import util from 'node:util';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { fileURLToPath } from 'node:url';
 import { rootLogger, ActionPermissionController, getArleChromeProfile } from '@arletex/core';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const execFilePromise = util.promisify(execFile);
 const logger = rootLogger.child('DeviceAgencyService');
