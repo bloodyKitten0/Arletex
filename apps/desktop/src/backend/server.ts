@@ -98,6 +98,7 @@ import { TelegramInitiativeService } from './telegramInitiativeService.js';
 import { AutonomousAgencyService } from './autonomousAgencyService.js';
 import { OcrService } from './ocrService.js';
 import { defaultMediaFinder } from './mediaFinderService.js';
+import { ScientificNotepadService } from './scientificNotepadService.js';
 import {
   ActivityRepository,
   AgencyRepository,
@@ -340,6 +341,7 @@ export class ArletexBackendServer {
   // Persistent Individual Continuity Subsystem
   public readonly continuityRepo: ContinuityRepository;
   public readonly continuityManager: ContinuityManager;
+  public readonly scientificNotepad: ScientificNotepadService;
 
   // Narrative Identity Subsystem (Milestone 03)
   public readonly narrativeRepo: NarrativeRepository;
@@ -730,6 +732,7 @@ export class ArletexBackendServer {
       logger,
       continuityBackupDir,
     );
+    this.scientificNotepad = new ScientificNotepadService(undefined, logger);
     this.ocrService = new OcrService('http://127.0.0.1:39282', logger);
     this.modelRegistry = new ModelRegistryService(logger);
     this.boundedPreservation = new BoundedSelfPreservationService({
@@ -3164,6 +3167,81 @@ Provide factual, comprehensive, high-density educational content.`;
         },
       });
 
+      // Scientific Scratchpad: Check if Arle invoked live Python / SymPy execution
+      const pythonActionMatch =
+        accumulatedResponse.match(/\[action:\s*run_python(?:\s+code=["']([\s\S]*?)["'])?\]/i) ||
+        accumulatedResponse.match(/\[action:\s*run_python\]\s*(?:```(?:python)?\s*([\s\S]*?)```|([\s\S]*?))\[\/action\]/i);
+
+      if (pythonActionMatch && !abortController.signal.aborted) {
+        const rawCode = pythonActionMatch[1] || pythonActionMatch[2];
+        if (rawCode && rawCode.trim().length > 0) {
+          const code = rawCode.trim();
+          this.logger.info(`Scientific notepad executing Python script for conversation ${conversationId}`);
+
+          onChunk({
+            requestId,
+            conversationId,
+            delta: '',
+            fullContent: '',
+            fullReasoning: '[Scientific Notepad: Evaluating symbolic math via Python / SymPy...]',
+            isDone: false,
+            error: null,
+            finishReason: null,
+            specialistStage: 'calculating',
+            specialistModel: activeModelId,
+          });
+
+          const pyResult = await this.scientificNotepad.executePython(code);
+          this.logger.info(
+            `Scientific notepad calculation finished in ${pyResult.executionTimeMs}ms (success=${pyResult.success})`,
+          );
+
+          // Append scratchpad calculation and verified output to messages
+          messages.push({
+            role: 'assistant',
+            content: `[action: run_python code="${code.replace(/"/g, '\\"')}"]`,
+          });
+          messages.push({
+            role: 'system',
+            content: `[Scientific Notepad & SymPy Verification Result]:\n${
+              pyResult.success ? pyResult.output : `Calculation error: ${pyResult.error}`
+            }\n\nNow deliver your definitive, elegant response to Proof incorporating this exact verified calculation with Fischer & Arlecchino composure.`,
+          });
+
+          // Second stream pass: stream the final verified response directly to Proof
+          accumulatedResponse = await this.inferenceGateway.streamChat({
+            conversationId,
+            requestId,
+            messages,
+            signal: abortController.signal,
+            onChunk: (chunk) => {
+              if (chunk.delta) {
+                tokenCount++;
+              }
+              const cleanFull = sanitizeAssistantDialogue(chunk.fullContent || '');
+              const cleanDelta = (chunk.delta || '')
+                .replace(
+                  /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu,
+                  '',
+                )
+                .replace(/\[(?:action|cmd|tone|thought|mood|emotion|state):[^\]]*\]/gi, '')
+                .replace(/^\s*\[[^\]]+\]\s*/g, '');
+
+              onChunk({
+                ...chunk,
+                delta: cleanDelta,
+                fullContent: cleanFull,
+                requestId,
+                ttftMs: this.lastTtftMs ?? undefined,
+                tokensPerSecond: this.lastTps ?? undefined,
+                specialistStage: 'central',
+                specialistModel: activeModelId,
+              });
+            },
+          });
+        }
+      }
+
       // 5. Store assistant response if non-empty
       const cleanContent = sanitizeAssistantDialogue(accumulatedResponse);
 
@@ -3295,6 +3373,21 @@ Provide factual, comprehensive, high-density educational content.`;
     const waFileRegex =
       /\[action:\s*send_whatsapp\s+file=["'](.*?)["'](?:\s+caption=["'](.*?)["'])?\]/i;
     const waFileMatch = responseContent.match(waFileRegex);
+
+    // [action: notepad_write title="..." content="..."]
+    const noteWriteRegex =
+      /\[action:\s*notepad_write(?:\s+title=["'](.*?)["'])?(?:\s+content=["'](.*?)["'])?\]/i;
+    const noteWriteMatch = responseContent.match(noteWriteRegex);
+    if (noteWriteMatch && (noteWriteMatch[1] || noteWriteMatch[2])) {
+      const title = noteWriteMatch[1] || 'Scientific Reflection';
+      const content = noteWriteMatch[2] || '';
+      try {
+        await this.scientificNotepad.writeNote(title, content);
+        executedActions.push(`Saved entry to scientific notepad: "${title}"`);
+      } catch (noteErr: any) {
+        this.logger.warn(`Failed to write to notepad: ${noteErr.message}`);
+      }
+    }
 
     // 2. Browser opening directive from assistant tag or user intent
     let targetUrl: string | undefined;
@@ -4208,6 +4301,18 @@ Rules:
           req.removeListener('close', abortOnDisconnect);
           res.end();
         }
+        return;
+      }
+
+      // Scientific Notepad endpoint
+      if (url.pathname === '/api/notepad' && method === 'GET') {
+        const fullContent = await this.scientificNotepad.getFullNotepad();
+        const recentNotes = await this.scientificNotepad.readRecentNotes(10);
+        this.sendJson(res, 200, {
+          path: this.scientificNotepad.getNotepadPath(),
+          content: fullContent,
+          recentNotes,
+        });
         return;
       }
 
