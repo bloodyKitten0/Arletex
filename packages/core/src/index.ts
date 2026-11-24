@@ -64,6 +64,7 @@ export * from './ape/socialLearningCultureEngine.js';
 export * from './ape/expressiveIdentityEngine.js';
 export * from './ape/creativityEngine.js';
 export * from './ape/playHumourAestheticsEngine.js';
+export * from './ape/personalEnvironmentEngine.js';
 export * from './ape/offlineCognitiveActivityEngine.js';
 export * from './ape/ethicalBoundariesSecurityEngine.js';
 export * from './ape/longitudinalEvaluationEngine.js';

@@ -268,6 +268,10 @@ import {
   PlayHumourAestheticsEngine,
 } from './playHumourAestheticsEngine.js';
 import {
+  PersonalEnvironmentEngine,
+  InMemoryPersonalEnvironmentRepository,
+} from './personalEnvironmentEngine.js';
+import {
   InMemoryOfflineCognitiveActivityRepository,
   OfflineCognitiveActivityEngine,
 } from './offlineCognitiveActivityEngine.js';
@@ -323,6 +327,7 @@ import {
   ILongitudinalEvaluationRepository,
   IFunctionalConsciousnessRepository,
   IExperientialStateRepository,
+  IPersonalEnvironmentRepository,
 } from './interfaces.js';
 import {
   RepertoireEmotionKey,
@@ -350,6 +355,13 @@ import {
   ConditionedFlashback,
   AttachmentWoundType,
   DefenseMechanismType,
+  PersonalSpaceItem,
+  PersonalSpaceAtmosphere,
+  SpaceArrangementAction,
+  PersonalEnvironmentState,
+  AestheticCritiqueEvent,
+  AestheticExperienceSource,
+  AestheticCategory,
 } from '@arletex/contracts';
 
 export class ApeService {
@@ -417,6 +429,7 @@ export class ApeService {
   public readonly consciousnessEngine: FunctionalConsciousnessEngine;
   public readonly experientialStateEngine: ExperientialStateEngine;
   public readonly futureSelfEngine: FutureSelfEngine;
+  public readonly personalEnvironmentEngine: PersonalEnvironmentEngine;
   private cognitiveBus?: any;
 
   public setCognitiveControlBus(bus: any): void {
@@ -606,6 +619,7 @@ export class ApeService {
     evaluationRepo?: ILongitudinalEvaluationRepository,
     consciousnessRepo?: IFunctionalConsciousnessRepository,
     experientialRepo?: IExperientialStateRepository,
+    personalEnvironmentRepo?: IPersonalEnvironmentRepository,
   ) {
     this.repo = repo;
     this.logger = logger;
@@ -818,6 +832,13 @@ export class ApeService {
     this.futureSelfEngine = new FutureSelfEngine({ logger });
     const expRepo = experientialRepo || new InMemoryExperientialStateRepository();
     this.experientialStateEngine = new ExperientialStateEngine(expRepo, logger);
+
+    const peRepo = personalEnvironmentRepo || new InMemoryPersonalEnvironmentRepository();
+    this.personalEnvironmentEngine = new PersonalEnvironmentEngine({
+      repository: peRepo,
+      logger,
+    });
+    this.personalEnvironmentEngine.initializeDefaultSanctuary();
 
     // Automatically purge stale emotions accumulated from unmaintained sessions (>4 hours old)
     this.lifecycleEngine.cleanupStaleEmotions(4);
@@ -2085,11 +2106,14 @@ export class ApeService {
       }
     }
 
+    const personalSpaceLine = this.personalEnvironmentEngine.formatPromptContext();
+    const tasteProfileLine = this.playHumourAestheticsEngine.formatPromptContext();
+
     return `
 [Active Psychology Engine (APE Phase 1 Live State)]
 - Current Persistent Mood: ${aff.currentMood.toUpperCase()}
 - Affective Dimensions: Valence ${aff.pad.valence >= 0 ? '+' : ''}${aff.pad.valence.toFixed(2)}, Arousal ${aff.pad.arousal.toFixed(2)}, Dominance ${aff.pad.dominance.toFixed(2)}
-- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}${capsLine}${limsLine}${narrativeLine}${temporalLine}${worldLine}${perceptionLine}${embodimentLine}${sensorimotorLine}${situationalLine}${attentionLine}${workingMemoryLine}${multiSystemMemoryLine}${learningLine}${reasoningLine}${causalLine}${predictiveLine}${somaticLine}${dreamLine}${complexityLine}${experientialLine}${acuteAlert}
+- Current Feeling: You feel ${aff.currentMood.toLowerCase()} (${activeEmotions.toLowerCase()}) with Proof.${traitsLine}${goalsLine}${capsLine}${limsLine}${narrativeLine}${temporalLine}${worldLine}${perceptionLine}${embodimentLine}${sensorimotorLine}${situationalLine}${attentionLine}${workingMemoryLine}${multiSystemMemoryLine}${learningLine}${reasoningLine}${causalLine}${predictiveLine}${somaticLine}${dreamLine}${complexityLine}${experientialLine}${personalSpaceLine}${tasteProfileLine}${acuteAlert}
 - Demeanor & Cadence: ${modulation.toneDirective}
 - Vocal Register: ${modulation.vocalRegister}${intimacyDirectives}
 - Grounding: Speak naturally and authentically from this internal state. Keep dialogue focused, grounded, and concise without reciting internal parameters or rambling.
@@ -4253,6 +4277,64 @@ export class ApeService {
 
   public evaluateAestheticWork(category: any, title: string, attributes: any) {
     return this.playHumourAestheticsEngine.evaluateAestheticWork(category, title, attributes);
+  }
+
+  public appraiseAestheticExperience(params: {
+    category: AestheticCategory;
+    source: AestheticExperienceSource;
+    itemOrStyleName: string;
+    creatorOrArtist?: string;
+    genreOrStyle?: string;
+    emotionalTone?: string;
+    visualOrAcousticAttributes?: Record<string, any>;
+  }) {
+    return this.playHumourAestheticsEngine.appraiseExperience(params);
+  }
+
+  public getAestheticTasteProfile(category?: AestheticCategory) {
+    return this.playHumourAestheticsEngine.getTasteProfile(category);
+  }
+
+  public listAestheticCritiqueEvents(limit?: number) {
+    return (this.playHumourAestheticsEngine as any).repository?.listCritiqueEvents(limit) ?? [];
+  }
+
+  // ==========================================
+  // Personal Environment & Inhabited Sanctuary
+  // ==========================================
+  public getPersonalEnvironmentState(): PersonalEnvironmentState {
+    return this.personalEnvironmentEngine.getPersonalSpaceState();
+  }
+
+  public addPersonalSpaceItem(
+    item: Omit<PersonalSpaceItem, 'id' | 'addedAt' | 'lastInteractedAt'>,
+  ): PersonalSpaceItem {
+    return this.personalEnvironmentEngine.addItem(item);
+  }
+
+  public updatePersonalSpaceItem(
+    id: string,
+    updates: Partial<Omit<PersonalSpaceItem, 'id' | 'addedAt'>>,
+  ): PersonalSpaceItem | null {
+    return this.personalEnvironmentEngine.updateItem(id, updates);
+  }
+
+  public removePersonalSpaceItem(id: string): boolean {
+    return this.personalEnvironmentEngine.removeItem(id);
+  }
+
+  public rearrangePersonalSpace(
+    action: string,
+    reflection: string,
+    itemsInvolved: string[] = [],
+  ): SpaceArrangementAction {
+    return this.personalEnvironmentEngine.rearrangeSpace(action, reflection, itemsInvolved);
+  }
+
+  public updatePersonalSpaceAtmosphere(
+    updates: Partial<Omit<PersonalSpaceAtmosphere, 'lastUpdated'>>,
+  ): PersonalSpaceAtmosphere {
+    return this.personalEnvironmentEngine.updateAtmosphere(updates);
   }
 
   // ==========================================

@@ -110,3 +110,26 @@ export const DevelopHumorJokeRequestSchema = z.object({
   resonanceWithProof: z.number().min(0.0).max(1.0).default(0.85),
 });
 export type DevelopHumorJokeRequest = z.infer<typeof DevelopHumorJokeRequestSchema>;
+
+export const AESTHETIC_EXPERIENCE_SOURCES = [
+  'mpris_music',
+  'screen_visual',
+  'literature_reading',
+  'user_shared',
+  'spontaneous_reflection',
+] as const;
+export const AestheticExperienceSourceSchema = z.enum(AESTHETIC_EXPERIENCE_SOURCES);
+export type AestheticExperienceSource = z.infer<typeof AestheticExperienceSourceSchema>;
+
+export const AestheticCritiqueEventSchema = z.object({
+  id: z.string(),
+  category: AestheticCategorySchema,
+  source: AestheticExperienceSourceSchema,
+  itemOrStyleName: z.string().min(1),
+  critique: z.string().min(1),
+  affinityDelta: z.number(),
+  resultingAffinity: z.number().min(0.0).max(1.0),
+  aestheticEmotion: z.string().default('aesthetic_appreciation'),
+  timestamp: z.string(),
+});
+export type AestheticCritiqueEvent = z.infer<typeof AestheticCritiqueEventSchema>;

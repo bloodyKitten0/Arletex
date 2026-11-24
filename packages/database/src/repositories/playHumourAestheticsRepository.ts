@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import {
   AestheticPreference,
+  AestheticCritiqueEvent,
   RecreationalActivity,
   IntellectualPlaySession,
   HumorDevelopmentRecord,
@@ -241,6 +242,79 @@ export class SqlitePlayHumourAestheticsRepository implements IPlayHumourAestheti
       }));
     } catch (err: any) {
       throw new DatabaseError(`Failed to list humor records: ${err.message}`, err);
+    }
+  }
+
+  public findPreferenceByName(
+    category: AestheticCategory,
+    name: string,
+  ): AestheticPreference | null {
+    try {
+      const row = this.db
+        .prepare(
+          `SELECT * FROM aesthetic_preferences WHERE category = ? AND LOWER(item_or_style_name) = LOWER(?) LIMIT 1`,
+        )
+        .get(category, name.trim()) as any;
+      if (!row) return null;
+      return {
+        id: row.id,
+        category: row.category,
+        itemOrStyleName: row.item_or_style_name,
+        affinityScore: row.affinity_score,
+        aestheticCritique: row.aesthetic_critique,
+        tags: JSON.parse(row.tags),
+        discoveredAt: row.discovered_at,
+        lastEnjoyedAt: row.last_enjoyed_at,
+      };
+    } catch (err: any) {
+      throw new DatabaseError(`Failed to find preference by name: ${err.message}`, err);
+    }
+  }
+
+  public saveCritiqueEvent(event: AestheticCritiqueEvent): void {
+    try {
+      this.db
+        .prepare(
+          `INSERT INTO aesthetic_critique_events (
+            id, category, source, item_or_style_name,
+            critique, affinity_delta, resulting_affinity,
+            aesthetic_emotion, timestamp
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        )
+        .run(
+          event.id,
+          event.category,
+          event.source,
+          event.itemOrStyleName,
+          event.critique,
+          event.affinityDelta,
+          event.resultingAffinity,
+          event.aestheticEmotion,
+          event.timestamp,
+        );
+    } catch (err: any) {
+      throw new DatabaseError(`Failed to save aesthetic critique event: ${err.message}`, err);
+    }
+  }
+
+  public listCritiqueEvents(limit: number = 50): AestheticCritiqueEvent[] {
+    try {
+      const rows = this.db
+        .prepare(`SELECT * FROM aesthetic_critique_events ORDER BY timestamp DESC LIMIT ?`)
+        .all(limit) as any[];
+      return rows.map((r) => ({
+        id: r.id,
+        category: r.category,
+        source: r.source,
+        itemOrStyleName: r.item_or_style_name,
+        critique: r.critique,
+        affinityDelta: r.affinity_delta,
+        resultingAffinity: r.resulting_affinity,
+        aestheticEmotion: r.aesthetic_emotion,
+        timestamp: r.timestamp,
+      }));
+    } catch (err: any) {
+      throw new DatabaseError(`Failed to list aesthetic critique events: ${err.message}`, err);
     }
   }
 }

@@ -186,6 +186,11 @@ import {
   CreativeInterest,
   CreativeDomain,
   AestheticPreference,
+  AestheticCritiqueEvent,
+  PersonalSpaceItem,
+  PersonalSpaceLocation,
+  PersonalSpaceAtmosphere,
+  SpaceArrangementAction,
   RecreationalActivity,
   IntellectualPlaySession,
   HumorDevelopmentRecord,
@@ -979,6 +984,20 @@ export interface IPlayHumourAestheticsRepository {
   listPlaySessions(limit?: number): IntellectualPlaySession[];
   saveHumorRecord(record: HumorDevelopmentRecord): void;
   listHumorRecords(limit?: number): HumorDevelopmentRecord[];
+  saveCritiqueEvent(event: AestheticCritiqueEvent): void;
+  listCritiqueEvents(limit?: number): AestheticCritiqueEvent[];
+  findPreferenceByName(category: AestheticCategory, name: string): AestheticPreference | null;
+}
+
+export interface IPersonalEnvironmentRepository {
+  saveItem(item: PersonalSpaceItem): void;
+  getItem(id: string): PersonalSpaceItem | null;
+  listItems(location?: PersonalSpaceLocation): PersonalSpaceItem[];
+  deleteItem(id: string): void;
+  saveAtmosphere(atmosphere: PersonalSpaceAtmosphere): void;
+  getAtmosphere(): PersonalSpaceAtmosphere | null;
+  saveArrangementAction(action: SpaceArrangementAction): void;
+  listArrangementActions(limit?: number): SpaceArrangementAction[];
 }
 
 export interface IOfflineCognitiveActivityRepository {

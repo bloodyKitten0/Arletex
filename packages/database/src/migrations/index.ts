@@ -3723,4 +3723,68 @@ export const MIGRATIONS: Migration[] = [
       VALUES ('psychological_trauma_and_indelible_memory', 1, CURRENT_TIMESTAMP);
     `,
   },
+  {
+    id: 70,
+    name: '070_personal_environment_and_dynamic_taste_evolution',
+    up: `
+      -- 1. Personal Space Items (Arle's Study persistent objects)
+      CREATE TABLE IF NOT EXISTS personal_space_items (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        location TEXT NOT NULL,
+        description TEXT NOT NULL,
+        significance TEXT NOT NULL,
+        state TEXT NOT NULL DEFAULT 'active',
+        added_at TEXT NOT NULL,
+        last_interacted_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_personal_space_loc ON personal_space_items (location);
+      CREATE INDEX IF NOT EXISTS idx_personal_space_cat ON personal_space_items (category);
+
+      -- 2. Personal Space Atmosphere
+      CREATE TABLE IF NOT EXISTS personal_space_atmosphere (
+        id TEXT PRIMARY KEY,
+        room_name TEXT NOT NULL,
+        ambient_lighting TEXT NOT NULL,
+        soundscape TEXT NOT NULL,
+        scent_or_warmth TEXT NOT NULL,
+        current_activity TEXT NOT NULL,
+        weather_mood TEXT NOT NULL,
+        last_updated TEXT NOT NULL
+      );
+
+      -- 3. Personal Space Arrangements
+      CREATE TABLE IF NOT EXISTS personal_space_arrangements (
+        id TEXT PRIMARY KEY,
+        timestamp TEXT NOT NULL,
+        action TEXT NOT NULL,
+        reflection TEXT NOT NULL,
+        items_involved TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_personal_space_arr_time ON personal_space_arrangements (timestamp DESC);
+
+      -- 4. Dynamic Aesthetic Critique Events (Taste formation log)
+      CREATE TABLE IF NOT EXISTS aesthetic_critique_events (
+        id TEXT PRIMARY KEY,
+        category TEXT NOT NULL,
+        source TEXT NOT NULL,
+        item_or_style_name TEXT NOT NULL,
+        critique TEXT NOT NULL,
+        affinity_delta REAL NOT NULL,
+        resulting_affinity REAL NOT NULL,
+        aesthetic_emotion TEXT NOT NULL DEFAULT 'aesthetic_appreciation',
+        timestamp TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_critique_cat ON aesthetic_critique_events (category);
+      CREATE INDEX IF NOT EXISTS idx_critique_time ON aesthetic_critique_events (timestamp DESC);
+
+      -- 5. System state version
+      INSERT OR IGNORE INTO system_state_versions (component, version, updated_at)
+      VALUES ('personal_environment_and_dynamic_taste_evolution', 1, CURRENT_TIMESTAMP);
+    `,
+  },
 ];

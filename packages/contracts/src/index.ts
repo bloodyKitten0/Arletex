@@ -1008,3 +1008,4 @@ export * from './speechExpression.js';
 export * from './whatsapp.js';
 export * from './experientialStates.js';
 export * from './experientialStateCatalogData.js';
+export * from './personalEnvironment.js';

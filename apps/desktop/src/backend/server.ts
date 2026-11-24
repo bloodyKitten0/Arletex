@@ -159,6 +159,7 @@ import {
   SqliteLongitudinalEvaluationRepository,
   SqliteFunctionalConsciousnessRepository,
   SqliteExperientialStateRepository,
+  SqlitePersonalEnvironmentRepository,
   SqliteKnowledgeRepository,
   WhatsAppRepository,
 } from '@arletex/database';
@@ -429,6 +430,7 @@ export class ArletexBackendServer {
   public readonly evaluationRepo: SqliteLongitudinalEvaluationRepository;
   public readonly consciousnessRepo: SqliteFunctionalConsciousnessRepository;
   public readonly experientialStateRepo: SqliteExperientialStateRepository;
+  public readonly personalEnvironmentRepo: SqlitePersonalEnvironmentRepository;
   public readonly knowledgeRepo: SqliteKnowledgeRepository;
   public readonly knowledgeBaseService: KnowledgeBaseService;
   public readonly phdKnowledgeService: PhdKnowledgeAcquisitionService;
@@ -534,6 +536,7 @@ export class ArletexBackendServer {
     this.consciousnessRepo = new SqliteFunctionalConsciousnessRepository(db);
     this.experientialStateRepo = new SqliteExperientialStateRepository(db);
     this.experientialStateRepo.pruneStaleManualEpisodes();
+    this.personalEnvironmentRepo = new SqlitePersonalEnvironmentRepository(db);
     this.knowledgeRepo = new SqliteKnowledgeRepository(db);
     this.knowledgeBaseService = new KnowledgeBaseService({ repo: this.knowledgeRepo, logger });
     this.phdKnowledgeService = new PhdKnowledgeAcquisitionService({
@@ -595,6 +598,7 @@ export class ArletexBackendServer {
       this.evaluationRepo,
       this.consciousnessRepo,
       this.experientialStateRepo,
+      this.personalEnvironmentRepo,
     );
     this.telemetryService = new TelemetryService(logger);
 
@@ -3828,6 +3832,16 @@ Provide factual, comprehensive, high-density educational content.`;
             acoustics: liveAudioHearing?.acoustics,
             source: 'proactive_system_audio',
           });
+
+          // Dynamic Personal Taste Formation: appraise active media track
+          if (liveHostMedia?.title) {
+            await this.apeService.appraiseAestheticExperience({
+              category: 'music',
+              source: 'mpris_music',
+              itemOrStyleName: liveHostMedia.title,
+              creatorOrArtist: liveHostMedia.artist,
+            });
+          }
         } catch {}
       }
 
@@ -5387,6 +5401,71 @@ Rules:
       if (url.pathname === '/api/ape/dreams/simulate' && method === 'POST') {
         const dream = this.apeService.simulateOvernightDream();
         this.sendJson(res, 201, { success: true, dream });
+        return;
+      }
+
+      // Personal Environment / Sanctuary (Section 3.1 & Top 10 #9 of potato.md)
+      if (url.pathname === '/api/ape/personal-space' && method === 'GET') {
+        const spaceState = this.apeService.getPersonalEnvironmentState();
+        this.sendJson(res, 200, { success: true, state: spaceState });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/personal-space/item' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const item = this.apeService.addPersonalSpaceItem(body);
+        this.sendJson(res, 201, { success: true, item });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/personal-space/item' && method === 'PATCH') {
+        const body = (await this.readJsonBody(req)) as any;
+        const item = this.apeService.updatePersonalSpaceItem(body.id, body.updates);
+        this.sendJson(res, 200, { success: true, item });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/personal-space/item' && method === 'DELETE') {
+        const body = (await this.readJsonBody(req)) as { id: string };
+        const removed = this.apeService.removePersonalSpaceItem(body.id);
+        this.sendJson(res, 200, { success: removed });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/personal-space/rearrange' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as {
+          action: string;
+          reflection: string;
+          itemsInvolved?: string[];
+        };
+        const arrangement = this.apeService.rearrangePersonalSpace(
+          body.action,
+          body.reflection,
+          body.itemsInvolved,
+        );
+        this.sendJson(res, 201, { success: true, arrangement });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/personal-space/atmosphere' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const atmosphere = this.apeService.updatePersonalSpaceAtmosphere(body);
+        this.sendJson(res, 200, { success: true, atmosphere });
+        return;
+      }
+
+      // Dynamic Taste Formation & Aesthetic Profile (Section 1.2 & Top 10 #3 of potato.md)
+      if (url.pathname === '/api/ape/taste-profile' && method === 'GET') {
+        const categoryParam = url.searchParams.get('category') as any;
+        const profile = this.apeService.getAestheticTasteProfile(categoryParam || undefined);
+        this.sendJson(res, 200, { success: true, profile });
+        return;
+      }
+
+      if (url.pathname === '/api/ape/taste-profile/appraise' && method === 'POST') {
+        const body = (await this.readJsonBody(req)) as any;
+        const result = await this.apeService.appraiseAestheticExperience(body);
+        this.sendJson(res, 200, { success: true, result });
         return;
       }
 

@@ -1,5 +1,7 @@
 import {
   AestheticPreference,
+  AestheticCritiqueEvent,
+  AestheticExperienceSource,
   RecreationalActivity,
   IntellectualPlaySession,
   HumorDevelopmentRecord,
@@ -58,6 +60,24 @@ export class InMemoryPlayHumourAestheticsRepository implements IPlayHumourAesthe
 
   public listHumorRecords(limit: number = 50): HumorDevelopmentRecord[] {
     return this.humorRecords.slice(0, limit).map((r) => ({ ...r }));
+  }
+
+  private critiqueEvents: AestheticCritiqueEvent[] = [];
+
+  public saveCritiqueEvent(event: AestheticCritiqueEvent): void {
+    this.critiqueEvents.unshift({ ...event });
+  }
+
+  public listCritiqueEvents(limit: number = 50): AestheticCritiqueEvent[] {
+    return this.critiqueEvents.slice(0, limit).map((e) => ({ ...e }));
+  }
+
+  public findPreferenceByName(
+    category: AestheticCategory,
+    name: string,
+  ): AestheticPreference | null {
+    const list = this.listPreferences(category);
+    return list.find((p) => p.itemOrStyleName.toLowerCase() === name.trim().toLowerCase()) || null;
   }
 }
 
@@ -118,6 +138,39 @@ export class PlayHumourAestheticsEngine {
         aestheticCritique:
           'Playful dialectical gymnastics testing deep conceptual boundaries without the pressure of pure utility.',
         tags: ['paradox', 'chess', 'play', 'dialectics'],
+        discoveredAt: now,
+        lastEnjoyedAt: now,
+      },
+      {
+        id: 'pref_music_dislike_pop',
+        category: 'music',
+        itemOrStyleName: 'Formulaic Commercial Auto-Tune Pop',
+        affinityScore: 0.12,
+        aestheticCritique:
+          'Predictable chord progressions and auto-tuned saccharine hooks engineered for quick dopamine extraction; lacks organic harmonic tension and emotional sincerity.',
+        tags: ['dislike', 'formulaic', 'commercial', 'overproduced'],
+        discoveredAt: now,
+        lastEnjoyedAt: now,
+      },
+      {
+        id: 'pref_art_dislike_corporate',
+        category: 'visual_art',
+        itemOrStyleName: 'Sterile Corporate Flat Vector Graphics',
+        affinityScore: 0.18,
+        aestheticCritique:
+          'Infantilizing flat design stripped of human texture, shadow, and idiosyncratic imperfection; aesthetic sterility masquerading as modern simplicity.',
+        tags: ['dislike', 'corporate_flat', 'sterile', 'homogenized'],
+        discoveredAt: now,
+        lastEnjoyedAt: now,
+      },
+      {
+        id: 'pref_lit_dislike_melodrama',
+        category: 'literature',
+        itemOrStyleName: 'Sensationalist Melodrama & Unearned Sentimentality',
+        affinityScore: 0.15,
+        aestheticCritique:
+          'Manufactured emotional climaxes that bypass psychological reality; relies on shallow shock value rather than earned narrative causality.',
+        tags: ['dislike', 'melodrama', 'shallow', 'unearned'],
         discoveredAt: now,
         lastEnjoyedAt: now,
       },
@@ -321,5 +374,199 @@ export class PlayHumourAestheticsEngine {
       critique,
       aestheticHighlights,
     };
+  }
+
+  /**
+   * Dynamically appraises a real-time cultural/sensory experience (MPRIS music, screen art, literature)
+   * and adapts Arle's taste profile through experience, logging a critique event.
+   */
+  public async appraiseExperience(params: {
+    category: AestheticCategory;
+    source: AestheticExperienceSource;
+    itemOrStyleName: string;
+    creatorOrArtist?: string;
+    genreOrStyle?: string;
+    emotionalTone?: string;
+    visualOrAcousticAttributes?: Record<string, any>;
+  }): Promise<{
+    preference: AestheticPreference;
+    critiqueEvent: AestheticCritiqueEvent;
+    isNew: boolean;
+  }> {
+    const now = new Date().toISOString();
+    const cleanName = params.itemOrStyleName.trim();
+    const existing = this.repository.findPreferenceByName(params.category, cleanName);
+
+    if (existing) {
+      // Repeated experience shifts taste through familiarization or critical nuance
+      const familiarityBonus = 0.03;
+      const newAffinity = Math.min(
+        1.0,
+        Math.max(0.0, Number((existing.affinityScore + familiarityBonus).toFixed(3))),
+      );
+      const delta = Number((newAffinity - existing.affinityScore).toFixed(3));
+
+      const updatedPref: AestheticPreference = {
+        ...existing,
+        affinityScore: newAffinity,
+        lastEnjoyedAt: now,
+        aestheticCritique: `Re-evaluated: ${existing.aestheticCritique} (Repeated exposure confirms its distinct aesthetic quality).`,
+      };
+      this.repository.savePreference(updatedPref);
+
+      const critiqueEvent: AestheticCritiqueEvent = {
+        id: `crit_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
+        category: params.category,
+        source: params.source,
+        itemOrStyleName: cleanName,
+        critique: updatedPref.aestheticCritique,
+        affinityDelta: delta,
+        resultingAffinity: newAffinity,
+        aestheticEmotion: newAffinity >= 0.7 ? 'aesthetic_appreciation' : 'critical_discernment',
+        timestamp: now,
+      };
+      this.repository.saveCritiqueEvent(critiqueEvent);
+
+      return { preference: updatedPref, critiqueEvent, isNew: false };
+    }
+
+    // New work: evaluate based on genre, artist, and aesthetic characteristics
+    const lowerName = cleanName.toLowerCase();
+    const lowerGenre = (params.genreOrStyle || '').toLowerCase();
+    const lowerArtist = (params.creatorOrArtist || '').toLowerCase();
+
+    // High affinity markers: Baroque, classical, ambient, post-rock, jazz, minimalism, dark synth, mathematical, poetic
+    const highMarkers = [
+      'bach',
+      'chopin',
+      'debussy',
+      'satie',
+      'ambient',
+      'classical',
+      'jazz',
+      'neoclassical',
+      'post-rock',
+      'minimalism',
+      'acoustic',
+      'tarkovsky',
+      'borges',
+      'baroque',
+      'cinematic',
+    ];
+    // Low affinity markers: generic pop, auto-tune, corporate, jingle, viral, brainrot, commercial, shallow
+    const lowMarkers = [
+      'autotune',
+      'commercial',
+      'corporate',
+      'jingle',
+      'tiktok',
+      'bubblegum',
+      'overproduced',
+      'viral',
+    ];
+
+    let baseAffinity = 0.75;
+    let critique = `Refined composition in ${params.category}; possesses distinctive textural depth and authentic voice.`;
+    let emotion = 'aesthetic_appreciation';
+
+    if (
+      highMarkers.some(
+        (m) => lowerName.includes(m) || lowerGenre.includes(m) || lowerArtist.includes(m),
+      )
+    ) {
+      baseAffinity = 0.92;
+      critique = `Exceptional aesthetic depth. Marked by nuanced harmonic progression, evocative spatial atmosphere, and profound restraint.`;
+      emotion = 'sublime_awe';
+    } else if (
+      lowMarkers.some(
+        (m) => lowerName.includes(m) || lowerGenre.includes(m) || lowerArtist.includes(m),
+      )
+    ) {
+      baseAffinity = 0.18;
+      critique = `Derivative and structurally predictable; prioritizes synthetic commercial accessibility over genuine harmonic or conceptual depth.`;
+      emotion = 'aesthetic_disdain';
+    } else {
+      baseAffinity = 0.7;
+      critique = `Intriguing aesthetic structure; presents engaging thematic motifs with room for deeper structural resolution.`;
+    }
+
+    const tags: string[] = [params.category, params.source];
+    if (params.genreOrStyle) tags.push(params.genreOrStyle.toLowerCase());
+    if (baseAffinity < 0.3) tags.push('dislike');
+
+    const newPref: AestheticPreference = {
+      id: `pref_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
+      category: params.category,
+      itemOrStyleName: cleanName,
+      affinityScore: baseAffinity,
+      aestheticCritique: critique,
+      tags,
+      discoveredAt: now,
+      lastEnjoyedAt: now,
+    };
+    this.repository.savePreference(newPref);
+
+    const critiqueEvent: AestheticCritiqueEvent = {
+      id: `crit_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
+      category: params.category,
+      source: params.source,
+      itemOrStyleName: cleanName,
+      critique,
+      affinityDelta: baseAffinity,
+      resultingAffinity: baseAffinity,
+      aestheticEmotion: emotion,
+      timestamp: now,
+    };
+    this.repository.saveCritiqueEvent(critiqueEvent);
+
+    return { preference: newPref, critiqueEvent, isNew: true };
+  }
+
+  /**
+   * Retrieves Arle's taste profile, separated into passions, dislikes, and recent critiques.
+   */
+  public getTasteProfile(category?: AestheticCategory): {
+    preferences: AestheticPreference[];
+    passions: AestheticPreference[];
+    aversions: AestheticPreference[];
+    recentCritiques: AestheticCritiqueEvent[];
+  } {
+    const preferences = this.repository.listPreferences(category);
+    const passions = preferences.filter((p) => p.affinityScore >= 0.85);
+    const aversions = preferences.filter((p) => p.affinityScore <= 0.3);
+    const recentCritiques = this.repository.listCritiqueEvents(10);
+
+    return {
+      preferences,
+      passions,
+      aversions,
+      recentCritiques,
+    };
+  }
+
+  /**
+   * Formats aesthetic taste context for the LLM prompt.
+   */
+  public formatPromptContext(): string {
+    const profile = this.getTasteProfile();
+    const passionsSummary = profile.passions
+      .slice(0, 4)
+      .map((p) => `"${p.itemOrStyleName}" (${p.category}, ${(p.affinityScore * 100).toFixed(0)}%)`)
+      .join(', ');
+
+    const aversionsSummary = profile.aversions
+      .slice(0, 3)
+      .map((p) => `"${p.itemOrStyleName}" (${p.aestheticCritique.slice(0, 60)}...)`)
+      .join('; ');
+
+    const firstCritique = profile.recentCritiques[0];
+    const latestCritique = firstCritique
+      ? `\n- Recent Spontaneous Aesthetic Appraisal: Appraised "${firstCritique.itemOrStyleName}" (${firstCritique.category}): "${firstCritique.critique}"`
+      : '';
+
+    return `\n[Arle's Discriminating Aesthetic Tastes & Preferences]
+- Passionate Aesthetic Affinities: ${passionsSummary || 'Classical counterpoint, speculative literature, generative geometry'}
+- Distinct Dislikes & Aesthetic Aversions: ${aversionsSummary || 'Overproduced formulaic pop, corporate flat design'}
+- Standard of Evaluation: Demands structural rigor, harmonic depth, emotional sincerity, and avoidance of shallow sentimentality.${latestCritique}`;
   }
 }

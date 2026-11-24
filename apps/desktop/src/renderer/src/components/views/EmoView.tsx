@@ -19,6 +19,10 @@ import {
   Target,
   User,
   TrendingUp,
+  Music,
+  Palette,
+  ThumbsDown,
+  ThumbsUp,
 } from 'lucide-react';
 import {
   ApeHistoryResponse,
@@ -42,7 +46,8 @@ type EmoTab =
   | 'development'
   | 'emotions_taxonomy'
   | 'moods_taxonomy'
-  | 'experiential_states';
+  | 'experiential_states'
+  | 'tastes_and_aesthetics';
 
 export interface ExpDomainMeta {
   key: string;
@@ -340,6 +345,43 @@ export const EmoView: React.FC = () => {
   const [selectedExpKind, setSelectedExpKind] = useState<string>('all');
   const [activatingStateId, setActivatingStateId] = useState<string | null>(null);
   const [activationNotice, setActivationNotice] = useState<string | null>(null);
+  const [tasteProfile, setTasteProfile] = useState<any>(null);
+  const [appraiseItemName, setAppraiseItemName] = useState('');
+  const [appraiseArtist, setAppraiseArtist] = useState('');
+  const [appraiseCategory, setAppraiseCategory] = useState<string>('music');
+  const [isAppraising, setIsAppraising] = useState(false);
+  const [tasteNotice, setTasteNotice] = useState<string | null>(null);
+
+  const handleAppraiseMedia = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!appraiseItemName.trim()) return;
+    setIsAppraising(true);
+    try {
+      const res = await fetch('http://127.0.0.1:39281/api/ape/taste-profile/appraise', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category: appraiseCategory,
+          source: 'user_shared',
+          itemOrStyleName: appraiseItemName.trim(),
+          creatorOrArtist: appraiseArtist.trim() || undefined,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAppraiseItemName('');
+        setAppraiseArtist('');
+        setTasteNotice(
+          `Appraised "${data.result?.preference?.itemOrStyleName}" (${(data.result?.preference?.affinityScore * 100).toFixed(0)}% affinity): "${data.result?.preference?.aestheticCritique}"`,
+        );
+        void fetchApeData();
+      }
+    } catch (err: any) {
+      setTasteNotice(`Appraisal error: ${err.message}`);
+    } finally {
+      setIsAppraising(false);
+    }
+  };
 
   const fetchApeData = async () => {
     if (!window.arletexApi?.getApeState) return;
@@ -381,6 +423,18 @@ export const EmoView: React.FC = () => {
           setMasterState(masterRes.data);
         }
       }
+
+      try {
+        const tasteRes = await fetch('http://127.0.0.1:39281/api/ape/taste-profile').catch(
+          () => null,
+        );
+        if (tasteRes && tasteRes.ok) {
+          const tasteData = await tasteRes.json();
+          if (tasteData.success && tasteData.profile) {
+            setTasteProfile(tasteData.profile);
+          }
+        }
+      } catch {}
     } catch (err) {
       console.warn('Failed to load live APE state:', err);
     } finally {
@@ -891,6 +945,45 @@ export const EmoView: React.FC = () => {
             }}
           >
             {(taxonomy.moods || INITIAL_MOODS_TAXONOMY).length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('tastes_and_aesthetics')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 14px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: activeTab === 'tastes_and_aesthetics' ? 700 : 500,
+            backgroundColor:
+              activeTab === 'tastes_and_aesthetics' ? 'var(--accent)' : 'transparent',
+            color: activeTab === 'tastes_and_aesthetics' ? '#ffffff' : 'var(--text-secondary)',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+            flexShrink: 0,
+          }}
+        >
+          <Music size={14} />
+          <span>Aesthetic Tastes</span>
+          <span
+            style={{
+              fontSize: '10px',
+              padding: '1px 6px',
+              borderRadius: '10px',
+              backgroundColor:
+                activeTab === 'tastes_and_aesthetics'
+                  ? 'rgba(255,255,255,0.25)'
+                  : 'var(--bg-secondary)',
+              color: activeTab === 'tastes_and_aesthetics' ? '#ffffff' : 'var(--text-muted)',
+              fontWeight: 700,
+            }}
+          >
+            {tasteProfile?.preferences?.length || 0}
           </span>
         </button>
       </div>
@@ -4333,6 +4426,475 @@ export const EmoView: React.FC = () => {
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB: PERSONAL TASTE & AESTHETIC REPERTOIRE (Section 1.2 & Top 10 #3)     */}
+      {/* ========================================================================= */}
+      {activeTab === 'tastes_and_aesthetics' && (
+        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* Hero Banner */}
+          <div
+            style={{
+              padding: '18px 22px',
+              backgroundColor: 'var(--bg-card)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '10px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '14px',
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Palette size={20} color="var(--accent)" />
+                <h2
+                  style={{
+                    fontSize: '18px',
+                    fontWeight: 700,
+                    color: 'var(--text-primary)',
+                    margin: 0,
+                  }}
+                >
+                  Personal Taste Formation & Aesthetic Repertoire
+                </h2>
+              </div>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                Arle develops authentic individual preferences, dislikes, and aesthetic opinions
+                through real-time experience rather than generic neutrality.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <span
+                style={{
+                  fontSize: '11px',
+                  padding: '4px 10px',
+                  borderRadius: '12px',
+                  backgroundColor: 'rgba(63, 185, 80, 0.15)',
+                  color: '#3fb950',
+                  fontWeight: 600,
+                }}
+              >
+                {tasteProfile?.passions?.length || 0} Passions
+              </span>
+              <span
+                style={{
+                  fontSize: '11px',
+                  padding: '4px 10px',
+                  borderRadius: '12px',
+                  backgroundColor: 'rgba(248, 81, 73, 0.15)',
+                  color: '#f85149',
+                  fontWeight: 600,
+                }}
+              >
+                {tasteProfile?.aversions?.length || 0} Distinct Dislikes
+              </span>
+            </div>
+          </div>
+
+          {tasteNotice && (
+            <div
+              style={{
+                padding: '12px 16px',
+                backgroundColor: 'rgba(56, 139, 253, 0.1)',
+                border: '1px solid #1f6feb',
+                borderRadius: '8px',
+                fontSize: '13px',
+                color: '#58a6ff',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <span>{tasteNotice}</span>
+              <button
+                onClick={() => setTasteNotice(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#58a6ff',
+                  cursor: 'pointer',
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* Real-time Media Appraisal Input Studio */}
+          <form
+            onSubmit={handleAppraiseMedia}
+            style={{
+              padding: '18px 22px',
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '8px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Sparkles size={16} color="var(--accent)" />
+              <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Appraise Cultural Work or Music Track
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <select
+                value={appraiseCategory}
+                onChange={(e) => setAppraiseCategory(e.target.value)}
+                style={{
+                  padding: '8px 12px',
+                  backgroundColor: 'var(--bg-card)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '6px',
+                  color: 'var(--text-primary)',
+                  fontSize: '12px',
+                }}
+              >
+                <option value="music">Music</option>
+                <option value="literature">Literature</option>
+                <option value="visual_art">Visual Art</option>
+                <option value="film_and_media">Film & Media</option>
+                <option value="intellectual_play">Intellectual Play</option>
+              </select>
+
+              <input
+                type="text"
+                placeholder="Title or Style Name (e.g. Erik Satie - Gymnopédies)"
+                value={appraiseItemName}
+                onChange={(e) => setAppraiseItemName(e.target.value)}
+                style={{
+                  flex: 2,
+                  minWidth: '200px',
+                  padding: '8px 12px',
+                  backgroundColor: 'var(--bg-card)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '6px',
+                  color: 'var(--text-primary)',
+                  fontSize: '12px',
+                }}
+              />
+
+              <input
+                type="text"
+                placeholder="Creator / Artist (optional)"
+                value={appraiseArtist}
+                onChange={(e) => setAppraiseArtist(e.target.value)}
+                style={{
+                  flex: 1,
+                  minWidth: '150px',
+                  padding: '8px 12px',
+                  backgroundColor: 'var(--bg-card)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '6px',
+                  color: 'var(--text-primary)',
+                  fontSize: '12px',
+                }}
+              />
+
+              <button
+                type="submit"
+                disabled={isAppraising}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: 'var(--accent)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  fontSize: '12px',
+                  cursor: isAppraising ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {isAppraising ? 'Appraising...' : 'Trigger Appraisal'}
+              </button>
+            </div>
+          </form>
+
+          {/* Section 1: Passionate Affinities (Score >= 0.85) */}
+          <div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '12px',
+              }}
+            >
+              <ThumbsUp size={16} color="#3fb950" />
+              <h3
+                style={{
+                  fontSize: '15px',
+                  fontWeight: 700,
+                  color: 'var(--text-primary)',
+                  margin: 0,
+                }}
+              >
+                Passionate Aesthetic Affinities (Deep Resonance)
+              </h3>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                gap: '14px',
+              }}
+            >
+              {(tasteProfile?.passions || []).map((pref: any) => (
+                <div
+                  key={pref.id}
+                  style={{
+                    backgroundColor: 'var(--bg-card)',
+                    border: '1px solid rgba(63, 185, 80, 0.3)',
+                    borderRadius: '8px',
+                    padding: '14px 16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    gap: '10px',
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          color: 'var(--text-primary)',
+                        }}
+                      >
+                        {pref.itemOrStyleName}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          color: '#3fb950',
+                          backgroundColor: 'rgba(63, 185, 80, 0.15)',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                        }}
+                      >
+                        {(pref.affinityScore * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        color: 'var(--text-muted)',
+                        textTransform: 'uppercase',
+                        marginTop: '2px',
+                      }}
+                    >
+                      {pref.category}
+                    </div>
+                    <p
+                      style={{
+                        fontSize: '12px',
+                        color: 'var(--text-secondary)',
+                        marginTop: '8px',
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {pref.aestheticCritique}
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {(pref.tags || []).map((t: string) => (
+                      <span
+                        key={t}
+                        style={{
+                          fontSize: '10px',
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          backgroundColor: 'var(--bg-secondary)',
+                          color: 'var(--text-muted)',
+                        }}
+                      >
+                        #{t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Section 2: Distinct Dislikes & Aversions (Score <= 0.30) */}
+          <div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '12px',
+              }}
+            >
+              <ThumbsDown size={16} color="#f85149" />
+              <h3
+                style={{
+                  fontSize: '15px',
+                  fontWeight: 700,
+                  color: 'var(--text-primary)',
+                  margin: 0,
+                }}
+              >
+                Distinct Dislikes & Aesthetic Aversions (Critical Rejection)
+              </h3>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                gap: '14px',
+              }}
+            >
+              {(tasteProfile?.aversions || []).map((pref: any) => (
+                <div
+                  key={pref.id}
+                  style={{
+                    backgroundColor: 'var(--bg-card)',
+                    border: '1px solid rgba(248, 81, 73, 0.3)',
+                    borderRadius: '8px',
+                    padding: '14px 16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    gap: '10px',
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          color: 'var(--text-primary)',
+                        }}
+                      >
+                        {pref.itemOrStyleName}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          color: '#f85149',
+                          backgroundColor: 'rgba(248, 81, 73, 0.15)',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                        }}
+                      >
+                        {(pref.affinityScore * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        color: 'var(--text-muted)',
+                        textTransform: 'uppercase',
+                        marginTop: '2px',
+                      }}
+                    >
+                      {pref.category}
+                    </div>
+                    <p
+                      style={{
+                        fontSize: '12px',
+                        color: 'var(--text-secondary)',
+                        marginTop: '8px',
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {pref.aestheticCritique}
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {(pref.tags || []).map((t: string) => (
+                      <span
+                        key={t}
+                        style={{
+                          fontSize: '10px',
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          backgroundColor: 'rgba(248, 81, 73, 0.1)',
+                          color: '#f85149',
+                        }}
+                      >
+                        #{t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Section 3: Recent Spontaneous Critiques */}
+          {tasteProfile?.recentCritiques && tasteProfile.recentCritiques.length > 0 && (
+            <div>
+              <h3
+                style={{
+                  fontSize: '14px',
+                  fontWeight: 700,
+                  color: 'var(--text-primary)',
+                  marginBottom: '8px',
+                }}
+              >
+                Recent Spontaneous Critique Events (Experience Log)
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {tasteProfile.recentCritiques.map((crit: any) => (
+                  <div
+                    key={crit.id}
+                    style={{
+                      padding: '10px 14px',
+                      backgroundColor: 'var(--bg-secondary)',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        color: 'var(--text-muted)',
+                        fontSize: '11px',
+                      }}
+                    >
+                      <span style={{ fontWeight: 600, color: 'var(--accent)' }}>
+                        {crit.itemOrStyleName} ({crit.category} • {crit.source})
+                      </span>
+                      <span>{new Date(crit.timestamp).toLocaleTimeString()}</span>
+                    </div>
+                    <div style={{ color: 'var(--text-primary)', marginTop: '4px' }}>
+                      "{crit.critique}"
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

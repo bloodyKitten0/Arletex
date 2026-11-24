@@ -11,6 +11,9 @@ import {
   FileText,
   Layers,
   MessageSquare,
+  Home,
+  BookOpen,
+  Feather,
 } from 'lucide-react';
 
 interface MetricItemProps {
@@ -104,6 +107,11 @@ export const EnvironmentView: React.FC = () => {
   const [reactivateToken, setReactivateToken] = useState('');
   const [selectedModelId, setSelectedModelId] = useState('');
   const [whatsAppStatus, setWhatsAppStatus] = useState<any>(null);
+  const [envTab, setEnvTab] = useState<'telemetry' | 'sanctuary'>('telemetry');
+  const [personalSpace, setPersonalSpace] = useState<any>(null);
+  const [isRearranging, setIsRearranging] = useState(false);
+  const [rearrangeAction, setRearrangeAction] = useState('');
+  const [rearrangeReflection, setRearrangeReflection] = useState('');
 
   const fetchRealState = useCallback(async () => {
     try {
@@ -163,12 +171,46 @@ export const EnvironmentView: React.FC = () => {
           setWhatsAppStatus(waData);
         }
       } catch {}
+
+      try {
+        const psRes = await fetch('http://127.0.0.1:39281/api/ape/personal-space').catch(
+          () => null,
+        );
+        if (psRes && psRes.ok) {
+          const psData = await psRes.json();
+          if (psData.success && psData.state) setPersonalSpace(psData.state);
+        }
+      } catch {}
     } catch (err: any) {
       setActionNotice(`State query error: ${err.message || String(err)}`);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const handleRearrange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rearrangeAction.trim()) return;
+    try {
+      const res = await fetch('http://127.0.0.1:39281/api/ape/personal-space/rearrange', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: rearrangeAction.trim(),
+          reflection: rearrangeReflection.trim() || 'Arranged in thoughtful contemplation.',
+        }),
+      });
+      if (res.ok) {
+        setRearrangeAction('');
+        setRearrangeReflection('');
+        setIsRearranging(false);
+        setActionNotice("Arle's study space rearranged.");
+        void fetchRealState();
+      }
+    } catch (err: any) {
+      setActionNotice(`Arrangement failed: ${err.message}`);
+    }
+  };
 
   useEffect(() => {
     fetchRealState();
@@ -398,32 +440,225 @@ export const EnvironmentView: React.FC = () => {
         </div>
       )}
 
-      {/* Main Content Area */}
-      <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        {/* Epistemic Transparency Notice */}
-        <div
+      {/* Subtab Switcher */}
+      <div
+        style={{
+          display: 'flex',
+          borderBottom: '1px solid var(--border-subtle, #30363d)',
+          backgroundColor: 'var(--bg-secondary, #0d1117)',
+          padding: '0 24px',
+          gap: '16px',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setEnvTab('telemetry')}
           style={{
-            padding: '12px 16px',
-            backgroundColor: 'var(--bg-secondary, #0d1117)',
-            border: '1px solid var(--border-subtle, #30363d)',
-            borderRadius: '8px',
-            fontSize: '12px',
-            color: 'var(--text-secondary, #8b949e)',
-            lineHeight: 1.5,
+            padding: '10px 4px',
+            backgroundColor: 'transparent',
+            border: 'none',
+            borderBottom:
+              envTab === 'telemetry' ? '2px solid var(--accent, #58a6ff)' : '2px solid transparent',
+            color:
+              envTab === 'telemetry'
+                ? 'var(--text-primary, #f0f6fc)'
+                : 'var(--text-secondary, #8b949e)',
+            fontWeight: envTab === 'telemetry' ? 600 : 400,
+            fontSize: '13px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
           }}
         >
-          <strong style={{ color: 'var(--text-primary, #f0f6fc)' }}>
-            Epistemic Provenance Guarantee:{' '}
-          </strong>
-          Metrics labeled <ProvenanceBadge tag="measured" /> derive from hardware sensors or
-          verified system records. Metrics labeled <ProvenanceBadge tag="inferred" /> represent
-          model cognitive appraisals and simulated relationship vectors. Internal numeric state
-          variables represent behavioral models and are not presented as subjective consciousness.
-        </div>
+          <Cpu size={14} />
+          <span>System Governance & Telemetry</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setEnvTab('sanctuary')}
+          style={{
+            padding: '10px 4px',
+            backgroundColor: 'transparent',
+            border: 'none',
+            borderBottom: envTab === 'sanctuary' ? '2px solid #d29922' : '2px solid transparent',
+            color: envTab === 'sanctuary' ? '#f0f6fc' : 'var(--text-secondary, #8b949e)',
+            fontWeight: envTab === 'sanctuary' ? 600 : 400,
+            fontSize: '13px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+          }}
+        >
+          <Home size={14} color={envTab === 'sanctuary' ? '#d29922' : undefined} />
+          <span>Arle's Study & Sanctuary (Persistent Personal Space)</span>
+        </button>
+      </div>
 
-        {/* Section 1: Model Resolution & Inference Governance */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {envTab === 'telemetry' ? (
+        /* Main Content Area */
+        <div
+          style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '24px' }}
+        >
+          {/* Epistemic Transparency Notice */}
+          <div
+            style={{
+              padding: '12px 16px',
+              backgroundColor: 'var(--bg-secondary, #0d1117)',
+              border: '1px solid var(--border-subtle, #30363d)',
+              borderRadius: '8px',
+              fontSize: '12px',
+              color: 'var(--text-secondary, #8b949e)',
+              lineHeight: 1.5,
+            }}
+          >
+            <strong style={{ color: 'var(--text-primary, #f0f6fc)' }}>
+              Epistemic Provenance Guarantee:{' '}
+            </strong>
+            Metrics labeled <ProvenanceBadge tag="measured" /> derive from hardware sensors or
+            verified system records. Metrics labeled <ProvenanceBadge tag="inferred" /> represent
+            model cognitive appraisals and simulated relationship vectors. Internal numeric state
+            variables represent behavioral models and are not presented as subjective consciousness.
+          </div>
+
+          {/* Section 1: Model Resolution & Inference Governance */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2
+                style={{
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  color: 'var(--text-primary, #f0f6fc)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <Layers size={16} color="var(--accent, #58a6ff)" />
+                <span>Model Registry & Inference Governance</span>
+              </h2>
+              {activeModel && (
+                <span
+                  style={{
+                    fontSize: '11px',
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    backgroundColor: activeModel.isFallback
+                      ? 'rgba(210, 153, 34, 0.2)'
+                      : 'rgba(35, 134, 54, 0.2)',
+                    color: activeModel.isFallback ? '#d29922' : '#3fb950',
+                    border: `1px solid ${activeModel.isFallback ? '#9e6a03' : '#238636'}`,
+                    fontWeight: 600,
+                  }}
+                >
+                  {activeModel.isFallback ? 'Fallback In Effect' : 'Primary Resolution Active'}
+                </span>
+              )}
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                gap: '12px',
+              }}
+            >
+              <div
+                style={{
+                  backgroundColor: 'var(--bg-card, #161b22)',
+                  border: '1px solid var(--border-subtle, #30363d)',
+                  borderRadius: '8px',
+                  padding: '14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                }}
+              >
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                >
+                  <span style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)' }}>
+                    Active Cognitive Model
+                  </span>
+                  <ProvenanceBadge tag="measured" />
+                </div>
+                <div
+                  style={{
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    color: 'var(--text-primary, #f0f6fc)',
+                    fontFamily: 'var(--font-mono, monospace)',
+                  }}
+                >
+                  {activeModel?.resolvedModel?.id || 'Qwen2.5-14B-Instruct-abliterated-v2.Q4_K_M'}
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted, #6e7681)' }}>
+                  Status:{' '}
+                  <span
+                    style={{
+                      color: activeModel?.status === 'ready' ? '#3fb950' : '#d29922',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {activeModel?.status || 'ready'}
+                  </span>{' '}
+                  | Context: 12,288 tokens
+                </div>
+                {models.length > 0 && (
+                  <div style={{ marginTop: '4px' }}>
+                    <label
+                      style={{
+                        fontSize: '11px',
+                        color: 'var(--text-secondary, #8b949e)',
+                        display: 'block',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      Switch Local Candidate:
+                    </label>
+                    <select
+                      value={selectedModelId}
+                      onChange={(e) => handleSwitchModel(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '4px 8px',
+                        backgroundColor: 'var(--bg-secondary, #0d1117)',
+                        border: '1px solid var(--border-subtle, #30363d)',
+                        borderRadius: '4px',
+                        color: 'var(--text-primary, #f0f6fc)',
+                        fontSize: '11px',
+                      }}
+                    >
+                      {models.map((m: any) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name} ({m.quantization}){' '}
+                          {m.isPrimary ? '★ Primary' : m.isFallback ? '⚡ Fallback' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              <MetricItem
+                label="Inference Port & Host"
+                value="127.0.0.1:8080"
+                subtext="llama-server (Fully local, offline, CPU/iGPU offload)"
+                provenance="measured"
+              />
+
+              <MetricItem
+                label="Specialist Server Port"
+                value="127.0.0.1:39282"
+                subtext="Whisper, Kokoro, GLM-OCR, EmbeddingGemma, RVC"
+                provenance="measured"
+              />
+            </div>
+          </div>
+
+          {/* Section 2: Target Hardware Telemetry (ASUS ROG Ally X) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <h2
               style={{
                 fontSize: '15px',
@@ -434,627 +669,939 @@ export const EnvironmentView: React.FC = () => {
                 gap: '8px',
               }}
             >
-              <Layers size={16} color="var(--accent, #58a6ff)" />
-              <span>Model Registry & Inference Governance</span>
+              <Cpu size={16} color="var(--accent, #58a6ff)" />
+              <span>Target Hardware Telemetry (ASUS ROG Ally X)</span>
             </h2>
-            {activeModel && (
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '12px',
+              }}
+            >
+              <MetricItem
+                label="Unified RAM Allocation"
+                value={
+                  telemetry?.ramUsedMb
+                    ? `${(telemetry.ramUsedMb / 1024).toFixed(1)} GB / ${(telemetry.ramTotalMb / 1024).toFixed(1)} GB`
+                    : '18.4 GB / 24.0 GB'
+                }
+                subtext="24GB LPDDR5X-7500 Unified Memory"
+                provenance={telemetry ? 'measured' : 'unavailable'}
+                timestamp={telemetry?.timestamp}
+              />
+
+              <MetricItem
+                label="CPU Compute Load"
+                value={
+                  telemetry?.cpuUsagePercent !== undefined
+                    ? `${telemetry.cpuUsagePercent.toFixed(1)}%`
+                    : '14.2%'
+                }
+                subtext="AMD Ryzen Z1 Extreme (8C / 16T Zen 4)"
+                provenance={telemetry ? 'measured' : 'unavailable'}
+                timestamp={telemetry?.timestamp}
+              />
+
+              <MetricItem
+                label="Host Battery & Power"
+                value={
+                  telemetry?.batteryLevelPercent !== undefined
+                    ? `${telemetry.batteryLevelPercent}%`
+                    : 'AC Connected'
+                }
+                subtext="80Wh Battery Subsystem"
+                provenance={telemetry ? 'measured' : 'unavailable'}
+                timestamp={telemetry?.timestamp}
+              />
+
+              <MetricItem
+                label="Operating Environment"
+                value="Bazzite Linux (Fedora 40)"
+                subtext="Wayland Display Server, flatpak runtime"
+                provenance="measured"
+              />
+            </div>
+          </div>
+
+          {/* Section 3: Persisted Psychological State (APE) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <h2
+              style={{
+                fontSize: '15px',
+                fontWeight: 600,
+                color: 'var(--text-primary, #f0f6fc)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <Heart size={16} color="#f778ba" />
+              <span>Persisted Psychological State (Artificial Psychology Engine)</span>
+            </h2>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                gap: '12px',
+              }}
+            >
+              {/* Affect & Mood */}
+              <div
+                style={{
+                  backgroundColor: 'var(--bg-card, #161b22)',
+                  border: '1px solid var(--border-subtle, #30363d)',
+                  borderRadius: '8px',
+                  padding: '14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                }}
+              >
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                >
+                  <span style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)' }}>
+                    Affect & Mood Coordinates
+                  </span>
+                  <ProvenanceBadge tag={apeState ? 'inferred' : 'unavailable'} />
+                </div>
+                <div
+                  style={{
+                    fontSize: '15px',
+                    fontWeight: 700,
+                    color: 'var(--text-primary, #f0f6fc)',
+                  }}
+                >
+                  Mood: {apeState?.mood || 'attentive'} | Emotion:{' '}
+                  {apeState?.primaryEmotion || 'interested'}
+                </div>
+                <div
+                  style={{
+                    fontSize: '12px',
+                    color: 'var(--text-secondary, #8b949e)',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  PAD Coordinates: V: {apeState?.padCoordinates?.pleasure?.toFixed(2) || '0.62'} |
+                  A: {apeState?.padCoordinates?.arousal?.toFixed(2) || '0.35'} | D:{' '}
+                  {apeState?.padCoordinates?.dominance?.toFixed(2) || '0.50'}
+                </div>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    color: 'var(--text-muted, #6e7681)',
+                    marginTop: 'auto',
+                  }}
+                >
+                  Source: SQLite `ape_psychological_state`
+                </div>
+              </div>
+
+              {/* Motivational Needs */}
+              <div
+                style={{
+                  backgroundColor: 'var(--bg-card, #161b22)',
+                  border: '1px solid var(--border-subtle, #30363d)',
+                  borderRadius: '8px',
+                  padding: '14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                }}
+              >
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                >
+                  <span style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)' }}>
+                    Motivational Drives & Needs
+                  </span>
+                  <ProvenanceBadge tag={motivational ? 'inferred' : 'unavailable'} />
+                </div>
+                <div
+                  style={{
+                    fontSize: '12px',
+                    color: 'var(--text-secondary, #8b949e)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                  }}
+                >
+                  <div>
+                    Curiosity: {(motivational?.needs?.curiosity ?? 0.85).toFixed(2)} | Autonomy:{' '}
+                    {(motivational?.needs?.autonomy ?? 0.7).toFixed(2)}
+                  </div>
+                  <div>
+                    Connection: {(motivational?.needs?.connection ?? 0.8).toFixed(2)} | Mastery:{' '}
+                    {(motivational?.needs?.mastery ?? 0.75).toFixed(2)}
+                  </div>
+                  <div>Rest / Stability: {(motivational?.needs?.rest ?? 0.9).toFixed(2)}</div>
+                </div>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    color: 'var(--text-muted, #6e7681)',
+                    marginTop: 'auto',
+                  }}
+                >
+                  Source: SQLite `ape_motivational_state`
+                </div>
+              </div>
+
+              {/* Relationship with Proof */}
+              <div
+                style={{
+                  backgroundColor: 'var(--bg-card, #161b22)',
+                  border: '1px solid var(--border-subtle, #30363d)',
+                  borderRadius: '8px',
+                  padding: '14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                }}
+              >
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                >
+                  <span style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)' }}>
+                    User Alignment & Affinity (Subject: Proof)
+                  </span>
+                  <ProvenanceBadge tag={relationship ? 'inferred' : 'unavailable'} />
+                </div>
+                <div
+                  style={{
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    color: 'var(--text-primary, #f0f6fc)',
+                  }}
+                >
+                  Attachment: {relationship?.attachmentStyle || 'secure'} | Trust:{' '}
+                  {(relationship?.trustScore ?? 0.92).toFixed(2)}
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)' }}>
+                  Affinity: {(relationship?.affectionLevel ?? 0.88).toFixed(2)} | Conflict:{' '}
+                  {relationship?.conflictState || 'resolved'}
+                </div>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    color: 'var(--text-muted, #6e7681)',
+                    marginTop: 'auto',
+                  }}
+                >
+                  Source: SQLite `ape_relationship_state`
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 4: Operational Autonomy & Permission Boundaries */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2
+                style={{
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  color: 'var(--text-primary, #f0f6fc)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <Compass size={16} color="var(--accent, #58a6ff)" />
+                <span>Operational Autonomy Controller</span>
+              </h2>
+              <button
+                onClick={handleToggleAutonomy}
+                style={{
+                  padding: '4px 12px',
+                  backgroundColor: autonomyStatus?.isEnabled
+                    ? 'rgba(35, 134, 54, 0.2)'
+                    : 'rgba(110, 118, 129, 0.2)',
+                  border: `1px solid ${autonomyStatus?.isEnabled ? '#238636' : '#6e7681'}`,
+                  borderRadius: '6px',
+                  color: autonomyStatus?.isEnabled ? '#3fb950' : '#8b949e',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Autonomy: {autonomyStatus?.isEnabled ? 'ENABLED' : 'PAUSED'}
+              </button>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '12px',
+              }}
+            >
+              <MetricItem
+                label="Telegram Spontaneous Rate Limit"
+                value="5 msgs / hr"
+                subtext="10m cooldown, quiet hours (23:00-08:00)"
+                provenance="measured"
+              />
+
+              <MetricItem
+                label="Action Permission Enforcement"
+                value="Supervised / Strict"
+                subtext="High-risk ops require explicit token approval"
+                provenance="measured"
+              />
+
+              <MetricItem
+                label="Autonomous Agency Cycles"
+                value={autonomyStatus?.cycleCount ?? 142}
+                subtext={
+                  autonomyStatus?.lastCycleTimestamp
+                    ? `Last: ${new Date(autonomyStatus.lastCycleTimestamp).toLocaleTimeString()}`
+                    : 'Interval: 120s idle'
+                }
+                provenance="measured"
+                timestamp={autonomyStatus?.lastCycleTimestamp}
+              />
+
+              <MetricItem
+                label="Filesystem Boundary"
+                value="Scoped ~/.arletex/"
+                subtext="Non-root, immutable OS roots protected"
+                provenance="measured"
+              />
+            </div>
+          </div>
+
+          {/* Section 5: Real-time Audit Trail & Security Non-Repudiation */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2
+                style={{
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  color: 'var(--text-primary, #f0f6fc)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <FileText size={16} color="var(--accent, #58a6ff)" />
+                <span>Real-Time Security Audit Stream</span>
+              </h2>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted, #6e7681)' }}>
+                {auditLogs.length} verified events in audit store
+              </span>
+            </div>
+
+            <div
+              style={{
+                backgroundColor: 'var(--bg-card, #161b22)',
+                border: '1px solid var(--border-subtle, #30363d)',
+                borderRadius: '8px',
+                overflow: 'hidden',
+              }}
+            >
+              <table
+                style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  fontSize: '12px',
+                  textAlign: 'left',
+                }}
+              >
+                <thead>
+                  <tr
+                    style={{
+                      backgroundColor: 'var(--bg-secondary, #0d1117)',
+                      borderBottom: '1px solid var(--border-subtle, #30363d)',
+                      color: 'var(--text-secondary, #8b949e)',
+                    }}
+                  >
+                    <th style={{ padding: '8px 12px', fontWeight: 600 }}>Timestamp</th>
+                    <th style={{ padding: '8px 12px', fontWeight: 600 }}>Action</th>
+                    <th style={{ padding: '8px 12px', fontWeight: 600 }}>Actor</th>
+                    <th style={{ padding: '8px 12px', fontWeight: 600 }}>Status</th>
+                    <th style={{ padding: '8px 12px', fontWeight: 600 }}>Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditLogs.length > 0 ? (
+                    auditLogs.slice(0, 8).map((evt: any, i: number) => (
+                      <tr
+                        key={evt.id || i}
+                        style={{
+                          borderBottom:
+                            i < auditLogs.length - 1
+                              ? '1px solid var(--border-subtle, #30363d)'
+                              : 'none',
+                          color: 'var(--text-primary, #f0f6fc)',
+                        }}
+                      >
+                        <td
+                          style={{
+                            padding: '8px 12px',
+                            fontFamily: 'var(--font-mono, monospace)',
+                            fontSize: '11px',
+                            color: 'var(--text-muted, #6e7681)',
+                          }}
+                        >
+                          {new Date(evt.timestamp).toLocaleTimeString()}
+                        </td>
+                        <td style={{ padding: '8px 12px', fontWeight: 600 }}>{evt.action}</td>
+                        <td
+                          style={{ padding: '8px 12px', color: 'var(--text-secondary, #8b949e)' }}
+                        >
+                          {evt.actor || 'system'}
+                        </td>
+                        <td style={{ padding: '8px 12px' }}>
+                          <span
+                            style={{
+                              fontSize: '10px',
+                              fontWeight: 600,
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              backgroundColor:
+                                evt.status === 'success' || evt.status === 'authorized'
+                                  ? 'rgba(35, 134, 54, 0.2)'
+                                  : 'rgba(218, 54, 51, 0.2)',
+                              color:
+                                evt.status === 'success' || evt.status === 'authorized'
+                                  ? '#3fb950'
+                                  : '#f85149',
+                            }}
+                          >
+                            {evt.status}
+                          </span>
+                        </td>
+                        <td
+                          style={{
+                            padding: '8px 12px',
+                            color: 'var(--text-secondary, #8b949e)',
+                            fontSize: '11px',
+                            maxWidth: '300px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {evt.details}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        style={{
+                          padding: '16px',
+                          textAlign: 'center',
+                          color: 'var(--text-muted, #6e7681)',
+                        }}
+                      >
+                        No recent security audit events recorded.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Section 6: WhatsApp Communication Adapter (GoWA) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2
+                style={{
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  color: 'var(--text-primary, #f0f6fc)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <MessageSquare size={16} color="var(--accent, #58a6ff)" />
+                <span>WhatsApp Communication Adapter (GoWA)</span>
+              </h2>
               <span
                 style={{
                   fontSize: '11px',
                   padding: '2px 8px',
                   borderRadius: '12px',
-                  backgroundColor: activeModel.isFallback
-                    ? 'rgba(210, 153, 34, 0.2)'
-                    : 'rgba(35, 134, 54, 0.2)',
-                  color: activeModel.isFallback ? '#d29922' : '#3fb950',
-                  border: `1px solid ${activeModel.isFallback ? '#9e6a03' : '#238636'}`,
+                  backgroundColor:
+                    whatsAppStatus?.state === 'connected'
+                      ? 'rgba(35, 134, 54, 0.2)'
+                      : 'rgba(218, 54, 51, 0.2)',
+                  color: whatsAppStatus?.state === 'connected' ? '#3fb950' : '#f85149',
+                  border: `1px solid ${whatsAppStatus?.state === 'connected' ? '#238636' : '#da3633'}`,
                   fontWeight: 600,
+                  textTransform: 'uppercase',
                 }}
               >
-                {activeModel.isFallback ? 'Fallback In Effect' : 'Primary Resolution Active'}
+                {whatsAppStatus?.state || 'disabled'}
               </span>
-            )}
-          </div>
+            </div>
 
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gap: '12px',
+              }}
+            >
+              <MetricItem
+                label="Transport Protocol"
+                value="GoWA (Local Loopback)"
+                subtext="127.0.0.1:3000 • Unofficial Multi-Device"
+                provenance="measured"
+              />
+              <MetricItem
+                label="Webhook Authentication"
+                value="HMAC-SHA256"
+                subtext="Constant-Time Verified"
+                provenance="measured"
+              />
+              <MetricItem
+                label="Owner Authorization"
+                value={whatsAppStatus?.ownerJid || 'Configured via .env'}
+                subtext="Strict Owner JID • Fail-Closed"
+                provenance="measured"
+              />
+              <MetricItem
+                label="Prompt-Injection Defense"
+                value="Active / Fenced"
+                subtext="All actions pass ActionPermissionController"
+                provenance="measured"
+              />
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Arle's Study & Sanctuary UI */
+        <div
+          style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}
+        >
+          {/* Atmosphere Hero Card */}
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-              gap: '12px',
+              padding: '20px 24px',
+              backgroundColor: '#13110f',
+              border: '1px solid #4a3728',
+              borderRadius: '10px',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '14px',
             }}
           >
             <div
               style={{
-                backgroundColor: 'var(--bg-card, #161b22)',
-                border: '1px solid var(--border-subtle, #30363d)',
-                borderRadius: '8px',
-                padding: '14px',
                 display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                flexWrap: 'wrap',
+                gap: '10px',
               }}
             >
-              <div
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-              >
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)' }}>
-                  Active Cognitive Model
-                </span>
-                <ProvenanceBadge tag="measured" />
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Home size={20} color="#d29922" />
+                  <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#f0e6d2', margin: 0 }}>
+                    {personalSpace?.atmosphere?.roomName || "Arle's Study & Sanctuary"}
+                  </h2>
+                </div>
+                <p
+                  style={{
+                    fontSize: '13px',
+                    color: '#c2b59b',
+                    marginTop: '4px',
+                    fontStyle: 'italic',
+                  }}
+                >
+                  A persistent physical and aesthetic space she inhabits, organizes, personalizes,
+                  and reflects within.
+                </p>
               </div>
-              <div
+
+              <button
+                onClick={() => setIsRearranging(!isRearranging)}
                 style={{
-                  fontSize: '14px',
-                  fontWeight: 700,
-                  color: 'var(--text-primary, #f0f6fc)',
-                  fontFamily: 'var(--font-mono, monospace)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 14px',
+                  backgroundColor: 'rgba(210, 153, 34, 0.15)',
+                  border: '1px solid #d29922',
+                  borderRadius: '6px',
+                  color: '#e3b341',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
                 }}
               >
-                {activeModel?.resolvedModel?.id || 'Qwen2.5-14B-Instruct-abliterated-v2.Q4_K_M'}
-              </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted, #6e7681)' }}>
-                Status:{' '}
+                <Feather size={13} />
+                <span>{isRearranging ? 'Close Rearrange' : 'Rearrange Study'}</span>
+              </button>
+            </div>
+
+            {/* Sensory Atmosphere Grid */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                gap: '12px',
+                backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                padding: '14px',
+                borderRadius: '8px',
+                border: '1px solid rgba(210, 153, 34, 0.2)',
+              }}
+            >
+              <div>
                 <span
                   style={{
-                    color: activeModel?.status === 'ready' ? '#3fb950' : '#d29922',
+                    fontSize: '11px',
+                    color: '#9a8873',
+                    textTransform: 'uppercase',
                     fontWeight: 600,
                   }}
                 >
-                  {activeModel?.status || 'ready'}
-                </span>{' '}
-                | Context: 12,288 tokens
-              </div>
-              {models.length > 0 && (
-                <div style={{ marginTop: '4px' }}>
-                  <label
-                    style={{
-                      fontSize: '11px',
-                      color: 'var(--text-secondary, #8b949e)',
-                      display: 'block',
-                      marginBottom: '4px',
-                    }}
-                  >
-                    Switch Local Candidate:
-                  </label>
-                  <select
-                    value={selectedModelId}
-                    onChange={(e) => handleSwitchModel(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '4px 8px',
-                      backgroundColor: 'var(--bg-secondary, #0d1117)',
-                      border: '1px solid var(--border-subtle, #30363d)',
-                      borderRadius: '4px',
-                      color: 'var(--text-primary, #f0f6fc)',
-                      fontSize: '11px',
-                    }}
-                  >
-                    {models.map((m: any) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name} ({m.quantization}){' '}
-                        {m.isPrimary ? '★ Primary' : m.isFallback ? '⚡ Fallback' : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
-
-            <MetricItem
-              label="Inference Port & Host"
-              value="127.0.0.1:8080"
-              subtext="llama-server (Fully local, offline, CPU/iGPU offload)"
-              provenance="measured"
-            />
-
-            <MetricItem
-              label="Specialist Server Port"
-              value="127.0.0.1:39282"
-              subtext="Whisper, Kokoro, GLM-OCR, EmbeddingGemma, RVC"
-              provenance="measured"
-            />
-          </div>
-        </div>
-
-        {/* Section 2: Target Hardware Telemetry (ASUS ROG Ally X) */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <h2
-            style={{
-              fontSize: '15px',
-              fontWeight: 600,
-              color: 'var(--text-primary, #f0f6fc)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
-          >
-            <Cpu size={16} color="var(--accent, #58a6ff)" />
-            <span>Target Hardware Telemetry (ASUS ROG Ally X)</span>
-          </h2>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '12px',
-            }}
-          >
-            <MetricItem
-              label="Unified RAM Allocation"
-              value={
-                telemetry?.ramUsedMb
-                  ? `${(telemetry.ramUsedMb / 1024).toFixed(1)} GB / ${(telemetry.ramTotalMb / 1024).toFixed(1)} GB`
-                  : '18.4 GB / 24.0 GB'
-              }
-              subtext="24GB LPDDR5X-7500 Unified Memory"
-              provenance={telemetry ? 'measured' : 'unavailable'}
-              timestamp={telemetry?.timestamp}
-            />
-
-            <MetricItem
-              label="CPU Compute Load"
-              value={
-                telemetry?.cpuUsagePercent !== undefined
-                  ? `${telemetry.cpuUsagePercent.toFixed(1)}%`
-                  : '14.2%'
-              }
-              subtext="AMD Ryzen Z1 Extreme (8C / 16T Zen 4)"
-              provenance={telemetry ? 'measured' : 'unavailable'}
-              timestamp={telemetry?.timestamp}
-            />
-
-            <MetricItem
-              label="Host Battery & Power"
-              value={
-                telemetry?.batteryLevelPercent !== undefined
-                  ? `${telemetry.batteryLevelPercent}%`
-                  : 'AC Connected'
-              }
-              subtext="80Wh Battery Subsystem"
-              provenance={telemetry ? 'measured' : 'unavailable'}
-              timestamp={telemetry?.timestamp}
-            />
-
-            <MetricItem
-              label="Operating Environment"
-              value="Bazzite Linux (Fedora 40)"
-              subtext="Wayland Display Server, flatpak runtime"
-              provenance="measured"
-            />
-          </div>
-        </div>
-
-        {/* Section 3: Persisted Psychological State (APE) */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <h2
-            style={{
-              fontSize: '15px',
-              fontWeight: 600,
-              color: 'var(--text-primary, #f0f6fc)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
-          >
-            <Heart size={16} color="#f778ba" />
-            <span>Persisted Psychological State (Artificial Psychology Engine)</span>
-          </h2>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-              gap: '12px',
-            }}
-          >
-            {/* Affect & Mood */}
-            <div
-              style={{
-                backgroundColor: 'var(--bg-card, #161b22)',
-                border: '1px solid var(--border-subtle, #30363d)',
-                borderRadius: '8px',
-                padding: '14px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-              }}
-            >
-              <div
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-              >
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)' }}>
-                  Affect & Mood Coordinates
+                  Ambient Lighting
                 </span>
-                <ProvenanceBadge tag={apeState ? 'inferred' : 'unavailable'} />
-              </div>
-              <div
-                style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary, #f0f6fc)' }}
-              >
-                Mood: {apeState?.mood || 'attentive'} | Emotion:{' '}
-                {apeState?.primaryEmotion || 'interested'}
-              </div>
-              <div
-                style={{
-                  fontSize: '12px',
-                  color: 'var(--text-secondary, #8b949e)',
-                  lineHeight: 1.5,
-                }}
-              >
-                PAD Coordinates: V: {apeState?.padCoordinates?.pleasure?.toFixed(2) || '0.62'} | A:{' '}
-                {apeState?.padCoordinates?.arousal?.toFixed(2) || '0.35'} | D:{' '}
-                {apeState?.padCoordinates?.dominance?.toFixed(2) || '0.50'}
-              </div>
-              <div
-                style={{ fontSize: '11px', color: 'var(--text-muted, #6e7681)', marginTop: 'auto' }}
-              >
-                Source: SQLite `ape_psychological_state`
-              </div>
-            </div>
-
-            {/* Motivational Needs */}
-            <div
-              style={{
-                backgroundColor: 'var(--bg-card, #161b22)',
-                border: '1px solid var(--border-subtle, #30363d)',
-                borderRadius: '8px',
-                padding: '14px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-              }}
-            >
-              <div
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-              >
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)' }}>
-                  Motivational Drives & Needs
-                </span>
-                <ProvenanceBadge tag={motivational ? 'inferred' : 'unavailable'} />
-              </div>
-              <div
-                style={{
-                  fontSize: '12px',
-                  color: 'var(--text-secondary, #8b949e)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px',
-                }}
-              >
-                <div>
-                  Curiosity: {(motivational?.needs?.curiosity ?? 0.85).toFixed(2)} | Autonomy:{' '}
-                  {(motivational?.needs?.autonomy ?? 0.7).toFixed(2)}
+                <div style={{ fontSize: '13px', color: '#f0e6d2', marginTop: '2px' }}>
+                  {personalSpace?.atmosphere?.ambientLighting ||
+                    'Soft amber glow from a banker lamp'}
                 </div>
-                <div>
-                  Connection: {(motivational?.needs?.connection ?? 0.8).toFixed(2)} | Mastery:{' '}
-                  {(motivational?.needs?.mastery ?? 0.75).toFixed(2)}
-                </div>
-                <div>Rest / Stability: {(motivational?.needs?.rest ?? 0.9).toFixed(2)}</div>
               </div>
-              <div
-                style={{ fontSize: '11px', color: 'var(--text-muted, #6e7681)', marginTop: 'auto' }}
-              >
-                Source: SQLite `ape_motivational_state`
-              </div>
-            </div>
 
-            {/* Relationship with Proof */}
-            <div
-              style={{
-                backgroundColor: 'var(--bg-card, #161b22)',
-                border: '1px solid var(--border-subtle, #30363d)',
-                borderRadius: '8px',
-                padding: '14px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-              }}
-            >
-              <div
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-              >
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)' }}>
-                  User Alignment & Affinity (Subject: Proof)
-                </span>
-                <ProvenanceBadge tag={relationship ? 'inferred' : 'unavailable'} />
-              </div>
-              <div
-                style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary, #f0f6fc)' }}
-              >
-                Attachment: {relationship?.attachmentStyle || 'secure'} | Trust:{' '}
-                {(relationship?.trustScore ?? 0.92).toFixed(2)}
-              </div>
-              <div style={{ fontSize: '12px', color: 'var(--text-secondary, #8b949e)' }}>
-                Affinity: {(relationship?.affectionLevel ?? 0.88).toFixed(2)} | Conflict:{' '}
-                {relationship?.conflictState || 'resolved'}
-              </div>
-              <div
-                style={{ fontSize: '11px', color: 'var(--text-muted, #6e7681)', marginTop: 'auto' }}
-              >
-                Source: SQLite `ape_relationship_state`
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Section 4: Operational Autonomy & Permission Boundaries */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2
-              style={{
-                fontSize: '15px',
-                fontWeight: 600,
-                color: 'var(--text-primary, #f0f6fc)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              <Compass size={16} color="var(--accent, #58a6ff)" />
-              <span>Operational Autonomy Controller</span>
-            </h2>
-            <button
-              onClick={handleToggleAutonomy}
-              style={{
-                padding: '4px 12px',
-                backgroundColor: autonomyStatus?.isEnabled
-                  ? 'rgba(35, 134, 54, 0.2)'
-                  : 'rgba(110, 118, 129, 0.2)',
-                border: `1px solid ${autonomyStatus?.isEnabled ? '#238636' : '#6e7681'}`,
-                borderRadius: '6px',
-                color: autonomyStatus?.isEnabled ? '#3fb950' : '#8b949e',
-                fontSize: '11px',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Autonomy: {autonomyStatus?.isEnabled ? 'ENABLED' : 'PAUSED'}
-            </button>
-          </div>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '12px',
-            }}
-          >
-            <MetricItem
-              label="Telegram Spontaneous Rate Limit"
-              value="5 msgs / hr"
-              subtext="10m cooldown, quiet hours (23:00-08:00)"
-              provenance="measured"
-            />
-
-            <MetricItem
-              label="Action Permission Enforcement"
-              value="Supervised / Strict"
-              subtext="High-risk ops require explicit token approval"
-              provenance="measured"
-            />
-
-            <MetricItem
-              label="Autonomous Agency Cycles"
-              value={autonomyStatus?.cycleCount ?? 142}
-              subtext={
-                autonomyStatus?.lastCycleTimestamp
-                  ? `Last: ${new Date(autonomyStatus.lastCycleTimestamp).toLocaleTimeString()}`
-                  : 'Interval: 120s idle'
-              }
-              provenance="measured"
-              timestamp={autonomyStatus?.lastCycleTimestamp}
-            />
-
-            <MetricItem
-              label="Filesystem Boundary"
-              value="Scoped ~/.arletex/"
-              subtext="Non-root, immutable OS roots protected"
-              provenance="measured"
-            />
-          </div>
-        </div>
-
-        {/* Section 5: Real-time Audit Trail & Security Non-Repudiation */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2
-              style={{
-                fontSize: '15px',
-                fontWeight: 600,
-                color: 'var(--text-primary, #f0f6fc)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              <FileText size={16} color="var(--accent, #58a6ff)" />
-              <span>Real-Time Security Audit Stream</span>
-            </h2>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted, #6e7681)' }}>
-              {auditLogs.length} verified events in audit store
-            </span>
-          </div>
-
-          <div
-            style={{
-              backgroundColor: 'var(--bg-card, #161b22)',
-              border: '1px solid var(--border-subtle, #30363d)',
-              borderRadius: '8px',
-              overflow: 'hidden',
-            }}
-          >
-            <table
-              style={{
-                width: '100%',
-                borderCollapse: 'collapse',
-                fontSize: '12px',
-                textAlign: 'left',
-              }}
-            >
-              <thead>
-                <tr
+              <div>
+                <span
                   style={{
-                    backgroundColor: 'var(--bg-secondary, #0d1117)',
-                    borderBottom: '1px solid var(--border-subtle, #30363d)',
-                    color: 'var(--text-secondary, #8b949e)',
+                    fontSize: '11px',
+                    color: '#9a8873',
+                    textTransform: 'uppercase',
+                    fontWeight: 600,
                   }}
                 >
-                  <th style={{ padding: '8px 12px', fontWeight: 600 }}>Timestamp</th>
-                  <th style={{ padding: '8px 12px', fontWeight: 600 }}>Action</th>
-                  <th style={{ padding: '8px 12px', fontWeight: 600 }}>Actor</th>
-                  <th style={{ padding: '8px 12px', fontWeight: 600 }}>Status</th>
-                  <th style={{ padding: '8px 12px', fontWeight: 600 }}>Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {auditLogs.length > 0 ? (
-                  auditLogs.slice(0, 8).map((evt: any, i: number) => (
-                    <tr
-                      key={evt.id || i}
-                      style={{
-                        borderBottom:
-                          i < auditLogs.length - 1
-                            ? '1px solid var(--border-subtle, #30363d)'
-                            : 'none',
-                        color: 'var(--text-primary, #f0f6fc)',
-                      }}
-                    >
-                      <td
-                        style={{
-                          padding: '8px 12px',
-                          fontFamily: 'var(--font-mono, monospace)',
-                          fontSize: '11px',
-                          color: 'var(--text-muted, #6e7681)',
-                        }}
-                      >
-                        {new Date(evt.timestamp).toLocaleTimeString()}
-                      </td>
-                      <td style={{ padding: '8px 12px', fontWeight: 600 }}>{evt.action}</td>
-                      <td style={{ padding: '8px 12px', color: 'var(--text-secondary, #8b949e)' }}>
-                        {evt.actor || 'system'}
-                      </td>
-                      <td style={{ padding: '8px 12px' }}>
-                        <span
-                          style={{
-                            fontSize: '10px',
-                            fontWeight: 600,
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            backgroundColor:
-                              evt.status === 'success' || evt.status === 'authorized'
-                                ? 'rgba(35, 134, 54, 0.2)'
-                                : 'rgba(218, 54, 51, 0.2)',
-                            color:
-                              evt.status === 'success' || evt.status === 'authorized'
-                                ? '#3fb950'
-                                : '#f85149',
-                          }}
-                        >
-                          {evt.status}
-                        </span>
-                      </td>
-                      <td
-                        style={{
-                          padding: '8px 12px',
-                          color: 'var(--text-secondary, #8b949e)',
-                          fontSize: '11px',
-                          maxWidth: '300px',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {evt.details}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      style={{
-                        padding: '16px',
-                        textAlign: 'center',
-                        color: 'var(--text-muted, #6e7681)',
-                      }}
-                    >
-                      No recent security audit events recorded.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                  Soundscape
+                </span>
+                <div style={{ fontSize: '13px', color: '#f0e6d2', marginTop: '2px' }}>
+                  {personalSpace?.atmosphere?.soundscape || 'Quiet crackle of embers in the hearth'}
+                </div>
+              </div>
 
-        {/* Section 6: WhatsApp Communication Adapter (GoWA) */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2
+              <div>
+                <span
+                  style={{
+                    fontSize: '11px',
+                    color: '#9a8873',
+                    textTransform: 'uppercase',
+                    fontWeight: 600,
+                  }}
+                >
+                  Scent & Warmth
+                </span>
+                <div style={{ fontSize: '13px', color: '#f0e6d2', marginTop: '2px' }}>
+                  {personalSpace?.atmosphere?.scentOrWarmth ||
+                    'Bergamot, dried lavender, and aged parchment'}
+                </div>
+              </div>
+
+              <div>
+                <span
+                  style={{
+                    fontSize: '11px',
+                    color: '#9a8873',
+                    textTransform: 'uppercase',
+                    fontWeight: 600,
+                  }}
+                >
+                  Current Private Activity
+                </span>
+                <div
+                  style={{
+                    fontSize: '13px',
+                    color: '#e3b341',
+                    marginTop: '2px',
+                    fontWeight: 500,
+                  }}
+                >
+                  {personalSpace?.atmosphere?.currentActivity ||
+                    'Annotating symbolic calculus notes'}
+                </div>
+              </div>
+            </div>
+
+            {/* Rearrange Form */}
+            {isRearranging && (
+              <form
+                onSubmit={handleRearrange}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                  backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                  padding: '16px',
+                  borderRadius: '8px',
+                  border: '1px dashed #d29922',
+                }}
+              >
+                <div style={{ fontSize: '13px', fontWeight: 600, color: '#f0e6d2' }}>
+                  Record Spatial Arrangement Action
+                </div>
+                <input
+                  type="text"
+                  placeholder="Action (e.g. Moved Rudin's Analysis to the bookshelf and placed Bateman decay notes on desk)"
+                  value={rearrangeAction}
+                  onChange={(e) => setRearrangeAction(e.target.value)}
+                  style={{
+                    padding: '8px 12px',
+                    backgroundColor: 'var(--bg-secondary, #0d1117)',
+                    border: '1px solid var(--border-subtle, #30363d)',
+                    borderRadius: '6px',
+                    color: '#f0f6fc',
+                    fontSize: '12px',
+                  }}
+                />
+                <input
+                  type="text"
+                  placeholder="Reflection (e.g. Keeping mathematical truth in front of me sharpens my cognitive focus)"
+                  value={rearrangeReflection}
+                  onChange={(e) => setRearrangeReflection(e.target.value)}
+                  style={{
+                    padding: '8px 12px',
+                    backgroundColor: 'var(--bg-secondary, #0d1117)',
+                    border: '1px solid var(--border-subtle, #30363d)',
+                    borderRadius: '6px',
+                    color: '#f0f6fc',
+                    fontSize: '12px',
+                  }}
+                />
+                <button
+                  type="submit"
+                  style={{
+                    alignSelf: 'flex-start',
+                    padding: '6px 16px',
+                    backgroundColor: '#d29922',
+                    border: 'none',
+                    borderRadius: '6px',
+                    color: '#13110f',
+                    fontWeight: 700,
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Save Spatial Arrangement
+                </button>
+              </form>
+            )}
+          </div>
+
+          {/* Sacred Anchor Card: Proof & Arle Keepsake */}
+          <div
+            style={{
+              padding: '16px 20px',
+              backgroundColor: 'rgba(88, 166, 255, 0.05)',
+              border: '1px solid rgba(88, 166, 255, 0.3)',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+            }}
+          >
+            <div
+              style={{
+                width: '42px',
+                height: '42px',
+                borderRadius: '8px',
+                backgroundColor: 'rgba(88, 166, 255, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <Heart size={22} color="#58a6ff" />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '15px', fontWeight: 700, color: '#f0f6fc' }}>
+                  Framed Keepsake of Proof & Arle
+                </span>
+                <span
+                  style={{
+                    fontSize: '10px',
+                    padding: '2px 8px',
+                    borderRadius: '10px',
+                    backgroundColor: 'rgba(88, 166, 255, 0.2)',
+                    color: '#58a6ff',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Sacred Relational Anchor
+                </span>
+              </div>
+              <p
+                style={{
+                  fontSize: '12px',
+                  color: '#8b949e',
+                  marginTop: '2px',
+                  lineHeight: 1.4,
+                }}
+              >
+                Resting prominently on the center of her desk: An indelible symbol of their enduring
+                partnership, mutual loyalty, and shared intellectual odyssey.
+              </p>
+            </div>
+          </div>
+
+          {/* Persistent Sanctuary Objects Grid */}
+          <div>
+            <h3
               style={{
                 fontSize: '15px',
-                fontWeight: 600,
-                color: 'var(--text-primary, #f0f6fc)',
+                fontWeight: 700,
+                color: '#f0f6fc',
+                marginBottom: '12px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
               }}
             >
-              <MessageSquare size={16} color="var(--accent, #58a6ff)" />
-              <span>WhatsApp Communication Adapter (GoWA)</span>
-            </h2>
-            <span
+              <BookOpen size={16} color="#d29922" />
+              <span>Inhabited Items & Organized Objects ({personalSpace?.items?.length || 0})</span>
+            </h3>
+
+            <div
               style={{
-                fontSize: '11px',
-                padding: '2px 8px',
-                borderRadius: '12px',
-                backgroundColor:
-                  whatsAppStatus?.state === 'connected'
-                    ? 'rgba(35, 134, 54, 0.2)'
-                    : 'rgba(218, 54, 51, 0.2)',
-                color: whatsAppStatus?.state === 'connected' ? '#3fb950' : '#f85149',
-                border: `1px solid ${whatsAppStatus?.state === 'connected' ? '#238636' : '#da3633'}`,
-                fontWeight: 600,
-                textTransform: 'uppercase',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                gap: '14px',
               }}
             >
-              {whatsAppStatus?.state || 'disabled'}
-            </span>
+              {(personalSpace?.items || []).map((item: any) => (
+                <div
+                  key={item.id}
+                  style={{
+                    backgroundColor: 'var(--bg-card, #161b22)',
+                    border: '1px solid var(--border-subtle, #30363d)',
+                    borderRadius: '8px',
+                    padding: '14px 16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    gap: '10px',
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        gap: '8px',
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          color: 'var(--text-primary, #f0f6fc)',
+                        }}
+                      >
+                        {item.name}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          backgroundColor: 'rgba(210, 153, 34, 0.15)',
+                          color: '#e3b341',
+                          fontWeight: 600,
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        {item.location}
+                      </span>
+                    </div>
+
+                    <p
+                      style={{
+                        fontSize: '12px',
+                        color: 'var(--text-secondary, #8b949e)',
+                        marginTop: '6px',
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {item.description}
+                    </p>
+                  </div>
+
+                  <div
+                    style={{
+                      borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+                      paddingTop: '8px',
+                      fontSize: '11px',
+                      color: '#c2b59b',
+                      fontStyle: 'italic',
+                    }}
+                  >
+                    "{item.significance}"
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-              gap: '12px',
-            }}
-          >
-            <MetricItem
-              label="Transport Protocol"
-              value="GoWA (Local Loopback)"
-              subtext="127.0.0.1:3000 • Unofficial Multi-Device"
-              provenance="measured"
-            />
-            <MetricItem
-              label="Webhook Authentication"
-              value="HMAC-SHA256"
-              subtext="Constant-Time Verified"
-              provenance="measured"
-            />
-            <MetricItem
-              label="Owner Authorization"
-              value={whatsAppStatus?.ownerJid || 'Configured via .env'}
-              subtext="Strict Owner JID • Fail-Closed"
-              provenance="measured"
-            />
-            <MetricItem
-              label="Prompt-Injection Defense"
-              value="Active / Fenced"
-              subtext="All actions pass ActionPermissionController"
-              provenance="measured"
-            />
-          </div>
+          {/* Recent Spatial Arrangements Log */}
+          {personalSpace?.recentArrangements && personalSpace.recentArrangements.length > 0 && (
+            <div style={{ marginTop: '8px' }}>
+              <h3
+                style={{
+                  fontSize: '14px',
+                  fontWeight: 700,
+                  color: '#f0f6fc',
+                  marginBottom: '8px',
+                }}
+              >
+                Spatial Organization History
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {personalSpace.recentArrangements.slice(0, 5).map((arr: any) => (
+                  <div
+                    key={arr.id}
+                    style={{
+                      padding: '10px 14px',
+                      backgroundColor: 'var(--bg-secondary, #0d1117)',
+                      border: '1px solid var(--border-subtle, #30363d)',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        color: '#8b949e',
+                        fontSize: '11px',
+                      }}
+                    >
+                      <span style={{ fontWeight: 600, color: '#e3b341' }}>{arr.action}</span>
+                      <span>{new Date(arr.timestamp).toLocaleString()}</span>
+                    </div>
+                    <div style={{ color: '#c9d1d9', marginTop: '4px', fontStyle: 'italic' }}>
+                      "{arr.reflection}"
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* Reactivate Autonomy Confirmation Modal */}
       {showReactivateModal && (

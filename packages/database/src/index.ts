@@ -60,3 +60,4 @@ export * from './repositories/functionalConsciousnessRepository.js';
 export * from './repositories/knowledgeRepository.js';
 export * from './repositories/whatsAppRepository.js';
 export * from './repositories/experientialStateRepository.js';
+export * from './repositories/personalEnvironmentRepository.js';
