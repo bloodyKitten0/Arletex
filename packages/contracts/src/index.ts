@@ -695,7 +695,14 @@ export const StreamChunkSchema = z.object({
   error: z.string().nullable().default(null),
   finishReason: z.string().nullable().default(null),
   specialistStage: z
-    .enum(['central', 'coding_specialist', 'synthesis', 'watching_video', 'learning'])
+    .enum([
+      'central',
+      'coding_specialist',
+      'synthesis',
+      'watching_video',
+      'learning',
+      'calculating',
+    ])
     .optional(),
   specialistModel: z.string().optional(),
   ttftMs: z.number().optional(),

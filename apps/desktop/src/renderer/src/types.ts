@@ -10,5 +10,6 @@ export interface GenerationStats {
     | 'synthesis'
     | 'thinking'
     | 'watching_video'
-    | 'learning';
+    | 'learning'
+    | 'calculating';
 }

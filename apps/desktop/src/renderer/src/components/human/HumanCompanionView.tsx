@@ -872,7 +872,9 @@ export const HumanCompanionView: React.FC<HumanCompanionViewProps> = ({
                           ? 'Arle is assimilating knowledge...'
                           : generationStats.stage === 'synthesis'
                             ? 'Arle is synthesizing reasoning...'
-                            : 'Arle is reflecting & composing...'}
+                            : generationStats.stage === 'calculating'
+                              ? 'Arle is evaluating symbolic calculation...'
+                              : 'Arle is reflecting & composing...'}
                       </div>
                       <div style={{ fontSize: '11px', color: 'var(--human-text-muted)' }}>
                         Cognitive synthesis stage // {generationStats.elapsedSeconds}s elapsed
